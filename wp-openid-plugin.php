@@ -1,11 +1,11 @@
 <?php
 /*
 Plugin Name: Wordpress OpenID
-Plugin URI: http://verselogic.net
+Plugin URI: http://wpopenid.sourceforge.net
 Description: Wordpress OpenID comments. Uses JanRain consumer library.
-Author: Alan Castonguay
-Version: 0.4
+Author: Alan J Castonguay, ...
 Author URI: http://verselogic.net
+Version: $VERSION$
 */
 
 
