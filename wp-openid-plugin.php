@@ -5,7 +5,7 @@ Plugin URI: http://wpopenid.sourceforge.net
 Description: Wordpress OpenID comments. Uses JanRain consumer library.
 Author: Alan J Castonguay, ...
 Author URI: http://verselogic.net
-Version: $VERSION$
+Version: 0.4
 */
 
 
