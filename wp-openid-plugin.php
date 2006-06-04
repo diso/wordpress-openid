@@ -9,137 +9,187 @@ Version: June 2, 2006
 */
 
 
+require_once "Auth/OpenID/Consumer.php";
 
 function erase_openid_session() {
-  global $_SESSION;
-  unset($_SESSION['openid_post_ID']);
-  unset($_SESSION['openid_content']);            
+	global $_SESSION;
+	unset($_SESSION['openid_post_ID']);
+	unset($_SESSION['openid_content']);            
 }
 
-function do_openid_comment( $user_identity, $user_url, $comment_post_ID, 
-			    $comment ) {
-  // contents of wp-comments-post.php
-  global $wpdb;
-  $comment_content      = trim($comment);
-  $comment_author       = $wpdb->escape($user_identity);
-  $comment_author_email = 'openid.consumer@verselogic.net';
-  $comment_author_url   = $wpdb->escape($user_url);
-  $comment_type = 'openid';
-  
-  if ( '' == $comment_content )
-    die( __('Error: please type a comment.') );
-  
-  $commentdata = compact('comment_post_ID', 'comment_author', 
+/*
+ * do_openid_comment ( displayurl, realurl, postIdNumber, commentext )
+ * functionally equivalent to contents of wp-comments-post.php
+ */
+function do_openid_comment( $user_identity, $user_url, $dirty_comment_post_ID, $comment ) {
+	global $wpdb;
+
+	$comment_content      = trim($comment);
+	$comment_author       = $wpdb->escape($user_identity);
+	$comment_author_email = 'openid.consumer@verselogic.net'; // make this an option?
+	$comment_author_url   = $wpdb->escape($user_url);
+	$comment_type         = 'openid';   // like "comment" & "trackback" in get_comment_type()
+	$comment_post_ID      = (int) $dirty_comment_post_ID;
+
+	// don't permit comments on closed or draft posts
+	$status = $wpdb->get_row("SELECT post_status, comment_status FROM $wpdb->posts WHERE ID = '$comment_post_ID'");
+	if ( empty($status->comment_status) ) {
+		do_action('comment_id_not_found', $comment_post_ID);
+		exit;
+	} elseif ( 'closed' ==  $status->comment_status ) {
+		do_action('comment_closed', $comment_post_ID);
+		die( __('Sorry, comments are closed for this item.') );
+	} elseif ( 'draft' == $status->post_status ) {
+		do_action('comment_on_draft', $comment_post_ID);
+		exit;
+	}
+
+	if ( '' == $comment_content ) {
+		die( __('Error: please type a comment.') );
+	}
+
+	$commentdata = compact('comment_post_ID', 'comment_author', 
 			 'comment_author_email', 'comment_author_url', 
 			 'comment_content', 'comment_type', 'user_ID');
-  $comment_id = wp_new_comment( $commentdata );
-  $location = ( empty( $_POST['redirect_to'] ) ) 
-    ? get_permalink( $comment_post_ID ) : $_POST['redirect_to'];
-	
-  return $location;
+	$comment_id = wp_new_comment( $commentdata );
+
+	$location = ( empty( $_POST['redirect_to'] ) ) ? get_permalink( $comment_post_ID ) : $_POST['redirect_to'];
+	return $location;
 }
 
 function openid_is_url($url) {
-  return (
-  !preg_match('#^http\\:\\/\\/[a-z0-9\-]+\.([a-z0-9\-]+\.)?\\/[a-z]+#i',$url));
+	return !preg_match( '#^http\\:\\/\\/[a-z0-9\-]+\.([a-z0-9\-]+\.)?\\/[a-z]+#i',$url );
 } 
 
-require_once "Auth/OpenID/Consumer.php";
-
-
-$openid_store_type = get_option('oid_store_type');
 
 /* 
- * Mysql Store, used to store association and nonce
- * This should be changed to use Auth_OpenID_OpenIDStore instead of a 
- * PEAR DB object 
+ * openid_sql_tables_broken
+ * return FALSE if everything's ok
+ * return array of broken tables if there's a problem
  */
-require_once "Auth/OpenID/MySQLStore.php";
-$oid_peardb_dsn = array( 'phptype'=>'mysql', 'username'=>DB_USER, 
+function openid_sql_tables_broken() {
+	global $table_prefix,$wpdb;
+	$missing_tables = array();
+	$tables = array( 'oid_settings','oid_associations','oid_nonces' );
+	foreach( $tables as $table_name_raw ) {
+		$table_name = $table_prefix . $table_name_raw;
+		if($wpdb->get_var("show tables like '$table_name'") != $table_name) {
+			$missing_tables[] = $table_name;
+		}
+	}
+	if( empty( $missing_tables ) ) return false;
+	return $missing_tables;
+}
+
+/* 
+ * Mysql Store, used to store association and nonce.
+ * This should be changed to use a subclass of 
+ * Auth_OpenID_DatabaseConnection over $wpdb instead
+ * of a PEAR DB object for communication to the database
+ */
+function openid_get_mysql_store() {
+	global $table_prefix;
+	require_once "Auth/OpenID/MySQLStore.php";
+	$oid_peardb_dsn = array( 'phptype'=>'mysql', 'username'=>DB_USER, 
 			 'password'=>DB_PASSWORD, 'hostspec'=>DB_HOST, 
 			 'database'=>DB_NAME );
-$oid_peardb_connection = & DB::connect($oid_peardb_dsn);
-if (PEAR::isError($oid_peardb_connection)) {
-  die("Error connecting to database: " . $db->getMessage());
+	$oid_peardb_connection = & DB::connect($oid_peardb_dsn);
+	if (PEAR::isError($oid_peardb_connection)) {
+	  die("Error connecting to database: " . $db->getMessage());
+	}
+	$store = new Auth_OpenID_MySQLStore( $oid_peardb_connection,
+		$table_prefix . 'oid_settings',
+		$table_prefix . 'oid_associations',
+		$table_prefix . 'oid_nonces' );
+	return $store;
 }
-$store = new Auth_OpenID_MySQLStore( $oid_peardb_connection );
 
+// Instansiate consumer
+$oid_store = openid_get_mysql_store();
+if( $oid_store == null ) echo "Warning: Null Store, the consumer's store tables probably arn't created properly.";
+$oid_consumer = new Auth_OpenID_Consumer($oid_store);
 
-$consumer = new Auth_OpenID_Consumer($store);
+// Trust Root should default to Wordpress Site url
+$openid_trust_root = get_option('oid_trust_root'); 
 
-
-$openid_claimed_url = $_POST['commentAuthOpenID'];
-$oid_unset = "[unset]";
-
-
-$openid_trust_root = get_option('oid_trust_root');  // Root of Wordpress 
-                                                    // URL by default?
-$openid_return_to = get_option('oid_ret_to') . '?post=' 
-  . $_POST['comment_post_ID']; // Wordpress index.php by defalt?
+// Return To should default to Wordpress' index.php
+$openid_return_to  = get_option('oid_ret_to');
 
 if( empty( $openid_trust_root )) echo "Warning: OpenID Trust Root not set!";
 if( empty( $openid_return_to  )) echo "Warning: OpenID Return To not set!";
 
-$openid_return_to = get_option('siteurl') . '/wp-comments-post.php'; 
+// Try without wp-comments-post.php, we will inject the comment ourselves
+// $openid_return_to = get_option('siteurl') . '/wp-comments-post.php'; 
 // Standard comment parser sounds like a sane default.
 
 
 session_start();
 
-if( !empty( $openid_claimed_url ) ) {
 
-  $auth_request= $consumer->begin($openid_claimed_url);
-  
-  if (!$auth_request) {
-    $error = "Expected an OpenID URL. Authentication Error.";
-    die($error);
-  }
-  
-  erase_openid_session();
-  $_SESSION['openid_token'] = $info->token;
-  $_SESSION['openid_content'] = $_POST['comment'];
-  $_SESSION['openid_post_ID'] = $_POST['comment_post_ID'];
-  
-  $redirect_url = $auth_request->redirectURL($openid_trust_root, 
-					     $openid_return_to);
-  header("Location: ".$redirect_url);
-  exit(0);
-  
-} elseif( isset( $_GET['openid_mode'] ) ) {	
-  // OpenID authentication already started, return and complete the attempt 
-  $response = $consumer->complete( $_GET );
-
-  switch( $response->status ) {
-  case Auth_OpenID_CANCEL:
-    $msg = 'OpenID verification cancelled.'; break;
-
-  case Auth_OpenID_FAILURE:
-    $msg = "OpenID authentication failed: " . $response->message; break;
-    
-  case Auth_OpenID_SUCCESS:
-    $msg = FALSE;
-    $identity = $response->identity_url;
-    $esc_identity = htmlspecialchars( $identity, ENT_QUOTES);
-    $location = do_openid_comment( $esc_identity, $identity, 
-				   $_SESSION['openid_post_ID'], 
-				   $_SESSION['openid_content'] );
-    require_once (ABSPATH . WPINC . '/pluggable-functions.php');	
-    // Maybe use header('Location: ' . $location); instead?
-    wp_redirect( $location );
-    exit(0);
-
-  default:
-    $msg = 'OpenID authentication failed: Unknown problem: ' 
-      . $response->status; break;
-  } 
-
-  erase_openid_session();
-  if($msg) die($msg);
-}
 
 if  ( !class_exists('WordpressOpenID') ) {
-  class WordpressOpenID {
-    function comment_form( $postid ) {
+	class WordpressOpenID {
+	
+		function start_openid_comment_loop( $consumer, $openid_claimed_url ) {
+			if ( empty( $openid_claimed_url ) ) return;
+			$openid_return_to  = get_option('oid_ret_to');
+			$openid_trust_root = get_option('oid_trust_root');
+		
+			$auth_request = $consumer->begin( $openid_claimed_url );
+	
+			if (!$auth_request) {
+				$error = "Expected an OpenID URL. Authentication Error.";
+				die($error);
+			}
+	
+			erase_openid_session();
+			$_SESSION['openid_token'] = $info->token;
+			$_SESSION['openid_content'] = $_POST['comment'];
+			$_SESSION['openid_post_ID'] = $_POST['comment_post_ID'];
+  
+			$redirect_url = $auth_request->redirectURL( $openid_trust_root, $openid_return_to );
+			header("Location: ".$redirect_url);
+			exit(0);
+		}
+		
+		function finish_openid_comment_loop( $consumer, $get ) {
+			if ( !isset( $get['openid_mode'] ) ) return;
+			
+			// OpenID authentication already started, return and complete the attempt 
+			$response = $consumer->complete( $_GET );
+
+			switch( $response->status ) {
+			case Auth_OpenID_CANCEL:
+				$msg = 'OpenID verification cancelled.';
+				break;
+			case Auth_OpenID_FAILURE:
+				$msg = "OpenID authentication failed: " . $response->message;
+				break;
+			case Auth_OpenID_SUCCESS:
+				$msg = false;
+				$identity = $response->identity_url;
+				$esc_identity = htmlspecialchars( $identity, ENT_QUOTES);
+				$location = do_openid_comment( $esc_identity, $identity, 
+				   $_SESSION['openid_post_ID'], $_SESSION['openid_content'] );
+				
+				require_once (ABSPATH . WPINC . '/pluggable-functions.php');
+				// Maybe use header('Location: ' . $location); instead?
+				wp_redirect( $location );
+				exit(0);
+			default:
+				$msg = 'OpenID authentication failed: Unknown problem: ' . $response->status;
+				break;
+			} // end switch
+			erase_openid_session();
+			if($msg) die($msg); // There needs to be a better way to show these errors
+		}
+
+
+
+		/*
+		 * Javascript to show/hide groups of the comment form
+		 */
+		function comment_form( $postid ) {
   ?>
  <script type="text/javascript">
     a = document.getElementById( "commentAuthModeAnon" );
@@ -173,169 +223,199 @@ if  ( !class_exists('WordpressOpenID') ) {
  }
  setTimeout(commentOptionsCheckHandler,1);	  			   
  </script>	  		  	
-     <?php
-     }
-    
-    function insert_server() {
-      if ( is_home() ) {
-      }
-    }
-	  
-    function h() {
-      echo "HELLO";
-    }
-
-    function css() {
-      print '<style type="text/css">
-	ul#commentAuthOptions {
-		list-style: none;
-		margin: 0;padding: 0;
-	}
-	ul#commentAuthOptions li {
-		margin:0; padding:0;
-	}
-	ul#commentAuthOptions li input {
-		width:auto;
-	}
-	input#openid_url {
-	  background: url(http://blog.verselogic.net/wp-content/themes/plains-in-the-dreaming/images/openid.gif) no-repeat;
-	  background-color: #fff; 
-	  background-position: 0 50%;
-	  color: #000;
-	  padding-left: 18px; 
-	}
-	input#livejournal_username {
-	  background: url(http://blog.verselogic.net/wp-content/themes/plains-in-the-dreaming/images/lj.gif) no-repeat;
-	  background-color: #fff;
-	  background-position: 0 50%;
-	  color: #000;
-	  padding-left: 18px;
-	}
-	.commentOptionsBlock {
-	  margin-left: 2em;
-	}
- 	</style>'; 
-    }
-
-    function preprocess_comment( $c ) {
-      global $_POST;
-      // executed when a new comment is submitted, $_POST is populated 
-      // with our extra form variables
-      // commentAuthMode   (flag = openid)
-      // commentAuthOpenID (claimed url)
-      return $c;
-    }
-
-    function pre_comment_approved( $approved ) {
-      // if OpenID was used to submit the comment, default to approve? 
-      // return 1;
-    }
-
-    function oid_options_page() {
-      global $oid_unset;
-      
-      // if we're posted back an update, let's set the values here
-      //
-      if (isset($_POST['info_update'])) {
-	$trust = $_POST['oid_trust_root'];
-	$ret_to = $_POST['oid_ret_to'];
+	<?php	}
+		
+		/*
+		 * A handy place to insert things in the <head> block,
+		 * such as the old Openid.Server link rel= tag
+		 */
+		function insert_server() {
+			if ( is_home() ) {
+			}
+		}
 	
-	if ($trust == null){$trust = $oid_unset;}
-	if ($ret_to == null){$ret_to = $oid_unset;}
+		/* DEBUG
+		 * Alan is using this function to test obscure wordpress hooks
+		 */  
+		function h() {
+			echo "HELLO";
+		}
 	
-	$error = '';
-	if (!openid_is_url($trust)) {
-	  $error .= "<p/>".$trust." is not a url";
-	} else {
-	  update_option('oid_trust_root', $trust);
-	}
-	if (!openid_is_url($ret_to)) {
-	  $error .= "<p/>".$ret_to." is not a url";
-	} else {
-	  update_option('oid_ret_to', $ret_to);
-	}
+		/*
+		 * Maybe styles should not be included, and left up to the template designer?
+		 * Especially since they will probably have absolute urls to images.
+		 */
+		function css() {
+			?>
+			<style type="text/css">
+			ul#commentAuthOptions {
+				list-style: none;
+				margin: 0;padding: 0;
+			}
+			ul#commentAuthOptions li {
+				margin:0; padding:0;
+			}
+			ul#commentAuthOptions li input {
+				width:auto;
+			}
+			input#openid_url {
+			  background: url(http://blog.verselogic.net/wp-content/themes/plains-in-the-dreaming/images/openid.gif) no-repeat;
+			  background-color: #fff; 
+			  background-position: 0 50%;
+			  color: #000;
+			  padding-left: 18px; 
+			}
+			input#livejournal_username {
+			  background: url(http://blog.verselogic.net/wp-content/themes/plains-in-the-dreaming/images/lj.gif) no-repeat;
+			  background-color: #fff;
+			  background-position: 0 50%;
+			  color: #000;
+			  padding-left: 18px;
+			}
+			.commentOptionsBlock {
+			  margin-left: 2em;
+			}
+ 			</style>
+ 			<?
+		}
+
+		/*
+		 * Hook to display the options page in the Admin screen
+		 */
+		function oid_add_pages() {
+			add_options_page('Open ID options', 'Open ID', 8, __FILE__,
+				array('WordpressOpenID', 'oid_options_page')  );
+		}
+		
+		/*
+		 * Display and handle updates from the Admin screen options page
+		 */
+		function oid_options_page() {
+			global $oid_unset;
+		
+			// if we're posted back an update, let's set the values here
+			if ( isset($_POST['info_update']) ) {
+				$trust = $_POST['oid_trust_root'];
+				$ret_to = $_POST['oid_ret_to'];
+				if ($trust == null){$trust = $oid_unset;}
+				if ($ret_to == null){$ret_to = $oid_unset;}
 	
-	if ($error != '') {
-	  echo '<div class="updated"><p><strong>At least one of Open ID options was NOT updated</strong>'.$error.'</p></div>';
-	} else {
-	  echo '<div class="updated"><p><strong>Open ID options updated</strong>'.$original.'</p></div>';
-	}
-      }
+				$error = '';
+				if (!openid_is_url($trust)) {
+					$error .= "<p/>".$trust." is not a url";
+				} else {
+					update_option('oid_trust_root', $trust);
+				}
+				if (!openid_is_url($ret_to)) {
+					$error .= "<p/>".$ret_to." is not a url";
+				} else {
+					update_option('oid_ret_to', $ret_to);
+				}
+			
+				if ($error != '') {
+					echo '<div class="updated"><p><strong>At least one of Open ID options was NOT updated</strong>'.$error.'</p></div>';
+				} else {
+					echo '<div class="updated"><p><strong>Open ID options updated</strong>'.$original.'</p></div>';
+				}
 
-      // the options page comes here
-      //
-	?>
-  <form method="post">
-     <div class="wrap">
-     <h2>Open ID options</h2>
-     <fieldset class="options">
-     <p><em>Please refer to <a href="http://verisign.com">http://[TBD]</a> 
-             specification for more information.</em></p>
-     <table class="editform" cellspacing="2" cellpadding="5" width="100%">
-
-     <tr>
-       <th valign="top" style="padding-top: 10px;">
-       <label for="oid_trust_root">Trust root:</label>
-       </th>
-       <td>
-         <input type="text" size="80" name="oid_trust_root" id="oid_trust_root"
-         	value="<?php echo htmlentities(get_option('oid_trust_root')); ?>" />
-          <p style="margin: 5px 10px;">Users will be asked whether they trust this url,
-           and its decendents, to know that they are logged in and own their identity url.
-           This should probably be <strong><?php echo get_settings('siteurl'); ?></strong></p>
-       </td>
-     </tr>
-
-     <tr>
-       <th valign="top" style="padding-top: 10px;">
-       <label for="<?php echo oid_ret_to; ?>">Return-to URL:</label>
-       </th>
-       <td>
-         <input type="text" size="80" name="oid_ret_to" id="oid_ret_to"
-         	value="<?php echo htmlentities(get_option('oid_ret_to')); ?>" />
-         <p style="margin: 5px 10px;">The url to return to after authentication.
-           This <em>must</em> be a decendent of the <em>trust root</em> above.
-           This should probably be <strong><?php echo get_settings('home'); ?></strong></p>
-       </td>
-     </tr>
-    </table>
-  </fieldset>
-  <input type="submit" name="info_update" value="<?php _e('Update options', 'Localization name') ?> »" /></div>
-  </form>
- </div><?php
- 
-        } // end function for displaying options page
-
-  }
-}
+				if ( isset( $_POST['install_tables'] ) ) {
+					global $oid_store;
+					$oid_store->createTables();
+					echo '<div class="updated"><p><strong>Assocation and nonce tables created.</strong></p></div>';
+				}
+			}
 
 
+			// Display the options page form
+			?>
+			<form method="post"><div class="wrap">
+				<h2>Open ID options</h2>
+     				<fieldset class="options">
+     					<p><em>Please refer to <a href="http://verisign.com">http://[TBD]</a> 
+     					specification for more information.</em></p>
+     					
+     					<table class="editform" cellspacing="2" cellpadding="5" width="100%">
+     					<tr><th valign="top" style="padding-top: 10px;">
+     						<label for="oid_trust_root">Trust root:</label>
+     					</th><td>
+     						<p><input type="text" size="80" name="oid_trust_root" id="oid_trust_root"
+     						value="<?php echo htmlentities(get_option('oid_trust_root')); ?>" /></p>
+     						<p style="margin: 5px 10px;">Commenters will be asked whether they trust this url,
+     						and its decendents, to know that they are logged in and own their identity url.
+     						This should probably be <strong><?php echo get_settings('siteurl'); ?></strong></p>
+     					</td></tr>
+     					
+     					<tr><th valign="top" style="padding-top: 10px;">
+     						<label for="oid_ret_to">Return-to URL:</label>
+     					</th><td>
+     						<p><input type="text" size="80" name="oid_ret_to" id="oid_ret_to"
+     						value="<?php echo htmlentities(get_option('oid_ret_to')); ?>" /></p>
+     						<p style="margin: 5px 10px;">The url to return to after authentication.
+     						This <em>must</em> be a decendent of the <em>trust root</em> above.
+     						This should probably be <strong><?php echo get_settings('home'); ?></strong></p>
+     					</td></tr>
+     					
+     					<tr><th valign="top" style="padding-top: 10px;">
+     						Assoication Tables:
+     					</th><td>
+     						<p><input type="checkbox" name="install_tables" id="install_tables" />
+     						<label for="install_tables">Reinstall association tables</label></p>
+     						<p style="margin: 5px 10px; color:<?php echo $table_ok_color; ?> ;">
+     						 <?php echo $table_ok_warn; ?></p>
+     					</table>
+     				</fieldset>
+     				<input type="submit" name="info_update" value="<?php _e('Update options', 'Localization name') ?> »" />
+     			</div></form>
+     			<?php
+     			
+     			?>
+     			<form method="post"><div class="wrap">
+     				<h2>Open ID tables</h2>
+     				<p style="color:<?php echo $table_ok_color; ?>;"><?php echo $table_ok_warn; ?></p>
+     				<input type="submit" name="install_openid_tables" value="<?php _e('Install tables'); ?>" />
+     			</div></form>
+ 			<?php
+ 		} // end function oid_options_page
+	} // end class definition
+} // end if-class-exists test
 
-// bind actions, filters and options to 
+
+/*
+ * Exposed functions, designed for use in templates
+ */
 
 function get_comment_openid() {
-  if( get_comment_type() == 'openid' ) {
-    echo '<img src="/openid.gif" height="16" width="16" alt="OpenID" />';
-  }
+	if( get_comment_type() == 'openid' ) {
+		echo '<img src="/openid.gif" height="16" width="16" alt="OpenID" />';
+	}
 }
 
-function alan_test($s) {
-  return $s;
+function is_openid_comment() {
+	return ( get_comment_type() == 'openid' );
 }
 
-add_filter('get_comment_type', 'alan_test', 1);
 
-add_option('oid_trust_root', $oid_unset, 'The Open ID trust root');
-add_option('oid_ret_to', $oid_unset, 'URL to return to after authentication');
-add_action('wp_head', array('WordpressOpenID', 'css'), 10, 2);
-add_action('comment_form', array('WordpressOpenID', 'comment_form'), 10, 2);
 
-add_action('admin_menu', 'oid_add_pages');
-function oid_add_pages() {
-   add_options_page('Open ID options', 'Open ID', 8, __FILE__, 
-		    array('WordpressOpenID', 'oid_options_page')  );
+
+// Kick off openid auth loop
+if( $broken_tables = openid_sql_tables_broken() ) {
+	// We can't really dump warnings to the client, only disable OpenID support.
+	//echo "Warning: OpenID consumer tables not created correctly.";
+} else {
+	WordpressOpenID::start_openid_comment_loop( $oid_consumer, $_POST['commentAuthOpenID'] );
+	WordpressOpenID::finish_openid_comment_loop( $oid_consumer, $_GET );
 }
 
+
+// Safely add options to the database if not already present
+$oid_unset = get_settings('home');
+add_option( 'oid_trust_root', $oid_unset, 'The Open ID trust root' );
+add_option( 'oid_ret_to', $oid_unset, 'URL to return to after authentication' );
+
+// Add handlers for action hooks
+add_action( 'wp_head', array('WordpressOpenID', 'css'), 10, 2 );	// inside <head>
+add_action( 'comment_form', array('WordpressOpenID', 'comment_form'), 10, 2 ); // bottom of comment form
+add_action( 'admin_menu', array('WordpressOpenID', 'oid_add_pages') );	// about to display the admin screen
 
 
 ?>
