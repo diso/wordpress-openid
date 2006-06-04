@@ -1,11 +1,11 @@
 <?php
 /*
 Plugin Name: Wordpress OpenID
-Plugin URI: http://wpopenid.sourceforge.net
+Plugin URI: http://wpopenid.sourceforge.net/
 Description: Wordpress OpenID comments. Uses JanRain consumer library.
-Author: Alan J Castonguay, Hans Granqvist
+Author: Alan J Castonguay, Hans Granqvist, ...
 Author URI: http://wpopenid.sourceforge.net
-Version: June 2, 2006
+Version: 2006-06-04
 */
 
 
@@ -14,6 +14,7 @@ require_once "Auth/OpenID/Consumer.php";
 
 if  ( !class_exists('WordpressOpenID') ) {
 	class WordpressOpenID {
+	
 
 		function erase_openid_session() {
 			global $_SESSION;
@@ -366,7 +367,8 @@ if  ( !class_exists('WordpressOpenID') ) {
 
 
 /*
- * Exposed functions, designed for use in templates, inside The Loop, specifically inside the comment foreach
+ * Exposed functions, designed for use in templates.
+ * Specifically inside `foreach ($comments as $comment)` in comments.php
  */
 
 /*  get_comment_openid()
@@ -380,6 +382,7 @@ function get_comment_openid() {
 
 /* is_openid_comment()
  * If the current comment was submitted with OpenID, return true
+ * useful for  <?php echo ( is_openid_comment() ? 'Submitted with OpenID' : '' ); ?>
  */
 function is_openid_comment() {
 	return ( get_comment_type() == 'openid' );
@@ -392,7 +395,7 @@ $oid_store = WordpressOpenID::openid_get_mysql_store();
 if( $oid_store == null ) echo "Warning: Null Store, the consumer's store tables probably arn't created properly.";
 $oid_consumer = new Auth_OpenID_Consumer($oid_store);
 
-session_start();
+@session_start();
 
 
 // Kick off openid auth loop
