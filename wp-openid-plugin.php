@@ -11,125 +11,110 @@ Version: June 2, 2006
 
 require_once "Auth/OpenID/Consumer.php";
 
-function erase_openid_session() {
-	global $_SESSION;
-	unset($_SESSION['openid_post_ID']);
-	unset($_SESSION['openid_content']);            
-}
-
-/*
- * do_openid_comment ( displayurl, realurl, postIdNumber, commentext )
- * functionally equivalent to contents of wp-comments-post.php
- */
-function do_openid_comment( $user_identity, $user_url, $dirty_comment_post_ID, $comment ) {
-	global $wpdb;
-
-	$comment_content      = trim($comment);
-	$comment_author       = $wpdb->escape($user_identity);
-	$comment_author_email = 'openid.consumer@verselogic.net'; // make this an option?
-	$comment_author_url   = $wpdb->escape($user_url);
-	$comment_type         = 'openid';   // like "comment" & "trackback" in get_comment_type()
-	$comment_post_ID      = (int) $dirty_comment_post_ID;
-
-	// don't permit comments on closed or draft posts
-	$status = $wpdb->get_row("SELECT post_status, comment_status FROM $wpdb->posts WHERE ID = '$comment_post_ID'");
-	if ( empty($status->comment_status) ) {
-		do_action('comment_id_not_found', $comment_post_ID);
-		exit;
-	} elseif ( 'closed' ==  $status->comment_status ) {
-		do_action('comment_closed', $comment_post_ID);
-		die( __('Sorry, comments are closed for this item.') );
-	} elseif ( 'draft' == $status->post_status ) {
-		do_action('comment_on_draft', $comment_post_ID);
-		exit;
-	}
-
-	if ( '' == $comment_content ) {
-		die( __('Error: please type a comment.') );
-	}
-
-	$commentdata = compact('comment_post_ID', 'comment_author', 
-			 'comment_author_email', 'comment_author_url', 
-			 'comment_content', 'comment_type', 'user_ID');
-	$comment_id = wp_new_comment( $commentdata );
-
-	$location = ( empty( $_POST['redirect_to'] ) ) ? get_permalink( $comment_post_ID ) : $_POST['redirect_to'];
-	return $location;
-}
-
-function openid_is_url($url) {
-	return !preg_match( '#^http\\:\\/\\/[a-z0-9\-]+\.([a-z0-9\-]+\.)?\\/[a-z]+#i',$url );
-} 
-
-
-/* 
- * openid_sql_tables_broken
- * return FALSE if everything's ok
- * return array of broken tables if there's a problem
- */
-function openid_sql_tables_broken() {
-	global $table_prefix,$wpdb;
-	$missing_tables = array();
-	$tables = array( 'oid_settings','oid_associations','oid_nonces' );
-	foreach( $tables as $table_name_raw ) {
-		$table_name = $table_prefix . $table_name_raw;
-		if($wpdb->get_var("show tables like '$table_name'") != $table_name) {
-			$missing_tables[] = $table_name;
-		}
-	}
-	if( empty( $missing_tables ) ) return false;
-	return $missing_tables;
-}
-
-/* 
- * Mysql Store, used to store association and nonce.
- * This should be changed to use a subclass of 
- * Auth_OpenID_DatabaseConnection over $wpdb instead
- * of a PEAR DB object for communication to the database
- */
-function openid_get_mysql_store() {
-	global $table_prefix;
-	require_once "Auth/OpenID/MySQLStore.php";
-	$oid_peardb_dsn = array( 'phptype'=>'mysql', 'username'=>DB_USER, 
-			 'password'=>DB_PASSWORD, 'hostspec'=>DB_HOST, 
-			 'database'=>DB_NAME );
-	$oid_peardb_connection = & DB::connect($oid_peardb_dsn);
-	if (PEAR::isError($oid_peardb_connection)) {
-	  die("Error connecting to database: " . $db->getMessage());
-	}
-	$store = new Auth_OpenID_MySQLStore( $oid_peardb_connection,
-		$table_prefix . 'oid_settings',
-		$table_prefix . 'oid_associations',
-		$table_prefix . 'oid_nonces' );
-	return $store;
-}
-
-// Instansiate consumer
-$oid_store = openid_get_mysql_store();
-if( $oid_store == null ) echo "Warning: Null Store, the consumer's store tables probably arn't created properly.";
-$oid_consumer = new Auth_OpenID_Consumer($oid_store);
-
-// Trust Root should default to Wordpress Site url
-$openid_trust_root = get_option('oid_trust_root'); 
-
-// Return To should default to Wordpress' index.php
-$openid_return_to  = get_option('oid_ret_to');
-
-if( empty( $openid_trust_root )) echo "Warning: OpenID Trust Root not set!";
-if( empty( $openid_return_to  )) echo "Warning: OpenID Return To not set!";
-
-// Try without wp-comments-post.php, we will inject the comment ourselves
-// $openid_return_to = get_option('siteurl') . '/wp-comments-post.php'; 
-// Standard comment parser sounds like a sane default.
-
-
-session_start();
-
-
 
 if  ( !class_exists('WordpressOpenID') ) {
 	class WordpressOpenID {
+
+		function erase_openid_session() {
+			global $_SESSION;
+			unset($_SESSION['openid_post_ID']);
+			unset($_SESSION['openid_content']);            
+		}
+		
+		/*
+		 * do_openid_comment ( displayurl, realurl, postIdNumber, commentext )
+		 * functionally equivalent to contents of wp-comments-post.php
+		 */
+
+		function do_openid_comment( $user_identity, $user_url, $dirty_comment_post_ID, $comment ) {
+			global $wpdb;
+
+			$comment_content      = trim($comment);
+			$comment_author       = $wpdb->escape($user_identity);
+			$comment_author_email = 'openid.consumer@verselogic.net'; // TODO make this an option.
+			$comment_author_url   = $wpdb->escape($user_url);
+			$comment_type         = 'openid';   // like "comment" & "trackback" in get_comment_type()
+			$comment_post_ID      = (int) $dirty_comment_post_ID;
+
+			// don't permit comments on closed or draft posts
+			$status = $wpdb->get_row("SELECT post_status, comment_status FROM $wpdb->posts WHERE ID = '$comment_post_ID'");
+			if ( empty($status->comment_status) ) {
+				do_action('comment_id_not_found', $comment_post_ID);
+				exit;
+			} elseif ( 'closed' ==  $status->comment_status ) {
+				do_action('comment_closed', $comment_post_ID);
+				die( __('Sorry, comments are closed for this item.') );
+			} elseif ( 'draft' == $status->post_status ) {
+				do_action('comment_on_draft', $comment_post_ID);
+				exit;
+			}
+			
+			// don't permit empty comments
+			if ( '' == $comment_content ) {
+			die( __('Error: please type a comment.') );
+			}
+
+			$commentdata = compact('comment_post_ID', 'comment_author', 
+				 'comment_author_email', 'comment_author_url', 
+				 'comment_content', 'comment_type', 'user_ID');
+			$comment_id = wp_new_comment( $commentdata );
+
+			$location = ( empty( $_POST['redirect_to'] ) ) ? get_permalink( $comment_post_ID ) : $_POST['redirect_to'];
+			return $location;
+		}
+
+		/*
+		 * Sanity check for urls
+		 */
+		function openid_is_url($url) {
+			return !preg_match( '#^http\\:\\/\\/[a-z0-9\-]+\.([a-z0-9\-]+\.)?\\/[a-z]+#i',$url );
+		} 
+
+		/* 
+		 * openid_sql_tables_broken
+		 * return FALSE if everything's ok
+		 * return array of broken tables if there's a problem
+		 */
+		function openid_sql_tables_broken() {
+			global $table_prefix,$wpdb;
+			$missing_tables = array();
+			$tables = array( 'oid_settings','oid_associations','oid_nonces' );
+			foreach( $tables as $table_name_raw ) {
+				$table_name = $table_prefix . $table_name_raw;
+				if($wpdb->get_var("show tables like '$table_name'") != $table_name) {
+					$missing_tables[] = $table_name;
+				}
+			}
+			if( empty( $missing_tables ) ) return false;
+			return $missing_tables;
+		}
+
+		/* 
+		 * Mysql Store, used to store association and nonce.
+		 * This should be changed to use a subclass of 
+		 * Auth_OpenID_DatabaseConnection over $wpdb instead
+		 * of a PEAR DB object for communication to the database
+		 */
+		function openid_get_mysql_store() {
+			global $table_prefix;
+			require_once "Auth/OpenID/MySQLStore.php";
 	
+			$oid_peardb_dsn = array( 'phptype'=>'mysql', 'username'=>DB_USER, 
+				 'password'=>DB_PASSWORD, 'hostspec'=>DB_HOST, 
+				 'database'=>DB_NAME );
+			$oid_peardb_connection = & DB::connect($oid_peardb_dsn);
+			if (PEAR::isError($oid_peardb_connection)) {
+				die("Error connecting to database: " . $db->getMessage());
+			}
+			
+			$store = new Auth_OpenID_MySQLStore( $oid_peardb_connection,
+				$table_prefix . 'oid_settings',
+				$table_prefix . 'oid_associations',
+				$table_prefix . 'oid_nonces' );
+			return $store;
+		}
+
+
 		function start_openid_comment_loop( $consumer, $openid_claimed_url ) {
 			if ( empty( $openid_claimed_url ) ) return;
 			$openid_return_to  = get_option('oid_ret_to');
@@ -142,7 +127,7 @@ if  ( !class_exists('WordpressOpenID') ) {
 				die($error);
 			}
 	
-			erase_openid_session();
+			WordpressOpenID::erase_openid_session();
 			$_SESSION['openid_token'] = $info->token;
 			$_SESSION['openid_content'] = $_POST['comment'];
 			$_SESSION['openid_post_ID'] = $_POST['comment_post_ID'];
@@ -169,7 +154,7 @@ if  ( !class_exists('WordpressOpenID') ) {
 				$msg = false;
 				$identity = $response->identity_url;
 				$esc_identity = htmlspecialchars( $identity, ENT_QUOTES);
-				$location = do_openid_comment( $esc_identity, $identity, 
+				$location = WordpressOpenID::do_openid_comment( $esc_identity, $identity, 
 				   $_SESSION['openid_post_ID'], $_SESSION['openid_content'] );
 				
 				require_once (ABSPATH . WPINC . '/pluggable-functions.php');
@@ -180,7 +165,7 @@ if  ( !class_exists('WordpressOpenID') ) {
 				$msg = 'OpenID authentication failed: Unknown problem: ' . $response->status;
 				break;
 			} // end switch
-			erase_openid_session();
+			WordpressOpenID::erase_openid_session();
 			if($msg) die($msg); // There needs to be a better way to show these errors
 		}
 
@@ -291,7 +276,7 @@ if  ( !class_exists('WordpressOpenID') ) {
 		 * Display and handle updates from the Admin screen options page
 		 */
 		function oid_options_page() {
-			global $oid_unset;
+			global $oid_unset, $oid_store;
 		
 			// if we're posted back an update, let's set the values here
 			if ( isset($_POST['info_update']) ) {
@@ -301,30 +286,37 @@ if  ( !class_exists('WordpressOpenID') ) {
 				if ($ret_to == null){$ret_to = $oid_unset;}
 	
 				$error = '';
-				if (!openid_is_url($trust)) {
-					$error .= "<p/>".$trust." is not a url";
-				} else {
+				if ( WordpressOpenID::openid_is_url($trust) ) {
 					update_option('oid_trust_root', $trust);
-				}
-				if (!openid_is_url($ret_to)) {
-					$error .= "<p/>".$ret_to." is not a url";
 				} else {
+					$error .= "<p/>".$trust." is not a url!";
+				}
+				if ( WordpressOpenID::openid_is_url($ret_to) ) {
 					update_option('oid_ret_to', $ret_to);
+				} else {
+					$error .= "<p/>".$ret_to." is not a url!";
 				}
 			
 				if ($error != '') {
 					echo '<div class="updated"><p><strong>At least one of Open ID options was NOT updated</strong>'.$error.'</p></div>';
 				} else {
-					echo '<div class="updated"><p><strong>Open ID options updated</strong>'.$original.'</p></div>';
+					echo '<div class="updated"><p><strong>Open ID options updated</strong></p></div>';
 				}
 
 				if ( isset( $_POST['install_tables'] ) ) {
-					global $oid_store;
 					$oid_store->createTables();
 					echo '<div class="updated"><p><strong>Assocation and nonce tables created.</strong></p></div>';
 				}
+				
+				
 			}
 
+			$table_ok_color='green';
+			$table_ok_warn='Tables are OK';
+			if( $broken_tables = WordpressOpenID::openid_sql_tables_broken() ) {
+				$table_ok_color='red';
+				$table_ok_warn='Some tables are not installed: ' . implode(', ', $broken_tables);
+			}
 
 			// Display the options page form
 			?>
@@ -342,6 +334,7 @@ if  ( !class_exists('WordpressOpenID') ) {
      						value="<?php echo htmlentities(get_option('oid_trust_root')); ?>" /></p>
      						<p style="margin: 5px 10px;">Commenters will be asked whether they trust this url,
      						and its decendents, to know that they are logged in and own their identity url.
+     						Include the trailing slash: <em>http://example.com</em><strong>/</strong>.
      						This should probably be <strong><?php echo get_settings('siteurl'); ?></strong></p>
      					</td></tr>
      					
@@ -359,7 +352,7 @@ if  ( !class_exists('WordpressOpenID') ) {
      						Assoication Tables:
      					</th><td>
      						<p><input type="checkbox" name="install_tables" id="install_tables" />
-     						<label for="install_tables">Reinstall association tables</label></p>
+     						<label for="install_tables">Install association tables.</label></p>
      						<p style="margin: 5px 10px; color:<?php echo $table_ok_color; ?> ;">
      						 <?php echo $table_ok_warn; ?></p>
      					</table>
@@ -367,41 +360,43 @@ if  ( !class_exists('WordpressOpenID') ) {
      				<input type="submit" name="info_update" value="<?php _e('Update options', 'Localization name') ?> »" />
      			</div></form>
      			<?php
-     			
-     			?>
-     			<form method="post"><div class="wrap">
-     				<h2>Open ID tables</h2>
-     				<p style="color:<?php echo $table_ok_color; ?>;"><?php echo $table_ok_warn; ?></p>
-     				<input type="submit" name="install_openid_tables" value="<?php _e('Install tables'); ?>" />
-     			</div></form>
- 			<?php
  		} // end function oid_options_page
 	} // end class definition
 } // end if-class-exists test
 
 
 /*
- * Exposed functions, designed for use in templates
+ * Exposed functions, designed for use in templates, inside The Loop, specifically inside the comment foreach
  */
 
+/*  get_comment_openid()
+ *  If the current comment was submitted with OpenID, output an <img> tag with the OpenID logo
+ */
 function get_comment_openid() {
 	if( get_comment_type() == 'openid' ) {
 		echo '<img src="/openid.gif" height="16" width="16" alt="OpenID" />';
 	}
 }
 
+/* is_openid_comment()
+ * If the current comment was submitted with OpenID, return true
+ */
 function is_openid_comment() {
 	return ( get_comment_type() == 'openid' );
 }
 
 
 
+// Instansiate consumer
+$oid_store = WordpressOpenID::openid_get_mysql_store();
+if( $oid_store == null ) echo "Warning: Null Store, the consumer's store tables probably arn't created properly.";
+$oid_consumer = new Auth_OpenID_Consumer($oid_store);
+
+session_start();
+
 
 // Kick off openid auth loop
-if( $broken_tables = openid_sql_tables_broken() ) {
-	// We can't really dump warnings to the client, only disable OpenID support.
-	//echo "Warning: OpenID consumer tables not created correctly.";
-} else {
+if( false === ($broken_tables = WordpressOpenID::openid_sql_tables_broken() ) ) {
 	WordpressOpenID::start_openid_comment_loop( $oid_consumer, $_POST['commentAuthOpenID'] );
 	WordpressOpenID::finish_openid_comment_loop( $oid_consumer, $_GET );
 }
