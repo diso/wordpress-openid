@@ -1,23 +1,23 @@
 <?php
 /*
-Plugin Name: Wordpress OpenID
+Plugin Name: OpenID Registration
 Plugin URI: http://wpopenid.sourceforge.net/
-Description: Wordpress OpenID comments. Uses JanRain consumer library.
+Description: Wordpress OpenID Registration and Authentication. Uses JanRain consumer library.
 Author: Alan J Castonguay, Hans Granqvist, ...
 Author URI: http://wpopenid.sourceforge.net
-Version: 2006-06-04
+Version: 2006-06-19
 */
 
 
 require_once "Auth/OpenID/Consumer.php";
-
 require_once "Auth/OpenID/DatabaseConnection.php";
+
 require_once 'wpdb-pear-wrapper.php';
 
 
 
-if  ( !class_exists('WordpressOpenID') ) {
-	class WordpressOpenID {
+if  ( !class_exists('WordpressOpenIDRegistration') ) {
+	class WordpressOpenIDRegistration {
 	
 
 		function erase_openid_session() {
@@ -135,11 +135,9 @@ if  ( !class_exists('WordpressOpenID') ) {
 			$openid_return_to  = get_option('oid_ret_to');
 			$openid_trust_root = get_option('oid_trust_root');
 		
-			error_log('OpenIDConsumer: Attempting auth for "' . $openid_claimed_url . '"');
 			$auth_request = $consumer->begin( $openid_claimed_url );
 	
 			if (!$auth_request) {
-				error_log('OpenIDConsumer: Expected an OpenID URL. Authentication Error.');
 				$error = "Expected an OpenID URL. Authentication Error.";
 				die($error);
 			}
@@ -434,5 +432,25 @@ add_option( 'oid_ret_to', $oid_unset, 'URL to return to after authentication' );
 add_action( 'wp_head', array('WordpressOpenID', 'css'), 10, 2 );	// inside <head>
 add_action( 'comment_form', array('WordpressOpenID', 'comment_form'), 10, 2 ); // bottom of comment form
 add_action( 'admin_menu', array('WordpressOpenID', 'oid_add_pages') );	// about to display the admin screen
+
+
+
+
+function openid_wp_authenticate( $username, $password ) {
+
+	echo "<h2>Username: $username.  Password: $password ";
+	if( $_POST['log_openid'] ) echo ' OpenID: ' . $_POST['log_openid'];
+	echo '</h2>';
+
+	if( $_GET['action'] == 'openid' ) {
+		echo "!!!!";
+	}
+
+}
+
+
+//add_action( 'wp_authenticate', 'openid_wp_authenticate' );
+
+
 
 ?>
