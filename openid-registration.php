@@ -16,6 +16,10 @@ require_once 'wpdb-pear-wrapper.php';
 
 @session_start();	// required by Services_Yadis_PHPSession:40
 
+if( !defined( 'OPENID_COMMENT_COOKIE' ) )
+	define( 'OPENID_COMMENT_COOKIE', 'wordpressopenidcomment_' . COOKIEHASH );
+	
+
 if  ( !class_exists('WordpressOpenIDRegistration') ) {
 	class WordpressOpenIDRegistration {
 	
@@ -75,10 +79,14 @@ if  ( !class_exists('WordpressOpenIDRegistration') ) {
 
 		}
 
+
+		function start_comment( ) {}
+
+		
 		/*  
 		 *		
 		 */
-		function start_login( $claimed_url, $redirect_to ) {
+		function start_login( $claimed_url, $redirect_to, $action='loginopenid', $wordpressid=0 ) {
 		
 			if ( empty( $claimed_url ) ) return;
 			
@@ -90,7 +98,8 @@ if  ( !class_exists('WordpressOpenIDRegistration') ) {
 
 			error_log('OpenIDConsumer: Attempting auth for "' . $claimed_url . '"');
 
-			$return_to = 'http://openid.verselogic.net/wp-login.php?action=loginopenid';
+			$return_to = "http://openid.verselogic.net/wp-login.php?action=$action";
+			if( $wordpressid ) $return_to .= "&wordpressid=$wordpressid";
 			if( !empty( $redirect_to ) ) $return_to .= '&redirect_to=' . urlencode( $redirect_to );
 			
 			$redirect_url = $auth_request->redirectURL( get_option('oid_trust_root'), $return_to );
@@ -100,9 +109,9 @@ if  ( !class_exists('WordpressOpenIDRegistration') ) {
 		}
 		
 	
-		function finish_login() {
+		function finish_login( ) {
 			global $_GET;
-			if ( $_GET['action'] !== 'loginopenid' ) return;
+			if ( $_GET['action'] !== 'loginopenid' && $_GET['action'] !== 'commentopenid' ) return;
 			if ( !isset( $_GET['openid_mode'] ) ) return;
 			
 			$response = $this->_consumer->complete( $_GET );
@@ -132,7 +141,7 @@ if  ( !class_exists('WordpressOpenIDRegistration') ) {
 				// 1. Search the wp_users list for the identity url
 				global $wpdb;
 				
-				$this->action='';
+				$this->action = '';
 				$redirect_to = 'wp-admin/';
 
 				$matching_logins = $wpdb->get_results("SELECT ID, user_login, user_pass FROM $wpdb->users WHERE( user_url = '" . $wpdb->escape( $response->identity_url ) . "' )" );
@@ -142,7 +151,7 @@ if  ( !class_exists('WordpressOpenIDRegistration') ) {
 					
 				} elseif( count( $matching_logins ) == 1 ) {
 					// 1.1 If url is found, check user_meta[permit_openid]
-					$user = new WP_User(0, $matching_logins[0]->user_login );
+					$user = new WP_User( 0, $matching_logins[0]->user_login );
 					
 					if( get_usermeta( $user->ID, 'permit_openid_login' ) ) {
 						if( wp_login( $user->user_login, md5($user->user_pass), true ) ) {
@@ -177,7 +186,7 @@ if  ( !class_exists('WordpressOpenIDRegistration') ) {
 						update_usermeta( $ID, 'permit_openid_login', true );
 						wp_update_user( array( 'ID' => $ID, 'user_url' => $response->identity_url ) );
 						
-						$user = new WP_User(0, $username );
+						$user = new WP_User( $ID );
 					
 						wp_login( $user->user_login, md5($user->user_pass), true );
 						do_action('wp_login', $user_login);
@@ -206,26 +215,111 @@ if  ( !class_exists('WordpressOpenIDRegistration') ) {
 			error_log('OpenIDConsumer: Finish Auth for "' . $response->identity_url . '". ' . $this->error );
 
 			
+			
 
 			// Possibly delay this while binding user account.
 			if( $this->action == 'redirect' ) {
 				if ( !empty( $_GET['redirect_to'] )) $redirect_to = $_GET['redirect_to'];
+				
+				
+				if( $_GET['action'] == 'commentopenid' ) {
+					// there's a cookie containing the comment text. post it and redirect to it.
+					
+					$comment_content = $this->comment_get_cookie();
+					if ( '' == trim($comment_content) )
+						die( __('Error: please type a comment.') );
+					
+					error_log('OpenIDConsumer: action=commentopenid  redirect_to=' . $redirect_to);
+					error_log('OpenIDConsumer: comment_content = ' . $comment_content);
+					
+					nocache_headers();
+					
+					// duplicate purpose of wp-comments-post.php
+					$comment_post_ID = (int) $_GET['wordpressid'];
+					$status = $wpdb->get_row("SELECT post_status, comment_status FROM $wpdb->posts WHERE ID = '$comment_post_ID'");
+					if ( empty($status->comment_status) ) {
+						do_action('comment_id_not_found', $comment_post_ID);
+						exit();
+					} elseif ( 'closed' ==  $status->comment_status ) {
+						do_action('comment_closed', $comment_post_ID);
+						die( __('Sorry, comments are closed for this item.') );
+					} elseif ( 'draft' == $status->post_status ) {
+						do_action('comment_on_draft', $comment_post_ID);
+						exit;
+					}
+					
+					$user_ID = $user->ID;
+					if ( !$user_ID ) {
+						die( __('Sorry, you must be logged in to post a comment.')
+							." If OpenID isn't working for you, try anonymous commenting." );
+					}
+					
+					$comment_author       = $wpdb->escape($user->display_name);
+					$comment_author_email = $wpdb->escape($user->user_email);
+					$comment_author_url   = $wpdb->escape($user->user_url);
+					$comment_type = 'openid';
+					
+					$commentdata = compact('comment_post_ID', 'comment_author', 'comment_author_email',
+						'comment_author_url', 'comment_content', 'comment_type', 'user_ID');
+
+					$comment_id = wp_new_comment( $commentdata );
+				}
+				
 				wp_redirect( $_GET['redirect_to'] );
 			}
 
 
 		}
 
-
-
-
-
-		function openid_wp_comment_tagging( $user ) {
-			global $current_user;		
-			if( $current_user->permit_openid_login ) {
-				$user['comment_type']='openid';
+		function comment_set_cookie( $content ) {
+			$commenttext = trim( $content );
+			setcookie('comment_content_' . COOKIEHASH, $commenttext, time() + 3600, COOKIEPATH, COOKIE_DOMAIN);
+			setcookie('comment_content_' . COOKIEHASH, $commenttext, time() + 3600, SITECOOKIEPATH, COOKIE_DOMAIN);
+		}
+		function comment_clear_cookie( ) {
+			setcookie('comment_content_' . COOKIEHASH, ' ', time() - 31536000, COOKIEPATH, COOKIE_DOMAIN);
+			setcookie('comment_content_' . COOKIEHASH, ' ', time() - 31536000, SITECOOKIEPATH, COOKIE_DOMAIN);
+		}
+		function comment_get_cookie( ) {
+			if( !empty($_COOKIE) ) {
+				if ( !empty($_COOKIE[ 'comment_content_' . COOKIEHASH ] ) ) {
+					return trim( $_COOKIE[ 'comment_content_' . COOKIEHASH ] );
+				}
 			}
-			return $user;
+			return false;
+		}
+
+
+
+		function openid_wp_comment_tagging( $comment ) {
+			global $current_user;		
+			
+			if( $current_user->permit_openid_login ) {
+				$comment['comment_type']='openid';
+			}
+			
+			
+			error_log('openid_wp_comment_tagging()' );
+			if( !empty( $_POST['openid_url'] ) ) {
+				/* comment form's OpenID url is filled in.
+				 * Strategy:
+				 *  Get openid url
+				 *  Store comment in a cookie
+				 *  start_login() with return_to as comment_post.php?action=commentopenid
+				 *  --
+				 *  in finish_login(), check for commentopenid
+				 *  grab cookie, post comment, delete cookie, redirect
+				 */
+				if ( '' == trim ( $comment['comment_content'] ) )
+					die( __('Error: please type a comment.') );
+				$this->comment_set_cookie( $comment['comment_content'] );
+				$this->start_login( $_POST['openid_url'], get_permalink( $comment['comment_post_ID'] ), 'commentopenid', $comment['comment_post_ID'] );
+				die( $this->error );
+			}
+			
+			
+			
+			return $comment;
 		}
 
 
