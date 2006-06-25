@@ -107,20 +107,8 @@ if  ( !class_exists('WordpressOpenIDRegistration') ) {
 			global $table_prefix, $wpdb;
 
 			require_once "Auth/OpenID/MySQLStore.php";
-/*	
-			$oid_peardb_dsn = array( 'phptype'=>'mysql', 'username'=>DB_USER, 
-				 'password'=>DB_PASSWORD, 'hostspec'=>DB_HOST, 
-				 'database'=>DB_NAME );
-			$oid_peardb_connection = & DB::connect($oid_peardb_dsn);
-			if (PEAR::isError($oid_peardb_connection)) {
-				die("Error connecting to database: " . $db->getMessage());
-			}
-
-*/
-
 
 			$oid_peardb_connection = new WP_OpenIDConnection( & $wpdb );
-			
 			
 			$store = new Auth_OpenID_MySQLStore( $oid_peardb_connection,
 				$table_prefix . 'oid_settings',
@@ -130,116 +118,47 @@ if  ( !class_exists('WordpressOpenIDRegistration') ) {
 		}
 
 
-		function start_openid_comment_loop( $consumer, $openid_claimed_url ) {
-			if ( empty( $openid_claimed_url ) ) return;
-			$openid_return_to  = get_option('oid_ret_to');
-			$openid_trust_root = get_option('oid_trust_root');
-		
-			$auth_request = $consumer->begin( $openid_claimed_url );
-	
+		function start_login( $consumer, $claimed_url ) {
+			if ( empty( $claimed_url ) ) return;
+			
+			$auth_request = $consumer->begin( $claimed_url );
 			if (!$auth_request) {
-				$error = "Expected an OpenID URL. Authentication Error.";
-				die($error);
+				global $error;
+				$error = 'Expected an OpenID URL. Got:<br/>' . htmlentities( $claimed_url );
+				return;
 			}
-	
-			WordpressOpenID::erase_openid_session();
-			$_SESSION['openid_token'] = $info->token;
-			$_SESSION['openid_content'] = $_POST['comment'];
-			$_SESSION['openid_post_ID'] = $_POST['comment_post_ID'];
-  
-			$redirect_url = $auth_request->redirectURL( $openid_trust_root, $openid_return_to );
-			header("Location: ".$redirect_url);
+			$redirect_url = $auth_request->redirectURL( get_option('oid_trust_root'), 'http://openid.verselogic.net/wp-login.php?action=loginopenid' );
+			wp_redirect( $redirect_url );
 			exit(0);
 		}
-		
-		function finish_openid_comment_loop( $consumer, $get ) {
-			if ( !isset( $get['openid_mode'] ) ) return;
 			
-			// OpenID authentication already started, return and complete the attempt 
-			$response = $consumer->complete( $_GET );
+	
+		function finish_login( $consumer, $get ) {
+			if ( !isset( $get['openid_mode'] ) ) return;
+			$response = $consumer->complete( $get );
+			global $openid_error;
 
 			switch( $response->status ) {
 			case Auth_OpenID_CANCEL:
-				$msg = 'OpenID verification cancelled.';
+				$openid_error = 'OpenID verification cancelled.';
 				break;
 			case Auth_OpenID_FAILURE:
-				$msg = "OpenID authentication failed: " . $response->message;
+				$openid_error = 'OpenID authentication failed: ' . $response->message;
 				break;
 			case Auth_OpenID_SUCCESS:
-				$msg = false;
-				$identity = $response->identity_url;
-				$esc_identity = htmlspecialchars( $identity, ENT_QUOTES);
-				$location = WordpressOpenID::do_openid_comment( $esc_identity, $identity, 
-				   $_SESSION['openid_post_ID'], $_SESSION['openid_content'] );
-				
-				require_once (ABSPATH . WPINC . '/pluggable-functions.php');
-				// Maybe use header('Location: ' . $location); instead?
-				wp_redirect( $location );
-				exit(0);
-			default:
-				$msg = 'OpenID authentication failed: Unknown problem: ' . $response->status;
+				$openid_error = 'OpenID success';
 				break;
-			} // end switch
-			WordpressOpenID::erase_openid_session();
-			if($msg) die($msg); // There needs to be a better way to show these errors
-		}
-
-
-
-		/*
-		 * Javascript to show/hide groups of the comment form
-		 */
-		function comment_form( $postid ) {
-  ?>
- <script type="text/javascript">
-    a = document.getElementById( "commentAuthModeAnon" );
- b = document.getElementById( "commentAuthModeOpenid" );
- c = document.getElementById( "commentAuthModeLivejournal" );
- a.onclick = commentOptionsCheckHandler;
- b.onclick = commentOptionsCheckHandler;
- c.onclick = commentOptionsCheckHandler;
- 
- if( ! ( a.checked || b.checked || c.checked )) {
-   b.checked=true;
- }
-	  		
- function commentOptionsCheckHandler() {
-   x = document.getElementById( "commentOptionsBlockAnon" );
-   y = document.getElementById( "commentOptionsBlockOpenid" );
-   z = document.getElementById( "commentOptionsBlockLivejournal" );
-   if( b.checked ) {
-     x.style.display = "none";
-     y.style.display = "block";
-     z.style.display = "none";
-   } else if( c.checked ) {
-     x.style.display = "none";
-     y.style.display = "none";
-     z.style.display = "block";
-   } else if( a.checked ) {
-     x.style.display = "block";
-     y.style.display = "none";
-     z.style.display = "none";
-   }
- }
- setTimeout(commentOptionsCheckHandler,1);	  			   
- </script>	  		  	
-	<?php	}
-		
-		/*
-		 * A handy place to insert things in the <head> block,
-		 * such as the old Openid.Server link rel= tag
-		 */
-		function insert_server() {
-			if ( is_home() ) {
+			default:
+				$openid_error = 'OpenID authentication failed: Unknown problem: ' . $response->status;
+				break;
 			}
+			
+			/*
+			$identity = $response->identity_url;
+			$esc_identity = htmlspecialchars( $identity, ENT_QUOTES);
+			 */
 		}
-	
-		/* DEBUG
-		 * Alan is using this function to test obscure wordpress hooks
-		 */  
-		function h() {
-			echo "HELLO";
-		}
+
 	
 		/*
 		 * Maybe styles should not be included, and left up to the template designer?
@@ -247,34 +166,13 @@ if  ( !class_exists('WordpressOpenIDRegistration') ) {
 		 */
 		function css() {
 			?>
+	
 			<style type="text/css">
-			ul#commentAuthOptions {
-				list-style: none;
-				margin: 0;padding: 0;
-			}
-			ul#commentAuthOptions li {
-				margin:0; padding:0;
-			}
-			ul#commentAuthOptions li input {
-				width:auto;
-			}
-			input#openid_url {
-			  background: url(http://blog.verselogic.net/wp-content/themes/plains-in-the-dreaming/images/openid.gif) no-repeat;
-			  background-color: #fff; 
-			  background-position: 0 50%;
-			  color: #000;
-			  padding-left: 18px; 
-			}
-			input#livejournal_username {
-			  background: url(http://blog.verselogic.net/wp-content/themes/plains-in-the-dreaming/images/lj.gif) no-repeat;
-			  background-color: #fff;
-			  background-position: 0 50%;
-			  color: #000;
-			  padding-left: 18px;
-			}
-			.commentOptionsBlock {
-			  margin-left: 2em;
-			}
+				input.openid_url_sidebar {
+					background: url(http://blog.verselogic.net/wp-content/themes/plains-in-the-dreaming/images/openid.gif) no-repeat;
+					background-position: 0 50%;
+					padding-left: 18px;
+				}
  			</style>
  			<?
 		}
@@ -388,24 +286,29 @@ if  ( !class_exists('WordpressOpenIDRegistration') ) {
 /*  get_comment_openid()
  *  If the current comment was submitted with OpenID, output an <img> tag with the OpenID logo
  */
+/*
 function get_comment_openid() {
 	if( get_comment_type() == 'openid' ) {
 		echo '<img src="/openid.gif" height="16" width="16" alt="OpenID" />';
 	}
 }
+*/
 
 /* is_openid_comment()
  * If the current comment was submitted with OpenID, return true
  * useful for  <?php echo ( is_openid_comment() ? 'Submitted with OpenID' : '' ); ?>
  */
+/*
 function is_openid_comment() {
 	return ( get_comment_type() == 'openid' );
 }
+*/
 
 
 
 // Instansiate consumer
 //$oid_store = WordpressOpenID::openid_get_mysql_store();
+/*
 $oid_store = new WP_OpenIDStore();
 if( $oid_store == null ) echo "Warning: Null Store, the consumer's store tables probably arn't created properly.";
 $oid_consumer = new Auth_OpenID_Consumer($oid_store);
@@ -434,23 +337,82 @@ add_action( 'comment_form', array('WordpressOpenID', 'comment_form'), 10, 2 ); /
 add_action( 'admin_menu', array('WordpressOpenID', 'oid_add_pages') );	// about to display the admin screen
 
 
+*/
 
+function openid_wp_login_ob( $form ) {
+	global $redirect_to;
+	$newform = '<form name="loginformopenid" id="loginformopenid" action="wp-login.php" method="post">
+	<p><label>'.__('OpenID Url:').'<br/><input type="text" class="openid_url" name="openid_url" id="log" size="20" tabindex="5" /></label></p>
+	<p class="submit">
+		<input type="submit" name="submit" id="submit" value="'. __('Login') . ' &raquo;" tabindex="6" />
+		<input type="hidden" name="rememberme" value="forever" />
+		<input type="hidden" name="redirect_to" value="' . $redirect_to . '" />
+	</p>
+	</form>';
 
-function openid_wp_authenticate( $username, $password ) {
-
-	echo "<h2>Username: $username.  Password: $password ";
-	if( $_POST['log_openid'] ) echo ' OpenID: ' . $_POST['log_openid'];
-	echo '</h2>';
-
-	if( $_GET['action'] == 'openid' ) {
-		echo "!!!!";
-	}
-
+	$newhead = '<style type="text/css">
+				#login input.openid_url {
+					background: url(http://blog.verselogic.net/wp-content/themes/plains-in-the-dreaming/images/openid.gif) no-repeat;
+					background-position: 0 50%; padding-left: 18px;
+				}  </style>';
+	
+	$form = preg_replace( '#</form>#', '</form>' . $newform , $form, 1 );
+	$form = preg_replace( '#<link rel#', $newhead . '<link rel', $form, 1);
+	return $form;
 }
 
 
-//add_action( 'wp_authenticate', 'openid_wp_authenticate' );
+function openid_wp_authenticate( $username, $password ) {
+	ob_start("openid_wp_login_ob");
+
+	global $error, $openid_error;
+	global $register_openid_consumer;
+	
+	if( !empty( $openid_error ) ) {
+		$error = $openid_error;
+	}
+	
+	if( !empty( $_POST['openid_url'] ) ) {
+		WordpressOpenIDRegistration::start_login( $register_openid_consumer, $_POST['openid_url'] );
+	}
+		
+}
 
 
+add_action( 'wp_authenticate', 'openid_wp_authenticate' );
+
+
+
+
+
+
+function openid_wp_sidebar_login( $link ) {
+	$link.='</li><li><form method="post" action="wp-login.php" style="display:inline;"><input class="openid_url_sidebar" name="openid_url" size="10" /><input type="hidden" name="redirect_to" value="'
+		. $_SERVER["REQUEST_URI"] . '" /></form>';
+	return $link;
+}
+
+add_action( 'loginout', 'openid_wp_sidebar_login' );
+
+
+
+
+@session_start();	// required by Services_Yadis_PHPSession:40
+
+
+$register_openid_store = new WP_OpenIDStore();
+$register_openid_consumer = new Auth_OpenID_Consumer( $register_openid_store );
+
+
+if( $_GET['action'] == 'loginopenid' ) {
+	WordpressOpenIDRegistration::finish_login( $register_openid_consumer, $_GET );
+}
+
+function foobar() {
+	echo "FOOBAR";
+}
+
+add_action( 'wp_head', array( 'WordpressOpenIDRegistration', 'css'), 10, 2 );
+add_action( 'admin_menu', 'foobar' );
 
 ?>

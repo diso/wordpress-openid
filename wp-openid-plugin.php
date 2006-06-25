@@ -247,7 +247,8 @@ if  ( !class_exists('WordpressOpenID') ) {
 		 * Maybe styles should not be included, and left up to the template designer?
 		 * Especially since they will probably have absolute urls to images.
 		 */
-		function css() {
+		 /*
+		 function css() {
 			?>
 			<style type="text/css">
 			ul#commentAuthOptions {
@@ -280,6 +281,7 @@ if  ( !class_exists('WordpressOpenID') ) {
  			</style>
  			<?
 		}
+		*/
 
 		/*
 		 * Hook to display the options page in the Admin screen
@@ -431,7 +433,7 @@ add_option( 'oid_trust_root', $oid_unset, 'The Open ID trust root' );
 add_option( 'oid_ret_to', $oid_unset, 'URL to return to after authentication' );
 
 // Add handlers for action hooks
-add_action( 'wp_head', array('WordpressOpenID', 'css'), 10, 2 );	// inside <head>
+//add_action( 'wp_head', array('WordpressOpenID', 'css'), 10, 2 );	// inside <head>
 add_action( 'comment_form', array('WordpressOpenID', 'comment_form'), 10, 2 ); // bottom of comment form
 add_action( 'admin_menu', array('WordpressOpenID', 'oid_add_pages') );	// about to display the admin screen
 
