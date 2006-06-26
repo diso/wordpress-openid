@@ -100,6 +100,7 @@ if  ( !class_exists('WordpressOpenIDRegistration') ) {
 
 			$return_to = "http://openid.verselogic.net/wp-login.php?action=$action";
 			if( $wordpressid ) $return_to .= "&wordpressid=$wordpressid";
+			//$return_to .= '&openid.sreg.optional=nickname,email,fullname';
 			if( !empty( $redirect_to ) ) $return_to .= '&redirect_to=' . urlencode( $redirect_to );
 			
 			$redirect_url = $auth_request->redirectURL( get_option('oid_trust_root'), $return_to );
@@ -201,7 +202,21 @@ if  ( !class_exists('WordpressOpenIDRegistration') ) {
 						error_log('OpenIDConsumer: Created new user '.$ID.' : '.$username);
 						
 						update_usermeta( $ID, 'permit_openid_login', true );
-						wp_update_user( array( 'ID' => $ID, 'user_url' => $response->identity_url ) );
+						$temp_user_data=array( 'ID' => $ID, 'user_url' => $response->identity_url );
+						
+						/*
+						if( isset( $response->signed_args['openid.sreg.nickname'] ) )
+							$temp_user_data['user_nickname'] = $response->signed_args['openid.sreg.nickname'];
+						if( isset( $response->signed_args['openid.sreg.email'] ) )
+							$temp_user_data['user_email'] = $response->signed_args['openid.sreg.email'];
+						if( isset( $response->signed_args['openid.sreg.fullname'] ) ) {
+							$namechunks = explode( ' ', $response->signed_args['openid.sreg.fullname'], 2 );
+							if( $namechunks[0] ) $temp_user_data['first_name'] = $namechunks[0];
+							if( $namechunks[1] ) $temp_user_data['last_name'] = $namechunks[1];
+						}
+						*/
+						
+						wp_update_user( $temp_user_data );
 						
 						$user = new WP_User( $ID );
 					
@@ -275,7 +290,8 @@ if  ( !class_exists('WordpressOpenIDRegistration') ) {
 					$comment_id = wp_new_comment( $commentdata );
 				}
 				
-				wp_redirect( $_GET['redirect_to'] );
+				if( $redirect_to == '/wp-admin' && !$user->has_cap('edit_posts') ) $redirect_to = '/wp-admin/profile.php';
+				wp_redirect( $redirect_to );
 			}
 
 			global $action;
@@ -361,7 +377,7 @@ if  ( !class_exists('WordpressOpenIDRegistration') ) {
 				break;
 
 			default:	
-				$style = get_option('oid_enable_selfstyle') ? 'style="background: #f4f4f4 url(http://blog.verselogic.net/wp-content/themes/plains-in-the-dreaming/images/openid.gif) no-repeat;
+				$style = get_option('oid_enable_selfstyle') ? 'style="background: #f4f4f4 url(http://openid.verselogic.net/openid.gif) no-repeat;
 					background-position: 0 50%; padding-left: 18px;" ' : '';
 					
 
@@ -392,29 +408,34 @@ if  ( !class_exists('WordpressOpenIDRegistration') ) {
 			if( !$current_user->has_cap('edit_posts')  ) {
 				$link = preg_replace( '#<a href="' . get_settings('siteurl') . '/wp-admin/">Site Admin</a>#', '<a href="' . get_settings('siteurl') . '/wp-admin/profile.php">' . __('Profile') . '</a>', $link );
 			}
-			if( $current_user->display_name ) {
-				$chunk ='<li>Logged in as ' . ( isset($current_user->user_url) ?
-					('<a href="' . $current_user->display_name . '">' . htmlentities( $current_user->display_name ) . '</a>')
+			if( $current_user->ID ) {
+				$chunk ='<li>Logged in as '
+					. ( get_usermeta($current_user->ID, 'permit_openid_login')
+					? '<img src="/openid.gif" height="16" width="16" alt="[oid]" />' : '' )
+					. ( !empty($current_user->user_url)
+					? ('<a href="' . $current_user->user_url . '">' . htmlentities( $current_user->display_name ) . '</a>')
 					: htmlentities( $current_user->display_name )        ) . '</li>';
 			
 			} else {
-				$style = get_option('oid_enable_selfstyle') ? 'style="background: url(http://blog.verselogic.net/wp-content/themes/plains-in-the-dreaming/images/openid.gif) no-repeat;
+				$style = get_option('oid_enable_selfstyle') ? 'style="border: 1px solid #ccc; background: url(http://openid.verselogic.net/openid.gif) no-repeat;
 					background-position: 0 50%; padding-left: 18px; " ' : '';
 				$chunk ='<li><form method="post" action="wp-login.php" style="display:inline;">
 					<input ' . $style . 'class="openid_url_sidebar" name="openid_url" size="17" />
-					<input type="hidden" name="redirect_to" value="'
-					. $_SERVER["REQUEST_URI"] . '" /></form></li>';
+					<input type="hidden" name="redirect_to" value="'. $_SERVER["REQUEST_URI"] .'" /></form></li>';
 			}
-			return $link . $chunk;
+			return $chunk . $link;
 		}
 		
+		function openid_wp_sidebar_loginout( $link ) {
+			return preg_replace( '#action=logout#', 'action=logout&redirect_to=' . urlencode($_SERVER["REQUEST_URI"]), $link );
+		}
 		/*
 		 * Hook. Add OpenID login-n-comment box below the comment form.
 		 */
 		function openid_wp_comment_form( $id ) {
 			global $current_user;
 			if( ! $current_user->id ) { // not logged in, draw a login form below the comment form
-				$style = get_option('oid_enable_selfstyle') ? 'style="background: url(http://blog.verselogic.net/wp-content/themes/plains-in-the-dreaming/images/openid.gif) no-repeat;
+				$style = get_option('oid_enable_selfstyle') ? 'style="background: url(http://openid.verselogic.net/openid.gif) no-repeat;
 					background-position: 0 50%; padding-left: 18px;" ' : '';	
 				?>
 				<label for="openid_url_comment_form">Sign in with OpenID:</label><br/>	
@@ -589,7 +610,7 @@ if( get_option('oid_enable_commentform') ) add_filter( 'comment_form',   array( 
 
 add_action( 'preprocess_comment', array( $wordpressOpenIDRegistration, 'openid_wp_comment_tagging' ) );
 add_filter( 'register', array( $wordpressOpenIDRegistration, 'openid_wp_sidebar_register' ) );
-
+add_filter( 'loginout', array( $wordpressOpenIDRegistration, 'openid_wp_sidebar_loginout' ) );
 
 
 
@@ -602,5 +623,16 @@ add_action( 'edit_user_profile', 'openid_wp_user_profile' );
 add_action( 'profile_personal_options', 'openid_wp_user_profile' );
 */
 
+function openid_wp_register_ob($form) {
+	$newform = '</form><p>Alternatively, just <a href="' .
+		get_settings('siteurl') . '/wp-login.php">login with <img src="/openid.gif" />OpenID!</a></p>';
+	$form = preg_replace( '#</form>#', $newform, $form, 1 );
+	
+
+	return $form;
+}
+if( $_SERVER["PHP_SELF"] == '/wp-register.php' ) {
+	ob_start( 'openid_wp_register_ob' );
+}
 
 ?>
