@@ -15,6 +15,9 @@ Version: 2006-06-26
  */
 define ( 'WORDPRESSOPENIDREGISTRATION_DEBUG', true );
 
+define ( 'OPENIDLOGO', dirname( __FILE__ ) . DIRECTORY_SEPARATOR . 'openid.gif' );
+
+//echo OPENIDLOGO;
 
 /* Sessions are apparently required by Services_Yadis_PHPSession, line 40 */
 
@@ -400,9 +403,14 @@ if  ( !class_exists('WordpressOpenIDRegistration') ) {
 				<input type="hidden" name="rememberme" value="forever" />
 				<input type="hidden" name="redirect_to" value="' . $redirect_to . '" />
 			</p></form>'; */
-
-				$newform = '<p><label>'.__('OpenID Url:').'<br/><input ' . $style . 'type="text" class="openid_url" name="openid_url" id="log" size="20" tabindex="5" /></label></p>';
-				$form = preg_replace( '#<p class="submit">#', $newform . '<p class="submit">' , $form, 1 );
+				
+				$newform = '<h2>WordPress User</h2>';
+				$form = preg_replace( '#<form[^>]*>#', '\\0 <h2>WordPress User:</h2>', $form, 1 );
+				
+				$newform = '<p align="center">-or-</p><h2>OpenID Identity:</h2><p><label>'
+					.__('OpenID Identity Url:').
+					' <small><a href="http://openid.net/">' . __('What is this?') . '</a></small><br/><input ' . $style
+					.'type="text" class="openid_url" name="openid_url" id="log" size="20" tabindex="5" /></label></p>';				$form = preg_replace( '#<p class="submit">#', $newform . '\\0' , $form, 1 );
 			}
 			return $form;
 		}
@@ -622,7 +630,7 @@ if( !function_exists( 'file_exists_in_path' ) ) {
 
 $wordpressOpenIDRegistrationErrors = array();
 
-if( file_exists_in_path( 'aAuth/OpenID/Consumer.php' ) )
+if( file_exists_in_path( 'Auth/OpenID/Consumer.php' ) )
 	require_once 'Auth/OpenID/Consumer.php';
 else
 	$wordpressOpenIDRegistrationErrors['Auth/OpenID/Consumer.php'] = 'Do you have the <a href="http://www.openidenabled.com/openid/libraries/php/">JanRain PHP OpenID library</a> installed in your path?';
