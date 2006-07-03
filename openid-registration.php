@@ -6,21 +6,20 @@ Description: Wordpress OpenID Registration, Authentication, and Commenting. Requ
 Author: Alan J Castonguay, Hans Granqvist
 Author URI: http://wpopenid.sourceforge.net/
 Version: 2006-06-26
+Licence: Modified BSD, http://www.fsf.org/licensing/licenses/index_html#ModifiedBSD
 */
+
 
 
 /* Turn on logging of process via error_log() facility in PHP.
  * Used primarily for debugging, lots of output.
  * For production use, leave this set to false.
  */
+
 define ( 'WORDPRESSOPENIDREGISTRATION_DEBUG', true );
-
-define ( 'OPENIDLOGO', dirname( __FILE__ ) . DIRECTORY_SEPARATOR . 'openid.gif' );
-
-//echo OPENIDLOGO;
+define ( 'OPENIDIMAGE', get_bloginfo('url') . '/wp-content/plugins/wpopenid/images/openid.gif' );
 
 /* Sessions are apparently required by Services_Yadis_PHPSession, line 40 */
-
 @session_start();
 
 
@@ -392,8 +391,8 @@ if  ( !class_exists('WordpressOpenIDRegistration') ) {
 				break;
 
 			default:	
-				$style = get_option('oid_enable_selfstyle') ? 'style="background: #f4f4f4 url(http://openid.verselogic.net/openid.gif) no-repeat;
-					background-position: 0 50%; padding-left: 18px;" ' : '';
+				$style = get_option('oid_enable_selfstyle') ? ('style="background: #f4f4f4 url('.OPENIDIMAGE.') no-repeat;
+					background-position: 0 50%; padding-left: 18px;" ') : '';
 					
 
 		/*$newform = '<form name="loginformopenid" id="loginformopenid" action="wp-login.php" method="post">
@@ -431,14 +430,14 @@ if  ( !class_exists('WordpressOpenIDRegistration') ) {
 			if( $current_user->ID ) {
 				$chunk ='<li>Logged in as '
 					. ( get_usermeta($current_user->ID, 'permit_openid_login')
-					? '<img src="/openid.gif" height="16" width="16" alt="[oid]" />' : '' )
+					? ('<img src="'.OPENIDIMAGE.'" height="16" width="16" alt="[oid]" />') : '' )
 					. ( !empty($current_user->user_url)
 					? ('<a href="' . $current_user->user_url . '">' . htmlentities( $current_user->display_name ) . '</a>')
 					: htmlentities( $current_user->display_name )        ) . '</li>';
 			
 			} else {
-				$style = get_option('oid_enable_selfstyle') ? 'style="border: 1px solid #ccc; background: url(http://openid.verselogic.net/openid.gif) no-repeat;
-					background-position: 0 50%; padding-left: 18px; " ' : '';
+				$style = get_option('oid_enable_selfstyle') ? ('style="border: 1px solid #ccc; background: url('.OPENIDIMAGE.') no-repeat;
+					background-position: 0 50%; padding-left: 18px; " ') : '';
 				$chunk ='<li><form method="post" action="wp-login.php" style="display:inline;">
 					<input ' . $style . 'class="openid_url_sidebar" name="openid_url" size="17" />
 					<input type="hidden" name="redirect_to" value="'. $_SERVER["REQUEST_URI"] .'" /></form></li>';
@@ -455,8 +454,8 @@ if  ( !class_exists('WordpressOpenIDRegistration') ) {
 		function openid_wp_comment_form( $id ) {
 			global $current_user;
 			if( ! $current_user->id ) { // not logged in, draw a login form below the comment form
-				$style = get_option('oid_enable_selfstyle') ? 'style="background: url(http://openid.verselogic.net/openid.gif) no-repeat;
-					background-position: 0 50%; padding-left: 18px;" ' : '';	
+				$style = get_option('oid_enable_selfstyle') ? ('style="background: url('.OPENIDIMAGE.') no-repeat;
+					background-position: 0 50%; padding-left: 18px;" ') : '';	
 				?>
 				<label for="openid_url_comment_form">Sign in with OpenID:</label><br/>	
 				<input <?php echo $style; ?> type="textbox" name="openid_url" tabindex="6" id="openid_url_comment_form" size="30" />
@@ -630,20 +629,14 @@ if( !function_exists( 'file_exists_in_path' ) ) {
 
 $wordpressOpenIDRegistrationErrors = array();
 
-if( file_exists_in_path( 'Auth/OpenID/Consumer.php' ) )
-	require_once 'Auth/OpenID/Consumer.php';
-else
-	$wordpressOpenIDRegistrationErrors['Auth/OpenID/Consumer.php'] = 'Do you have the <a href="http://www.openidenabled.com/openid/libraries/php/">JanRain PHP OpenID library</a> installed in your path?';
+if( file_exists_in_path( 'Auth/OpenID/Consumer.php' ) ) { require_once 'Auth/OpenID/Consumer.php'; }
+else { $wordpressOpenIDRegistrationErrors['Auth/OpenID/Consumer.php'] = 'Do you have the <a href="http://www.openidenabled.com/openid/libraries/php/">JanRain PHP OpenID library</a> installed in your path?'; }
 
-if( file_exists_in_path( 'Auth/OpenID/DatabaseConnection.php' ) )
-	require_once 'Auth/OpenID/DatabaseConnection.php';
-else
-	$wordpressOpenIDRegistrationErrors['Auth/OpenID/DatabaseConnection.php'] ='Do you have the <a href="http://www.openidenabled.com/openid/libraries/php/">JanRain PHP OpenID library</a> installed in your path?';
+if( file_exists_in_path( 'Auth/OpenID/DatabaseConnection.php' ) ) { require_once 'Auth/OpenID/DatabaseConnection.php'; }
+else { $wordpressOpenIDRegistrationErrors['Auth/OpenID/DatabaseConnection.php'] ='Do you have the <a href="http://www.openidenabled.com/openid/libraries/php/">JanRain PHP OpenID library</a> installed in your path?'; }
 
-if( file_exists_in_path( 'wpdb-pear-wrapper.php' ) )
-	require_once 'wpdb-pear-wrapper.php';
-else
-	$wordpressOpenIDRegistrationErrors['wpdb-pear-wrapper.php'] = 'Came with the plugin, but not found in include path. Does it include the current directory: <strong>.</strong>?';
+if( file_exists_in_path( 'wpdb-pear-wrapper.php' ) ) { require_once 'wpdb-pear-wrapper.php'; }
+else { $wordpressOpenIDRegistrationErrors['wpdb-pear-wrapper.php'] = 'Came with the plugin, but not found in include path. Does it include the current directory: <strong>.</strong>?'; }
 
 
 /* Instantiate main class */
@@ -675,8 +668,8 @@ if( $wordpressOpenIDRegistration->enabled ) {
 
 
 	function openid_wp_register_ob($form) {
-		$newform = '</form><p>Alternatively, just <a href="' .
-			get_settings('siteurl') . '/wp-login.php">login with <img src="/openid.gif" />OpenID!</a></p>';
+		$newform = '</form><p>Alternatively, just <a href="' . get_settings('siteurl')
+			. '/wp-login.php">login with <img src="'.OPENIDIMAGE.'" />OpenID!</a></p>';
 		$form = preg_replace( '#</form>#', $newform, $form, 1 );
 		return $form;
 	}
@@ -710,7 +703,7 @@ add_action( 'profile_personal_options', 'openid_wp_user_profile' );
  */
 if( !function_exists( 'get_comment_openid' ) ) {
 	function get_comment_openid() {
-		if( get_comment_type() == 'openid' ) echo '<img src="/openid.gif" height="16" width="16" alt="OpenID" />';
+		if( get_comment_type() == 'openid' ) echo '<img src="'.OPENIDIMAGE.'" height="16" width="16" alt="OpenID" />';
 	}
 }
 
@@ -725,6 +718,69 @@ if( !function_exists( 'is_comment_openid' ) ) {
 }
 
 
+/* openid_comment_form()
+ * Replace the form provided by comments.php
+ * Uses javascript to provide visual confirmation of identity duality (anon XOR openid)
+ */
+if( !function_exists( 'wpopenid_comment_form' ) ) {
+	function wpopenid_comment_form() {
+		openid_comment_form_pre();
+		openid_comment_form_anon();
+		openid_comment_form_post();
+	}
+}
 
+if( !function_exists( 'wpopenid_comment_form' ) ) {
+	function wpopenid_comment_form_anon() {
+		?>
+			<p><input type="text" name="author" id="author" value="<?php echo $comment_author; ?>" size="22" tabindex="1" />
+			<label for="author"><small>Name <?php if ($req) _e('(required)'); ?></small></label></p>
+			<p><input type="text" name="email" id="email" value="<?php echo $comment_author_email; ?>" size="22" tabindex="2" />
+			<label for="email"><small>Mail (will not be published) <?php if ($req) _e('(required)'); ?></small></label></p>
+			<p><input type="text" name="url" id="url" value="<?php echo $comment_author_url; ?>" size="22" tabindex="3" />
+			<label for="url"><small>Website</small></label></p>
+		<?php
+	}
+}
+
+if( !function_exists( 'wpopenid_comment_form_pre' ) ) {
+	function wpopenid_comment_form_pre() {
+		?>
+		<ul id="commentAuthOptions">
+		<li><label><input id="commentAuthModeAnon" type="radio" checked="checked" name="commentAuthMode" value="anon" />Anonymous Coward</label>
+		<div id="commentOptionsBlockAnon">
+		<?php
+	}
+}
+if( !function_exists( 'wpopenid_comment_form_post' ) ) {
+	function wpopenid_comment_form_post() {
+		$style = get_option('oid_enable_selfstyle') ? ('style="background: url('.OPENIDIMAGE.') no-repeat;
+					background-position: 0 50%; padding-left: 18px;" ') : ' ';
+		?>
+		</div>
+		</li>
+		<li><label><input id="commentAuthModeOpenid" type="radio" name="commentAuthMode" value="openid" />OpenID</label>
+			<div id="commentOptionsBlockOpenid"><p><input <?php echo $style; ?>name="openid_url" id="openid_url_comment_form" size="22" tabindex="3.5"/>
+			<label for="openid_url_comment_form"><small>OpenID Identity URL</small></label></p></div>
+		</li>
+		</ul>
+		<script type="text/javascript">
+			a = document.getElementById( "commentAuthModeAnon" );
+			b = document.getElementById( "commentAuthModeOpenid" );
+			a.onclick = commentOptionsCheckHandler;
+			b.onclick = commentOptionsCheckHandler;
+			if( ! ( a.checked || b.checked )) { b.checked=true; }
+			function commentOptionsCheckHandler() {
+				x = document.getElementById( "commentOptionsBlockAnon" );
+				y = document.getElementById( "commentOptionsBlockOpenid" );
+				if(b.checked)        {x.style.display = "none"; y.style.display = "block";
+				} else if(a.checked) {x.style.display = "block"; y.style.display = "none";
+				}
+			}
+			setTimeout(commentOptionsCheckHandler,1);
+		</script>
+		<?php
+	}
+}
 
 ?>
