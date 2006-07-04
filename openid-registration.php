@@ -99,7 +99,7 @@ if  ( !class_exists('WordpressOpenIDRegistration') ) {
 
 			if( WORDPRESSOPENIDREGISTRATION_DEBUG ) error_log('OpenIDConsumer: Is an OpenID url. Starting redirect.');
 			
-			$return_to = "http://openid.verselogic.net/wp-login.php?action=$action";
+			$return_to = get_bloginfo('url') . "/wp-login.php?action=$action";
 			if( $wordpressid ) $return_to .= "&wordpressid=$wordpressid";
 			if( !empty( $redirect_to ) ) $return_to .= '&redirect_to=' . urlencode( $redirect_to );
 			
