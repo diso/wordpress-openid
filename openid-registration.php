@@ -51,6 +51,13 @@ if  ( !class_exists('WordpressOpenIDRegistration') ) {
 			$this->action = '';
 		}
 
+		/*
+		 * Create tables if needed by running dbDelta calls. Upgrade safe. Called on plugin activate.
+		 */		
+		function create_tables() {
+			$this->_store->dbDelta();
+		}
+
  
 		/*
 		 * Hook - called as wp_authenticate
@@ -665,7 +672,7 @@ if( $wordpressOpenIDRegistration->enabled ) {
 	add_action( 'preprocess_comment', array( $wordpressOpenIDRegistration, 'openid_wp_comment_tagging' ) );
 	add_filter( 'register', array( $wordpressOpenIDRegistration, 'openid_wp_sidebar_register' ) );
 	add_filter( 'loginout', array( $wordpressOpenIDRegistration, 'openid_wp_sidebar_loginout' ) );
-
+	register_activation_hook( __FILE__, array( $wordpressOpenIDRegistration, 'create_tables' ) );
 
 	function openid_wp_register_ob($form) {
 		$newform = '</form><p>Alternatively, just <a href="' . get_settings('siteurl')
