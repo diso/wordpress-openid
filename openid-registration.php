@@ -65,9 +65,8 @@ if  ( !class_exists('WordpressOpenIDRegistration') ) {
 					uurl_id bigint(20) NOT NULL auto_increment,
 					user_id bigint(20) NOT NULL default '0',
 					meta_value longtext,
-					PRIMARY KEY  (umeta_id),
-					KEY user_id (user_id),
-					);";
+					PRIMARY KEY  (uurl_id),
+					KEY user_id (user_id)  );";
 			dbDelta($identity_url_table_sql);
 		}
 		
