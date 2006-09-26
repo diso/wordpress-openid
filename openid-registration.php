@@ -61,7 +61,7 @@ if  ( !class_exists('WordpressOpenIDRegistration') ) {
 		 */		
 		function create_tables() {
 			$this->_store->dbDelta();
-			$identity_url_table_sql = "CREATE TABLE $identity_url_table_name (
+			$identity_url_table_sql = "CREATE TABLE $this->identity_url_table_name (
 					uurl_id bigint(20) NOT NULL auto_increment,
 					user_id bigint(20) NOT NULL default '0',
 					meta_value longtext,
