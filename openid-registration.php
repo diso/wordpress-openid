@@ -19,7 +19,7 @@ Licence: Modified BSD, http://www.fsf.org/licensing/licenses/index_html#Modified
 define ( 'WORDPRESSOPENIDREGISTRATION_DEBUG', true );
 define ( 'OPENIDIMAGE', get_bloginfo('url') . '/wp-content/plugins/wpopenid/images/openid.gif' );
 
-/* Sessions are apparently required by Services_Yadis_PHPSession, line 40 */
+/* Sessions are required by Services_Yadis_PHPSession, in Manager.php line 40 */
 @session_start();
 
 
@@ -34,11 +34,13 @@ if  ( !class_exists('WordpressOpenIDRegistration') ) {
 
 		var $enabled = true;
 
+		var $identity_url_table_name;
+
 		/* 
 		 * Initialize required store and consumer.
 		 */		
 		function WordpressOpenIDRegistration() {
-			global $wordpressOpenIDRegistrationErrors;
+			global $table_prefix,$wordpressOpenIDRegistrationErrors;
 			if( count( $wordpressOpenIDRegistrationErrors ) ) {
 				if( WORDPRESSOPENIDREGISTRATION_DEBUG ) error_log('OpenIDConsumer: Disabled. Check libraries.');
 				$error = 'Disabled';
@@ -48,7 +50,10 @@ if  ( !class_exists('WordpressOpenIDRegistration') ) {
 			$this->_store = new WP_OpenIDStore();
 			$this->_consumer = new Auth_OpenID_Consumer( $this->_store );
 			$this->error = '';
+			error_log("A-OK");
+			error_log('table: ' . $this->_store->associations_table_name );
 			$this->action = '';
+			$this->identity_url_table_name = ($table_prefix . 'openid_identities');
 		}
 
 		/*
@@ -56,7 +61,28 @@ if  ( !class_exists('WordpressOpenIDRegistration') ) {
 		 */		
 		function create_tables() {
 			$this->_store->dbDelta();
+			$identity_url_table_sql = "CREATE TABLE $identity_url_table_name (
+					uurl_id bigint(20) NOT NULL auto_increment,
+					user_id bigint(20) NOT NULL default '0',
+					meta_value longtext,
+					PRIMARY KEY  (umeta_id),
+					KEY user_id (user_id),
+					);";
+			dbDelta($identity_url_table_sql);
 		}
+		
+		/*
+		 * Cleanup by dropping nonce, assoication, and settings tables. Called on plugin deactivate.
+		 */
+		function destroy_tables() {
+			global $wpdb;
+			$sql = 'drop table '. $this->_store->associations_table_name;
+			$wpdb->query($sql);
+			$sql = 'drop table '. $this->_store->nonces_table_name;
+			$wpdb->query($sql);
+			$sql = 'drop table '. $this->_store->settings_table_name;
+			$wpdb->query($sql);			
+		}			
 
  
 		/*
@@ -79,8 +105,6 @@ if  ( !class_exists('WordpressOpenIDRegistration') ) {
 			}
 			
 			ob_start( array( $this, 'openid_wp_login_ob' ) );
-
-			
 		}
 
 
@@ -111,12 +135,9 @@ if  ( !class_exists('WordpressOpenIDRegistration') ) {
 			if( !empty( $redirect_to ) ) $return_to .= '&redirect_to=' . urlencode( $redirect_to );
 			
 			$redirect_url = $auth_request->redirectURL( get_option('oid_trust_root'), $return_to );
-
-			if( WORDPRESSOPENIDREGISTRATION_DEBUG ) error_log('OpenIDConsumer: redirect: ' . $redirect_url );
-			
 			//$redirect_url .= '&openid.sreg.optional=nickname,email,fullname';
 
-	
+			if( WORDPRESSOPENIDREGISTRATION_DEBUG ) error_log('OpenIDConsumer: redirect: ' . $redirect_url );
 			wp_redirect( $redirect_url );
 			exit(0);
 		}
@@ -214,7 +235,8 @@ if  ( !class_exists('WordpressOpenIDRegistration') ) {
 						if( WORDPRESSOPENIDREGISTRATION_DEBUG ) error_log('OpenIDConsumer: Created new user '.$ID.' : '.$username);
 						
 						update_usermeta( $ID, 'permit_openid_login', true );
-						$temp_user_data=array( 'ID' => $ID, 'user_url' => $response->identity_url );
+						$temp_user_data=array( 'ID' => $ID, 'user_url' => $response->identity_url,
+							'user_nickname' => $response->identity_url );
 						/*
 						if( isset( $response->signed_args['openid.sreg.nickname'] ) )
 							$temp_user_data['user_nickname'] = $response->signed_args['openid.sreg.nickname'];
@@ -375,7 +397,25 @@ if  ( !class_exists('WordpressOpenIDRegistration') ) {
 
 
 
-
+		function get_identities_for_user( $user_id ) {
+			global $wpdb;
+			$user_id = (int) $user_id;
+			$urls = $wpdb->get_results("SELECT meta_value FROM $identity_url_table_name WHERE user_id = '$user_id'");
+			return $urls;
+		}
+		function delete_identity_for_user( $user_id, $url ) {
+			global $wpdb;
+			$user_id = (int) $user_id;
+			$wpdb->query("DELETE FROM $identity_url_table_name WHERE user_id = '$user_id' AND meta_value = '$url'");
+		}
+		function add_identity_for_user( $user_id, $url ) {
+			global $wpdb;
+			$user_id = (int) $user_id;
+			if( $wpdb->get_var("SELECT meta_value FROM $identity_url_table_name WHERE user_id = '$user_id' AND meta_value = '$url'") !== $url ) {
+				// not already there, add it
+				$wpdb->query("INSERT INTO $identity_url_table_name ( user_id, meta_value ) VALUES ( '$user_id', '$meta_value' )");
+			}
+		}
 
 
 		/*
@@ -401,22 +441,14 @@ if  ( !class_exists('WordpressOpenIDRegistration') ) {
 				$style = get_option('oid_enable_selfstyle') ? ('style="background: #f4f4f4 url('.OPENIDIMAGE.') no-repeat;
 					background-position: 0 50%; padding-left: 18px;" ') : '';
 					
-
-		/*$newform = '<form name="loginformopenid" id="loginformopenid" action="wp-login.php" method="post">
-			<p><label>'.__('OpenID Url:').'<br/><input ' . $style . 'type="text" class="openid_url" name="openid_url" id="log" size="20" tabindex="5" /></label></p>
-			<p class="submit">
-				<input type="submit" name="submit" id="submit" value="'. __('Login') . ' &raquo;" tabindex="6" />
-				<input type="hidden" name="rememberme" value="forever" />
-				<input type="hidden" name="redirect_to" value="' . $redirect_to . '" />
-			</p></form>'; */
-				
 				$newform = '<h2>WordPress User</h2>';
 				$form = preg_replace( '#<form[^>]*>#', '\\0 <h2>WordPress User:</h2>', $form, 1 );
 				
 				$newform = '<p align="center">-or-</p><h2>OpenID Identity:</h2><p><label>'
 					.__('OpenID Identity Url:').
 					' <small><a href="http://openid.net/">' . __('What is this?') . '</a></small><br/><input ' . $style
-					.'type="text" class="openid_url" name="openid_url" id="log" size="20" tabindex="5" /></label></p>';				$form = preg_replace( '#<p class="submit">#', $newform . '\\0' , $form, 1 );
+					.'type="text" class="openid_url" name="openid_url" id="log" size="20" tabindex="5" /></label></p>';
+				$form = preg_replace( '#<p class="submit">#', $newform . '\\0' , $form, 1 );
 			}
 			return $form;
 		}
@@ -469,15 +501,12 @@ if  ( !class_exists('WordpressOpenIDRegistration') ) {
 				<?php
 			}
 		}
-		
-
-
 
 		/*
 		 * Sanity check for urls entered in Options pane. Needs to permit HTTPS.
 		 */
 		function openid_is_url($url) {
-			return !preg_match( '#^http\\:\\/\\/[a-z0-9\-]+\.([a-z0-9\-]+\.)?\\/[a-z]+#i',$url );
+			return !preg_match( '#^http(s)?\\:\\/\\/[a-z0-9\-]+\.([a-z0-9\-]+\.)?\\/[a-z]+#i',$url );
 		}
 		
 		/*
@@ -631,7 +660,6 @@ if( !function_exists( 'file_exists_in_path' ) ) {
 
 
 
-
 /* Load required libraries, throw nice errors on failure. */
 
 $wordpressOpenIDRegistrationErrors = array();
@@ -660,6 +688,10 @@ add_option( 'oid_enable_commentform', true, 'Display OpenID box in comment form'
 
 add_action( 'admin_menu', array( $wordpressOpenIDRegistration, 'oid_add_pages' ) );  // about to display the admin screen
 
+/* Create and destroy tables on activate / deactivate of plugin. Everyone should clean up after themselves. */
+
+register_activation_hook( 'wpopenid/openid-registration.php', array( $wordpressOpenIDRegistration, 'create_tables' ) );
+register_deactivation_hook( 'wpopenid/openid-registration.php', array( $wordpressOpenIDRegistration, 'destroy_tables' ) );
 
 /* If everthing's ok, add hooks all over WordPress */
 
@@ -672,8 +704,6 @@ if( $wordpressOpenIDRegistration->enabled ) {
 	add_action( 'preprocess_comment', array( $wordpressOpenIDRegistration, 'openid_wp_comment_tagging' ) );
 	add_filter( 'register', array( $wordpressOpenIDRegistration, 'openid_wp_sidebar_register' ) );
 	add_filter( 'loginout', array( $wordpressOpenIDRegistration, 'openid_wp_sidebar_loginout' ) );
-	register_activation_hook( __FILE__, array( $wordpressOpenIDRegistration, 'create_tables' ) );
-
 	function openid_wp_register_ob($form) {
 		$newform = '</form><p>Alternatively, just <a href="' . get_settings('siteurl')
 			. '/wp-login.php">login with <img src="'.OPENIDIMAGE.'" />OpenID!</a></p>';
@@ -688,15 +718,40 @@ if( $wordpressOpenIDRegistration->enabled ) {
 
 
 
-/*
+
 function openid_wp_user_profile($a) {
 	echo "FOO";
 	print_r($a);
 }
 add_action( 'edit_user_profile', 'openid_wp_user_profile' );
 add_action( 'profile_personal_options', 'openid_wp_user_profile' );
-*/
 
+
+
+function openid_wp_profilephp_panel_add() {
+	add_submenu_page('profile.php', 'Your Open ID Identities', 'Your Open ID Identities', 'read', __FILE__, 'openid_wp_profilephp_panel' );
+}
+							
+
+function openid_wp_profilephp_panel() {
+	if( current_user_can('read') ) {
+		?>
+
+		<div class="wrap">
+		<h2>OpenID Identities</h2>
+		<p>The following OpenID Identity Urls<a title="What is OpenID?" href="http://openid.net/">?</a> are tied to
+		this user account. You can login with equivilent permissions using any of the following identity urls.</p>
+
+		<?php
+	
+		// fetch a list of identifiers from the database
+	
+		?>
+		</div>
+		<?php
+	}
+}
+add_action( 'admin_menu', 'openid_wp_profilephp_panel_add' );
 
 
 /* Exposed functions, designed for use in templates.

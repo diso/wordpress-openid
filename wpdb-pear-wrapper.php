@@ -48,6 +48,11 @@ class WP_OpenIDStore extends Auth_OpenID_MySQLStore {
         dbDelta($sql);
     }
 
+
+    function dbCleanup() {
+    	    
+    }
+
     function setSQL()
     {
         $this->sql['nonce_table'] =
