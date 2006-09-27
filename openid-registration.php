@@ -28,6 +28,7 @@ if  ( !class_exists('WordpressOpenIDRegistration') ) {
 
 		var $_store;	// Hold the WP_OpenIDStore and
 		var $_consumer; // Auth_OpenID_Consumer internally.
+		var $ui;	// Along with all the UI functions
 		
 		var $error;	// User friendly error message, defaults to ''.
 		var $action;	// Internal action tag. '', 'error', 'redirect'.
@@ -49,6 +50,7 @@ if  ( !class_exists('WordpressOpenIDRegistration') ) {
 			}
 			$this->_store = new WP_OpenIDStore();
 			$this->_consumer = new Auth_OpenID_Consumer( $this->_store );
+			$this->ui = new WordpressOpenIDRegistrationUI( $this );
 			$this->error = '';
 			error_log("A-OK");
 			error_log('table: ' . $this->_store->associations_table_name );
@@ -173,7 +175,7 @@ if  ( !class_exists('WordpressOpenIDRegistration') ) {
 				 *   1.1.2.1. If credentials fail, redisplay form
 				 *   1.1.2.2. If credentials OK, set permit=true
 				 *   1.2. If url is not found, create a user with md5()'d password, permit=true
-				 *   2. wp_redirect( $redirect_to )
+                     *   2. wp_redirect( $redirect_to )
 				 */
 				 
 				// 1. Search the wp_users list for the identity url
@@ -672,6 +674,8 @@ else { $wordpressOpenIDRegistrationErrors['Auth/OpenID/DatabaseConnection.php'] 
 if( file_exists_in_path( 'wpdb-pear-wrapper.php' ) ) { require_once 'wpdb-pear-wrapper.php'; }
 else { $wordpressOpenIDRegistrationErrors['wpdb-pear-wrapper.php'] = 'Came with the plugin, but not found in include path. Does it include the current directory: <strong>.</strong>?'; }
 
+if( file_exists_in_path( 'user-interface.php' ) ) { require_once 'user-interface.php'; }
+else { $wordpressOpenIDRegistrationErrors['user-interface.php'] = 'Came with the  plugin, but not found in include path. Does it include current directory: <strong>.</strong>?'; }
 
 /* Instantiate main class */
 
@@ -725,32 +729,7 @@ function openid_wp_user_profile($a) {
 add_action( 'edit_user_profile', 'openid_wp_user_profile' );
 add_action( 'profile_personal_options', 'openid_wp_user_profile' );
 
-
-
-function openid_wp_profilephp_panel_add() {
-	add_submenu_page('profile.php', 'Your Open ID Identities', 'Your Open ID Identities', 'read', __FILE__, 'openid_wp_profilephp_panel' );
-}
-							
-
-function openid_wp_profilephp_panel() {
-	if( current_user_can('read') ) {
-		?>
-
-		<div class="wrap">
-		<h2>OpenID Identities</h2>
-		<p>The following OpenID Identity Urls<a title="What is OpenID?" href="http://openid.net/">?</a> are tied to
-		this user account. You can login with equivilent permissions using any of the following identity urls.</p>
-
-		<?php
-	
-		// fetch a list of identifiers from the database
-	
-		?>
-		</div>
-		<?php
-	}
-}
-add_action( 'admin_menu', 'openid_wp_profilephp_panel_add' );
+add_action( 'admin_menu', array( $wordpressOpenIDRegistration->ui, 'add_admin_panels' ) );
 
 
 /* Exposed functions, designed for use in templates.

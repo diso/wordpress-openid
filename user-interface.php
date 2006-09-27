@@ -6,12 +6,19 @@
   purpose: User Interface Elements for wpopenid
  */
 
+{
+  class WordpressOpenIDRegistrationUI {
 
+	var $oid;
+	
+	function WordpressOpenIDRegistrationUI( $oidref ) {
+		$this->oid = $oidref;
+	}
 	/*  Output Buffer handler
 	 *  @param $form - String of html
 	 *  @return - String of html
 	 *  Replaces parts of the wp-login.php form.
-	 */
+	 */ 
 	function ajc_openid_wp_login_ob( $form ) {
 			global $redirect_to, $action;
 
@@ -203,14 +210,12 @@
 
 
 
-	function ajc_openid_wp_admin_panel_add() {
+	function add_admin_panels() {
 		add_options_page('Open ID options', 'Open ID', 8, __FILE__, array( $this, 'oid_options_page')  );
-		add_submenu_page('profile.php', 'Your Open ID Identities', 'Your Open ID Identities', 'read', 'openidpreferences', 'ajc_openid_wp_profilephp_panel' );
+		add_submenu_page('profile.php', 'Your Open ID Identities', 'Your Open ID Identities', 'read', 'your-openid-identities', array($this, 'profile_panel') );
 	}
-	add_action( 'admin_menu', 'ajc_openid_wp_admin_panel_add' );
-					
 
-	function ajc_openid_wp_profilephp_panel() {
+	function profile_panel() {
 		if( current_user_can('read') ) {
 		?>
 
@@ -220,18 +225,41 @@
 		this user account. You can login with equivilent permissions using any of the following identity urls.</p>
 
 		<?php
-	
-		// fetch a list of identifiers from the database
-	
+		
+		global $wpdb, $userdata;
+		$urls = $wpdb->get_results( "SELECT uurl_id,meta_value from " . $this->oid->identity_url_table_name . " WHERE user_id = \"" . (int)$userdata->ID . "\"" );
+
+		if( count($urls) ) {
+			?>
+			<p>There are <?php echo count($urls); ?> OpenID identities associated with this Wordpress user.
+			You can login with any of these urls, or your Wordpress username and password.</p>
+			<table>
+			<tr><th>id</th><th>Identity Url</th><th>Action</th></tr>
+			<?
+			foreach( $urls as $v ) {
+				echo "<tr><td>$v->uurl_id</td><td>$v->meta_value</td><td>remove</td></tr>";
+			}
+		
+			print_r($urls);
+			?>
+			</table>
+			<?php
+		} else {
 		?>
+		<p>There are no OpenID identity urls assoicated with this Wordpress user.
+		You can login with your Wordpress username and password.</p>
+		<?php
+		}
+		?>
+		<p><form>Add identity: <input name="openid" /> <input type="submit" value="Add" /></form></p>
 		</div>
 		<?php
 		}
 	}
 
 
-
-
+ }
+}
 	/* Exposed functions, designed for use in templates.
 	 * Specifically inside `foreach ($comments as $comment)` in comments.php
 	 */
