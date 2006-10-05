@@ -1,16 +1,12 @@
 <?php
 
-require_once ABSPATH . 'wp-admin/upgrade-functions.php';
-require_once "Auth/OpenID/MySQLStore.php";
-require_once "Auth/OpenID/DatabaseConnection.php";
-
-
-class WP_OpenIDStore extends Auth_OpenID_MySQLStore {
+if( class_exists( 'Auth_OpenID_MySQLStore' )) {
+ class WP_OpenIDStore extends Auth_OpenID_MySQLStore {
     function WP_OpenIDStore()
     {
         global $table_prefix, $wpdb;
 
-        $conn = new WP_OpenIDConnection(&$wpdb);
+        $conn = new WP_OpenIDConnection( $wpdb );
         parent::Auth_OpenID_MySQLStore(
             $conn,
             $table_prefix . 'openid_settings',
@@ -115,8 +111,8 @@ CREATE TABLE %s (
         $this->sql['remove_nonce'] =
             "DELETE FROM %s WHERE nonce = %%s";
     }
+ }
 }
-
 
 /* 
 	WP_OpenIDConnection class implements a PEAR-style database connection using the Wordpress WPDB object.
@@ -124,10 +120,10 @@ CREATE TABLE %s (
 	Modified to support setFetchMode() by Alan J Castonguay, 2006-06-16 
  */
 
-if  ( !class_exists('WP_OpenIDConnection') ) {
-
-class WP_OpenIDConnection extends Auth_OpenID_DatabaseConnection {
-	var $fetchmode = OBJECT;
+if ( !class_exists('WP_OpenIDConnection') ) {
+ if (  class_exists('Auth_OpenID_DatabaseConnection') ) {
+  class WP_OpenIDConnection extends Auth_OpenID_DatabaseConnection {
+	var $fetchmode = ARRAY_A;  // to fix PHP Fatal error:  Cannot use object of type stdClass as array in /usr/local/php5/lib/php/Auth/OpenID/SQLStore.php on line 495
 	
 	function WP_OpenIDConnection(&$wpdb) {
 		$this->wpdb =& $wpdb;
@@ -158,9 +154,10 @@ class WP_OpenIDConnection extends Auth_OpenID_DatabaseConnection {
 	function setFetchMode( $mode ) {
 		if( DB_FETCHMODE_ASSOC == $mode ) $this->fetchmode = ARRAY_A;
 		if( DB_FETCHMODE_ORDERED == $mode ) $this->fetchmode = ARRAY_N;
+		if( DB_FETCHMODE_OBJECT == $mode ) $this->fetchmode = OBJECT;
 	}
-}
-
+  }
+ }
 }
 
 

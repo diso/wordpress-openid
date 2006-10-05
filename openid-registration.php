@@ -20,7 +20,7 @@ define ( 'WORDPRESSOPENIDREGISTRATION_DEBUG', true );
 define ( 'OPENIDIMAGE', get_bloginfo('url') . '/wp-content/plugins/wpopenid/images/openid.gif' );
 
 /* Sessions are required by Services_Yadis_PHPSession, in Manager.php line 40 */
-@session_start();
+//@session_start();
 
 
 if  ( !class_exists('WordpressOpenIDRegistration') ) {
@@ -42,6 +42,7 @@ if  ( !class_exists('WordpressOpenIDRegistration') ) {
 		 */		
 		function WordpressOpenIDRegistration() {
 			global $table_prefix,$wordpressOpenIDRegistrationErrors;
+			$this->ui = new WordpressOpenIDRegistrationUI( $this );
 			if( count( $wordpressOpenIDRegistrationErrors ) ) {
 				if( WORDPRESSOPENIDREGISTRATION_DEBUG ) error_log('OpenIDConsumer: Disabled. Check libraries.');
 				$error = 'Disabled';
@@ -50,10 +51,8 @@ if  ( !class_exists('WordpressOpenIDRegistration') ) {
 			}
 			$this->_store = new WP_OpenIDStore();
 			$this->_consumer = new Auth_OpenID_Consumer( $this->_store );
-			$this->ui = new WordpressOpenIDRegistrationUI( $this );
 			$this->error = '';
 			error_log("A-OK");
-			error_log('table: ' . $this->_store->associations_table_name );
 			$this->action = '';
 			$this->identity_url_table_name = ($table_prefix . 'openid_identities');
 		}
@@ -62,13 +61,14 @@ if  ( !class_exists('WordpressOpenIDRegistration') ) {
 		 * Create tables if needed by running dbDelta calls. Upgrade safe. Called on plugin activate.
 		 */		
 		function create_tables() {
+			require_once(ABSPATH . '/wp-admin/upgrade-functions.php');
 			$this->_store->dbDelta();
 			$identity_url_table_sql = "CREATE TABLE $this->identity_url_table_name (
 					uurl_id bigint(20) NOT NULL auto_increment,
 					user_id bigint(20) NOT NULL default '0',
 					meta_value longtext,
 					PRIMARY KEY  (uurl_id),
-					KEY user_id (user_id)  );";
+					KEY user_id (user_id) );";		// TODO: Make meta_value unique.
 			dbDelta($identity_url_table_sql);
 		}
 		
@@ -144,6 +144,120 @@ if  ( !class_exists('WordpressOpenIDRegistration') ) {
 		}
 		
 
+
+		/* Start and finish the redirect loop, for the admin pages.
+		 */
+		function admin_page_handler() {
+			if( !isset( $_GET['page'] )) return;
+			if( 'your-openid-identities' != plugin_basename( stripslashes($_GET['page']) ) ) return;
+
+			if( !isset( $_REQUEST['action'] )) return;
+			$action = $_REQUEST['action'];
+			
+			if( $action ) {	// Point of no return.
+			
+				require_once(ABSPATH . 'wp-admin/admin-functions.php');
+				require_once(ABSPATH . 'wp-admin/admin-db.php');
+				require_once(ABSPATH . WPINC . '/registration.php');
+
+				auth_redirect();
+				nocache_headers();
+				wp_get_current_user();
+				
+				global $parent_file;
+				$self = get_option('siteurl') . '/wp-admin/users.php?page=your-openid-identities';
+				
+				switch( $action ) {
+					case 'add_identity_to_account':			// Verify identity, then add it.
+					
+						$claimed_url = $_POST['openid_url'];
+						
+						if ( empty( $claimed_url ) ) return;
+						if( WORDPRESSOPENIDREGISTRATION_DEBUG ) error_log('OpenIDConsumer: Attempting bind for "' . $claimed_url . '"');
+						
+						$auth_request = $this->_consumer->begin( $claimed_url );
+						if (!$auth_request) {
+							$this->error = 'Expected an OpenID URL. Got: ' . htmlentities( $claimed_url );
+							return;
+						}
+
+						$return_to = $self . '&action=add_identity';
+						$redirect_url = $auth_request->redirectURL( get_option('oid_trust_root'), $return_to );
+
+						if( WORDPRESSOPENIDREGISTRATION_DEBUG ) error_log('OpenIDConsumer: redirect: ' . $redirect_url );
+						wp_redirect( $redirect_url );
+						exit(0);
+						
+						break;
+					case 'add_identity':					// Return from verify loop.
+						if ( !isset( $_GET['openid_mode'] ) ) break;	// no mode? probably a spoof or bad cancel.
+
+						$response = $this->_consumer->complete( $_GET );
+
+						switch( $response->status ) {
+							case Auth_OpenID_CANCEL:	$this->error = 'OpenID assertion cancelled.'; break;
+							case Auth_OpenID_FAILURE:	$this->error = 'OpenID assertion failed: ' . $response->message; break;
+							case Auth_OpenID_SUCCESS:	$this->error = 'OpenID assertion successful.';
+								if( !$this->insert_identity( $response->identity_url ) ) {
+									$this->error = 'OpenID assertion successful, but this URL is already claimed by another user on this blog. This is probably a bug.';
+								}
+								break;
+							default:					$this->error = 'Unknown Status. Bind not successful. This is probably a bug.';
+						}
+						break;
+					case 'drop_identity':					// Remove a binding.
+						if( !isset( $_GET['id'])) {
+							$this->error = 'Identity url delete failed: ID paramater missing.';
+							break;
+						}
+
+						$deleted_identity_url = get_my_identities( $_GET['id'] );
+						if( FALSE === $deleted_identity_url ) {
+							$this->error = 'Identity url delete failed: Specified identity does not exist.';
+							break;
+						}
+						
+						if( $this->drop_identity( $_GET['id'] ) ) {
+							$this->error = 'Identity url delete successful. <b>' . $deleted_identity_url . '</b> removed.';
+							break;
+						}
+						
+						$this->error = 'Identity url delete failed: Unknown reason.';
+						break;
+					
+
+				}
+			
+			}
+		}
+
+
+		/* Application-specific database operatiorns */
+		function get_my_identities( $id = 0 ) {
+			global $userdata;
+			if( $id ) return $this->_store->connection->getOne( "SELECT meta_value FROM $this->identity_url_table_name WHERE user_id = %s AND uurl_id = %s",
+					array( (int)$userdata->ID ), (int)$id );
+			return $this->_store->connection->getAll( "SELECT uurl_id,meta_value FROM $this->identity_url_table_name WHERE user_id = %s",
+				array( (int)$userdata->ID ) );
+		}
+
+		function insert_identity($url) {
+			global $userdata;
+			return $this->_store->connection->query( "INSERT INTO $this->identity_url_table_name (user_id,meta_value) VALUES ( %s, %s)",
+				array( (int)$userdata->ID, $url ) );
+		}
+		
+		function drop_identity($id) {
+			global $userdata;
+			return $this->_store->connection->query( "DELETE FROM $this->identity_url_table_name WHERE user_id = %s AND uurl_id = %s",
+				array( (int)$userdata->ID, (int)$id ));
+		}
+		
+		function get_user_by_identity($url) {
+			return $this->_store->connection->getOne( "SELECT user_id FROM $this->identity_url_table_name WHERE meta_value = %s",
+				array( $url ) );
+		}
+
 		/* 
 		 * Finish the redirect loop.
 		 * If returning from openid server with action set to loginopenid or commentopenid, complete the loop
@@ -151,6 +265,9 @@ if  ( !class_exists('WordpressOpenIDRegistration') ) {
 		 */	
 		function finish_login( ) {
 			global $_GET;
+			
+			// TODO: ASSERT THAT WE ARE IN wp-login.php
+			
 			if ( $_GET['action'] !== 'loginopenid' && $_GET['action'] !== 'commentopenid' ) return;
 			if ( !isset( $_GET['openid_mode'] ) ) return;
 			
@@ -316,16 +433,16 @@ if  ( !class_exists('WordpressOpenIDRegistration') ) {
 					
 					if ( !$user->ID )
 						die( __('Sorry, you must be logged in to post a comment.')
-							." If OpenID isn't working for you, try anonymous commenting." );
+							.' If OpenID isn\'t working for you, try anonymous commenting.' );
 					
 					$comment_author       = $wpdb->escape($user->display_name);
 					$comment_author_email = $wpdb->escape($user->user_email);
 					$comment_author_url   = $wpdb->escape($user->user_url);
-					$comment_type = 'openid';
-					$user_ID = $user->ID;
-					
+					$comment_type         = 'openid';
+					$user_ID              = $user->ID;
+
 					$commentdata = compact('comment_post_ID', 'comment_author', 'comment_author_email',
-						'comment_author_url', 'comment_content', 'comment_type', 'user_ID');
+												'comment_author_url', 'comment_content', 'comment_type', 'user_ID');
 
 					$comment_id = wp_new_comment( $commentdata );
 				}
@@ -398,29 +515,9 @@ if  ( !class_exists('WordpressOpenIDRegistration') ) {
 
 
 
-		function get_identities_for_user( $user_id ) {
-			global $wpdb;
-			$user_id = (int) $user_id;
-			$urls = $wpdb->get_results("SELECT meta_value FROM $identity_url_table_name WHERE user_id = '$user_id'");
-			return $urls;
-		}
-		function delete_identity_for_user( $user_id, $url ) {
-			global $wpdb;
-			$user_id = (int) $user_id;
-			$wpdb->query("DELETE FROM $identity_url_table_name WHERE user_id = '$user_id' AND meta_value = '$url'");
-		}
-		function add_identity_for_user( $user_id, $url ) {
-			global $wpdb;
-			$user_id = (int) $user_id;
-			if( $wpdb->get_var("SELECT meta_value FROM $identity_url_table_name WHERE user_id = '$user_id' AND meta_value = '$url'") !== $url ) {
-				// not already there, add it
-				$wpdb->query("INSERT INTO $identity_url_table_name ( user_id, meta_value ) VALUES ( '$user_id', '$meta_value' )");
-			}
-		}
-
-
 		/*
 		 * Only UI below this line
+		 * TODO: MOVE ALL UI TO user-interface.php
 		 */
 
 		/*  Output Buffer handler
@@ -488,12 +585,13 @@ if  ( !class_exists('WordpressOpenIDRegistration') ) {
 		function openid_wp_sidebar_loginout( $link ) {
 			return preg_replace( '#action=logout#', 'action=logout&redirect_to=' . urlencode($_SERVER["REQUEST_URI"]), $link );
 		}
+		
 		/*
 		 * Hook. Add OpenID login-n-comment box below the comment form.
 		 */
 		function openid_wp_comment_form( $id ) {
 			global $current_user;
-			if( ! $current_user->id ) { // not logged in, draw a login form below the comment form
+			if( ! $current_user->ID ) { // not logged in, draw a login form below the comment form
 				$style = get_option('oid_enable_selfstyle') ? ('style="background: url('.OPENIDIMAGE.') no-repeat;
 					background-position: 0 50%; padding-left: 18px;" ') : '';	
 				?>
@@ -509,132 +607,6 @@ if  ( !class_exists('WordpressOpenIDRegistration') ) {
 		function openid_is_url($url) {
 			return !preg_match( '#^http(s)?\\:\\/\\/[a-z0-9\-]+\.([a-z0-9\-]+\.)?\\/[a-z]+#i',$url );
 		}
-		
-		/*
-		 * Hook to display the options page in the Admin screen
-		 */
-		function oid_add_pages() {
-			add_options_page('Open ID options', 'Open ID', 8, __FILE__,
-				array( $this, 'oid_options_page')  );
-		}
-		
-		/*
-		 * Display and handle updates from the Admin screen options page.
-		 */
-		function oid_options_page() {
-		
-			// if we're posted back an update, let's set the values here
-			if ( isset($_POST['info_update']) ) {
-			
-				$trust = $_POST['oid_trust_root'];
-				if($trust == null ) $trust = get_settings('siteurl');
-	
-				$error = '';
-				if( $this->openid_is_url($trust) ) {
-					update_option('oid_trust_root', $trust);
-				} else {
-					$error .= "<p/>".$trust." is not a url!";
-				}
-				
-				update_option( 'oid_enable_selfstyle', isset($_POST['enable_selfstyle']) ? true : false );
-				update_option( 'oid_enable_loginform', isset($_POST['enable_loginform']) ? true : false );
-				update_option( 'oid_enable_commentform', isset($_POST['enable_commentform']) ? true : false );
-				
-				if ($error != '') {
-					echo '<div class="updated"><p><strong>At least one of Open ID options was NOT updated</strong>'.$error.'</p></div>';
-				} else {
-					echo '<div class="updated"><p><strong>Open ID options updated</strong></p></div>';
-				}
-				
-			}
-
-			if( !$this->enabled ) {
-				global $wordpressOpenIDRegistrationErrors;
-				?>
-				<div class="error"><p><strong>There was a problem loading required libraries. Plugin disabled.</strong></p><ul>
-				<?php
-				foreach( $wordpressOpenIDRegistrationErrors as $k=>$v ) {
-					echo "<li>$k - $v</li>";
-				}
-				?>
-				</ul><p>You can place the requisite files in any of these directories:</p><ul>
-				<?php
-				$relativeto = dirname( __FILE__ ) . DIRECTORY_SEPARATOR;
-				$paths = explode(PATH_SEPARATOR, get_include_path());
-				foreach( $paths as $path ) {
-					$fullpath = $path . DIRECTORY_SEPARATOR;
-					if( $path == '.' ) $fullpath = '';
-					if( substr( $path, 0, 1 ) !== '/' ) $fullpath = $relativeto . $fullpath;
-					echo "<li><em>$fullpath</em></li>";
-				}
-				?></ul></div>
-				<?php
-			}
-			
-			// Display the options page form
-			$siteurl = get_settings('siteurl');
-			if( substr( $siteurl, -1, 1 ) !== '/' ) $siteurl .= '/';
-			?>
-			<form method="post"><div class="wrap">
-				<h2>OpenID Registration Options</h2>
-     				<fieldset class="options">
-     					<p><em>Please refer to <a href="http://verisign.com">http://[TBD]</a> 
-     					specification for more information.</em></p>
-     					
-     					<table class="editform" cellspacing="2" cellpadding="5" width="100%">
-     					<tr valign="top"><th style="width: 10em; padding-top: 1.5em;">
-     						<label for="oid_trust_root">Trust root:</label>
-     					</th><td>
-     						<p><input type="text" size="80" name="oid_trust_root" id="oid_trust_root"
-     						value="<?php echo htmlentities(get_option('oid_trust_root')); ?>" /></p>
-     						<p>Commenters will be asked whether they trust this url,
-     						and its decendents, to know that they are logged in and control their identity url.
-     						Include the trailing slash.
-     						This should probably be <strong><?php echo $siteurl; ?></strong></p>
-     					</td></tr>
-     					
-     					<tr><th>
-     						<label for="enable_loginform">Login Form:</label>
-     					</th><td>
-     						<p><input type="checkbox" name="enable_loginform" id="enable_loginform" <?php
-     						if( get_option('oid_enable_loginform') ) echo 'checked="checked"'
-     						?> />
-     						<label for="enable_loginform">Add OpenID url box to the WordPress
-     						<a href="<?php bloginfo('wpurl'); ?>/wp-login.php"><?php _e('Login') ?></a>
-     						form.</p>
-     					</td></tr>
-
-     					<tr><th>
-     						<label for="enable_commentform">Comment Form:</label>
-     					</th><td>
-     						<p><input type="checkbox" name="enable_commentform" id="enable_commentform" <?php
-     						if( get_option('oid_enable_commentform') ) echo 'checked="checked"'
-     						?> />
-     						<label for="enable_commentform">Add OpenID url box to the WordPress
-     						post comment form.</p>
-     					</td></tr>
-     					
-     					<tr><th>
-     						<label for="enable_selfstyle">Internal Style:</label>
-     					</th><td>
-     						<p><input type="checkbox" name="enable_selfstyle" id="enable_selfstyle" <?php
-     						if( get_option('oid_enable_selfstyle') ) echo 'checked="checked"'
-     						?> />
-     						<label for="enable_selfstyle">Use Internal Style Rules</label></p>
-     						<p>These rules affect the visual appearance of various OpenID login boxes,
-     						such as those in the wp-login page, the comments area, and the sidebar.
-     						The included styles are tested to work with the default themes.
-     						For custom themeing, turn this off and apply your own styles to the form elements.</p>
-     					</td></tr>
-
-     					</table>
-     				</fieldset>
-     				<input type="submit" name="info_update" value="<?php _e('Update options') ?> »" />
-     			</div></form>
-     			<?php
- 		} // end function oid_options_page
-
-
 
 	} // end class definition
 } // end if-class-exists test
@@ -646,6 +618,7 @@ if  ( !class_exists('WordpressOpenIDRegistration') ) {
 
 if( !function_exists( 'file_exists_in_path' ) ) {
 	function file_exists_in_path ($file) {
+		if( file_exists( $file ) ) return $file;
 		$relativeto = dirname( __FILE__ ) . DIRECTORY_SEPARATOR;
 		$paths = explode(PATH_SEPARATOR, get_include_path());
 		foreach ($paths as $path) {
@@ -660,46 +633,44 @@ if( !function_exists( 'file_exists_in_path' ) ) {
 }
 
 
-
 /* Load required libraries, throw nice errors on failure. */
+$wordpressOpenIDRegistrationErrors = array(
+	'Auth/OpenID/Consumer.php' => 'Do you have the <a href="http://www.openidenabled.com/openid/libraries/php/">JanRain PHP OpenID library</a> installed in your path?',
+	'Auth/OpenID/DatabaseConnection.php' => 'Do you have the <a href="http://www.openidenabled.com/openid/libraries/php/">JanRain PHP OpenID library</a> installed in your path?',
+	'Auth/OpenID/MySQLStore.php' => 'Do you have the <a href="http://www.openidenabled.com/openid/libraries/php/">JanRain PHP OpenID library</a> installed in your path?',
+	//ABSPATH . 'wp-admin/upgrade-functions.php' => 'Built in to Wordpress. If we can\'t find this, there\'s something really wrong.<strong>.</strong>?',
+	'wpdb-pear-wrapper.php' => 'Came with the plugin, but not found in include path. Does it include the current directory: <strong>.</strong>?',
+	'user-interface.php' => 'Came with the plugin, but not found in include path. Does it include current directory: <strong>.</strong>?'
+	);
 
-$wordpressOpenIDRegistrationErrors = array();
+foreach( $wordpressOpenIDRegistrationErrors as $k => $v ) {
+	if( file_exists_in_path( $k ) ) {
+		require_once( $k );
+		unset( $wordpressOpenIDRegistrationErrors[ $k ] );
+	} else { error_log( " ERROR: Could not load the file $k"); }
+}
+unset($m);  // otherwise JanRain's XRI.php will leave $m = 1048576
 
-if( file_exists_in_path( 'Auth/OpenID/Consumer.php' ) ) { require_once 'Auth/OpenID/Consumer.php'; }
-else { $wordpressOpenIDRegistrationErrors['Auth/OpenID/Consumer.php'] = 'Do you have the <a href="http://www.openidenabled.com/openid/libraries/php/">JanRain PHP OpenID library</a> installed in your path?'; }
-
-if( file_exists_in_path( 'Auth/OpenID/DatabaseConnection.php' ) ) { require_once 'Auth/OpenID/DatabaseConnection.php'; }
-else { $wordpressOpenIDRegistrationErrors['Auth/OpenID/DatabaseConnection.php'] ='Do you have the <a href="http://www.openidenabled.com/openid/libraries/php/">JanRain PHP OpenID library</a> installed in your path?'; }
-
-if( file_exists_in_path( 'wpdb-pear-wrapper.php' ) ) { require_once 'wpdb-pear-wrapper.php'; }
-else { $wordpressOpenIDRegistrationErrors['wpdb-pear-wrapper.php'] = 'Came with the plugin, but not found in include path. Does it include the current directory: <strong>.</strong>?'; }
-
-if( file_exists_in_path( 'user-interface.php' ) ) { require_once 'user-interface.php'; }
-else { $wordpressOpenIDRegistrationErrors['user-interface.php'] = 'Came with the  plugin, but not found in include path. Does it include current directory: <strong>.</strong>?'; }
 
 /* Instantiate main class */
-
 $wordpressOpenIDRegistration = new WordpressOpenIDRegistration();
 
 
 /* Add custom OpenID options */
-
 add_option( 'oid_trust_root', '', 'The Open ID trust root' );
 add_option( 'oid_enable_selfstyle', true, 'Use internal style rules' );
 add_option( 'oid_enable_loginform', true, 'Display OpenID box in login form' );
 add_option( 'oid_enable_commentform', true, 'Display OpenID box in comment form' );
 
-add_action( 'admin_menu', array( $wordpressOpenIDRegistration, 'oid_add_pages' ) );  // about to display the admin screen
 
 /* Create and destroy tables on activate / deactivate of plugin. Everyone should clean up after themselves. */
-
 register_activation_hook( 'wpopenid/openid-registration.php', array( $wordpressOpenIDRegistration, 'create_tables' ) );
 register_deactivation_hook( 'wpopenid/openid-registration.php', array( $wordpressOpenIDRegistration, 'destroy_tables' ) );
 
 /* If everthing's ok, add hooks all over WordPress */
-
 if( $wordpressOpenIDRegistration->enabled ) {
-	add_action( 'init', array( $wordpressOpenIDRegistration, 'finish_login'  ) );
+	add_action( 'init', array( $wordpressOpenIDRegistration, 'finish_login' ) );
+	add_action( 'init', array( $wordpressOpenIDRegistration, 'admin_page_handler' ) );
 
 	if( get_option('oid_enable_loginform') )   add_action('wp_authenticate', array( $wordpressOpenIDRegistration, 'wp_authenticate' ) );
 	if( get_option('oid_enable_commentform') ) add_filter( 'comment_form',   array( $wordpressOpenIDRegistration, 'openid_wp_comment_form' ) );
@@ -721,15 +692,6 @@ if( $wordpressOpenIDRegistration->enabled ) {
 
 
 
-
-function openid_wp_user_profile($a) {
-	echo "FOO";
-	print_r($a);
-}
-add_action( 'edit_user_profile', 'openid_wp_user_profile' );
-add_action( 'profile_personal_options', 'openid_wp_user_profile' );
-
-add_action( 'admin_menu', array( $wordpressOpenIDRegistration->ui, 'add_admin_panels' ) );
 
 
 /* Exposed functions, designed for use in templates.

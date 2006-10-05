@@ -13,7 +13,9 @@
 	
 	function WordpressOpenIDRegistrationUI( $oidref ) {
 		$this->oid = $oidref;
+		add_action( 'admin_menu', array( $this, 'add_admin_panels' ) );
 	}
+	
 	/*  Output Buffer handler
 	 *  @param $form - String of html
 	 *  @return - String of html
@@ -96,7 +98,7 @@
 	/*
 	 * Display and handle updates from the Admin screen options page.
 	 */
-	function ajc_openid_global_options_page() {
+	function options_page() {
 			// if we're posted back an update, let's set the values here
 			if ( isset($_POST['info_update']) ) {
 			
@@ -104,7 +106,7 @@
 				if($trust == null ) $trust = get_settings('siteurl');
 	
 				$error = '';
-				if( $this->openid_is_url($trust) ) {
+				if( $this->oid->openid_is_url($trust) ) {
 					update_option('oid_trust_root', $trust);
 				} else {
 					$error .= "<p/>".$trust." is not a url!";
@@ -122,7 +124,7 @@
 				
 			}
 
-			if( !$this->enabled ) {
+			if( !$this->oid->enabled ) {
 				global $wordpressOpenIDRegistrationErrors;
 				?>
 				<div class="error"><p><strong>There was a problem loading required libraries. Plugin disabled.</strong></p><ul>
@@ -162,7 +164,7 @@
      						<p><input type="text" size="80" name="oid_trust_root" id="oid_trust_root"
      						value="<?php echo htmlentities(get_option('oid_trust_root')); ?>" /></p>
      						<p>Commenters will be asked whether they trust this url,
-     						and its decendents, to know that they are logged in and control their identity url.
+     						and its decedents, to know that they are logged in and control their identity url.
      						Include the trailing slash.
      						This should probably be <strong><?php echo $siteurl; ?></strong></p>
      					</td></tr>
@@ -206,19 +208,22 @@
      				<input type="submit" name="info_update" value="<?php _e('Update options') ?> »" />
      			</div></form>
     			<?php
-	} // end function oid_options_page
+	} // end function options_page
 
 
 
 	function add_admin_panels() {
-		add_options_page('Open ID options', 'Open ID', 8, __FILE__, array( $this, 'oid_options_page')  );
-		add_submenu_page('profile.php', 'Your Open ID Identities', 'Your Open ID Identities', 'read', 'your-openid-identities', array($this, 'profile_panel') );
+		add_options_page('Open ID options', 'OpenID', 8, 'global-openid-options', array( $this, 'options_page')  );
+		add_submenu_page('profile.php', 'Your OpenID Identities', 'Your OpenID Identities', 'read', 'your-openid-identities', array($this, 'profile_panel') );
 	}
 
 	function profile_panel() {
 		if( current_user_can('read') ) {
 		?>
 
+		<?php  if( $this->oid->error ) { ?>
+			<div class="error"><p><strong>Error: <?php echo $this->oid->error; ?>.</strong></p></div>
+		<?php } ?>
 		<div class="wrap">
 		<h2>OpenID Identities</h2>
 		<p>The following OpenID Identity Urls<a title="What is OpenID?" href="http://openid.net/">?</a> are tied to
@@ -226,37 +231,40 @@
 
 		<?php
 		
-		global $wpdb, $userdata;
-		$urls = $wpdb->get_results( "SELECT uurl_id,meta_value from " . $this->oid->identity_url_table_name . " WHERE user_id = \"" . (int)$userdata->ID . "\"" );
-
+		$urls = $this->oid->get_my_identities();
 		if( count($urls) ) {
 			?>
 			<p>There are <?php echo count($urls); ?> OpenID identities associated with this Wordpress user.
 			You can login with any of these urls, or your Wordpress username and password.</p>
-			<table>
-			<tr><th>id</th><th>Identity Url</th><th>Action</th></tr>
-			<?
-			foreach( $urls as $v ) {
-				echo "<tr><td>$v->uurl_id</td><td>$v->meta_value</td><td>remove</td></tr>";
+
+			<table class="widefat">
+			<thead>
+				<tr><th style="text-align: center">id</th><th>Identity Url</th><th style="text-align: center">Action</th></tr>
+			</thead>
+			<?php
+			foreach( $urls as $k=>$v ) {
+				?><tr>
+					<td class="id"><?php echo $v['uurl_id']; ?></td>
+					<td class="desc"><?php echo $v['meta_value']; ?></td>
+					<td class="togl"><a class="edit" href="users.php?page=your-openid-identities&action=drop_identity&id=<?php echo $v['uurl_id']; ?>">remove</a></td>
+				</tr><?php
 			}
-		
-			print_r($urls);
 			?>
 			</table>
 			<?php
 		} else {
 		?>
-		<p>There are no OpenID identity urls assoicated with this Wordpress user.
+		<p>There are no OpenID identity urls associated with this Wordpress user.
 		You can login with your Wordpress username and password.</p>
 		<?php
 		}
 		?>
-		<p><form>Add identity: <input name="openid" /> <input type="submit" value="Add" /></form></p>
+		<p><form method="post">Add identity: <input name="openid_url" /> <input type="submit" value="Add" />
+			<input type="hidden" name="action" value="add_identity_to_account" ></form></p>
 		</div>
 		<?php
 		}
 	}
-
 
  }
 }
