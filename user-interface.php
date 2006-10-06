@@ -15,13 +15,13 @@
 		$this->oid = $oidref;
 		add_action( 'admin_menu', array( $this, 'add_admin_panels' ) );
 	}
-	
+
 	/*  Output Buffer handler
 	 *  @param $form - String of html
 	 *  @return - String of html
 	 *  Replaces parts of the wp-login.php form.
-	 */ 
-	function ajc_openid_wp_login_ob( $form ) {
+	 */
+	function openid_wp_login_ob( $form ) {
 			global $redirect_to, $action;
 
 			switch( $action ) {
@@ -214,7 +214,8 @@
 
 	function add_admin_panels() {
 		add_options_page('Open ID options', 'OpenID', 8, 'global-openid-options', array( $this, 'options_page')  );
-		add_submenu_page('profile.php', 'Your OpenID Identities', 'Your OpenID Identities', 'read', 'your-openid-identities', array($this, 'profile_panel') );
+		//add_submenu_page('profile.php', 'Your OpenID Identities', 'Your OpenID Identities', 'read', 'your-openid-identities', array($this, 'profile_panel') );
+		add_submenu_page('users.php', 'Your OpenID Identities', 'Your OpenID Identities', 'read', 'your-openid-identities', array($this, 'profile_panel') );
 	}
 
 	function profile_panel() {

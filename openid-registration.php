@@ -52,7 +52,6 @@ if  ( !class_exists('WordpressOpenIDRegistration') ) {
 			$this->_store = new WP_OpenIDStore();
 			$this->_consumer = new Auth_OpenID_Consumer( $this->_store );
 			$this->error = '';
-			error_log("A-OK");
 			$this->action = '';
 			$this->identity_url_table_name = ($table_prefix . 'openid_identities');
 		}
@@ -84,6 +83,13 @@ if  ( !class_exists('WordpressOpenIDRegistration') ) {
 			$sql = 'drop table '. $this->_store->settings_table_name;
 			$wpdb->query($sql);			
 		}			
+		
+		/*
+		 * Customer error handler for calls into the JanRain library
+		 */
+		function customer_error_handler($errno, $errmsg, $filename, $linenum, $vars) {
+			error_log( "Error $errno: $errmsg in $filename :$linenum");
+		}
 
  
 		/*
@@ -92,9 +98,7 @@ if  ( !class_exists('WordpressOpenIDRegistration') ) {
 		 * Otherwise, return and let Wordpress handle the login and/or draw the form.
 		 * Uses output buffering to modify the form. See openid_wp_login_ob()
 		 */
-		function wp_authenticate( &$username, &$password ) {
-			if( WORDPRESSOPENIDREGISTRATION_DEBUG ) error_log("OpenIDConsumer: wp_authenticate( $username , $password )  POST[openid_url] = " . $_POST['openid_url'] );
-			
+		function wp_authenticate( &$username ) {
 			if( !empty( $_POST['openid_url'] ) ) {
 				$redirect_to = '';
 				if( !empty( $_REQUEST['redirect_to'] ) ) $redirect_to = $_REQUEST['redirect_to'];
@@ -105,44 +109,8 @@ if  ( !class_exists('WordpressOpenIDRegistration') ) {
 				$error = $this->error;
 			}
 			
-			ob_start( array( $this, 'openid_wp_login_ob' ) );
+			ob_start( array( $this->ui, 'openid_wp_login_ob' ) );
 		}
-
-
-		/*  
-		 * Prepare to start the redirect loop
-		 * This function is mainly for assembling urls
-		 * Called from wp_authenticate (for login form) and openid_wp_comment_tagging (for comment form)
-		 * If using comment form, specify optional parameters action=commentopenid and wordpressid=PostID.
-		 */
-		function start_login( $claimed_url, $redirect_to, $action='loginopenid', $wordpressid=0 ) {
-		
-			if ( empty( $claimed_url ) ) return;
-			
-			if( WORDPRESSOPENIDREGISTRATION_DEBUG ) error_log('OpenIDConsumer: Attempting auth for "' . $claimed_url . '"');
-
-			$auth_request = $this->_consumer->begin( $claimed_url );
-			if( WORDPRESSOPENIDREGISTRATION_DEBUG ) error_log( $auth_request );
-			if (!$auth_request) {
-				$this->error = 'Expected an OpenID URL. Got:<br/>' . htmlentities( $claimed_url );
-				if( WORDPRESSOPENIDREGISTRATION_DEBUG ) error_log('OpenIDConsumer: ' . $this->error );
-				return;
-			}
-
-			if( WORDPRESSOPENIDREGISTRATION_DEBUG ) error_log('OpenIDConsumer: Is an OpenID url. Starting redirect.');
-			
-			$return_to = get_bloginfo('url') . "/wp-login.php?action=$action";
-			if( $wordpressid ) $return_to .= "&wordpressid=$wordpressid";
-			if( !empty( $redirect_to ) ) $return_to .= '&redirect_to=' . urlencode( $redirect_to );
-			
-			$redirect_url = $auth_request->redirectURL( get_option('oid_trust_root'), $return_to );
-			//$redirect_url .= '&openid.sreg.optional=nickname,email,fullname';
-
-			if( WORDPRESSOPENIDREGISTRATION_DEBUG ) error_log('OpenIDConsumer: redirect: ' . $redirect_url );
-			wp_redirect( $redirect_url );
-			exit(0);
-		}
-		
 
 
 		/* Start and finish the redirect loop, for the admin pages.
@@ -174,9 +142,9 @@ if  ( !class_exists('WordpressOpenIDRegistration') ) {
 						if ( empty( $claimed_url ) ) return;
 						if( WORDPRESSOPENIDREGISTRATION_DEBUG ) error_log('OpenIDConsumer: Attempting bind for "' . $claimed_url . '"');
 
-						// set_error_handler()
+						set_error_handler( array($this, 'customer_error_handler'));
 						$auth_request = $this->_consumer->begin( $claimed_url );
-						// restore_error_handler()
+						restore_error_handler();
 						
 						if (!$auth_request) {
 							$this->error = 'Expected an OpenID URL. Got: ' . htmlentities( $claimed_url );
@@ -194,8 +162,10 @@ if  ( !class_exists('WordpressOpenIDRegistration') ) {
 					case 'add_identity_ok':					// Return from verify loop.
 						if ( !isset( $_GET['openid_mode'] ) ) break;	// no mode? probably a spoof or bad cancel.
 
+						set_error_handler( array($this, 'customer_error_handler'));
 						$response = $this->_consumer->complete( $_GET );
-
+						restore_error_handler();
+						
 						switch( $response->status ) {
 							case Auth_OpenID_CANCEL:	$this->error = 'OpenID assertion cancelled.'; break;
 							case Auth_OpenID_FAILURE:	$this->error = 'OpenID assertion failed: ' . $response->message; break;
@@ -260,6 +230,41 @@ if  ( !class_exists('WordpressOpenIDRegistration') ) {
 				array( $url ) );
 		}
 
+
+
+		/*  
+		 * Prepare to start the redirect loop
+		 * This function is mainly for assembling urls
+		 * Called from wp_authenticate (for login form) and openid_wp_comment_tagging (for comment form)
+		 * If using comment form, specify optional parameters action=commentopenid and wordpressid=PostID.
+		 */
+		function start_login( $claimed_url, $redirect_to, $action='loginopenid', $wordpressid=0 ) {
+			if ( empty( $claimed_url ) ) return; // do nothing.
+			
+			set_error_handler( array($this, 'customer_error_handler'));
+			$auth_request = $this->_consumer->begin( $claimed_url );
+			restore_error_handler();
+
+			if (!$auth_request) {
+				$this->error = 'Could not find OpenID endpoint at the specified url.';
+				if( WORDPRESSOPENIDREGISTRATION_DEBUG ) error_log('OpenIDConsumer: ' . $this->error );
+				return;
+			}
+
+			if( WORDPRESSOPENIDREGISTRATION_DEBUG ) error_log('OpenIDConsumer: Is an OpenID url. Starting redirect.');
+			
+			$return_to = get_bloginfo('url') . "/wp-login.php?action=$action";
+			if( $wordpressid ) $return_to .= "&wordpressid=$wordpressid";
+			if( !empty( $redirect_to ) ) $return_to .= '&redirect_to=' . urlencode( $redirect_to );
+			
+			// If we've never heard of this url before, add the SREG extension.
+			if( $this->get_user_by_identity( $auth_request->endpoint->identity_url ) == NULL ) $auth_request->addExtensionArg('sreg', 'optional', 'nickname,email,fullname');
+			
+			$redirect_url = $auth_request->redirectURL( get_option('oid_trust_root'), $return_to );
+			wp_redirect( $redirect_url );
+			exit(0);
+		}
+
 		/* 
 		 * Finish the redirect loop.
 		 * If returning from openid server with action set to loginopenid or commentopenid, complete the loop
@@ -272,10 +277,10 @@ if  ( !class_exists('WordpressOpenIDRegistration') ) {
 			
 			if ( $_GET['action'] !== 'loginopenid' && $_GET['action'] !== 'commentopenid' ) return;
 			if ( !isset( $_GET['openid_mode'] ) ) return;
-			
-			// set_error_handler()
+
+			set_error_handler( array($this, 'customer_error_handler'));
 			$response = $this->_consumer->complete( $_GET );
-			// restore_error_handler()
+			restore_error_handler();
 			
 			switch( $response->status ) {
 			case Auth_OpenID_CANCEL:
@@ -302,10 +307,9 @@ if  ( !class_exists('WordpressOpenIDRegistration') ) {
 				$redirect_to = 'wp-admin/';
 
 				$matching_user_id = $this->get_user_by_identity( $response->identity_url );
-					
-				if( false !== $matching_user_id ) {
+				
+				if( NULL !== $matching_user_id ) {
 					// 1.1 If url is found, login.
-					
 					$user = new WP_User( $matching_user_id );
 					
 					if( wp_login( $user->user_login, md5($user->user_pass), true ) ) {
@@ -323,47 +327,48 @@ if  ( !class_exists('WordpressOpenIDRegistration') ) {
 					
 				} else {
 					// 1.2. If url is not found, create a user with md5()'d password, permit=true
-					require_once( ABSPATH . WPINC . '/registration-functions.php');
+					require_once( ABSPATH . 'wp-admin/upgrade-functions.php');
 				 	
 					$username = sanitize_user ( $response->identity_url );
 					$password = substr( md5( uniqid( microtime() ) ), 0, 7);
-					$email    = '';
-				 	
-					$user_id = wp_create_user( $username, $password, $email );
+					
+					$user_id = wp_create_user( $username, $password );
+					error_log("wp_create_user( $username, $password )  returned $user_id ");
+					
 					if( $user_id ) {
 						// created ok
-						if( WORDPRESSOPENIDREGISTRATION_DEBUG ) error_log("OpenIDConsumer: Created new user $user_id : $username");
 						
 						update_usermeta( $user_id, 'registered_with_openid', true );
 						$temp_user_data=array( 'ID' => $user_id, 'user_url' => $response->identity_url, 'user_nickname' => $response->identity_url );
 
-						/* // This employs the SREG OpenID extension to pre-fill some of the user metadata.
-						if( isset( $response->signed_args['openid.sreg.nickname'] ) )
-							$temp_user_data['user_nickname'] = $response->signed_args['openid.sreg.nickname'];
-						if( isset( $response->signed_args['openid.sreg.email'] ) )
-							$temp_user_data['user_email'] = $response->signed_args['openid.sreg.email'];
-						if( isset( $response->signed_args['openid.sreg.fullname'] ) ) {
-							$namechunks = explode( ' ', $response->signed_args['openid.sreg.fullname'], 2 );
-							if( $namechunks[0] ) $temp_user_data['first_name'] = $namechunks[0];
-							if( $namechunks[1] ) $temp_user_data['last_name'] = $namechunks[1];
+						$sreg = $response->extensionResponse('sreg');
+						if( isset( $sreg['email'])) $temp_user_data['user_email'] = $sreg['email'];
+						if( isset( $sreg['nickname'])) $temp_user_data['nickname'] = $sreg['nickname'];
+						if( isset( $sreg['fullname'])) {
+							$namechunks = explode( ' ', $sreg['fullname'], 2 );
+							if( isset($namechunks[0]) ) $temp_user_data['first_name'] = $namechunks[0];
+							if( isset($namechunks[1]) ) $temp_user_data['last_name'] = $namechunks[1];
 						}
-						*/
-						
-						if( WORDPRESSOPENIDREGISTRATION_DEBUG ) error_log('OpenIDConsumer: Userdata: ' . var_export( $temp_user_data, true ) );
+						if( WORDPRESSOPENIDREGISTRATION_DEBUG ) error_log("OpenIDConsumer: Created new user $user_id : $username and metadata: " . var_export( $temp_user_data, true ) );
 						
 						// Insert the new wordpress user into the database
 						wp_update_user( $temp_user_data );
 						$user = new WP_User( $user_id );
-						wp_login( $user->user_login, md5($user->user_pass), true );
-						
+
+						if( !wp_login( $user->user_login, $user->user_pass, true ) ) {
+							if( WORDPRESSOPENIDREGISTRATION_DEBUG ) error_log( "OpenIDConsumer: wp_login() for the new user failed." );
+						}
 						// Call the usual user-registration hooks
 						do_action('user_register', $user_id);
 						wp_new_user_notification( $user->user_login );
 						
-						$this->insert_identity( $response->identity_url );
-						
 						wp_clearcookie();
 						wp_setcookie( $username, $password, true, '', '', true );
+						
+						
+						global $userdata;
+						$userdata = get_userdata( $user_id );
+						$this->insert_identity( $response->identity_url );
 						
 						$this->action = 'redirect';
 						
@@ -509,36 +514,6 @@ if  ( !class_exists('WordpressOpenIDRegistration') ) {
 		 * TODO: MOVE ALL UI TO user-interface.php
 		 */
 
-		/*  Output Buffer handler
-		 *  @param $form - String of html
-		 *  @return - String of html
-		 *  Replaces parts of the wp-login.php form.
-		 */
-		function openid_wp_login_ob( $form ) {
-			global $redirect_to, $action;
-
-			switch( $action ) {
-			case 'bind':
-				$page = $this->page;
-				
-				$form = preg_replace( '#<form.*</form>#s', $page, $form, 1 );	// strip the whole form
-				break;
-
-			default:	
-				$style = get_option('oid_enable_selfstyle') ? ('style="background: #f4f4f4 url('.OPENIDIMAGE.') no-repeat;
-					background-position: 0 50%; padding-left: 18px;" ') : '';
-					
-				$newform = '<h2>WordPress User</h2>';
-				$form = preg_replace( '#<form[^>]*>#', '\\0 <h2>WordPress User:</h2>', $form, 1 );
-				
-				$newform = '<p align="center">-or-</p><h2>OpenID Identity:</h2><p><label>'
-					.__('OpenID Identity Url:').
-					' <small><a href="http://openid.net/">' . __('What is this?') . '</a></small><br/><input ' . $style
-					.'type="text" class="openid_url" name="openid_url" id="log" size="20" tabindex="5" /></label></p>';
-				$form = preg_replace( '#<p class="submit">#', $newform . '\\0' , $form, 1 );
-			}
-			return $form;
-		}
 
 
 
