@@ -260,7 +260,7 @@
 		}
 		?>
 		<p><form method="post">Add identity: <input name="openid_url" /> <input type="submit" value="Add" />
-			<input type="hidden" name="action" value="add_identity_to_account" ></form></p>
+			<input type="hidden" name="action" value="add_identity" ></form></p>
 		</div>
 		<?php
 		}
