@@ -20,7 +20,7 @@ define ( 'WORDPRESSOPENIDREGISTRATION_DEBUG', true );
 define ( 'OPENIDIMAGE', get_bloginfo('url') . '/wp-content/plugins/wpopenid/images/openid.gif' );
 
 /* Sessions are required by Services_Yadis_PHPSession, in Manager.php line 40 */
-session_start();
+@session_start();
 
 
 if  ( !class_exists('WordpressOpenIDRegistration') ) {
@@ -63,11 +63,12 @@ if  ( !class_exists('WordpressOpenIDRegistration') ) {
 			require_once(ABSPATH . '/wp-admin/upgrade-functions.php');
 			$this->_store->dbDelta();
 			$identity_url_table_sql = "CREATE TABLE $this->identity_url_table_name (
-					uurl_id bigint(20) NOT NULL auto_increment,
-					user_id bigint(20) NOT NULL default '0',
-					meta_value longtext,
-					PRIMARY KEY  (uurl_id),
-					KEY user_id (user_id) );";		// TODO: Make meta_value unique.
+							uurl_id bigint(20) NOT NULL auto_increment,
+							user_id bigint(20) NOT NULL default '0',
+							meta_value longtext,
+							PRIMARY KEY  (uurl_id),
+							UNIQUE KEY uurl (meta_value(30)),
+							KEY user_id (user_id) );";
 			dbDelta($identity_url_table_sql);
 		}
 		
@@ -146,6 +147,11 @@ if  ( !class_exists('WordpressOpenIDRegistration') ) {
 					$auth_request = $this->_consumer->begin( $claimed_url );
 					restore_error_handler();
 					
+					global $userdata;
+					if( $userdata->ID === $this->get_user_by_identity( $auth_request->endpoint->identity_url )) {
+						$this->error = 'The specified url is already bound to this account, dummy';
+						return;
+					}
 					if (!$auth_request) {
 						$this->error = 'Expected an OpenID URL. Got: ' . htmlentities( $claimed_url );
 						return;
@@ -157,8 +163,8 @@ if  ( !class_exists('WordpressOpenIDRegistration') ) {
 					if( WORDPRESSOPENIDREGISTRATION_DEBUG ) error_log('OpenIDConsumer: redirect: ' . $redirect_url );
 					wp_redirect( $redirect_url );
 					exit(0);
-					
 					break;
+					
 				case 'add_identity_ok':					// Return from verify loop.
 					if ( !isset( $_GET['openid_mode'] ) ) break;	// no mode? probably a spoof or bad cancel.
 
@@ -177,6 +183,7 @@ if  ( !class_exists('WordpressOpenIDRegistration') ) {
 						default:					$this->error = 'Unknown Status. Bind not successful. This is probably a bug.';
 					}
 					break;
+					
 				case 'drop_identity':					// Remove a binding.
 					if( !isset( $_GET['id'])) {
 						$this->error = 'Identity url delete failed: ID paramater missing.';
@@ -210,9 +217,13 @@ if  ( !class_exists('WordpressOpenIDRegistration') ) {
 		}
 
 		function insert_identity($url) {
-			global $userdata;
-			return $this->_store->connection->query( "INSERT INTO $this->identity_url_table_name (user_id,meta_value) VALUES ( %s, %s )",
+			global $userdata, $wpdb;
+			$old_show_errors = $wpdb->show_errors;
+			if( $old_show_errors ) $wpdb->hide_errors();
+			$ret = @$this->_store->connection->query( "INSERT INTO $this->identity_url_table_name (user_id,meta_value) VALUES ( %s, %s )",
 				array( (int)$userdata->ID, $url ) );
+			if( $old_show_errors ) $wpdb->show_errors();
+			return $ret;
 		}
 		
 		function drop_identity($id) {
@@ -267,7 +278,15 @@ if  ( !class_exists('WordpressOpenIDRegistration') ) {
 		 * If we fail to login, pass on the error message.
 		 */	
 		function finish_login( ) {
-			// TODO: ASSERT THAT WE ARE IN wp-login.php
+			$self = basename( $GLOBALS['pagenow'] );
+			
+			if( $self == 'wp-comments-post.php' ) {		// Hijack comment form fields, bypassing 'require_name_email'
+				$_POST['author'] = 'openid';
+				$_POST['email'] = 'placeholder@example.com';
+				return;
+			}
+			
+			if( $self !== 'wp-login.php') return;
 			
 			if ( $_GET['action'] !== 'loginopenid' && $_GET['action'] !== 'commentopenid' ) return;
 			if ( !isset( $_GET['openid_mode'] ) ) return;
@@ -349,15 +368,16 @@ if  ( !class_exists('WordpressOpenIDRegistration') ) {
 						wp_update_user( $temp_user_data );
 						$user = new WP_User( $user_id );
 
-						if( !wp_login( $user->user_login, $user->user_pass, true ) ) {
-							if( WORDPRESSOPENIDREGISTRATION_DEBUG ) error_log( "OpenIDConsumer: wp_login() for the new user failed." );
+						if( ! wp_login( $user->user_login, md5($user->user_pass), true ) ) {
+							$this->error = "User was created fine, but wp_login() for the new user failed. This is probably a bug." );
+							break;
 						}
 						// Call the usual user-registration hooks
 						do_action('user_register', $user_id);
 						wp_new_user_notification( $user->user_login );
 						
 						wp_clearcookie();
-						wp_setcookie( $username, $password, true, '', '', true );
+						wp_setcookie( $user->user_login, md5($user->user_pass), true, '', '', true );
 						
 						
 						global $userdata;
@@ -383,8 +403,6 @@ if  ( !class_exists('WordpressOpenIDRegistration') ) {
 			
 			if( WORDPRESSOPENIDREGISTRATION_DEBUG ) error_log('OpenIDConsumer: Finish Auth for "' . $response->identity_url . '". ' . $this->error );
 			
-
-			// Possibly delay this while binding user account.
 			if( $this->action == 'redirect' ) {
 				if ( !empty( $_GET['redirect_to'] )) $redirect_to = $_GET['redirect_to'];
 				
@@ -406,6 +424,7 @@ if  ( !class_exists('WordpressOpenIDRegistration') ) {
 					nocache_headers();
 					
 					// Do essentially the same thing as wp-comments-post.php
+					global $wpdb;
 					$comment_post_ID = (int) $_GET['wordpressid'];
 					$status = $wpdb->get_row("SELECT post_status, comment_status FROM $wpdb->posts WHERE ID = '$comment_post_ID'");
 					if ( empty($status->comment_status) ) {

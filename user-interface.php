@@ -174,7 +174,7 @@
      					<tr valign="top"><th style="width: 10em; padding-top: 1.5em;">
      						<label for="oid_trust_root">Trust root:</label>
      					</th><td>
-     						<p><input type="text" size="80" name="oid_trust_root" id="oid_trust_root"
+     						<p><input type="text" size="50" name="oid_trust_root" id="oid_trust_root"
      						value="<?php echo htmlentities(get_option('oid_trust_root')); ?>" /></p>
      						<p>Commenters will be asked whether they trust this url,
      						and its decedents, to know that they are logged in and control their identity url.
