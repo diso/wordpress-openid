@@ -14,36 +14,49 @@
 	function WordpressOpenIDRegistrationUI( $oidref ) {
 		$this->oid = $oidref;
 		add_action( 'admin_menu', array( $this, 'add_admin_panels' ) );
+		add_action( 'login_form', array( $this, 'login_form_v2_insert_fields'));
+		add_filter( 'login_errors', array( $this, 'login_form_v2_hide_username_password_errors'));
+	}
+	
+	function login_form_v2_hide_username_password_errors($r) {
+		if( $_POST['openid_url']
+			|| $_GET['action'] == 'loginopenid'
+			|| $_GET['action'] == 'commentopenid' ) return $this->oid->error;
+		return $r;
 	}
 
+	function login_form_v2_insert_fields() {
+		$this->__flag_use_Viper007Bond_login_form = true;
+		$style = get_option('oid_enable_selfstyle') ? ('style="background: #f4f4f4 url('.OPENIDIMAGE.') no-repeat;
+			background-position: 0 50%; padding-left: 18px;" ') : '';
+		?>
+		<hr />
+		<p>
+			<label>Or login using your <img src="<?php echo OPENIDIMAGE; ?>" />OpenID<a title="<?php echo __('What is this?'); ?>" href="http://openid.net/">?</a> url:<br/>
+			<input type="text" name="openid_url" id="openid_url" class="input openid_url" value="" size="20" tabindex="25" <?php echo $style; ?>/></label>
+		</p>
+		<?php
+	}
 	/*  Output Buffer handler
 	 *  @param $form - String of html
 	 *  @return - String of html
 	 *  Replaces parts of the wp-login.php form.
 	 */
 	function openid_wp_login_ob( $form ) {
-			global $redirect_to, $action;
+			if( $this->__flag_use_Viper007Bond_login_form ) return $form;
+			global $redirect_to;
 
-			switch( $action ) {
-			case 'bind':
-				$page = $this->page;
+			$style = get_option('oid_enable_selfstyle') ? ('style="background: #f4f4f4 url('.OPENIDIMAGE.') no-repeat;
+				background-position: 0 50%; padding-left: 18px;" ') : '';
 				
-				$form = preg_replace( '#<form.*</form>#s', $page, $form, 1 );	// strip the whole form
-				break;
-
-			default:	
-				$style = get_option('oid_enable_selfstyle') ? ('style="background: #f4f4f4 url('.OPENIDIMAGE.') no-repeat;
-					background-position: 0 50%; padding-left: 18px;" ') : '';
-					
-				$newform = '<h2>WordPress User</h2>';
-				$form = preg_replace( '#<form[^>]*>#', '\\0 <h2>WordPress User:</h2>', $form, 1 );
-				
-				$newform = '<p align="center">-or-</p><h2>OpenID Identity:</h2><p><label>'
-					.__('OpenID Identity Url:').
-					' <small><a href="http://openid.net/">' . __('What is this?') . '</a></small><br/><input ' . $style
-					.'type="text" class="openid_url" name="openid_url" id="log" size="20" tabindex="5" /></label></p>';
-				$form = preg_replace( '#<p class="submit">#', $newform . '\\0' , $form, 1 );
-			}
+			$newform = '<h2>WordPress User</h2>';
+			$form = preg_replace( '#<form[^>]*>#', '\\0 <h2>WordPress User:</h2>', $form, 1 );
+			
+			$newform = '<p align="center">-or-</p><h2>OpenID Identity:</h2><p><label>'
+				.__('OpenID Identity Url:').
+				' <small><a href="http://openid.net/">' . __('What is this?') . '</a></small><br/><input ' . $style
+				.'type="text" class="input openid_url" name="openid_url" id="log" size="20" tabindex="5" /></label></p>';
+			$form = preg_replace( '#<p class="submit">#', $newform . '\\0' , $form, 1 );
 			return $form;
 	}
 
@@ -214,8 +227,7 @@
 
 	function add_admin_panels() {
 		add_options_page('Open ID options', 'OpenID', 8, 'global-openid-options', array( $this, 'options_page')  );
-		//add_submenu_page('profile.php', 'Your OpenID Identities', 'Your OpenID Identities', 'read', 'your-openid-identities', array($this, 'profile_panel') );
-		add_submenu_page('users.php', 'Your OpenID Identities', 'Your OpenID Identities', 'read', 'your-openid-identities', array($this, 'profile_panel') );
+		add_submenu_page('profile.php', 'Your OpenID Identities', 'Your OpenID Identities', 'read', 'your-openid-identities', array($this, 'profile_panel') );
 	}
 
 	function profile_panel() {
@@ -240,14 +252,14 @@
 
 			<table class="widefat">
 			<thead>
-				<tr><th style="text-align: center">id</th><th>Identity Url</th><th style="text-align: center">Action</th></tr>
+				<tr><th scope="col" style="text-align: center">ID</th><th scope="col">Identity Url</th><th scope="col" style="text-align: center">Action</th></tr>
 			</thead>
 			<?php
 			foreach( $urls as $k=>$v ) {
-				?><tr>
-					<td class="id"><?php echo $v['uurl_id']; ?></td>
-					<td class="desc"><?php echo $v['meta_value']; ?></td>
-					<td class="togl"><a class="edit" href="users.php?page=your-openid-identities&action=drop_identity&id=<?php echo $v['uurl_id']; ?>">remove</a></td>
+				?><tr class="alternate">
+					<th scope="row" style="text-align: center"><?php echo $v['uurl_id']; ?></td>
+					<td><a href="<?php echo $v['meta_value']; ?>"><?php echo $v['meta_value']; ?></a></td>
+					<td style="text-align: center"><a class="delete" href="?page=your-openid-identities&action=drop_identity&id=<?php echo $v['uurl_id']; ?>">Delete</a></td>
 				</tr><?php
 			}
 			?>

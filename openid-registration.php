@@ -113,7 +113,7 @@ if  ( !class_exists('WordpressOpenIDRegistration') ) {
 		}
 
 
-		/* Start and finish the redirect loop, for the admin pages.
+		/* Start and finish the redirect loop, for the admin pages profile.php & users.php
 		 */
 		function admin_page_handler() {
 			if( !isset( $_GET['page'] )) return;
@@ -122,84 +122,80 @@ if  ( !class_exists('WordpressOpenIDRegistration') ) {
 			if( !isset( $_REQUEST['action'] )) return;
 			$action = $_REQUEST['action'];
 			
-			if( $action ) {	// Point of no return.
+			require_once(ABSPATH . 'wp-admin/admin-functions.php');
+			require_once(ABSPATH . 'wp-admin/admin-db.php');
+			require_once(ABSPATH . 'wp-admin/upgrade-functions.php');
+
+			auth_redirect();
+			nocache_headers();
+			get_currentuserinfo();
 			
-				require_once(ABSPATH . 'wp-admin/admin-functions.php');
-				require_once(ABSPATH . 'wp-admin/admin-db.php');
-				require_once(ABSPATH . 'wp-admin/upgrade-functions.php');
-
-				auth_redirect();
-				nocache_headers();
-				get_currentuserinfo();
-				
-				global $parent_file;
-				$self = get_option('siteurl') . '/wp-admin/profile.php?page=your-openid-identities';
-				
-				switch( $action ) {
-					case 'add_identity':			// Verify identity, return with add_identity_ok
-						$claimed_url = $_POST['openid_url'];
-						
-						if ( empty( $claimed_url ) ) return;
-						if( WORDPRESSOPENIDREGISTRATION_DEBUG ) error_log('OpenIDConsumer: Attempting bind for "' . $claimed_url . '"');
-
-						set_error_handler( array($this, 'customer_error_handler'));
-						$auth_request = $this->_consumer->begin( $claimed_url );
-						restore_error_handler();
-						
-						if (!$auth_request) {
-							$this->error = 'Expected an OpenID URL. Got: ' . htmlentities( $claimed_url );
-							return;
-						}
-
-						$return_to = $self . '&action=add_identity_ok';
-						$redirect_url = $auth_request->redirectURL( get_option('oid_trust_root'), $return_to );
-
-						if( WORDPRESSOPENIDREGISTRATION_DEBUG ) error_log('OpenIDConsumer: redirect: ' . $redirect_url );
-						wp_redirect( $redirect_url );
-						exit(0);
-						
-						break;
-					case 'add_identity_ok':					// Return from verify loop.
-						if ( !isset( $_GET['openid_mode'] ) ) break;	// no mode? probably a spoof or bad cancel.
-
-						set_error_handler( array($this, 'customer_error_handler'));
-						$response = $this->_consumer->complete( $_GET );
-						restore_error_handler();
-						
-						switch( $response->status ) {
-							case Auth_OpenID_CANCEL:	$this->error = 'OpenID assertion cancelled.'; break;
-							case Auth_OpenID_FAILURE:	$this->error = 'OpenID assertion failed: ' . $response->message; break;
-							case Auth_OpenID_SUCCESS:	$this->error = 'OpenID assertion successful.';
-								if( !$this->insert_identity( $response->identity_url ) ) {
-									$this->error = 'OpenID assertion successful, but this URL is already claimed by another user on this blog. This is probably a bug.';
-								}
-								break;
-							default:					$this->error = 'Unknown Status. Bind not successful. This is probably a bug.';
-						}
-						break;
-					case 'drop_identity':					// Remove a binding.
-						if( !isset( $_GET['id'])) {
-							$this->error = 'Identity url delete failed: ID paramater missing.';
-							break;
-						}
-
-						$deleted_identity_url = $this->get_my_identities( $_GET['id'] );
-						if( FALSE === $deleted_identity_url ) {
-							$this->error = 'Identity url delete failed: Specified identity does not exist.';
-							break;
-						}
-						
-						if( $this->drop_identity( $_GET['id'] ) ) {
-							$this->error = 'Identity url delete successful. <b>' . $deleted_identity_url . '</b> removed.';
-							break;
-						}
-						
-						$this->error = 'Identity url delete failed: Unknown reason.';
-						break;
+			// Construct self-referential url for redirects.
+			if ( current_user_can('edit_users') ) $parent_file = 'users.php';
+			else $parent_file = 'profile.php';
+			$self = get_option('siteurl') . '/wp-admin/' . $parent_file . '?page=your-openid-identities';
+			
+			switch( $action ) {
+				case 'add_identity':			// Verify identity, return with add_identity_ok
+					$claimed_url = $_POST['openid_url'];
 					
+					if ( empty( $claimed_url ) ) return;
+					if( WORDPRESSOPENIDREGISTRATION_DEBUG ) error_log('OpenIDConsumer: Attempting bind for "' . $claimed_url . '"');
 
-				}
-			
+					set_error_handler( array($this, 'customer_error_handler'));
+					$auth_request = $this->_consumer->begin( $claimed_url );
+					restore_error_handler();
+					
+					if (!$auth_request) {
+						$this->error = 'Expected an OpenID URL. Got: ' . htmlentities( $claimed_url );
+						return;
+					}
+
+					$return_to = $self . '&action=add_identity_ok';
+					$redirect_url = $auth_request->redirectURL( get_option('oid_trust_root'), $return_to );
+
+					if( WORDPRESSOPENIDREGISTRATION_DEBUG ) error_log('OpenIDConsumer: redirect: ' . $redirect_url );
+					wp_redirect( $redirect_url );
+					exit(0);
+					
+					break;
+				case 'add_identity_ok':					// Return from verify loop.
+					if ( !isset( $_GET['openid_mode'] ) ) break;	// no mode? probably a spoof or bad cancel.
+
+					set_error_handler( array($this, 'customer_error_handler'));
+					$response = $this->_consumer->complete( $_GET );
+					restore_error_handler();
+					
+					switch( $response->status ) {
+						case Auth_OpenID_CANCEL:	$this->error = 'OpenID assertion cancelled.'; break;
+						case Auth_OpenID_FAILURE:	$this->error = 'OpenID assertion failed: ' . $response->message; break;
+						case Auth_OpenID_SUCCESS:	$this->error = 'OpenID assertion successful.';
+							if( !$this->insert_identity( $response->identity_url ) ) {
+								$this->error = 'OpenID assertion successful, but this URL is already claimed by another user on this blog. This is probably a bug.';
+							}
+							break;
+						default:					$this->error = 'Unknown Status. Bind not successful. This is probably a bug.';
+					}
+					break;
+				case 'drop_identity':					// Remove a binding.
+					if( !isset( $_GET['id'])) {
+						$this->error = 'Identity url delete failed: ID paramater missing.';
+						break;
+					}
+
+					$deleted_identity_url = $this->get_my_identities( $_GET['id'] );
+					if( FALSE === $deleted_identity_url ) {
+						$this->error = 'Identity url delete failed: Specified identity does not exist.';
+						break;
+					}
+					
+					if( $this->drop_identity( $_GET['id'] ) ) {
+						$this->error = 'Identity url delete successful. <b>' . $deleted_identity_url . '</b> removed.';
+						break;
+					}
+					
+					$this->error = 'Identity url delete failed: Unknown reason.';
+					break;
 			}
 		}
 
@@ -246,7 +242,7 @@ if  ( !class_exists('WordpressOpenIDRegistration') ) {
 			restore_error_handler();
 
 			if (!$auth_request) {
-				$this->error = 'Could not find OpenID endpoint at the specified url.';
+				$this->error = 'Could not find OpenID endpoint at specified url.';
 				if( WORDPRESSOPENIDREGISTRATION_DEBUG ) error_log('OpenIDConsumer: ' . $this->error );
 				return;
 			}
@@ -271,12 +267,12 @@ if  ( !class_exists('WordpressOpenIDRegistration') ) {
 		 * If we fail to login, pass on the error message.
 		 */	
 		function finish_login( ) {
-			global $_GET;
-			
 			// TODO: ASSERT THAT WE ARE IN wp-login.php
 			
 			if ( $_GET['action'] !== 'loginopenid' && $_GET['action'] !== 'commentopenid' ) return;
 			if ( !isset( $_GET['openid_mode'] ) ) return;
+			$_POST['user_login']='';
+			$_POST['user_pass']='';
 
 			set_error_handler( array($this, 'customer_error_handler'));
 			$response = $this->_consumer->complete( $_GET );
@@ -284,13 +280,14 @@ if  ( !class_exists('WordpressOpenIDRegistration') ) {
 			
 			switch( $response->status ) {
 			case Auth_OpenID_CANCEL:
-				$this->error = 'OpenID verification cancelled.';
+				$this->error = 'OpenID Verification Cancelled.';
 				break;
 			case Auth_OpenID_FAILURE:
-				$this->error = 'OpenID authentication failed: ' . $response->message;
+				$this->error = 'OpenID Authentication Failed: <br/>' . stripslashes($response->message) . '.';
+				if(stristr( $response->message, 'not under trust_root')) $this->error.='<br/>Plugin incorrectly configured.';
 				break;
 			case Auth_OpenID_SUCCESS:
-				$this->error = 'OpenID success.';
+				$this->error = 'OpenID Authentication Success.';
 				
 				/*
 				 * Strategy:
@@ -299,10 +296,7 @@ if  ( !class_exists('WordpressOpenIDRegistration') ) {
 				 *   1.2. If not found, create a user with md5()'d password
 				 *   2. wp_redirect( $redirect_to )
 				 */
-				 
-				// 1. Search the wp_users list for the identity url
-				global $wpdb;
-				
+
 				$this->action = '';
 				$redirect_to = 'wp-admin/';
 
@@ -321,7 +315,7 @@ if  ( !class_exists('WordpressOpenIDRegistration') ) {
 						if ( !$user->has_cap('edit_posts') ) $redirect_to = '/wp-admin/profile.php';
 
 					} else {
-						$this->error = "Failed to login via OpenID, wp_login() returned false. User was $user->user_login";
+						$this->error = "OpenID authentication valid, but Wordpress login failed. OpenID login disabled for this account.";
 						$this->action = 'error';
 					}
 					
