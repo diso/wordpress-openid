@@ -369,7 +369,7 @@ if  ( !class_exists('WordpressOpenIDRegistration') ) {
 						$user = new WP_User( $user_id );
 
 						if( ! wp_login( $user->user_login, md5($user->user_pass), true ) ) {
-							$this->error = "User was created fine, but wp_login() for the new user failed. This is probably a bug." );
+							$this->error = "User was created fine, but wp_login() for the new user failed. This is probably a bug.";
 							break;
 						}
 						// Call the usual user-registration hooks
