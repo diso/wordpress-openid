@@ -356,13 +356,16 @@ if  ( !class_exists('WordpressOpenIDRegistration') ) {
 					$password = substr( md5( uniqid( microtime() ) ), 0, 7);
 					
 					$user_id = wp_create_user( $username, $password );
-					error_log("wp_create_user( $username, $password )  returned $user_id ");
+					if( WORDPRESSOPENIDREGISTRATION_DEBUG ) error_log("wp_create_user( $username, $password )  returned $user_id ");
 					
 					if( $user_id ) {
 						// created ok
 						
 						update_usermeta( $user_id, 'registered_with_openid', true );
-						$temp_user_data=array( 'ID' => $user_id, 'user_url' => $response->identity_url, 'user_nickname' => $response->identity_url );
+						$temp_user_data=array( 'ID' => $user_id,
+							'user_url' => $response->identity_url,
+							'user_nicename' => $response->identity_url,
+							'display_name' => $response->identity_url );
 
 						$sreg = $response->extensionResponse('sreg');
 						if( isset( $sreg['email'])) $temp_user_data['user_email'] = $sreg['email'];
