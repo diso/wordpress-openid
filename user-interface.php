@@ -15,6 +15,7 @@
 		$this->oid = $oidref;
 		add_action( 'admin_menu', array( $this, 'add_admin_panels' ) );
 		add_action( 'login_form', array( $this, 'login_form_v2_insert_fields'));
+		add_action( 'register_form', array( $this, 'openid_wp_register_v2'));
 		add_filter( 'login_errors', array( $this, 'login_form_v2_hide_username_password_errors'));
 	}
 	
@@ -37,6 +38,7 @@
 		</p>
 		<?php
 	}
+
 	/*  Output Buffer handler
 	 *  @param $form - String of html
 	 *  @return - String of html
@@ -60,6 +62,19 @@
 			return $form;
 	}
 
+
+	/* Hook. Add information about OpenID registration to wp-register.php */
+	function openid_wp_register_ob($form) {
+		$newform = '<p>For faster registration, just <a href="' . get_settings('siteurl')
+			. '/wp-login.php">login with <img src="'.OPENIDIMAGE.'" />OpenID!</a></p></form>';
+		$form = preg_replace( '#</form>#', $newform, $form, 1 );
+		return $form;
+	}
+	
+	/* Hook. Add information about registration to wp-login.php?action=register */
+	function openid_wp_register_v2() {
+		?><p>For faster registration, just <a style="color:white;" href="?">login with <img src="<?php echo OPENIDIMAGE; ?>" />OpenID!</a></p><?php
+	}
 
 	/*
 	 * Hook. Add sidebar login form, editing Register link.
@@ -130,7 +145,7 @@
 				update_option( 'oid_enable_commentform', isset($_POST['enable_commentform']) ? true : false );
 				
 				if ($error != '') {
-					echo '<div class="updated"><p><strong>At least one of Open ID options was NOT updated</strong>'.$error.'</p></div>';
+					echo '<div class="error"><p><strong>At least one of Open ID options was NOT updated</strong>'.$error.'</p></div>';
 				} else {
 					echo '<div class="updated"><p><strong>Open ID options updated</strong></p></div>';
 				}
@@ -167,9 +182,7 @@
 			<form method="post"><div class="wrap">
 				<h2>OpenID Registration Options</h2>
      				<fieldset class="options">
-     					<p><em>Please refer to <a href="http://verisign.com">http://[TBD]</a> 
-     					specification for more information.</em></p>
-     					
+     									
      					<table class="editform" cellspacing="2" cellpadding="5" width="100%">
      					<tr valign="top"><th style="width: 10em; padding-top: 1.5em;">
      						<label for="oid_trust_root">Trust root:</label>

@@ -1,11 +1,11 @@
 <?php
 /*
 Plugin Name: OpenID Registration
-Plugin URI: http://wpopenid.sourceforge.net/
+Plugin URI: http://sourceforge.net/projects/wpopenid/
 Description: Wordpress OpenID Registration, Authentication, and Commenting. Requires JanRain PHP OpenID library >1.1.1
 Author: Alan J Castonguay, Hans Granqvist
-Author URI: http://wpopenid.sourceforge.net/
-Version: 2006-10-06
+Author URI: http://blog.verselogic.net/projects/wordpress/wordpress-openid-plugin/
+Version: 2006-10-09
 Licence: Modified BSD, http://www.fsf.org/licensing/licenses/index_html#ModifiedBSD
 */
 
@@ -45,7 +45,7 @@ if  ( !class_exists('WordpressOpenIDRegistration') ) {
 			$this->ui = new WordpressOpenIDRegistrationUI( $this );
 			if( count( $wordpressOpenIDRegistrationErrors ) ) {
 				if( WORDPRESSOPENIDREGISTRATION_DEBUG ) error_log('OpenIDConsumer: Disabled. Check libraries.');
-				$error = 'Disabled';
+				$error = 'OpenID consumer is Disabled. Check libraries.';
 				$this->enabled = false;
 				return;
 			}
@@ -280,19 +280,37 @@ if  ( !class_exists('WordpressOpenIDRegistration') ) {
 		function finish_login( ) {
 			$self = basename( $GLOBALS['pagenow'] );
 			
-			if( $self == 'wp-comments-post.php' ) {		// Hijack comment form fields, bypassing 'require_name_email'
-				$_POST['author'] = 'openid';
-				$_POST['email'] = 'placeholder@example.com';
-				return;
-			}
-			
-			if( $self !== 'wp-login.php') return;
-			
-			if ( $_GET['action'] !== 'loginopenid' && $_GET['action'] !== 'commentopenid' ) return;
-			if ( !isset( $_GET['openid_mode'] ) ) return;
-			$_POST['user_login']='';
-			$_POST['user_pass']='';
+			switch ( $self ) {
+				case 'wp-login.php':
+					if( $action == 'register' ) {
+						ob_start( array( $this->ui, 'openid_wp_register_ob' ) );
+						return;
+					}
+					if ( !isset( $_GET['openid_mode'] ) ) return;
+					if( $_GET['action'] == 'loginopenid' ) break;
+					if( $_GET['action'] == 'commentopenid' ) break;
+					return;
+					break;
+					
 
+				case 'wp-register.php':
+					ob_start( array( $this->ui, 'openid_wp_register_ob' ) );
+					return;
+
+				case 'wp-comments-post.php':	// Hijack comment form fields, bypassing 'require_name_email'
+					$_POST['author'] = 'openid';
+					$_POST['email'] = 'placeholder@example.com';
+					return;
+
+				default:
+					return;				
+			}						
+			
+			// We're doing OpenID login, so zero out these variables
+			unset( $_POST['user_login'] );
+			unset( $_POST['user_pass'] );
+
+			// The JanRain consumer can throw errors. We'll try to handle them ourselves.
 			set_error_handler( array($this, 'customer_error_handler'));
 			$response = $this->_consumer->complete( $_GET );
 			restore_error_handler();
@@ -307,14 +325,6 @@ if  ( !class_exists('WordpressOpenIDRegistration') ) {
 				break;
 			case Auth_OpenID_SUCCESS:
 				$this->error = 'OpenID Authentication Success.';
-				
-				/*
-				 * Strategy:
-				 *   1. Search for a user with the specified identity.
-				 *   1.1. If found, login as that wordpress user, setting cookies
-				 *   1.2. If not found, create a user with md5()'d password
-				 *   2. wp_redirect( $redirect_to )
-				 */
 
 				$this->action = '';
 				$redirect_to = 'wp-admin/';
@@ -372,6 +382,7 @@ if  ( !class_exists('WordpressOpenIDRegistration') ) {
 							$this->error = "User was created fine, but wp_login() for the new user failed. This is probably a bug.";
 							break;
 						}
+						
 						// Call the usual user-registration hooks
 						do_action('user_register', $user_id);
 						wp_new_user_notification( $user->user_login );
@@ -379,7 +390,7 @@ if  ( !class_exists('WordpressOpenIDRegistration') ) {
 						wp_clearcookie();
 						wp_setcookie( $user->user_login, md5($user->user_pass), true, '', '', true );
 						
-						
+						// Bind the provided identity to the just-created user
 						global $userdata;
 						$userdata = get_userdata( $user_id );
 						$this->insert_identity( $response->identity_url );
@@ -468,6 +479,7 @@ if  ( !class_exists('WordpressOpenIDRegistration') ) {
 		 * in a cookie temporarily while doing an
 		 * OpenID redirect loop.
 		 */
+		
 		function comment_set_cookie( $content ) {
 			$commenttext = trim( $content );
 			setcookie('comment_content_' . COOKIEHASH, $commenttext, time() + 3600, COOKIEPATH, COOKIE_DOMAIN);
@@ -519,15 +531,6 @@ if  ( !class_exists('WordpressOpenIDRegistration') ) {
 			
 			return $comment;
 		}
-
-
-
-		/*
-		 * Only UI below this line
-		 * TODO: MOVE ALL UI TO user-interface.php
-		 */
-
-
 
 
 
@@ -644,7 +647,7 @@ add_option( 'oid_enable_commentform', true, 'Display OpenID box in comment form'
 register_activation_hook( 'wpopenid/openid-registration.php', array( $wordpressOpenIDRegistration, 'create_tables' ) );
 register_deactivation_hook( 'wpopenid/openid-registration.php', array( $wordpressOpenIDRegistration, 'destroy_tables' ) );
 
-/* If everthing's ok, add hooks all over WordPress */
+/* If everthing's ok, add hooks for core logic */
 if( $wordpressOpenIDRegistration->enabled ) {
 	add_action( 'init', array( $wordpressOpenIDRegistration, 'finish_login' ) );
 	add_action( 'init', array( $wordpressOpenIDRegistration, 'admin_page_handler' ) );
@@ -655,111 +658,7 @@ if( $wordpressOpenIDRegistration->enabled ) {
 	add_action( 'preprocess_comment', array( $wordpressOpenIDRegistration, 'openid_wp_comment_tagging' ) );
 	add_filter( 'register', array( $wordpressOpenIDRegistration, 'openid_wp_sidebar_register' ) );
 	add_filter( 'loginout', array( $wordpressOpenIDRegistration, 'openid_wp_sidebar_loginout' ) );
-	function openid_wp_register_ob($form) {
-		$newform = '</form><p>Alternatively, just <a href="' . get_settings('siteurl')
-			. '/wp-login.php">login with <img src="'.OPENIDIMAGE.'" />OpenID!</a></p>';
-		$form = preg_replace( '#</form>#', $newform, $form, 1 );
-		return $form;
-	}
-
-	if( $_SERVER["PHP_SELF"] == '/wp-register.php' )
-		ob_start( 'openid_wp_register_ob' );
 }
 
-
-
-
-
-
-/* Exposed functions, designed for use in templates.
- * Specifically inside `foreach ($comments as $comment)` in comments.php
- */
-
-
-
-/*  get_comment_openid()
- *  If the current comment was submitted with OpenID, output an <img> tag with the OpenID logo
- */
-if( !function_exists( 'get_comment_openid' ) ) {
-	function get_comment_openid() {
-		if( get_comment_type() == 'openid' ) echo '<img src="'.OPENIDIMAGE.'" height="16" width="16" alt="OpenID" />';
-	}
-}
-
-/* is_comment_openid()
- * If the current comment was submitted with OpenID, return true
- * useful for  <?php echo ( is_comment_openid() ? 'Submitted with OpenID' : '' ); ?>
- */
-if( !function_exists( 'is_comment_openid' ) ) {
-	function is_comment_openid() {
-		return ( get_comment_type() == 'openid' );
-	}
-}
-
-
-/* openid_comment_form()
- * Replace the form provided by comments.php
- * Uses javascript to provide visual confirmation of identity duality (anon XOR openid)
- */
-if( !function_exists( 'wpopenid_comment_form' ) ) {
-	function wpopenid_comment_form() {
-		openid_comment_form_pre();
-		openid_comment_form_anon();
-		openid_comment_form_post();
-	}
-}
-
-if( !function_exists( 'wpopenid_comment_form' ) ) {
-	function wpopenid_comment_form_anon() {
-		?>
-			<p><input type="text" name="author" id="author" value="<?php echo $comment_author; ?>" size="22" tabindex="1" />
-			<label for="author"><small>Name <?php if ($req) _e('(required)'); ?></small></label></p>
-			<p><input type="text" name="email" id="email" value="<?php echo $comment_author_email; ?>" size="22" tabindex="2" />
-			<label for="email"><small>Mail (will not be published) <?php if ($req) _e('(required)'); ?></small></label></p>
-			<p><input type="text" name="url" id="url" value="<?php echo $comment_author_url; ?>" size="22" tabindex="3" />
-			<label for="url"><small>Website</small></label></p>
-		<?php
-	}
-}
-
-if( !function_exists( 'wpopenid_comment_form_pre' ) ) {
-	function wpopenid_comment_form_pre() {
-		?>
-		<ul id="commentAuthOptions">
-		<li><label><input id="commentAuthModeAnon" type="radio" checked="checked" name="commentAuthMode" value="anon" />Anonymous Coward</label>
-		<div id="commentOptionsBlockAnon">
-		<?php
-	}
-}
-if( !function_exists( 'wpopenid_comment_form_post' ) ) {
-	function wpopenid_comment_form_post() {
-		$style = get_option('oid_enable_selfstyle') ? ('style="background: url('.OPENIDIMAGE.') no-repeat;
-					background-position: 0 50%; padding-left: 18px;" ') : ' ';
-		?>
-		</div>
-		</li>
-		<li><label><input id="commentAuthModeOpenid" type="radio" name="commentAuthMode" value="openid" />OpenID</label>
-			<div id="commentOptionsBlockOpenid"><p><input <?php echo $style; ?>name="openid_url" id="openid_url_comment_form" size="22" tabindex="3.5"/>
-			<label for="openid_url_comment_form"><small>OpenID Identity URL</small></label></p></div>
-		</li>
-		</ul>
-		<script type="text/javascript">
-			a = document.getElementById( "commentAuthModeAnon" );
-			b = document.getElementById( "commentAuthModeOpenid" );
-			a.onclick = commentOptionsCheckHandler;
-			b.onclick = commentOptionsCheckHandler;
-			if( ! ( a.checked || b.checked )) { b.checked=true; }
-			function commentOptionsCheckHandler() {
-				x = document.getElementById( "commentOptionsBlockAnon" );
-				y = document.getElementById( "commentOptionsBlockOpenid" );
-				if(b.checked)        {x.style.display = "none"; y.style.display = "block";
-				} else if(a.checked) {x.style.display = "block"; y.style.display = "none";
-				}
-			}
-			setTimeout(commentOptionsCheckHandler,1);
-		</script>
-		<?php
-	}
-}
 
 ?>
