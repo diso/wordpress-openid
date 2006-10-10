@@ -26,14 +26,14 @@ If a blog requires registration & login before accepting comments, then comments
 
 
 <h3>Login Method</h3>
-<dl><dt><input style="width:1em;" type="radio" name="login_method_radio" value="openid"/>OpenID</dt>
+<dl><dt>OpenID</dt>
 <dd><p>
 <label for="openid_url_comment_form">Sign in with OpenID:</label><br/>	
 <input style="background: url(http://openid.verselogic.net/wp-content/plugins/wpopenid/images/openid.gif) no-repeat;
 background-position: 0 50%; padding-left: 18px;" type="textbox" name="openid_url" tabindex="6" id="openid_url_comment_form" size="30" />
 </p></dd>
 
-<dt><input type="radio" name="login_method_radio" value="anonymous"/>Anonymous</dt>
+<dt>Anonymous</dt>
 <dd>
 
 <p><input type="text" name="author" id="author" value="<?php echo $comment_author; ?>" size="22" tabindex="1" />
