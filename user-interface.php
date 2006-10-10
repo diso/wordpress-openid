@@ -294,29 +294,30 @@
 
  }
 }
-	/* Exposed functions, designed for use in templates.
-	 * Specifically inside `foreach ($comments as $comment)` in comments.php
-	 */
+
+/* Exposed functions, designed for use in templates.
+ * Specifically inside `foreach ($comments as $comment)` in comments.php
+ */
 
 
-	/*  get_comment_openid()
-	 *  If the current comment was submitted with OpenID, output an <img> tag with the OpenID logo
-	 */
-	if( !function_exists( 'get_comment_openid' ) ) {
-		function get_comment_openid() {
-			if( get_comment_type() == 'openid' ) echo '<img src="'.OPENIDIMAGE.'" height="16" width="16" alt="OpenID" />';
-		}
+/*  get_comment_openid()
+ *  If the current comment was submitted with OpenID, output an <img> tag with the OpenID logo
+ */
+if( !function_exists( 'get_comment_openid' ) ) {
+	function get_comment_openid() {
+		if( get_comment_type() == 'openid' ) echo '<img src="'.OPENIDIMAGE.'" height="16" width="16" alt="OpenID" />';
 	}
+}
 
-	/* is_comment_openid()
-	 * If the current comment was submitted with OpenID, return true
-	 * useful for  <?php echo ( is_comment_openid() ? 'Submitted with OpenID' : '' ); ?>
-	 */
-	if( !function_exists( 'is_comment_openid' ) ) {
-		function is_comment_openid() {
-			return ( get_comment_type() == 'openid' );
-		}
+/* is_comment_openid()
+ * If the current comment was submitted with OpenID, return true
+ * useful for  <?php echo ( is_comment_openid() ? 'Submitted with OpenID' : '' ); ?>
+ */
+if( !function_exists( 'is_comment_openid' ) ) {
+	function is_comment_openid() {
+		return ( get_comment_type() == 'openid' );
 	}
+}
 
 
 /* openid_comment_form()

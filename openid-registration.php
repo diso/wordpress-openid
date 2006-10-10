@@ -511,7 +511,7 @@ if  ( !class_exists('WordpressOpenIDRegistration') ) {
 		function openid_wp_comment_tagging( $comment ) {
 			global $current_user;		
 			
-			if( $current_user->permit_openid_login ) {
+			if( get_usermeta($current_user->ID, 'registered_with_openid') ) {
 				$comment['comment_type']='openid';
 			}
 			
@@ -550,7 +550,7 @@ if  ( !class_exists('WordpressOpenIDRegistration') ) {
 			}
 			if( $current_user->ID ) {
 				$chunk ='<li>Logged in as '
-					. ( get_usermeta($current_user->ID, 'permit_openid_login')
+					. ( get_usermeta($current_user->ID, 'registered_with_openid')
 					? ('<img src="'.OPENIDIMAGE.'" height="16" width="16" alt="[oid]" />') : '' )
 					. ( !empty($current_user->user_url)
 					? ('<a href="' . $current_user->user_url . '">' . htmlentities( $current_user->display_name ) . '</a>')
