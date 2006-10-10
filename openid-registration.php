@@ -350,8 +350,9 @@ if  ( !class_exists('WordpressOpenIDRegistration') ) {
 					
 				} else {
 					// 1.2. If url is not found, create a user with md5()'d password, permit=true
-					require_once( ABSPATH . 'wp-admin/upgrade-functions.php');
-				 	
+					@require_once( ABSPATH . 'wp-admin/upgrade-functions.php');	// 2.1
+				 	@require_once( ABSPATH . WPINC . '/registration-functions.php'); // 2.0.4
+				
 					$username = sanitize_user ( $response->identity_url );
 					$password = substr( md5( uniqid( microtime() ) ), 0, 7);
 					
