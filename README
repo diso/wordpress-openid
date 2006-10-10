@@ -1,6 +1,11 @@
 1. Modifying theme's comments.php for better styles
 
-If a blog requires registration & login before accepting comments, then comments.php displays a link to the login form. Augment it with a quick and easy OpenID login form. If a blog permits anonymous commenting, then wrap the anonymous text fields with semantically valid markup indicating a choice between OpenID and Anonymous comments. Here is the modified comments.php from the default Kubrick theme.
+If a blog requires registration & login before accepting comments, then comments.php displays a
+link to the login form. Augment it with a quick and easy OpenID login form. If a blog permits
+anonymous commenting, then wrap the anonymous text fields with semantically valid markup
+indicating a choice between OpenID and Anonymous comments. Here is part of the modified
+comments.php from the default Kubrick theme.
+
 
 
 <?php if ( get_option('comment_registration') && !$user_ID ) : ?>
@@ -8,8 +13,8 @@ If a blog requires registration & login before accepting comments, then comments
 
 <form method="post" action="<?php echo get_option('siteurl'); ?>/wp-login.php?redirect_to=<?php the_permalink(); ?>#respond">
  <p><label for="openid_url_comment_form">You can login with your OpenID!</label><br/>
- <input style="background: url(http://openid.verselogic.net/wp-content/plugins/wpopenid/images/openid.gif) no-repeat;
- background-position: 0 50%; padding-left: 18px;" type="textbox" name="openid_url" tabindex="6" id="openid_url_comment_form" size="30" />
+ <input style="background: url(<?php echo OPENIDIMAGE; ?>) no-repeat;
+ background-position: 0 50%; padding-left: 18px;" type="text" name="openid_url" tabindex="6" id="openid_url_comment_form" size="22" />
  <input name="submit" type="submit" value="Login" /></p>
 </form>
 
@@ -28,9 +33,10 @@ If a blog requires registration & login before accepting comments, then comments
 <h3>Login Method</h3>
 <dl><dt>OpenID</dt>
 <dd><p>
-<label for="openid_url_comment_form">Sign in with OpenID:</label><br/>	
-<input style="background: url(http://openid.verselogic.net/wp-content/plugins/wpopenid/images/openid.gif) no-repeat;
-background-position: 0 50%; padding-left: 18px;" type="textbox" name="openid_url" tabindex="6" id="openid_url_comment_form" size="30" />
+
+<input type="text" name="openid_url" id="openid_url_comment_form" size="22" tabindex="0"/>
+<label for="openid_url_comment_form"><small>OpenID Identity</small></label>
+
 </p></dd>
 
 <dt>Anonymous</dt>
