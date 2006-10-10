@@ -522,7 +522,7 @@ if  ( !class_exists('WordpressOpenIDRegistration') ) {
 				 *  start_login() with action=commentopenid, redirect_to=postpermalink, wordpressid=postID
 				 *  finish_login(), check for commentopenid, grab cookie, post comment, delete cookie, redirect to the post permalink
 				 */
-				$this->comment_set_cookie( $comment['comment_content'] );
+				$this->comment_set_cookie( stripslashes( $comment['comment_content'] ) );
 				$this->start_login( $_POST['openid_url'], get_permalink( $comment['comment_post_ID'] ), 'commentopenid', $comment['comment_post_ID'] );
 				
 				// Failure to redirect at all, the URL is malformed or unreachable. Display the login form with the error.
