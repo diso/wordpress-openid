@@ -297,11 +297,6 @@ if  ( !class_exists('WordpressOpenIDRegistration') ) {
 					ob_start( array( $this->ui, 'openid_wp_register_ob' ) );
 					return;
 
-				case 'wp-comments-post.php':	// Hijack comment form fields, bypassing 'require_name_email'
-					$_POST['author'] = 'openid';
-					$_POST['email'] = 'placeholder@example.com';
-					return;
-
 				default:
 					return;				
 			}						
@@ -502,7 +497,13 @@ if  ( !class_exists('WordpressOpenIDRegistration') ) {
 			return false;
 		}
 
-
+		/* Called when comment is submitted by get_option('require_name_email') */
+		function openid_bypass_option_require_name_email( $value ) {
+			if( !empty( $_POST['openid_url'] ) ) {	// same criteria as the hijack in openid_wp_comment_tagging
+				return false;
+			}
+		}
+		
 		/*
 		 * Called when comment is submitted via preprocess_comment hook.
 		 * Set the comment_type to 'openid', so it can be drawn differently by theme.
@@ -662,6 +663,7 @@ if( $wordpressOpenIDRegistration->enabled ) {
 	add_action( 'preprocess_comment', array( $wordpressOpenIDRegistration, 'openid_wp_comment_tagging' ) );
 	add_filter( 'register', array( $wordpressOpenIDRegistration, 'openid_wp_sidebar_register' ) );
 	add_filter( 'loginout', array( $wordpressOpenIDRegistration, 'openid_wp_sidebar_loginout' ) );
+	add_filter( 'option_require_name_email', array( $wordpressOpenIDRegistration, 'openid_bypass_option_require_name_email') );
 }
 
 
