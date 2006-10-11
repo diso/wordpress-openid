@@ -5,7 +5,7 @@ Plugin URI: http://sourceforge.net/projects/wpopenid/
 Description: Wordpress OpenID Registration, Authentication, and Commenting. Requires JanRain PHP OpenID library >1.1.1
 Author: Alan J Castonguay, Hans Granqvist
 Author URI: http://blog.verselogic.net/projects/wordpress/wordpress-openid-plugin/
-Version: 2006-10-09
+Version: $Rev$ on $Date$
 Licence: Modified BSD, http://www.fsf.org/licensing/licenses/index_html#ModifiedBSD
 */
 
