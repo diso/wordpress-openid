@@ -345,8 +345,8 @@ if  ( !class_exists('WordpressOpenIDRegistration') ) {
 					
 				} else {
 					// 1.2. If url is not found, create a user with md5()'d password, permit=true
-					@require_once( ABSPATH . 'wp-admin/upgrade-functions.php');	// 2.1
-				 	@require_once( ABSPATH . WPINC . '/registration-functions.php'); // 2.0.4
+					@include_once( ABSPATH . 'wp-admin/upgrade-functions.php');	// 2.1
+				 	@include_once( ABSPATH . WPINC . '/registration-functions.php'); // 2.0.4
 				
 					$username = sanitize_user ( $response->identity_url );
 					$password = substr( md5( uniqid( microtime() ) ), 0, 7);
@@ -635,11 +635,10 @@ foreach( $wordpressOpenIDRegistrationErrors as $k => $v ) {
 	} else { error_log( " ERROR: Could not load the file $k"); }
 }
 unset($m);  // otherwise JanRain's XRI.php will leave $m = 1048576
-
+if( !extension_loaded( 'gmp' )) $wordpressOpenIDRegistrationErrors['GMP Support'] = '<a href="http://www.php.net/gmp">GMP</a> does not appear to be built into PHP. This is required.';
 
 /* Instantiate main class */
 $wordpressOpenIDRegistration = new WordpressOpenIDRegistration();
-
 
 /* Add custom OpenID options */
 add_option( 'oid_trust_root', '', 'The Open ID trust root' );
