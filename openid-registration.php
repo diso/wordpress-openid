@@ -36,6 +36,7 @@ if  ( !class_exists('WordpressOpenIDRegistration') ) {
 		var $enabled = true;
 
 		var $identity_url_table_name;
+		var $flag_doing_openid_comment = false;
 
 		/* 
 		 * Initialize required store and consumer.
@@ -365,7 +366,7 @@ if  ( !class_exists('WordpressOpenIDRegistration') ) {
 
 						$sreg = $response->extensionResponse('sreg');
 						if( isset( $sreg['email'])) $temp_user_data['user_email'] = $sreg['email'];
-						if( isset( $sreg['nickname'])) $temp_user_data['nickname'] = $sreg['nickname'];
+						if( isset( $sreg['nickname'])) $temp_user_data['nickname'] = $temp_user_data['user_nicename'] = $temp_user_data['display_name'] =$sreg['nickname'];
 						if( isset( $sreg['fullname'])) {
 							$namechunks = explode( ' ', $sreg['fullname'], 2 );
 							if( isset($namechunks[0]) ) $temp_user_data['first_name'] = $namechunks[0];
@@ -379,6 +380,8 @@ if  ( !class_exists('WordpressOpenIDRegistration') ) {
 
 						if( ! wp_login( $user->user_login, md5($user->user_pass), true ) ) {
 							$this->error = "User was created fine, but wp_login() for the new user failed. This is probably a bug.";
+							$this->action= 'error';
+							error_log( $this->error );
 							break;
 						}
 						
@@ -401,13 +404,17 @@ if  ( !class_exists('WordpressOpenIDRegistration') ) {
 						
 					} else {
 						// failed to create user for some reason.
-						$this->error = "OpenID authentication OK, but failed to create Wordpress user.";
+						$this->error = "OpenID authentication OK, but failed to create Wordpress user. This is probably a bug.";
+						$this->action= 'error';
+						error_log( $this->error );
 					}
 				}
 				break;
 
 			default:
-				$this->error = 'OpenID authentication failed, unknown problem #' . $response->status;
+				$this->error = "OpenID authentication failed, unknown problem #$response->status";
+				$this->action= 'error';
+				error_log( $this->error );
 				break;
 			}
 			
@@ -457,6 +464,7 @@ if  ( !class_exists('WordpressOpenIDRegistration') ) {
 					$comment_author_url   = $wpdb->escape($user->user_url);
 					$comment_type         = 'openid';
 					$user_ID              = $user->ID;
+					$this->flag_doing_openid_comment = true;
 
 					$commentdata = compact('comment_post_ID', 'comment_author', 'comment_author_email',
 												'comment_author_url', 'comment_content', 'comment_type', 'user_ID');
@@ -592,6 +600,43 @@ if  ( !class_exists('WordpressOpenIDRegistration') ) {
 		function openid_is_url($url) {
 			return !preg_match( '#^http(s)?\\:\\/\\/[a-z0-9\-]+\.([a-z0-9\-]+\.)?\\/[a-z]+#i',$url );
 		}
+		
+		
+		/* Hooks to clean up wp_notify_postauthor() emails
+		 * Tries to call as few functions as required */
+		function openid_comment_notification_text( $notify_message_original, $comment_id ) {
+			if( $this->flag_doing_openid_comment ) {
+				$comment = get_comment( $comment_id );
+				if( 'openid' == $comment['comment_type'] ) {
+					$post = get_post($comment->comment_post_ID);
+					$youcansee = __('You can see all comments on this post here: ');
+					if( !strpos( $notify_message_original, $youcansee ) ) { // notification message missing, prepend it
+						$notify_message  = sprintf( __('New comment on your post #%1$s "%2$s"'), $comment->comment_post_ID, $post->post_title ) . "\r\n";
+						$notify_message .= sprintf( __('Author : %1$s (IP: %2$s , %3$s)'), $comment->comment_author, $comment->comment_author_IP, $comment_author_domain ) . "\r\n";
+						$notify_message .= sprintf( __('E-mail : %s'), $comment->comment_author_email ) . "\r\n";
+						$notify_message .= sprintf( __('URL    : %s'), $comment->comment_author_url ) . "\r\n";
+						$notify_message .= sprintf( __('Whois  : http://ws.arin.net/cgi-bin/whois.pl?queryinput=%s'), $comment->comment_author_IP ) . "\r\n";
+						$notify_message .= __('Comment: ') . "\r\n" . $comment->comment_content . "\r\n\r\n";
+						$notify_message .= $youcansee . "\r\n";
+						return $notify_message . $notify_message_original;
+					}
+				}
+			}
+			return $notify_message_original;
+		}
+		function openid_comment_notification_subject( $subject, $comment_id ) {
+							$comment = get_comment( $comment_id );
+							error_log("This comment is being made with " . $comment['comment_type']);
+			if( $this->flag_doing_openid_comment ) {
+				$comment = get_comment( $comment_id );
+				if( 'openid' == $comment['comment_type'] && empty( $subject ) ) {
+					$blogname = get_option('blogname');
+					$post = get_post($comment->comment_post_ID);
+					$subject = sprintf( __('[%1$s] OpenID Comment: "%2$s"'), $blogname, $post->post_title );
+				}
+			}
+			return $subject;
+		}
 
 	} // end class definition
 } // end if-class-exists test
@@ -663,6 +708,7 @@ if( $wordpressOpenIDRegistration->enabled ) {
 	add_filter( 'register', array( $wordpressOpenIDRegistration, 'openid_wp_sidebar_register' ) );
 	add_filter( 'loginout', array( $wordpressOpenIDRegistration, 'openid_wp_sidebar_loginout' ) );
 	add_filter( 'option_require_name_email', array( $wordpressOpenIDRegistration, 'openid_bypass_option_require_name_email') );
+	add_filter( 'comment_notification_subject', array( $wordpressOpenIDRegistration, 'openid_comment_notification_subject'), 10, 2);
 }
 
 

@@ -1,0 +1,4 @@
+Roadmap for MU support:
+
+Trustroot should have a * if constant( "VHOST" ) !== 'no'
+
