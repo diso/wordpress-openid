@@ -696,8 +696,8 @@ $wordpressOpenIDRegistrationErrors = array(
 
 foreach( $wordpressOpenIDRegistrationErrors as $k => $v ) {
 	if( file_exists_in_path( $k ) ) {
-		require_once( $k );
-		unset( $wordpressOpenIDRegistrationErrors[ $k ] );
+		$try_include = @require_once( $k );
+		if( $try_include ) unset( $wordpressOpenIDRegistrationErrors[ $k ] );
 	} else { error_log( " ERROR: Could not load the file $k"); }
 }
 unset($m);  // otherwise JanRain's XRI.php will leave $m = 1048576

@@ -1,4 +1,33 @@
-1. Modifying theme's comments.php for better styles
+1. Installing the JanRain PHP OpenID library
+
+The plugin needs to find the following files in PHP's path, along with the full content of
+the Auth and Services directories from the library's compressed source archive. Directories
+such as Tests, admin, doc, examples are unnecessary. 
+
+ Auth/OpenID.php
+ Services/Yadis/Yadis.php
+
+An example directory structure with the library installed in the plugin directory:
+
+ blog/
+   wp-content/
+     plugins/
+       wpopenid/
+         openid-registration.php
+         user-interface.php
+         README
+         images/
+            openid.gif
+         Auth/
+           OpenID.php
+           OpenID/
+             Consumer.php
+         Services/
+           Yadis/
+             Yadis.php
+
+
+2. Modifying theme's comments.php for better styles
 
 If a blog requires registration & login before accepting comments, then comments.php displays a
 link to the login form. Augment it with a quick and easy OpenID login form. If a blog permits
