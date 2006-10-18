@@ -19,6 +19,13 @@ Licence: Modified BSD, http://www.fsf.org/licensing/licenses/index_html#Modified
 define ( 'WORDPRESSOPENIDREGISTRATION_DEBUG', true );
 define ( 'OPENIDIMAGE', get_bloginfo('url') . '/wp-content/plugins/wpopenid/images/openid.gif' );
 
+if( WORDPRESSOPENIDREGISTRATION_DEBUG ) {  // try to turn on verbose PHP error reporting
+	ini_set('display_errors', true);
+	ini_set('error_log', ABSPATH . get_option('upload_path') . '/php.log' );
+	ini_set('error_reporting', 2039);
+}
+
+
 /* Sessions are required by Services_Yadis_PHPSession, in Manager.php line 40 */
 @session_start();
 
@@ -45,8 +52,9 @@ if  ( !class_exists('WordpressOpenIDRegistration') ) {
 			global $table_prefix,$wordpressOpenIDRegistrationErrors;
 			$this->ui = new WordpressOpenIDRegistrationUI( $this );
 			if( count( $wordpressOpenIDRegistrationErrors ) ) {
-				if( WORDPRESSOPENIDREGISTRATION_DEBUG ) error_log('OpenIDConsumer: Disabled. Check libraries.');
-				$error = 'OpenID consumer is Disabled. Check libraries.';
+				$this->error = 'OpenID consumer is Disabled. Check libraries.';
+				if( WORDPRESSOPENIDREGISTRATION_DEBUG ) error_log($this->error);
+				echo $this->error;
 				$this->enabled = false;
 				return;
 			}
@@ -59,8 +67,14 @@ if  ( !class_exists('WordpressOpenIDRegistration') ) {
 
 		/*
 		 * Create tables if needed by running dbDelta calls. Upgrade safe. Called on plugin activate.
-		 */		
+		 */
 		function create_tables() {
+			if( !$this->enabled ) {  // do nothing if something bad happened
+				$this->error = 'OpenID Consumer could not be activated, something bad happened. Skipping table create. Check libraries.';
+				if( WORDPRESSOPENIDREGISTRATION_DEBUG ) error_log($this->error);
+				echo $this->error;
+				return;
+			}
 			require_once(ABSPATH . '/wp-admin/upgrade-functions.php');
 			$this->_store->dbDelta();
 			$identity_url_table_sql = "CREATE TABLE $this->identity_url_table_name (
@@ -78,18 +92,25 @@ if  ( !class_exists('WordpressOpenIDRegistration') ) {
 		 */
 		function destroy_tables() {
 			global $wpdb;
+			if( !isset( $this->_store )) {
+				$this->error = 'OpenIDConsumer: Disabled. Cannot locate libraries, therefore cannot clean up database tables.';
+				if( WORDPRESSOPENIDREGISTRATION_DEBUG ) error_log($this->error);
+				echo $this->error;
+				return;
+			}
 			$sql = 'drop table '. $this->_store->associations_table_name;
 			$wpdb->query($sql);
 			$sql = 'drop table '. $this->_store->nonces_table_name;
 			$wpdb->query($sql);
 			$sql = 'drop table '. $this->_store->settings_table_name;
 			$wpdb->query($sql);			
-		}			
+		}
 		
 		/*
 		 * Customer error handler for calls into the JanRain library
 		 */
 		function customer_error_handler($errno, $errmsg, $filename, $linenum, $vars) {
+			if( (2048 & $errno) == 2048 ) return;
 			error_log( "Error $errno: $errmsg in $filename :$linenum");
 		}
 

@@ -155,7 +155,7 @@
 			if( !$this->oid->enabled ) {
 				global $wordpressOpenIDRegistrationErrors;
 				?>
-				<div class="error"><p><strong>There was a problem loading required libraries. Plugin disabled.</strong></p><ul>
+				<div class="error"><p><strong>There was a problem loading required libraries. Plugin disabled. Fix this problem, then Deactivate/Reactivate the plugin.</strong></p><ul>
 				<?php
 				foreach( $wordpressOpenIDRegistrationErrors as $k=>$v ) {
 					echo "<li>$k - $v</li>";
