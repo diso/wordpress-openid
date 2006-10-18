@@ -553,13 +553,7 @@ if  ( !class_exists('WordpressOpenIDRegistration') ) {
 				$comment['comment_type']='openid';
 			}
 			
-			if( !empty( $_POST['openid_url'] ) ) {
-				/* comment form's OpenID url is filled in.
-				 * Strategy:
-				 *  Store comment in a cookie
-				 *  start_login() with action=commentopenid, redirect_to=postpermalink, wordpressid=postID
-				 *  finish_login(), check for commentopenid, grab cookie, post comment, delete cookie, redirect to the post permalink
-				 */
+			if( !empty( $_POST['openid_url'] ) ) {  // Comment form's OpenID url is filled in.
 				$this->comment_set_cookie( stripslashes( $comment['comment_content'] ) );
 				$this->start_login( $_POST['openid_url'], get_permalink( $comment['comment_post_ID'] ), 'commentopenid', $comment['comment_post_ID'] );
 				
@@ -691,7 +685,6 @@ if( !function_exists( 'file_exists_in_path' ) ) {
 	}
 }
 
-
 /* Load required libraries, throw nice errors on failure. */
 $wordpressOpenIDRegistrationErrors = array(
 	'Auth/OpenID/Consumer.php' => 'Do you have the <a href="http://www.openidenabled.com/openid/libraries/php/">JanRain PHP OpenID library</a> installed in your path?',
@@ -703,12 +696,14 @@ $wordpressOpenIDRegistrationErrors = array(
 	'user-interface.php' => 'Came with the plugin, but not found in include path. Does it include current directory: <strong>.</strong>?'
 	);
 
+ini_set('include_path',ini_get('include_path').':'.dirname(__FILE__)); 
 foreach( $wordpressOpenIDRegistrationErrors as $k => $v ) {
 	if( file_exists_in_path( $k ) ) {
-		$try_include = @require_once( $k );
+		$try_include = include_once( $k );
 		if( $try_include ) unset( $wordpressOpenIDRegistrationErrors[ $k ] );
 	} else { error_log( " ERROR: Could not load the file $k"); }
 }
+ini_restore('include_path');
 unset($m);  // otherwise JanRain's XRI.php will leave $m = 1048576
 if( !extension_loaded( 'gmp' )) $wordpressOpenIDRegistrationErrors['GMP Support'] = '<a href="http://www.php.net/gmp">GMP</a> does not appear to be built into PHP. This is required.';
 
