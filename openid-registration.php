@@ -708,7 +708,8 @@ if( $wordpressOpenIDRegistration->enabled ) {
 	add_filter( 'register', array( $wordpressOpenIDRegistration, 'openid_wp_sidebar_register' ) );
 	add_filter( 'loginout', array( $wordpressOpenIDRegistration, 'openid_wp_sidebar_loginout' ) );
 	add_filter( 'option_require_name_email', array( $wordpressOpenIDRegistration, 'openid_bypass_option_require_name_email') );
-	add_filter( 'comment_notification_subject', array( $wordpressOpenIDRegistration, 'openid_comment_notification_subject'), 10, 2);
+	add_filter( 'comment_notification_subject', array( $wordpressOpenIDRegistration, 'openid_comment_notification_subject'), 10, 2 );
+	add_filter( 'comment_notification_text', array( $wordpressOpenIDRegistration, 'openid_comment_notification_text'), 10, 2 );
 }
 
 
