@@ -54,7 +54,6 @@ if  ( !class_exists('WordpressOpenIDRegistration') ) {
 			if( count( $wordpressOpenIDRegistrationErrors ) ) {
 				$this->error = 'OpenID consumer is Disabled. Check libraries.';
 				if( WORDPRESSOPENIDREGISTRATION_DEBUG ) error_log($this->error);
-				echo $this->error;
 				$this->enabled = false;
 				return;
 			}
@@ -88,7 +87,7 @@ if  ( !class_exists('WordpressOpenIDRegistration') ) {
 		}
 		
 		/*
-		 * Cleanup by dropping nonce, assoication, and settings tables. Called on plugin deactivate.
+		 * Cleanup by dropping nonce, association, and settings tables. Called on plugin deactivate.
 		 */
 		function destroy_tables() {
 			global $wpdb;
@@ -104,6 +103,15 @@ if  ( !class_exists('WordpressOpenIDRegistration') ) {
 			$wpdb->query($sql);
 			$sql = 'drop table '. $this->_store->settings_table_name;
 			$wpdb->query($sql);			
+		}
+		
+		/*
+		 * Check to see whether the none, association, and settings tables exist.
+		 */
+		function check_tables() {
+			global $wpdb;
+			if( !isset( $this->_store )) return 'OpenID Store not created correctly, database tables unavailable.';
+			return false;
 		}
 		
 		/*
@@ -689,6 +697,7 @@ $wordpressOpenIDRegistrationErrors = array(
 	'Auth/OpenID/Consumer.php' => 'Do you have the <a href="http://www.openidenabled.com/openid/libraries/php/">JanRain PHP OpenID library</a> installed in your path?',
 	'Auth/OpenID/DatabaseConnection.php' => 'Do you have the <a href="http://www.openidenabled.com/openid/libraries/php/">JanRain PHP OpenID library</a> installed in your path?',
 	'Auth/OpenID/MySQLStore.php' => 'Do you have the <a href="http://www.openidenabled.com/openid/libraries/php/">JanRain PHP OpenID library</a> installed in your path?',
+	'Services/Yadis/Yadis.php' => 'Do you have the <a href="http://www.openidenabled.com/yadis/libraries/php/">JanRain PHP Yadis library</a> installed in your path? (Comes with the OpenID library.)',
 	//ABSPATH . 'wp-admin/upgrade-functions.php' => 'Built in to Wordpress. If we can\'t find this, there\'s something really wrong.<strong>.</strong>?',
 	'wpdb-pear-wrapper.php' => 'Came with the plugin, but not found in include path. Does it include the current directory: <strong>.</strong>?',
 	'user-interface.php' => 'Came with the plugin, but not found in include path. Does it include current directory: <strong>.</strong>?'
