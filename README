@@ -85,3 +85,6 @@ comments.php from the default Kubrick theme.
 <?php endif; ?>
 
 
+3. Useful hooks
+
+Provided are get_comments_openid() & is_comment_openid().
