@@ -157,7 +157,6 @@
 				
 			}
 
-
 			$relativeto = dirname( __FILE__ ) . DIRECTORY_SEPARATOR;
 			$paths = explode(PATH_SEPARATOR, get_include_path());
 			foreach( $paths as $path ) {
@@ -167,15 +166,21 @@
 				$list_of_paths[] = $fullpath;
 			}
 			
-			
 			wordpressOpenIDRegistration_Status_Set( 'Include Path', 'info', implode('<br/>', $list_of_paths ) );
 			wordpressOpenIDRegistration_Status_Set( 'PHP version', 'info', phpversion() );
-			wordpressOpenIDRegistration_Status_Set( 'library: GMP library compiled into in PHP', ( extension_loaded('gmp') && gmp_init(1) ), '<a href="http://www.php.net/gmp">GMP</a> does not appear to be built into PHP. This is required for performance reasons.' );
+			wordpressOpenIDRegistration_Status_Set( 'library: GMP library compiled into in PHP', ( extension_loaded('gmp') && @gmp_init(1) ), '<a href="http://www.php.net/gmp">GMP</a> does not appear to be built into PHP. This is highly recommended for performance reasons.' );
+			wordpressOpenIDRegistration_Status_Set( 'library: BCMath library compiled into in PHP', ( extension_loaded('bcmath') && @bcadd(1,1)==2 ), '<a href="http://www.php.net/bc">BCMath</a> does not appear to be built into PHP. GMP is preferred.' );
+			
+			global $_Auth_OpenID_math_extensions;
+			$loaded_long_integer_library = Auth_OpenID_detectMathLibrary( $_Auth_OpenID_math_extensions );
+			wordpressOpenIDRegistration_Status_Set( 'Loaded long integer library', $loaded_long_integer_library?'info':false, $loaded_long_integer_library?$loaded_long_integer_library['extension']:'No long integer library is loaded! Key calculation will be very slow!' );
 			
 			global $wp_version;
 			wordpressOpenIDRegistration_Status_Set( 'Wordpress version', 'info', $wp_version );
-			wordpressOpenIDRegistration_Status_Set( 'MySQL version', 'info', @mysql_get_client_info() );
+			wordpressOpenIDRegistration_Status_Set( 'MySQL version', 'info', function_exists('mysql_get_client_info') ? mysql_get_client_info() : 'Mysql client information not available. Very strange, as Wordpress requires MySQL.' );
 
+			wordpressOpenIDRegistration_Status_Set( 'Curl version', Auth_OpenID_CURL_PRESENT, function_exists('curl_version') ? implode(' - ', curl_version()) : 'Curl library is not built into PHP. Cannot use Paranoid HTTP client mode.' );
+			
 			/* Check for updates via SF RSS feed */
 			@require_once (ABSPATH . WPINC . '/rss.php');
 			$plugins = get_plugins();
@@ -206,10 +211,16 @@
 				$vercmp_message .= 'Could not contact sourceforge for latest version information.';
 			}
 			wordpressOpenIDRegistration_Status_Set( 'Plugin version', $matches[1], $vercmp_message);			
-			
-			
+			wordpressOpenIDRegistration_Status_Set( '<strong>Overall Plugin Status</strong>', $this->oid->enabled, 'There are problems above that must be dealt with before the plugin can be used.' );
+
+			?>
+			<style>
+				div#openidrollup:hover dl { display: block; }
+				div#openidrollup dl { display: none; }
+			</style>
+			<?php
 			if( $this->oid->enabled ) {	// Display status information
-				?><div class="updated"><p>Status information:</strong><?php
+				?><div id="openidrollup" class="updated"><p><strong>Status information:</strong></p><?php
 			} else {
 				?><div class="error"><p><strong>Plugin is currently disabled. Fix the problem, then Deactivate/Reactivate the plugin.</strong></p><?php
 			}
@@ -267,7 +278,8 @@
      						if( get_option('oid_enable_commentform') ) echo 'checked="checked"'
      						?> />
      						<label for="enable_commentform">Add OpenID url box to the WordPress
-     						post comment form.</p>
+     						post comment form. In general, this should not be used. Rather, the
+							comment form should be tweaked as mentioned in the <em>readme</em></p>
      					</td></tr>
      					
      					<tr><th>
