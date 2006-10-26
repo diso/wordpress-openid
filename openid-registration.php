@@ -63,24 +63,28 @@ if  ( !class_exists('WordpressOpenIDRegistration') ) {
 			$this->_store = new WP_OpenIDStore();
 			
 			if( null == $this->_store ) {
-				wordpressOpenIDRegistration_Status_Set('OpenID Store', false, 'OpenID store not created properly.');
+				wordpressOpenIDRegistration_Status_Set('object: OpenID Store', false, 'OpenID store could not be created properly.');
+				wordpressOpenIDRegistration_Status_Set('class: WP_OpenIDStore', class_exists('WP_OpenIDStore'),  'This class is provided by the plugin, used to wrap the Wordpress database for PEAR-style database access.');
 				$this->enabled = false;
 			} else {
-				wordpressOpenIDRegistration_Status_Set('OpenID Store', true, 'OpenID store created properly.');
+				wordpressOpenIDRegistration_Status_Set('object: OpenID Store', true, 'OpenID store created properly.');
 			}
 			
 			$this->_consumer = new Auth_OpenID_Consumer( $this->_store );
 			if( null == $this->_consumer ) {
-				wordpressOpenIDRegistration_Status_Set('OpenID Consumer', false, 'OpenID consumer not created properly.');
+				wordpressOpenIDRegistration_Status_Set('object: OpenID Consumer', false, 'OpenID consumer could not be created properly.');
+				wordpressOpenIDRegistration_Status_Set('class: Auth_OpenID_Consumer', class_exists('Auth_OpenID_Consumer'),  'This class is provided by the JanRain library.');
 				$this->enabled = false;
 			} else {
-				wordpressOpenIDRegistration_Status_Set('OpenID Consumer', true, 'OpenID consumer created properly.');
+				wordpressOpenIDRegistration_Status_Set('object: OpenID Consumer', true, 'OpenID consumer created properly.');
 			}
 			
 			$this->error = '';
 			$this->action = '';
 			$this->identity_url_table_name = ($table_prefix . 'openid_identities');
-
+			
+			$this->check_tables();
+			
 			if( $this->enabled ) {	// Add openid core logic hooks
 				add_action( 'init', array( $this, 'finish_login' ) );
 				add_action( 'init', array( $this, 'admin_page_handler' ) );
@@ -140,10 +144,33 @@ if  ( !class_exists('WordpressOpenIDRegistration') ) {
 		/*
 		 * Check to see whether the none, association, and settings tables exist.
 		 */
-		function check_tables() {
-			global $wpdb;
-			if( !isset( $this->_store )) return 'OpenID Store not created correctly, database tables unavailable.';
-			return false;
+		function check_tables($retry=true) {
+			global $wpdb,$table_prefix;
+			if( !isset( $this->_store )) return false;
+			wordpressOpenIDRegistration_Status_Set('wordpress: table_prefix', isset($table_prefix)?'info':false, isset($table_prefix) ? $table_prefix : 'Wordpress $table_prefix must be set!');
+
+			$ok = true;
+			$message = '';
+			$tables = array( $this->_store->associations_table_name, $this->_store->nonces_table_name,
+				$this->_store->settings_table_name, $this->identity_url_table_name );
+			foreach( $tables as $t ) {
+				$message .= empty($message) ? '' : '<br/>';
+				if( $wpdb->get_var("SHOW TABLES LIKE '$t'") != $t ) {
+					$ok = false;
+					$message .= "Table $t doesn't exist.";
+				} else {
+					$message .= "Table $t exists.";
+				}
+			}
+			
+			if( $retry && !$ok) {
+				wordpressOpenIDRegistration_Status_Set( 'database tables', false, $message . '<br/>Trying to create..' );
+				$this->create_tables();
+				$ok = $this->check_tables( false );
+			}
+			
+			wordpressOpenIDRegistration_Status_Set( 'database tables', $ok?'info':false, $message );
+			return $ok;
 		}
 		
 		/*
@@ -683,6 +710,7 @@ function wordpressOpenIDRegistration_Status_Set($slug, $state, $message) {
 	if( !$state ||  WORDPRESSOPENIDREGISTRATION_DEBUG ) error_log('WPOpenID Status: ' . $slug . ': ' . $message);
 }
 
+wordpressOpenIDRegistration_Status_Set('file:error_log', 'info', ini_get('error_log') ? ("Logging errors via PHP's error_log to: " . ini_get('error_log')) : "PHP error_log is not set." );
 
 /* Load required libraries into global context. */
 $wordpressOpenIDRegistration_Required_Files = array(
@@ -698,7 +726,7 @@ ini_set('include_path',ini_get('include_path').':'.dirname(__FILE__));   // Add 
 foreach( $wordpressOpenIDRegistration_Required_Files as $___k => $___v ) {
 	if( file_exists_in_path( $___k ) ) {
 		if( include_once( $___k ) ) {
-			wordpressOpenIDRegistration_Status_Set('file:'.$___k, true, '');
+			wordpressOpenIDRegistration_Status_Set('loading file: '.$___k, true, '');
 			continue;
 		}
 	}
@@ -706,13 +734,6 @@ foreach( $wordpressOpenIDRegistration_Required_Files as $___k => $___v ) {
 }
 ini_restore('include_path');  // Leave no footprints behind
 unset($m);  // otherwise JanRain's XRI.php will leave $m = 1048576
-
-/* Check other status information */
-if( extension_loaded( 'gmp' ) && gmp_init(1) ) {
-	wordpressOpenIDRegistration_Status_Set('lib:gmp', true, '<a href="http://www.php.net/gmp">GMP</a> loaded.' );
-} else {
-	wordpressOpenIDRegistration_Status_Set('lib:gmp', false, '<a href="http://www.php.net/gmp">GMP</a> does not appear to be built into PHP. This is required for performance reasons.' );
-}
 
 
 

@@ -10,12 +10,12 @@
   class WordpressOpenIDRegistrationUI {
 
 	var $oid;
-	var $__flag_use_Viper007Bond_login_form;
+	var $__flag_use_Viper007Bond_login_form = false;
 	
 	function WordpressOpenIDRegistrationUI( $oidref ) {
 		$this->oid = $oidref;
 		add_action( 'admin_menu', array( $this, 'add_admin_panels' ) );
-		if( $oid->enabled ) {  // Add hooks to the Public Wordpress User Interface
+		if( $this->oid->enabled ) {  // Add hooks to the Public Wordpress User Interface
 			add_action( 'login_form', array( $this, 'login_form_v2_insert_fields'));
 			add_action( 'register_form', array( $this, 'openid_wp_register_v2'));
 			add_filter( 'login_errors', array( $this, 'login_form_v2_hide_username_password_errors'));
@@ -167,8 +167,47 @@
 				$list_of_paths[] = $fullpath;
 			}
 			
-			wordpressOpenIDRegistration_Status_Set( 'Include Path', 2, implode('<br/>', $list_of_paths ) );
+			
+			wordpressOpenIDRegistration_Status_Set( 'Include Path', 'info', implode('<br/>', $list_of_paths ) );
+			wordpressOpenIDRegistration_Status_Set( 'PHP version', 'info', phpversion() );
+			wordpressOpenIDRegistration_Status_Set( 'library: GMP library compiled into in PHP', ( extension_loaded('gmp') && gmp_init(1) ), '<a href="http://www.php.net/gmp">GMP</a> does not appear to be built into PHP. This is required for performance reasons.' );
+			
+			global $wp_version;
+			wordpressOpenIDRegistration_Status_Set( 'Wordpress version', 'info', $wp_version );
+			wordpressOpenIDRegistration_Status_Set( 'MySQL version', 'info', @mysql_get_client_info() );
 
+			/* Check for updates via SF RSS feed */
+			@require_once (ABSPATH . WPINC . '/rss.php');
+			$plugins = get_plugins();
+			$plugin_version = (int)str_replace( '$Rev: ', '', $plugins['wpopenid/openid-registration.php']['Version'] );
+			$matches = array();
+			if( function_exists( 'fetch_simplepie' )) {
+				$rss = fetch_simplepie('http://sourceforge.net/export/rss2_projfiles.php?group_id=167532');
+				if ( $rss && $rss->get_item_quantity() > 0 ) {
+					$items = $rss->get_items(0,0);
+					preg_match( '/wpopenid ([0-9]+) released/', $items[0]->get_title(), $matches );
+				}
+			} elseif ( function_exists( 'fetch_rss' )) {
+				$rss = @fetch_rss('http://sourceforge.net/export/rss2_projfiles.php?group_id=167532');
+				if( isset( $rss->items ) && 0 != count( $rss->items )) {
+					preg_match( '/wpopenid ([0-9]+) released/', $rss->items[0]->get_title(), $matches );
+				}				
+			}
+
+			$vercmp_message = "Running version $plugin_version. ";
+			if( $matches[1] ) {
+				$vercmp_message .= "Latest stable release is $matches[1]. ";
+				switch( version_compare( $plugin_version, $matches[1] ) ) {
+					case 1: $vercmp_message .= 'Life on the edge.'; break;
+					case 0: $vercmp_message .= 'Up to date.'; break;
+					case -1: $vercmp_message .= '<a href="http://sourceforge.net/project/showfiles.php?group_id=167532&package_id=190501">A new version of this plugin is available</a>.'; break;
+				}
+			} else {
+				$vercmp_message .= 'Could not contact sourceforge for latest version information.';
+			}
+			wordpressOpenIDRegistration_Status_Set( 'Plugin version', $matches[1], $vercmp_message);			
+			
+			
 			if( $this->oid->enabled ) {	// Display status information
 				?><div class="updated"><p>Status information:</strong><?php
 			} else {
@@ -183,7 +222,7 @@
 					if( $v['state'] === false ) { echo "<dt><span style='color:red;'>[FAIL]</span> $k </dt>"; }
 					elseif( $v['state'] === true ) { echo "<dt><span style='color:green;'>[OK]</span> $k </dt>"; }
 					else { echo "<dt><span style='color:grey;'>[INFO]</span> $k </dt>"; }
-					if( $v['message'] ) echo '<dd>' . $v['message'] . '</dd>';
+					if( $v['state']!==true && $v['message'] ) echo '<dd>' . $v['message'] . '</dd>';
 				}
 			?>
 			</dl></div>
