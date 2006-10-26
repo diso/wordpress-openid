@@ -168,8 +168,8 @@
 			
 			wordpressOpenIDRegistration_Status_Set( 'Include Path', 'info', implode('<br/>', $list_of_paths ) );
 			wordpressOpenIDRegistration_Status_Set( 'PHP version', 'info', phpversion() );
-			wordpressOpenIDRegistration_Status_Set( 'library: GMP library compiled into in PHP', ( extension_loaded('gmp') && @gmp_init(1) ), '<a href="http://www.php.net/gmp">GMP</a> does not appear to be built into PHP. This is highly recommended for performance reasons.' );
-			wordpressOpenIDRegistration_Status_Set( 'library: BCMath library compiled into in PHP', ( extension_loaded('bcmath') && @bcadd(1,1)==2 ), '<a href="http://www.php.net/bc">BCMath</a> does not appear to be built into PHP. GMP is preferred.' );
+			wordpressOpenIDRegistration_Status_Set( 'library: GMP compiled into in PHP', ( extension_loaded('gmp') && @gmp_init(1) ), '<a href="http://www.php.net/gmp">GMP</a> does not appear to be built into PHP. This is highly recommended for performance reasons.' );
+			wordpressOpenIDRegistration_Status_Set( 'library: BCMath compiled into in PHP', ( extension_loaded('bcmath') && @bcadd(1,1)==2 ), '<a href="http://www.php.net/bc">BCMath</a> does not appear to be built into PHP. GMP is preferred.' );
 			
 			global $_Auth_OpenID_math_extensions;
 			$loaded_long_integer_library = Auth_OpenID_detectMathLibrary( $_Auth_OpenID_math_extensions );
@@ -195,14 +195,14 @@
 			} elseif ( function_exists( 'fetch_rss' )) {
 				$rss = @fetch_rss('http://sourceforge.net/export/rss2_projfiles.php?group_id=167532');
 				if( isset( $rss->items ) && 0 != count( $rss->items )) {
-					preg_match( '/wpopenid ([0-9]+) released/', $rss->items[0]->get_title(), $matches );
+					preg_match( '/wpopenid ([0-9]+) released/', $rss->items[0]['title'], $matches );
 				}				
 			}
 
 			$vercmp_message = "Running version $plugin_version. ";
 			if( $matches[1] ) {
 				$vercmp_message .= "Latest stable release is $matches[1]. ";
-				switch( version_compare( $plugin_version, $matches[1] ) ) {
+				switch( version_compare( (int)$plugin_version, (int)$matches[1] ) ) {
 					case 1: $vercmp_message .= 'Life on the edge.'; break;
 					case 0: $vercmp_message .= 'Up to date.'; break;
 					case -1: $vercmp_message .= '<a href="http://sourceforge.net/project/showfiles.php?group_id=167532&package_id=190501">A new version of this plugin is available</a>.'; break;
