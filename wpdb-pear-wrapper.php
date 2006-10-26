@@ -4,7 +4,7 @@ if( class_exists( 'Auth_OpenID_MySQLStore' )) {
  class WP_OpenIDStore extends Auth_OpenID_MySQLStore {
     function WP_OpenIDStore()
     {
-        global $table_prefix, $wpdb;
+        global $wpdb, $table_prefix;
 
         $conn = new WP_OpenIDConnection( $wpdb );
         parent::Auth_OpenID_MySQLStore(

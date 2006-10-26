@@ -10,13 +10,18 @@
   class WordpressOpenIDRegistrationUI {
 
 	var $oid;
+	var $__flag_use_Viper007Bond_login_form;
 	
 	function WordpressOpenIDRegistrationUI( $oidref ) {
 		$this->oid = $oidref;
 		add_action( 'admin_menu', array( $this, 'add_admin_panels' ) );
-		add_action( 'login_form', array( $this, 'login_form_v2_insert_fields'));
-		add_action( 'register_form', array( $this, 'openid_wp_register_v2'));
-		add_filter( 'login_errors', array( $this, 'login_form_v2_hide_username_password_errors'));
+		if( $oid->enabled ) {  // Add hooks to the Public Wordpress User Interface
+			add_action( 'login_form', array( $this, 'login_form_v2_insert_fields'));
+			add_action( 'register_form', array( $this, 'openid_wp_register_v2'));
+			add_filter( 'login_errors', array( $this, 'login_form_v2_hide_username_password_errors'));
+			add_filter( 'register', array( $this, 'openid_wp_sidebar_register' ) );
+			add_filter( 'loginout', array( $this, 'openid_wp_sidebar_loginout' ) );
+		}
 	}
 	
 	function login_form_v2_hide_username_password_errors($r) {
@@ -80,7 +85,7 @@
 	 * Hook. Add sidebar login form, editing Register link.
 	 * Turns SiteAdmin into Profile link in sidebar.
 	 */
-	function ajc_openid_wp_sidebar_register( $link ) {
+	function openid_wp_sidebar_register( $link ) {
 			global $current_user;
 			if( !$current_user->has_cap('edit_posts')  ) {
 				$link = preg_replace( '#<a href="' . get_settings('siteurl') . '/wp-admin/">Site Admin</a>#', '<a href="' . get_settings('siteurl') . '/wp-admin/profile.php">' . __('Profile') . '</a>', $link );
@@ -102,15 +107,15 @@
 			}
 			return $chunk . $link;
 	}
-		
-	function ajc_openid_wp_sidebar_loginout( $link ) {
+
+	function openid_wp_sidebar_loginout( $link ) {
 		return preg_replace( '#action=logout#', 'action=logout&redirect_to=' . urlencode($_SERVER["REQUEST_URI"]), $link );
 	}
 		
 	/*
 	 * Hook. Add OpenID login-n-comment box below the comment form.
 	 */
-	function ajc_openid_wp_comment_form( $id ) {
+	function openid_wp_comment_form( $id ) {
 			global $current_user;
 			if( ! $current_user->id ) { // not logged in, draw a login form below the comment form
 				$style = get_option('oid_enable_selfstyle') ? ('style="background: url('.OPENIDIMAGE.') no-repeat;
@@ -152,28 +157,38 @@
 				
 			}
 
-			if( !$this->oid->enabled ) {
-				global $wordpressOpenIDRegistrationErrors;
-				?>
-				<div class="error"><p><strong>There was a problem loading required libraries. Plugin disabled. Fix this problem, then Deactivate/Reactivate the plugin.</strong></p><ul>
-				<?php
-				foreach( $wordpressOpenIDRegistrationErrors as $k=>$v ) {
-					echo "<li>$k - $v</li>";
-				}
-				?>
-				</ul><p>You can place the requisite files in any of these directories:</p><ul>
-				<?php
-				$relativeto = dirname( __FILE__ ) . DIRECTORY_SEPARATOR;
-				$paths = explode(PATH_SEPARATOR, get_include_path());
-				foreach( $paths as $path ) {
-					$fullpath = $path . DIRECTORY_SEPARATOR;
-					if( $path == '.' ) $fullpath = '';
-					if( substr( $path, 0, 1 ) !== '/' ) $fullpath = $relativeto . $fullpath;
-					echo "<li><em>$fullpath</em></li>";
-				}
-				?></ul></div>
-				<?php
+
+			$relativeto = dirname( __FILE__ ) . DIRECTORY_SEPARATOR;
+			$paths = explode(PATH_SEPARATOR, get_include_path());
+			foreach( $paths as $path ) {
+				$fullpath = $path . DIRECTORY_SEPARATOR;
+				if( $path == '.' ) $fullpath = '';
+				if( substr( $path, 0, 1 ) !== '/' ) $fullpath = $relativeto . $fullpath;
+				$list_of_paths[] = $fullpath;
 			}
+			
+			wordpressOpenIDRegistration_Status_Set( 'Include Path', 2, implode('<br/>', $list_of_paths ) );
+
+			if( $this->oid->enabled ) {	// Display status information
+				?><div class="updated"><p>Status information:</strong><?php
+			} else {
+				?><div class="error"><p><strong>Plugin is currently disabled. Fix the problem, then Deactivate/Reactivate the plugin.</strong></p><?php
+			}
+			global $wordpressOpenIDRegistration_Status;
+			
+			?>
+			<dl>
+			<?php
+				foreach( $wordpressOpenIDRegistration_Status as $k=>$v ) {
+					if( $v['state'] === false ) { echo "<dt><span style='color:red;'>[FAIL]</span> $k </dt>"; }
+					elseif( $v['state'] === true ) { echo "<dt><span style='color:green;'>[OK]</span> $k </dt>"; }
+					else { echo "<dt><span style='color:grey;'>[INFO]</span> $k </dt>"; }
+					if( $v['message'] ) echo '<dd>' . $v['message'] . '</dd>';
+				}
+			?>
+			</dl></div>
+			<?php
+			
 			
 			// Display the options page form
 			$siteurl = get_settings('siteurl');
