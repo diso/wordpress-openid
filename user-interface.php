@@ -12,8 +12,10 @@
 	var $oid;
 	var $__flag_use_Viper007Bond_login_form = false;
 	
-	function WordpressOpenIDRegistrationUI( $oidref ) {
-		$this->oid = $oidref;
+	function WordpressOpenIDRegistrationUI() {
+		global $wordpressOpenIDRegistration;
+		$this->oid = & $wordpressOpenIDRegistration;
+		
 		add_action( 'admin_menu', array( $this, 'add_admin_panels' ) );
 		if( $this->oid->enabled ) {  // Add hooks to the Public Wordpress User Interface
 			if( get_option('oid_enable_commentform') ) add_filter( 'comment_form', array( $this, 'openid_wp_comment_form' ) );

@@ -79,7 +79,7 @@ if  ( !class_exists('WordpressOpenIDRegistration') ) {
 			}
 
 			global $table_prefix,$wordpressOpenIDRegistration_Status;
-			$this->ui = new WordpressOpenIDRegistrationUI( $this );
+			$this->ui = new WordpressOpenIDRegistrationUI();
 			
 			foreach( $wordpressOpenIDRegistration_Status as $k=>$v) {
 				if( false === $v['state'] ) {
@@ -105,6 +105,8 @@ if  ( !class_exists('WordpressOpenIDRegistration') ) {
 				add_filter( 'option_require_name_email', array( $this, 'openid_bypass_option_require_name_email') );
 				add_filter( 'comment_notification_subject', array( $this, 'openid_comment_notification_subject'), 10, 2 );
 				add_filter( 'comment_notification_text', array( $this, 'openid_comment_notification_text'), 10, 2 );
+				
+				add_action( 'delete_user', array( $this, 'drop_all_identities_for_user' ) );	// If user is dropped from database, remove their identities too.
 			}
 
 		}
@@ -271,14 +273,14 @@ if  ( !class_exists('WordpressOpenIDRegistration') ) {
 					restore_error_handler();
 					
 					switch( $response->status ) {
-						case Auth_OpenID_CANCEL:	$this->error = 'OpenID assertion cancelled.'; break;
+						case Auth_OpenID_CANCEL:	$this->error = 'OpenID assertion cancelled'; break;
 						case Auth_OpenID_FAILURE:	$this->error = 'OpenID assertion failed: ' . $response->message; break;
-						case Auth_OpenID_SUCCESS:	$this->error = 'OpenID assertion successful.';
+						case Auth_OpenID_SUCCESS:	$this->error = 'OpenID assertion successful';
 							if( !$this->insert_identity( $response->identity_url ) ) {
 								$this->error = 'OpenID assertion successful, but this URL is already claimed by another user on this blog. This is probably a bug.';
 							}
 							break;
-						default:					$this->error = 'Unknown Status. Bind not successful. This is probably a bug.';
+						default:					$this->error = 'Unknown Status. Bind not successful. This is probably a bug';
 					}
 					break;
 					
@@ -305,7 +307,7 @@ if  ( !class_exists('WordpressOpenIDRegistration') ) {
 		}
 
 
-		/* Application-specific database operatiorns */
+		/* Application-specific database operations */
 		function get_my_identities( $id = 0 ) {
 			global $userdata;
 			if( !$this->enabled ) return array();
@@ -324,6 +326,12 @@ if  ( !class_exists('WordpressOpenIDRegistration') ) {
 				array( (int)$userdata->ID, $url ) );
 			if( $old_show_errors ) $wpdb->show_errors();
 			return $ret;
+		}
+		
+		function drop_all_identities_for_user($userid) {
+			if( !$this->enabled ) return false;
+			return $this->_store->connection->query( "DELETE FROM $this->identity_url_table_name WHERE user_id = %s", 
+				array( (int)$userid ) );
 		}
 		
 		function drop_identity($id) {
