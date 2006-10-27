@@ -334,7 +334,7 @@
 		<div class="wrap">
 		<h2>OpenID Identities</h2>
 		<p>The following OpenID Identity Urls<a title="What is OpenID?" href="http://openid.net/">?</a> are tied to
-		this user account. You can login with equivilent permissions using any of the following identity urls.</p>
+		this user account. You can login with equivalent permissions using any of the following identity urls.</p>
 
 		<?php
 		
