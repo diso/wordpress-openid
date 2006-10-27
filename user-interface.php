@@ -171,9 +171,12 @@
 			wordpressOpenIDRegistration_Status_Set( 'library: GMP compiled into in PHP', ( extension_loaded('gmp') && @gmp_init(1) ), '<a href="http://www.php.net/gmp">GMP</a> does not appear to be built into PHP. This is highly recommended for performance reasons.' );
 			wordpressOpenIDRegistration_Status_Set( 'library: BCMath compiled into in PHP', ( extension_loaded('bcmath') && @bcadd(1,1)==2 ), '<a href="http://www.php.net/bc">BCMath</a> does not appear to be built into PHP. GMP is preferred.' );
 			
-			global $_Auth_OpenID_math_extensions;
-			$loaded_long_integer_library = Auth_OpenID_detectMathLibrary( $_Auth_OpenID_math_extensions );
-			wordpressOpenIDRegistration_Status_Set( 'Loaded long integer library', $loaded_long_integer_library?'info':false, $loaded_long_integer_library?$loaded_long_integer_library['extension']:'No long integer library is loaded! Key calculation will be very slow!' );
+			$loaded_long_integer_library = false;
+			if( function_exists('Auth_OpenID_detectMathLibrary') ) {
+				global $_Auth_OpenID_math_extensions;
+				$loaded_long_integer_library = Auth_OpenID_detectMathLibrary( $_Auth_OpenID_math_extensions );
+			}
+			wordpressOpenIDRegistration_Status_Set( 'Loaded long integer library', $loaded_long_integer_library, $loaded_long_integer_library?$loaded_long_integer_library['extension']:'No long integer library is loaded! Key calculation will be very slow!' );
 			
 			global $wp_version;
 			wordpressOpenIDRegistration_Status_Set( 'Wordpress version', 'info', $wp_version );

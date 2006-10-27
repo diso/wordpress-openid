@@ -60,15 +60,8 @@ if  ( !class_exists('WordpressOpenIDRegistration') ) {
 				echo "<p><strong>$this->error</strong></p>";
 				return;
 			}
-			
-			$loaded_long_integer_library = false
-			if( function_exists('Auth_OpenID_detectMathLibrary') ) {
-				global $_Auth_OpenID_math_extensions;
-				$loaded_long_integer_library = Auth_OpenID_detectMathLibrary( $_Auth_OpenID_math_extensions );
-			}
-			wordpressOpenIDRegistration_Status_Set( 'Loaded long integer library', $loaded_long_integer_library, $loaded_long_integer_library?$loaded_long_integer_library['extension']:'No long integer library is loaded! Key calculation will be very slow!' );
-			
-			if( null == $this->_store = new WP_OpenIDStore() ) {
+						
+			if( !class_exists('WP_OpenIDStore') || (null == $this->_store = new WP_OpenIDStore()) ) {
 				wordpressOpenIDRegistration_Status_Set('object: OpenID Store', false, 'OpenID store could not be created properly.');
 				wordpressOpenIDRegistration_Status_Set('class: WP_OpenIDStore', class_exists('WP_OpenIDStore'),  'This class is provided by the plugin, used to wrap the Wordpress database for PEAR-style database access.');
 				$this->enabled = false;
@@ -76,7 +69,7 @@ if  ( !class_exists('WordpressOpenIDRegistration') ) {
 				wordpressOpenIDRegistration_Status_Set('object: OpenID Store', true, 'OpenID store created properly.');
 			}
 			
-			if( null == $this->_consumer = new Auth_OpenID_Consumer( $this->_store ) ) {
+			if( !class_exists('Auth_OpenID_Consumer') || (null == $this->_consumer = new Auth_OpenID_Consumer( $this->_store )) ) {
 				wordpressOpenIDRegistration_Status_Set('object: OpenID Consumer', false, 'OpenID consumer could not be created properly.');
 				wordpressOpenIDRegistration_Status_Set('class: Auth_OpenID_Consumer', class_exists('Auth_OpenID_Consumer'),  'This class is provided by the JanRain library.');
 				$this->enabled = false;
