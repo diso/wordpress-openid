@@ -178,16 +178,23 @@
 			global $wp_version;
 			wordpressOpenIDRegistration_Status_Set( 'Wordpress version', 'info', $wp_version );
 			wordpressOpenIDRegistration_Status_Set( 'MySQL version', 'info', function_exists('mysql_get_client_info') ? mysql_get_client_info() : 'Mysql client information not available. Very strange, as Wordpress requires MySQL.' );
-
-			wordpressOpenIDRegistration_Status_Set( 'Curl version', Auth_OpenID_CURL_PRESENT, function_exists('curl_version') ? implode(' - ', curl_version()) : 'Curl library is not built into PHP. Cannot use Paranoid HTTP client mode.' );
 			
+			$curl_message = '';
+			if( function_exists('curl_version') ) {
+				$curl_version = curl_version;
+				if(isset($curl_version['version']))  	$curl_message = 'Version ' . $curl_version['version'] . '. ';
+				if(isset($curl_version['ssl_version']))	$curl_message = 'SSL: ' . $curl_version['ssl_version'] . '. ';
+			}
+ 			wordpressOpenIDRegistration_Status_Set( 'Curl version', Auth_OpenID_CURL_PRESENT, function_exists('curl_version') ? $curl_message : 'Curl library is not built into PHP. Cannot use Paranoid HTTP client mode.' );
+
 			/* Check for updates via SF RSS feed */
-			@require_once (ABSPATH . WPINC . '/rss.php');
+			@include_once (ABSPATH . WPINC . '/rss.php');
+			@include_once (ABSPATH . WPINC . '/rss-functions.php');
 			$plugins = get_plugins();
 			$plugin_version = (int)str_replace( '$Rev: ', '', $plugins['wpopenid/openid-registration.php']['Version'] );
 			$matches = array();
 			if( function_exists( 'fetch_simplepie' )) {
-				$rss = fetch_simplepie('http://sourceforge.net/export/rss2_projfiles.php?group_id=167532');
+				$rss = @fetch_simplepie('http://sourceforge.net/export/rss2_projfiles.php?group_id=167532');
 				if ( $rss && $rss->get_item_quantity() > 0 ) {
 					$items = $rss->get_items(0,0);
 					preg_match( '/wpopenid ([0-9]+) released/', $items[0]->get_title(), $matches );
@@ -306,7 +313,7 @@
 
 	function add_admin_panels() {
 		add_options_page('Open ID options', 'OpenID', 8, 'global-openid-options', array( $this, 'options_page')  );
-		add_submenu_page('profile.php', 'Your OpenID Identities', 'Your OpenID Identities', 'read', 'your-openid-identities', array($this, 'profile_panel') );
+		if( $this->oid->enabled ) add_submenu_page('profile.php', 'Your OpenID Identities', 'Your OpenID Identities', 'read', 'your-openid-identities', array($this, 'profile_panel') );
 	}
 
 	function profile_panel() {

@@ -49,16 +49,16 @@ if  ( !class_exists('WordpressOpenIDRegistration') ) {
 		 * Initialize required store and consumer.
 		 */		
 		function WordpressOpenIDRegistration() {
-			global $table_prefix,$wordpressOpenIDRegistration_Status;
-			$this->ui = new WordpressOpenIDRegistrationUI( $this );
-			
-			foreach( $wordpressOpenIDRegistration_Status as $k=>$v) {
-				if( false === $v['state'] ) {
-					$this->enabled = false;
-					$this->error = 'OpenID consumer is Disabled: ' . $v['message'];
-					if( WORDPRESSOPENIDREGISTRATION_DEBUG ) error_log($this->error);
-					return;
-				}
+			/* Create and destroy tables on activate / deactivate of plugin. Everyone should clean up after themselves. */
+			if( function_exists('register_activation_hook') ) {
+				register_activation_hook( 'wpopenid/openid-registration.php', array( $wordpressOpenIDRegistration, 'create_tables' ) );
+				register_deactivation_hook( 'wpopenid/openid-registration.php', array( $wordpressOpenIDRegistration, 'destroy_tables' ) );
+			} else {
+				wordpressOpenIDRegistration_Status_Set('Unsupported Wordpress Version', false, '<em>register_activation_hook</em> first appeared in wp 2.0.');
+				$this->error = 'Unsupported Wordpress Version: The wpopenid plugin requires at least version 2.0. Cannot activate.';
+				$this->enabled = false;
+				echo "<p><strong>$this->error</strong></p>";
+				return;
 			}
 			
 			global $_Auth_OpenID_math_extensions;
@@ -80,15 +80,25 @@ if  ( !class_exists('WordpressOpenIDRegistration') ) {
 			} else {
 				wordpressOpenIDRegistration_Status_Set('object: OpenID Consumer', true, 'OpenID consumer created properly.');
 			}
+
+			global $table_prefix,$wordpressOpenIDRegistration_Status;
+			$this->ui = new WordpressOpenIDRegistrationUI( $this );
 			
-			$this->error = '';
-			$this->action = '';
+			foreach( $wordpressOpenIDRegistration_Status as $k=>$v) {
+				if( false === $v['state'] ) {
+					$this->enabled = false;
+					$this->error = 'OpenID consumer is Disabled: ' . $v['message'];
+					if( WORDPRESSOPENIDREGISTRATION_DEBUG ) error_log($this->error);
+				}
+			}
+			
 			$this->identity_url_table_name = ($table_prefix . 'openid_identities');
 			
-			$this->check_tables();
-			
-			
 			if( $this->enabled ) {	// Add openid core logic hooks
+				$this->error = '';
+				$this->action = '';
+				$this->check_tables();
+
 				add_action( 'init', array( $this, 'finish_login' ) );
 				add_action( 'init', array( $this, 'admin_page_handler' ) );
 
@@ -302,6 +312,7 @@ if  ( !class_exists('WordpressOpenIDRegistration') ) {
 		/* Application-specific database operatiorns */
 		function get_my_identities( $id = 0 ) {
 			global $userdata;
+			if( !$this->enabled ) return array();
 			if( $id ) return $this->_store->connection->getOne( "SELECT meta_value FROM $this->identity_url_table_name WHERE user_id = %s AND uurl_id = %s",
 					array( (int)$userdata->ID, (int)$id ) );
 			return $this->_store->connection->getAll( "SELECT uurl_id,meta_value FROM $this->identity_url_table_name WHERE user_id = %s",
@@ -310,6 +321,7 @@ if  ( !class_exists('WordpressOpenIDRegistration') ) {
 
 		function insert_identity($url) {
 			global $userdata, $wpdb;
+			if( !$this->enabled ) return false;
 			$old_show_errors = $wpdb->show_errors;
 			if( $old_show_errors ) $wpdb->hide_errors();
 			$ret = @$this->_store->connection->query( "INSERT INTO $this->identity_url_table_name (user_id,meta_value) VALUES ( %s, %s )",
@@ -320,11 +332,13 @@ if  ( !class_exists('WordpressOpenIDRegistration') ) {
 		
 		function drop_identity($id) {
 			global $userdata;
+			if( !$this->enabled ) return false;
 			return $this->_store->connection->query( "DELETE FROM $this->identity_url_table_name WHERE user_id = %s AND uurl_id = %s",
 				array( (int)$userdata->ID, (int)$id ) );
 		}
 		
 		function get_user_by_identity($url) {
+			if( !$this->enabled ) return false;
 			return $this->_store->connection->getOne( "SELECT user_id FROM $this->identity_url_table_name WHERE meta_value = %s",
 				array( $url ) );
 		}
@@ -748,9 +762,5 @@ add_option( 'oid_trust_root', '', 'The Open ID trust root' );
 add_option( 'oid_enable_selfstyle', true, 'Use internal style rules' );
 add_option( 'oid_enable_loginform', true, 'Display OpenID box in login form' );
 add_option( 'oid_enable_commentform', true, 'Display OpenID box in comment form' );
-
-/* Create and destroy tables on activate / deactivate of plugin. Everyone should clean up after themselves. */
-register_activation_hook( 'wpopenid/openid-registration.php', array( $wordpressOpenIDRegistration, 'create_tables' ) );
-register_deactivation_hook( 'wpopenid/openid-registration.php', array( $wordpressOpenIDRegistration, 'destroy_tables' ) );
 
 ?>
