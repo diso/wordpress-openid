@@ -63,6 +63,7 @@ if  ( !class_exists('WordpressOpenIDRegistration') ) {
 						
 			if( !class_exists('WP_OpenIDStore') || (null == $this->_store = new WP_OpenIDStore()) ) {
 				wordpressOpenIDRegistration_Status_Set('object: OpenID Store', false, 'OpenID store could not be created properly.');
+				wordpressOpenIDRegistration_Status_Set('class: Auth_OpenID_MySQLStore', class_exists('Auth_OpenID_MySQLStore'), 'This class is provided by the JanRain library, used to store association and nonce data.');
 				wordpressOpenIDRegistration_Status_Set('class: WP_OpenIDStore', class_exists('WP_OpenIDStore'),  'This class is provided by the plugin, used to wrap the Wordpress database for PEAR-style database access.');
 				$this->enabled = false;
 			} else {
@@ -71,7 +72,7 @@ if  ( !class_exists('WordpressOpenIDRegistration') ) {
 			
 			if( !class_exists('Auth_OpenID_Consumer') || (null == $this->_consumer = new Auth_OpenID_Consumer( $this->_store )) ) {
 				wordpressOpenIDRegistration_Status_Set('object: OpenID Consumer', false, 'OpenID consumer could not be created properly.');
-				wordpressOpenIDRegistration_Status_Set('class: Auth_OpenID_Consumer', class_exists('Auth_OpenID_Consumer'),  'This class is provided by the JanRain library.');
+				wordpressOpenIDRegistration_Status_Set('class: Auth_OpenID_Consumer', class_exists('Auth_OpenID_Consumer'),  'This class is provided by the JanRain library, does the heavy lifting.');
 				$this->enabled = false;
 			} else {
 				wordpressOpenIDRegistration_Status_Set('object: OpenID Consumer', true, 'OpenID consumer created properly.');
@@ -99,7 +100,6 @@ if  ( !class_exists('WordpressOpenIDRegistration') ) {
 				add_action( 'init', array( $this, 'admin_page_handler' ) );
 
 				if( get_option('oid_enable_loginform') )   add_action('wp_authenticate', array( $this, 'wp_authenticate' ) );
-				if( get_option('oid_enable_commentform') ) add_filter( 'comment_form',   array( $this, 'openid_wp_comment_form' ) );
 
 				add_action( 'preprocess_comment', array( $this, 'openid_wp_comment_tagging' ) );
 				add_filter( 'option_require_name_email', array( $this, 'openid_bypass_option_require_name_email') );
@@ -208,7 +208,7 @@ if  ( !class_exists('WordpressOpenIDRegistration') ) {
 				$error = $this->error;
 			}
 			
-			ob_start( array( $this->ui, 'openid_wp_login_ob' ) );
+			if( get_option('oid_enable_loginform') ) ob_start( array( $this->ui, 'openid_wp_login_ob' ) );
 		}
 
 
@@ -720,7 +720,11 @@ $wordpressOpenIDRegistration_Status = array();
 function wordpressOpenIDRegistration_Status_Set($slug, $state, $message) {
 	global $wordpressOpenIDRegistration_Status;
 	$wordpressOpenIDRegistration_Status[$slug] = array('state'=>$state,'message'=>$message);
-	if( !$state ||  WORDPRESSOPENIDREGISTRATION_DEBUG ) error_log('WPOpenID Status: ' . strip_tags($slug) . ': ' . strip_tags(str_replace('<br/>'," ", $message)) );
+	if( !$state || WORDPRESSOPENIDREGISTRATION_DEBUG ) {
+		if( $state === true ) $state = 'ok';
+		if( $state === false ) $state = 'fail';
+		error_log('WPOpenID Status: ' . strip_tags($slug) . " [$state]" . ( $state==='ok' ? '': strip_tags(str_replace('<br/>'," ", ': ' . $message))  ) );
+	}
 }
 
 wordpressOpenIDRegistration_Status_Set('file:error_log', 'info', ini_get('error_log') ? ("Logging errors via PHP's error_log to: " . ini_get('error_log')) : "PHP error_log is not set." );

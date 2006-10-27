@@ -16,10 +16,13 @@
 		$this->oid = $oidref;
 		add_action( 'admin_menu', array( $this, 'add_admin_panels' ) );
 		if( $this->oid->enabled ) {  // Add hooks to the Public Wordpress User Interface
-			add_action( 'login_form', array( $this, 'login_form_v2_insert_fields'));
-			add_action( 'register_form', array( $this, 'openid_wp_register_v2'));
-			add_filter( 'login_errors', array( $this, 'login_form_v2_hide_username_password_errors'));
-			add_filter( 'register', array( $this, 'openid_wp_sidebar_register' ) );
+			if( get_option('oid_enable_commentform') ) add_filter( 'comment_form', array( $this, 'openid_wp_comment_form' ) );
+			if( get_option('oid_enable_loginform') ) {
+				add_action( 'login_form', array( $this, 'login_form_v2_insert_fields'));
+				add_action( 'register_form', array( $this, 'openid_wp_register_v2'));
+				add_filter( 'login_errors', array( $this, 'login_form_v2_hide_username_password_errors'));
+				add_filter( 'register', array( $this, 'openid_wp_sidebar_register' ) );
+			}
 			add_filter( 'loginout', array( $this, 'openid_wp_sidebar_loginout' ) );
 		}
 	}
@@ -220,7 +223,7 @@
 			} else {
 				$vercmp_message .= 'Could not contact sourceforge for latest version information.';
 			}
-			wordpressOpenIDRegistration_Status_Set( 'Plugin version', $matches[1], $vercmp_message);			
+			wordpressOpenIDRegistration_Status_Set( 'Plugin version', 'info', $vercmp_message);
 			wordpressOpenIDRegistration_Status_Set( '<strong>Overall Plugin Status</strong>', $this->oid->enabled, 'There are problems above that must be dealt with before the plugin can be used.' );
 
 			?>
