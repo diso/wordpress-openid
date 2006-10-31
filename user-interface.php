@@ -12,7 +12,9 @@
 	var $oid;  // Hold core logic instance
 	var $__flag_use_Viper007Bond_login_form = false;
 	
-	function WordpressOpenIDRegistrationUI() {
+	function WordpressOpenIDRegistrationUI() {}
+	
+	function startup() {
 		global $wordpressOpenIDRegistration_Status;
 		
 		add_action( 'admin_menu', array( $this, 'add_admin_panels' ) );
@@ -26,7 +28,7 @@
 			foreach( $wordpressOpenIDRegistration_Status as $k=>$v) {
 				if( false === $v['state'] ) {
 					$this->oid->enabled = false;
-					if( WORDPRESSOPENIDREGISTRATION_DEBUG ) error_log( 'OpenID consumer is Disabled: ' . $v['message'] . ' : By some requirement before starting UI.');
+					error_log( 'OpenID consumer is Disabled: ' . $v['message'] . ' : By some requirement before starting UI.');
 				}
 			}
 			

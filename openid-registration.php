@@ -721,7 +721,9 @@ if  ( !class_exists('WordpressOpenIDRegistration') ) {
 
 /* Bootstap operations */
 
-
+/* Check whether the specified file exists somewhere in PHP's path.
+ * Used for sanity-checking require() or include().
+ */
 if( !function_exists( 'file_exists_in_path' ) ) {
 	function file_exists_in_path ($file) {
 		if( file_exists( $file ) ) return $file;
@@ -731,19 +733,14 @@ if( !function_exists( 'file_exists_in_path' ) ) {
 			$fullpath = $path . DIRECTORY_SEPARATOR . $file;
 			if( substr( $path, 0, 1 ) !== '/' )
 				$fullpath = $relativeto . $fullpath;
-			
 			if (file_exists($fullpath)) return $fullpath;
 		}
 		return false;
 	}
 }
 
-
-
-
 /* State of the Plugin */
 $wordpressOpenIDRegistration_Status = array();
-  //  $['slug'] => array{ 'state' => boolean, 'message' => string }
 
 function wordpressOpenIDRegistration_Status_Set($slug, $state, $message) {
 	global $wordpressOpenIDRegistration_Status;
@@ -797,7 +794,6 @@ function wordpressOpenIDRegistration_Load_Required_Files( $wordpressOpenIDRegist
 
 /* Load required libraries into global context. */
 wordpressOpenIDRegistration_Load_Required_Files( $wordpressOpenIDRegistration_Required_Files );
-//
 
 /* Add custom OpenID options */
 add_option( 'oid_trust_root', get_settings('siteurl'), 'The Open ID trust root' );
@@ -808,6 +804,7 @@ add_option( 'oid_enable_commentform', true, 'Display OpenID box in comment form'
 /* Instantiate User Interface class */
 if( class_exists('WordpressOpenIDRegistrationUI')) {
 	$wordpressOpenIDRegistrationUI = new WordpressOpenIDRegistrationUI();
+	$wordpressOpenIDRegistrationUI->startup();
 } else {
 	echo '<div><p><strong>The Wordpress OpenID Registration User Interface class could not be loaded. Make sure wpopenid/user-interface.php was uploaded properly.</strong></p></div>';
 }
