@@ -59,12 +59,6 @@ if  ( !class_exists('WordpressOpenIDRegistration') ) {
 				echo "<p><strong>$this->error</strong></p>";
 				return;
 			}
-			
-			if( !class_exists('Services_Yadis_Yadis') || !method_exists(Services_Yadis_Yadis, 'curlPresent')) {
-				// In lieu of a real version number, detect the Yadis library's Curl detection, which changed in 1.2.0
-				// As this is a fairly volatile test, it's only a warning.
-				wordpressOpenIDRegistration_Status_Set('Unsupported Yadis Library Version', 'info', 'If the Services/Yadis/Yadis.php file is loaded, then it does not provide the expected interface. Version 1.2.0 or better is recommended.');
-			}
 
 			if( !class_exists('WP_OpenIDStore') || (null == $this->_store = new WP_OpenIDStore()) ) {
 				wordpressOpenIDRegistration_Status_Set('object: OpenID Store', false, 'OpenID store could not be created properly.');
