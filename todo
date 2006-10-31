@@ -1,4 +1,9 @@
 Roadmap for MU support:
-
 Trustroot should have a * if constant( "VHOST" ) !== 'no'
 
+
+Returns from begin() need better error handling.
+Username should be normalized to http-domain-com-path-component-query-component
+
+Incompatible with Clutter Free. (Global vars?)
+Incompatible with K2's comments. (Comment type?)

@@ -9,23 +9,37 @@
 {
   class WordpressOpenIDRegistrationUI {
 
-	var $oid;
+	var $oid;  // Hold core logic instance
 	var $__flag_use_Viper007Bond_login_form = false;
 	
 	function WordpressOpenIDRegistrationUI() {
-		global $wordpressOpenIDRegistration;
-		$this->oid = & $wordpressOpenIDRegistration;
+		$enabled = true;
+		global $wordpressOpenIDRegistration_Status;
 		
+		foreach( $wordpressOpenIDRegistration_Status as $k=>$v) {
+			if( false === $v['state'] ) {
+				$enabled = false;
+				$this->error = 'OpenID consumer is Disabled: ' . $v['message'];
+				if( WORDPRESSOPENIDREGISTRATION_DEBUG ) error_log($this->error);
+			}
+		}
+
 		add_action( 'admin_menu', array( $this, 'add_admin_panels' ) );
-		if( $this->oid->enabled ) {  // Add hooks to the Public Wordpress User Interface
+		
+		$this->oid = new WordpressOpenIDRegistration();
+
+		if( null !== $this->oid && $this->oid->enabled ) {  // Add hooks to the Public Wordpress User Interface
+			add_action('wp_authenticate', array( $this->oid, 'wp_authenticate' ));
 			if( get_option('oid_enable_commentform') ) add_filter( 'comment_form', array( $this, 'openid_wp_comment_form' ) );
 			if( get_option('oid_enable_loginform') ) {
 				add_action( 'login_form', array( $this, 'login_form_v2_insert_fields'));
 				add_action( 'register_form', array( $this, 'openid_wp_register_v2'));
 				add_filter( 'login_errors', array( $this, 'login_form_v2_hide_username_password_errors'));
-				add_filter( 'register', array( $this, 'openid_wp_sidebar_register' ) );
+				add_filter( 'register', array( $this, 'openid_wp_sidebar_register' ));
 			}
-			add_filter( 'loginout', array( $this, 'openid_wp_sidebar_loginout' ) );
+			add_filter( 'loginout', array( $this, 'openid_wp_sidebar_loginout' ));
+		} else {
+			add_action('admin_notices', array( $this, 'admin_notices_plugin_problem_warning' ));
 		}
 	}
 	
@@ -133,6 +147,12 @@
 	}
 
 
+	/* Spam up the admin interface with warnings */
+	function admin_notices_plugin_problem_warning() {
+		?><div class="error"><p><strong>The Wordpress OpenID plugin is not active.</strong>
+		Check <a href="options-general.php?page=global-openid-options">OpenID Options</a> for
+		a full diagnositic report.</p></div><?php
+	}
 	/*
 	 * Display and handle updates from the Admin screen options page.
 	 */
@@ -193,8 +213,9 @@
 				if(isset($curl_version['version']))  	$curl_message = 'Version ' . $curl_version['version'] . '. ';
 				if(isset($curl_version['ssl_version']))	$curl_message = 'SSL: ' . $curl_version['ssl_version'] . '. ';
 			}
- 			wordpressOpenIDRegistration_Status_Set( 'Curl version', Auth_OpenID_CURL_PRESENT, function_exists('curl_version') ? $curl_message : 'Curl library is not built into PHP. Cannot use Paranoid HTTP client mode.' );
-
+ 			wordpressOpenIDRegistration_Status_Set( 'Curl version', function_exists('curl_version'), function_exists('curl_version') ? $curl_message :
+					'This PHP installation does not have support for libcurl. Some functionality, such as fetching https:// URLs, will be missing and performance will not be as good. See <a href="http://www.php.net/manual/en/ref.curl.php">php.net/manual/en/ref.curl.php</a> about enabling libcurl support for PHP.');
+			
 			/* Check for updates via SF RSS feed */
 			@include_once (ABSPATH . WPINC . '/rss.php');
 			@include_once (ABSPATH . WPINC . '/rss-functions.php');
@@ -317,8 +338,6 @@
     			<?php
 	} // end function options_page
 
-
-
 	function add_admin_panels() {
 		add_options_page('Open ID options', 'OpenID', 8, 'global-openid-options', array( $this, 'options_page')  );
 		if( $this->oid->enabled ) add_submenu_page('profile.php', 'Your OpenID Identities', 'Your OpenID Identities', 'read', 'your-openid-identities', array($this, 'profile_panel') );
@@ -328,9 +347,12 @@
 		if( current_user_can('read') ) {
 		?>
 
-		<?php  if( $this->oid->error ) { ?>
+		<?php if( 'success' == $this->oid->action ) { ?>
+			<div class="updated"><p><strong>Success: <?php echo $this->oid->error; ?>.</strong></p></div>
+		<?php } elseif( '' !== $this->oid->error ) { ?>
 			<div class="error"><p><strong>Error: <?php echo $this->oid->error; ?>.</strong></p></div>
 		<?php } ?>
+
 		<div class="wrap">
 		<h2>OpenID Identities</h2>
 		<p>The following OpenID Identity Urls<a title="What is OpenID?" href="http://openid.net/">?</a> are tied to

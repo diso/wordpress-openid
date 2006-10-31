@@ -1,8 +1,8 @@
-1. Installing the JanRain PHP OpenID library
+1. Installing the JanRain PHP OpenID library version 1.2.0
 
 The plugin needs to find the following files in PHP's path, along with the full content of
 the Auth and Services directories from the library's compressed source archive. Directories
-such as Tests, admin, doc, examples are unnecessary. 
+such as Tests, admin, doc, examples are unnecessary.
 
  Auth/OpenID.php
  Services/Yadis/Yadis.php
