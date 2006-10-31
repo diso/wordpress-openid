@@ -13,23 +13,23 @@
 	var $__flag_use_Viper007Bond_login_form = false;
 	
 	function WordpressOpenIDRegistrationUI() {
-		$enabled = true;
 		global $wordpressOpenIDRegistration_Status;
 		
-		foreach( $wordpressOpenIDRegistration_Status as $k=>$v) {
-			if( false === $v['state'] ) {
-				$enabled = false;
-				$this->error = 'OpenID consumer is Disabled: ' . $v['message'];
-				if( WORDPRESSOPENIDREGISTRATION_DEBUG ) error_log($this->error);
-			}
-		}
-
 		add_action( 'admin_menu', array( $this, 'add_admin_panels' ) );
 		
-		$this->oid = new WordpressOpenIDRegistration(); // Bootstrap Level 1
-		
-		if( null !== $this->oid && $this->oid->enabled ) {  // Add hooks to the Public Wordpress User Interface
+		if( class_exists('WordpressOpenIDRegistration'))
+			$this->oid = new WordpressOpenIDRegistration(); // Bootstrap Level 1
+
+		if( null !== $this->oid and $this->oid->enabled ) {  // Add hooks to the Public Wordpress User Interface
 			if( WORDPRESSOPENIDREGISTRATION_DEBUG ) error_log("Bootstrap Level 1 OK");
+			
+			foreach( $wordpressOpenIDRegistration_Status as $k=>$v) {
+				if( false === $v['state'] ) {
+					$this->oid->enabled = false;
+					if( WORDPRESSOPENIDREGISTRATION_DEBUG ) error_log( 'OpenID consumer is Disabled: ' . $v['message'] . ' : By some requirement before starting UI.');
+				}
+			}
+			
 			$this->oid->startup(); // Bootstrap Level 2
 			if( $this->oid->enabled ) {  // Add hooks to the Public Wordpress User Interface
 				if( WORDPRESSOPENIDREGISTRATION_DEBUG ) error_log("Bootstrap Level 2 OK");
@@ -54,8 +54,8 @@
 	
 	function login_form_v2_hide_username_password_errors($r) {
 		if( $_POST['openid_url']
-			|| $_GET['action'] == 'loginopenid'
-			|| $_GET['action'] == 'commentopenid' ) return $this->oid->error;
+			or $_GET['action'] == 'loginopenid'
+			or $_GET['action'] == 'commentopenid' ) return $this->oid->error;
 		return $r;
 	}
 
@@ -166,12 +166,14 @@
 	 * Display and handle updates from the Admin screen options page.
 	 */
 	function options_page() {
+			if( WORDPRESSOPENIDREGISTRATION_DEBUG ) error_log("Poststrap Level 3: OID " . ($this->oid->enabled? 'Enabled':'Disabled' ) );
+		
 			// if we're posted back an update, let's set the values here
 			if ( isset($_POST['info_update']) ) {
 			
 				$trust = $_POST['oid_trust_root'];
-				if($trust == null ) $trust = get_settings('siteurl');
-	
+				if( $trust == null ) $trust = get_settings('siteurl');
+				
 				$error = '';
 				if( $this->oid->openid_is_url($trust) ) {
 					update_option('oid_trust_root', $trust);
@@ -183,7 +185,7 @@
 				update_option( 'oid_enable_loginform', isset($_POST['enable_loginform']) ? true : false );
 				update_option( 'oid_enable_commentform', isset($_POST['enable_commentform']) ? true : false );
 				
-				if ($error != '') {
+				if ($error !== '') {
 					echo '<div class="error"><p><strong>At least one of Open ID options was NOT updated</strong>'.$error.'</p></div>';
 				} else {
 					echo '<div class="updated"><p><strong>Open ID options updated</strong></p></div>';
@@ -202,15 +204,17 @@
 			
 			wordpressOpenIDRegistration_Status_Set( 'Include Path', 'info', implode('<br/>', $list_of_paths ) );
 			wordpressOpenIDRegistration_Status_Set( 'PHP version', 'info', phpversion() );
-			wordpressOpenIDRegistration_Status_Set( 'library: GMP compiled into in PHP', ( extension_loaded('gmp') && @gmp_init(1) ), '<a href="http://www.php.net/gmp">GMP</a> does not appear to be built into PHP. This is highly recommended for performance reasons.' );
-			wordpressOpenIDRegistration_Status_Set( 'library: BCMath compiled into in PHP', ( extension_loaded('bcmath') && @bcadd(1,1)==2 ), '<a href="http://www.php.net/bc">BCMath</a> does not appear to be built into PHP. GMP is preferred.' );
+			wordpressOpenIDRegistration_Status_Set( 'library: GMP compiled into in PHP', ( extension_loaded('gmp') and @gmp_init(1) ), '<a href="http://www.php.net/gmp">GMP</a> does not appear to be built into PHP. This is highly recommended for performance reasons.' );
+			wordpressOpenIDRegistration_Status_Set( 'library: BCMath compiled into in PHP', ( extension_loaded('bcmath') and @bcadd(1,1)==2 ), '<a href="http://www.php.net/bc">BCMath</a> does not appear to be built into PHP. GMP is preferred.' );
 			
 			$loaded_long_integer_library = false;
 			if( function_exists('Auth_OpenID_detectMathLibrary') ) {
 				global $_Auth_OpenID_math_extensions;
 				$loaded_long_integer_library = Auth_OpenID_detectMathLibrary( $_Auth_OpenID_math_extensions );
 			}
-			wordpressOpenIDRegistration_Status_Set( 'Loaded long integer library', $loaded_long_integer_library, $loaded_long_integer_library?$loaded_long_integer_library['extension']:'No long integer library is loaded! Key calculation will be very slow!' );
+			wordpressOpenIDRegistration_Status_Set( 'Loaded long integer library', $loaded_long_integer_library==null?false:'info', $loaded_long_integer_library?$loaded_long_integer_library['extension']:'No long integer library is loaded! Key calculation will be very slow!' );
+			
+			if( WORDPRESSOPENIDREGISTRATION_DEBUG ) error_log("Poststrap Level 3.5: OID " . ($this->oid->enabled? 'Enabled':'Disabled' ) );
 			
 			global $wp_version;
 			wordpressOpenIDRegistration_Status_Set( 'Wordpress version', 'info', $wp_version );
@@ -233,16 +237,18 @@
 			$matches = array();
 			if( function_exists( 'fetch_simplepie' )) {
 				$rss = @fetch_simplepie('http://sourceforge.net/export/rss2_projfiles.php?group_id=167532');
-				if ( $rss && $rss->get_item_quantity() > 0 ) {
+				if ( $rss and $rss->get_item_quantity() > 0 ) {
 					$items = $rss->get_items(0,0);
 					preg_match( '/wpopenid ([0-9]+) released/', $items[0]->get_title(), $matches );
 				}
 			} elseif ( function_exists( 'fetch_rss' )) {
 				$rss = @fetch_rss('http://sourceforge.net/export/rss2_projfiles.php?group_id=167532');
-				if( isset( $rss->items ) && 0 != count( $rss->items )) {
+				if( isset( $rss->items ) and 0 != count( $rss->items )) {
 					preg_match( '/wpopenid ([0-9]+) released/', $rss->items[0]['title'], $matches );
 				}				
 			}
+
+			if( WORDPRESSOPENIDREGISTRATION_DEBUG ) error_log("Poststrap Level 3.6: OID " . ($this->oid->enabled? 'Enabled':'Disabled' ) );
 
 			$vercmp_message = "Running version $plugin_version. ";
 			if( $matches[1] ) {
@@ -256,7 +262,7 @@
 				$vercmp_message .= 'Could not contact sourceforge for latest version information.';
 			}
 			wordpressOpenIDRegistration_Status_Set( 'Plugin version', 'info', $vercmp_message);
-			wordpressOpenIDRegistration_Status_Set( '<strong>Overall Plugin Status</strong>', $this->oid->enabled, 'There are problems above that must be dealt with before the plugin can be used.' );
+			wordpressOpenIDRegistration_Status_Set( '<strong>Overall Plugin Status</strong>', ($this->oid->enabled), 'There are problems above that must be dealt with before the plugin can be used.' );
 
 			?>
 			<style>
@@ -278,7 +284,7 @@
 					if( $v['state'] === false ) { echo "<dt><span style='color:red;'>[FAIL]</span> $k </dt>"; }
 					elseif( $v['state'] === true ) { echo "<dt><span style='color:green;'>[OK]</span> $k </dt>"; }
 					else { echo "<dt><span style='color:grey;'>[INFO]</span> $k </dt>"; }
-					if( $v['state']!==true && $v['message'] ) echo '<dd>' . $v['message'] . '</dd>';
+					if( $v['state']!==true and $v['message'] ) echo '<dd>' . $v['message'] . '</dd>';
 				}
 			?>
 			</dl></div>

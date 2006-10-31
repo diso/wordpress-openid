@@ -48,6 +48,8 @@ if  ( !class_exists('WordpressOpenIDRegistration') ) {
 		 * Initialize required store and consumer, making a few sanity checks.
 		 */
 		function WordpressOpenIDRegistration() {
+			$this->enabled = true;  // Optimisitic
+			
 			/* Create and destroy tables on activate / deactivate of plugin. Everyone should clean up after themselves. */
 			if( function_exists('register_activation_hook') ) {
 				//register_activation_hook( 'wpopenid/openid-registration.php', array( $this, 'create_tables' ) );
@@ -57,31 +59,28 @@ if  ( !class_exists('WordpressOpenIDRegistration') ) {
 				$this->error = 'Unsupported Wordpress Version: The wpopenid plugin requires at least version 2.0. Cannot activate.';
 				$this->enabled = false;
 				echo "<p><strong>$this->error</strong></p>";
-				return;
 			}
 
 			$this->_store = new WP_OpenIDStore();
-			if( !class_exists('WP_OpenIDStore') || (null === $this->_store) ) {
+			if( !class_exists('WP_OpenIDStore') or (null === $this->_store) ) {
 				wordpressOpenIDRegistration_Status_Set('object: OpenID Store', false, 'OpenID store could not be created properly.');
 				wordpressOpenIDRegistration_Status_Set('class: Auth_OpenID_MySQLStore', class_exists('Auth_OpenID_MySQLStore'), 'This class is provided by the JanRain library, used to store association and nonce data.');
 				wordpressOpenIDRegistration_Status_Set('class: WP_OpenIDStore', class_exists('WP_OpenIDStore'),  'This class is provided by the plugin, used to wrap the Wordpress database for PEAR-style database access. It\'s provided by <code>wpdb-pear-wrapper.php</code>, did you upload it?');
 				$this->enabled = false;
-				return;
 			} else {
 				wordpressOpenIDRegistration_Status_Set('object: OpenID Store', true, 'OpenID store created properly.');
 			}
 			
 			$this->_consumer = new Auth_OpenID_Consumer( $this->_store );
-			if( !class_exists('Auth_OpenID_Consumer') || (null === $this->_consumer) ) {
+			if( !class_exists('Auth_OpenID_Consumer') or (null === $this->_consumer) ) {
 				wordpressOpenIDRegistration_Status_Set('object: OpenID Consumer', false, 'OpenID consumer could not be created properly.');
 				wordpressOpenIDRegistration_Status_Set('class: Auth_OpenID_Consumer', class_exists('Auth_OpenID_Consumer'),  'This class is provided by the JanRain library, does the heavy lifting.');
 				$this->enabled = false;
-				return;
 			} else {
 				wordpressOpenIDRegistration_Status_Set('object: OpenID Consumer', true, 'OpenID consumer created properly.');
 			}
 
-			if( false === get_option('oid_trust_root') || '' === get_option('oid_trust_root') ) {
+			if( false === get_option('oid_trust_root') or '' === get_option('oid_trust_root') ) {
 				wordpressOpenIDRegistration_Status_Set('Option: Trust Root', 'info', 'You must specify the Trust Root paramater on the OpenID Options page. Commenters will be asked whether they trust this url, and its decedents, to know that they are logged in and control their identity url. Include the trailing slash.');
 			}
 
@@ -94,7 +93,8 @@ if  ( !class_exists('WordpressOpenIDRegistration') ) {
 			global $table_prefix;
 			$this->identity_url_table_name = ($table_prefix . 'openid_identities');
 			if( WORDPRESSOPENIDREGISTRATION_DEBUG ) error_log("Bootstrap -- checking tables");
-			$this->check_tables();
+			
+			if( $this->enabled ) $this->enabled = $this->check_tables();
 			
 			if( $this->enabled ) {	// Everything looks fine. Add hooks between Plugin Core Logic and Wordpress
 				if( WORDPRESSOPENIDREGISTRATION_DEBUG ) error_log("Bootstrap Level 1.5 OK");
@@ -118,17 +118,17 @@ if  ( !class_exists('WordpressOpenIDRegistration') ) {
 		 * Create tables if needed by running dbDelta calls. Upgrade safe. Called on plugin activate.
 		 */
 		function create_tables() {
-			if( !$this->enabled ) {  // do nothing if something bad happened
+			if( false == $this->enabled ) {  // do nothing if something bad happened
 				$this->error = 'OpenID Consumer could not be activated, something bad happened. Skipping table create. Check libraries.';
 				if( WORDPRESSOPENIDREGISTRATION_DEBUG ) error_log($this->error);
 				echo $this->error;
-				return;
+				return false;
 			}
 			if( null == $this->_store ) {
 				$this->error = 'OpenID Consumer could not be activated, because the store could not be created properly. Are the database files in place?';
 				if( WORDPRESSOPENIDREGISTRATION_DEBUG ) error_log($this->error);
 				echo $this->error;
-				return;				
+				return false;				
 			}
 			require_once(ABSPATH . '/wp-admin/upgrade-functions.php');
 			$this->_store->dbDelta();
@@ -148,7 +148,7 @@ if  ( !class_exists('WordpressOpenIDRegistration') ) {
 		function destroy_tables() {
 			global $wpdb;
 			if( !isset( $this->_store )) {
-				$this->error = 'OpenIDConsumer: Disabled. Cannot locate libraries, therefore cannot clean up database tables.';
+				$this->error = 'OpenIDConsumer: Disabled. Cannot locate libraries, therefore cannot clean up database tables. Fix the libraries, or drop the tables yourself.';
 				if( WORDPRESSOPENIDREGISTRATION_DEBUG ) error_log($this->error);
 				echo $this->error;
 				return;
@@ -159,7 +159,7 @@ if  ( !class_exists('WordpressOpenIDRegistration') ) {
 			$sql = 'drop table '. $this->_store->nonces_table_name;
 			$wpdb->query($sql);
 			$sql = 'drop table '. $this->_store->settings_table_name;
-			$wpdb->query($sql);			
+			$wpdb->query($sql);
 		}
 		
 		/*
@@ -184,13 +184,13 @@ if  ( !class_exists('WordpressOpenIDRegistration') ) {
 				}
 			}
 			
-			if( $retry && !$ok) {
-				wordpressOpenIDRegistration_Status_Set( 'database tables', false, $message . '<br/>Trying to create..' );
+			if( $retry and !$ok) {
+				wordpressOpenIDRegistration_Status_Set( 'database tables', false, 'Tables not created properly. Trying to create..' );
 				$this->create_tables();
 				$ok = $this->check_tables( false );
+			} else {
+				wordpressOpenIDRegistration_Status_Set( 'database tables', $ok?'info':false, $message );
 			}
-			
-			wordpressOpenIDRegistration_Status_Set( 'database tables', $ok?'info':false, $message );
 			return $ok;
 		}
 		
@@ -199,7 +199,7 @@ if  ( !class_exists('WordpressOpenIDRegistration') ) {
 		 */
 		function customer_error_handler($errno, $errmsg, $filename, $linenum, $vars) {
 			if( (2048 & $errno) == 2048 ) return;
-			error_log( "Error $errno: $errmsg in $filename :$linenum");
+			error_log( "Library Error $errno: $errmsg in $filename :$linenum");
 		}
 
  
@@ -601,7 +601,7 @@ if  ( !class_exists('WordpressOpenIDRegistration') ) {
 					$comment_id = wp_new_comment( $commentdata );
 				}
 				
-				if( $redirect_to == '/wp-admin' && !$user->has_cap('edit_posts') ) $redirect_to = '/wp-admin/profile.php';
+				if( $redirect_to == '/wp-admin' and !$user->has_cap('edit_posts') ) $redirect_to = '/wp-admin/profile.php';
 				wp_redirect( $redirect_to );
 			}
 
@@ -705,7 +705,7 @@ if  ( !class_exists('WordpressOpenIDRegistration') ) {
 			if( $this->flag_doing_openid_comment ) {
 				$comment = get_comment( $comment_id );
 				
-				if( 'openid' == $comment->comment_type && empty( $subject ) ) {
+				if( 'openid' == $comment->comment_type and empty( $subject ) ) {
 					$blogname = get_option('blogname');
 					$post = get_post($comment->comment_post_ID);
 					$subject = sprintf( __('[%1$s] OpenID Comment: "%2$s"'), $blogname, $post->post_title );
@@ -748,10 +748,11 @@ $wordpressOpenIDRegistration_Status = array();
 function wordpressOpenIDRegistration_Status_Set($slug, $state, $message) {
 	global $wordpressOpenIDRegistration_Status;
 	$wordpressOpenIDRegistration_Status[$slug] = array('state'=>$state,'message'=>$message);
-	if( !$state || WORDPRESSOPENIDREGISTRATION_DEBUG ) {
-		if( $state === true ) $state = 'ok';
-		if( $state === false ) $state = 'fail';
-		error_log('WPOpenID Status: ' . strip_tags($slug) . " [$state]" . ( $state==='ok' ? '': strip_tags(str_replace('<br/>'," ", ': ' . $message))  ) );
+	if( !$state or WORDPRESSOPENIDREGISTRATION_DEBUG ) {
+		if( $state === true ) { $_state = 'ok'; }
+		elseif( $state === false ) { $_state = 'fail'; }
+		else { $_state = ''.($state); }
+		error_log('WPOpenID Status: ' . strip_tags($slug) . " [$_state]" . ( ($_state==='ok') ? '': strip_tags(str_replace('<br/>'," ", ': ' . $message))  ) );
 	}
 }
 
