@@ -50,8 +50,8 @@ if  ( !class_exists('WordpressOpenIDRegistration') ) {
 		function WordpressOpenIDRegistration() {
 			/* Create and destroy tables on activate / deactivate of plugin. Everyone should clean up after themselves. */
 			if( function_exists('register_activation_hook') ) {
-				register_activation_hook( 'wpopenid/openid-registration.php', array( $wordpressOpenIDRegistration, 'create_tables' ) );
-				register_deactivation_hook( 'wpopenid/openid-registration.php', array( $wordpressOpenIDRegistration, 'destroy_tables' ) );
+				register_activation_hook( 'wpopenid/openid-registration.php', array( $this, 'create_tables' ) );
+				register_deactivation_hook( 'wpopenid/openid-registration.php', array( $this, 'destroy_tables' ) );
 			} else {
 				wordpressOpenIDRegistration_Status_Set('Unsupported Wordpress Version', false, '<em>register_activation_hook</em> first appeared in wp 2.0.');
 				$this->error = 'Unsupported Wordpress Version: The wpopenid plugin requires at least version 2.0. Cannot activate.';
@@ -144,6 +144,7 @@ if  ( !class_exists('WordpressOpenIDRegistration') ) {
 				echo $this->error;
 				return;
 			}
+			if( WORDPRESSOPENIDREGISTRATION_DEBUG ) error_log('Dropping all database tables.');
 			$sql = 'drop table '. $this->_store->associations_table_name;
 			$wpdb->query($sql);
 			$sql = 'drop table '. $this->_store->nonces_table_name;
