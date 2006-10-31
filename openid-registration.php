@@ -60,7 +60,8 @@ if  ( !class_exists('WordpressOpenIDRegistration') ) {
 				return;
 			}
 
-			if( !class_exists('WP_OpenIDStore') || (null == $this->_store = new WP_OpenIDStore()) ) {
+			$this->_store = new WP_OpenIDStore();
+			if( !class_exists('WP_OpenIDStore') || (null === $this->_store) ) {
 				wordpressOpenIDRegistration_Status_Set('object: OpenID Store', false, 'OpenID store could not be created properly.');
 				wordpressOpenIDRegistration_Status_Set('class: Auth_OpenID_MySQLStore', class_exists('Auth_OpenID_MySQLStore'), 'This class is provided by the JanRain library, used to store association and nonce data.');
 				wordpressOpenIDRegistration_Status_Set('class: WP_OpenIDStore', class_exists('WP_OpenIDStore'),  'This class is provided by the plugin, used to wrap the Wordpress database for PEAR-style database access. It\'s provided by <code>wpdb-pear-wrapper.php</code>, did you upload it?');
@@ -70,7 +71,8 @@ if  ( !class_exists('WordpressOpenIDRegistration') ) {
 				wordpressOpenIDRegistration_Status_Set('object: OpenID Store', true, 'OpenID store created properly.');
 			}
 			
-			if( !class_exists('Auth_OpenID_Consumer') || (null == $this->_consumer = new Auth_OpenID_Consumer( $this->_store )) ) {
+			$this->_consumer = new Auth_OpenID_Consumer( $this->_store );
+			if( !class_exists('Auth_OpenID_Consumer') || (null === $this->_consumer) ) {
 				wordpressOpenIDRegistration_Status_Set('object: OpenID Consumer', false, 'OpenID consumer could not be created properly.');
 				wordpressOpenIDRegistration_Status_Set('class: Auth_OpenID_Consumer', class_exists('Auth_OpenID_Consumer'),  'This class is provided by the JanRain library, does the heavy lifting.');
 				$this->enabled = false;
