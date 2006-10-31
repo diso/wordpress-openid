@@ -115,6 +115,12 @@ if  ( !class_exists('WordpressOpenIDRegistration') ) {
 				echo $this->error;
 				return;
 			}
+			if( null == $this->_store ) {
+				$this->error = 'OpenID Consumer could not be activated, because the store could not be created properly. Are the database files in place?';
+				if( WORDPRESSOPENIDREGISTRATION_DEBUG ) error_log($this->error);
+				echo $this->error;
+				return;				
+			}
 			require_once(ABSPATH . '/wp-admin/upgrade-functions.php');
 			$this->_store->dbDelta();
 			$identity_url_table_sql = "CREATE TABLE $this->identity_url_table_name (
