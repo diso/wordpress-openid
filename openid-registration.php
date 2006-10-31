@@ -2,7 +2,7 @@
 /*
 Plugin Name: OpenID Registration
 Plugin URI: http://sourceforge.net/projects/wpopenid/
-Description: Wordpress OpenID Registration, Authentication, and Commenting. Requires JanRain PHP OpenID library >1.1.1
+Description: Wordpress OpenID Registration, Authentication, and Commenting. Requires JanRain PHP OpenID library 1.2.0
 Author: Alan J Castonguay, Hans Granqvist
 Author URI: http://blog.verselogic.net/projects/wordpress/wordpress-openid-plugin/
 Version: $Rev$
@@ -45,12 +45,12 @@ if  ( !class_exists('WordpressOpenIDRegistration') ) {
 		var $flag_doing_openid_comment = false;
 
 		/* 
-		 * Initialize required store and consumer.
+		 * Initialize required store and consumer, making a few sanity checks.
 		 */
 		function WordpressOpenIDRegistration() {
 			/* Create and destroy tables on activate / deactivate of plugin. Everyone should clean up after themselves. */
 			if( function_exists('register_activation_hook') ) {
-				register_activation_hook( 'wpopenid/openid-registration.php', array( $this, 'create_tables' ) );
+				//register_activation_hook( 'wpopenid/openid-registration.php', array( $this, 'create_tables' ) );
 				register_deactivation_hook( 'wpopenid/openid-registration.php', array( $this, 'destroy_tables' ) );
 			} else {
 				wordpressOpenIDRegistration_Status_Set('Unsupported Wordpress Version', false, '<em>register_activation_hook</em> first appeared in wp 2.0.');
@@ -80,17 +80,24 @@ if  ( !class_exists('WordpressOpenIDRegistration') ) {
 			} else {
 				wordpressOpenIDRegistration_Status_Set('object: OpenID Consumer', true, 'OpenID consumer created properly.');
 			}
-			
+
 			if( false === get_option('oid_trust_root') || '' === get_option('oid_trust_root') ) {
-				wordpressOpenIDRegistration_Status_Set('Option: Trust Root', false, 'You must specify the Trust Root paramater on the OpenID Options page. Commenters will be asked whether they trust this url, and its decedents, to know that they are logged in and control their identity url. Include the trailing slash.');
-				$this->enabled = false;
+				wordpressOpenIDRegistration_Status_Set('Option: Trust Root', 'info', 'You must specify the Trust Root paramater on the OpenID Options page. Commenters will be asked whether they trust this url, and its decedents, to know that they are logged in and control their identity url. Include the trailing slash.');
 			}
 
-			global $table_prefix;		
+		}
+		
+		/*
+		 * Initialize the store's database tables if nessessary, create hooks
+		 */
+		function startup() {
+			global $table_prefix;
 			$this->identity_url_table_name = ($table_prefix . 'openid_identities');
+			if( WORDPRESSOPENIDREGISTRATION_DEBUG ) error_log("Bootstrap -- checking tables");
 			$this->check_tables();
 			
 			if( $this->enabled ) {	// Everything looks fine. Add hooks between Plugin Core Logic and Wordpress
+				if( WORDPRESSOPENIDREGISTRATION_DEBUG ) error_log("Bootstrap Level 1.5 OK");
 				$this->error = '';
 				$this->action = '';
 
@@ -104,7 +111,7 @@ if  ( !class_exists('WordpressOpenIDRegistration') ) {
 				
 				add_action( 'delete_user', array( $this, 'drop_all_identities_for_user' ) );	// If user is dropped from database, remove their identities too.
 			}
-
+			return $this->enabled;
 		}
 
 		/*
@@ -160,7 +167,7 @@ if  ( !class_exists('WordpressOpenIDRegistration') ) {
 		 */
 		function check_tables($retry=true) {
 			global $wpdb,$table_prefix;
-			if( !isset( $this->_store )) return false;
+			if( null === $this->_store ) return false;
 			wordpressOpenIDRegistration_Status_Set('wordpress: table_prefix', isset($table_prefix)?'info':false, isset($table_prefix) ? $table_prefix : 'Wordpress $table_prefix must be set!');
 
 			$ok = true;

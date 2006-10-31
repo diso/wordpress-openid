@@ -26,19 +26,28 @@
 
 		add_action( 'admin_menu', array( $this, 'add_admin_panels' ) );
 		
-		$this->oid = new WordpressOpenIDRegistration();
-
+		$this->oid = new WordpressOpenIDRegistration(); // Bootstrap Level 1
+		
 		if( null !== $this->oid && $this->oid->enabled ) {  // Add hooks to the Public Wordpress User Interface
-			add_action('wp_authenticate', array( $this->oid, 'wp_authenticate' ));
-			if( get_option('oid_enable_commentform') ) add_filter( 'comment_form', array( $this, 'openid_wp_comment_form' ) );
-			if( get_option('oid_enable_loginform') ) {
-				add_action( 'login_form', array( $this, 'login_form_v2_insert_fields'));
-				add_action( 'register_form', array( $this, 'openid_wp_register_v2'));
-				add_filter( 'login_errors', array( $this, 'login_form_v2_hide_username_password_errors'));
-				add_filter( 'register', array( $this, 'openid_wp_sidebar_register' ));
+			if( WORDPRESSOPENIDREGISTRATION_DEBUG ) error_log("Bootstrap Level 1 OK");
+			$this->oid->startup(); // Bootstrap Level 2
+			if( $this->oid->enabled ) {  // Add hooks to the Public Wordpress User Interface
+				if( WORDPRESSOPENIDREGISTRATION_DEBUG ) error_log("Bootstrap Level 2 OK");
+				add_action('wp_authenticate', array( $this->oid, 'wp_authenticate' ));
+				if( get_option('oid_enable_commentform') ) add_filter( 'comment_form', array( $this, 'openid_wp_comment_form' ) );
+				if( get_option('oid_enable_loginform') ) {
+					add_action( 'login_form', array( $this, 'login_form_v2_insert_fields'));
+					add_action( 'register_form', array( $this, 'openid_wp_register_v2'));
+					add_filter( 'login_errors', array( $this, 'login_form_v2_hide_username_password_errors'));
+					add_filter( 'register', array( $this, 'openid_wp_sidebar_register' ));
+				}
+				add_filter( 'loginout', array( $this, 'openid_wp_sidebar_loginout' ));
+			} else {
+				if( WORDPRESSOPENIDREGISTRATION_DEBUG ) error_log("Bootstrap Level 2 Fail");
+				add_action('admin_notices', array( $this, 'admin_notices_plugin_problem_warning' ));
 			}
-			add_filter( 'loginout', array( $this, 'openid_wp_sidebar_loginout' ));
 		} else {
+			if( WORDPRESSOPENIDREGISTRATION_DEBUG ) error_log("Bootstrap Level 1 Fail");
 			add_action('admin_notices', array( $this, 'admin_notices_plugin_problem_warning' ));
 		}
 	}
