@@ -365,6 +365,32 @@ if  ( !class_exists('WordpressOpenIDRegistration') ) {
 				array( $url ) );
 		}
 
+		/* Simple loop to reduce collisions for usernames for urls like:
+		 * Eg: http://foo.com/80/to/magic.com
+		 * and http://foo.com.80.to.magic.com
+		 * and http://foo.com:80/to/magic.com
+		 * and http://foo.com/80?to=magic.com
+		 */
+		function generate_new_username($url) {
+			$base = $this->normalize_username($url);
+			$i='';
+			while(true) {
+				$username = $this->normalize_username( $base . $i );
+				$user = get_userdatabylogin($username);
+				if ( $user ) {
+					$i++;
+					continue;
+				}
+				return $username;
+			}
+		}
+		
+		function normalize_username($username) {
+			$username = sanitize_user( $username );
+			$username = preg_replace('|[^a-z0-9 _.\-@]+|i', '-', $username);
+			return $username;
+		}
+
 
 
 		/*  
@@ -457,7 +483,6 @@ if  ( !class_exists('WordpressOpenIDRegistration') ) {
 				$matching_user_id = $this->get_user_by_identity( $response->identity_url );
 				
 				if( NULL !== $matching_user_id ) {
-					// 1.1 If url is found, login.
 					$user = new WP_User( $matching_user_id );
 					
 					if( wp_login( $user->user_login, md5($user->user_pass), true ) ) {
@@ -474,19 +499,17 @@ if  ( !class_exists('WordpressOpenIDRegistration') ) {
 					}
 					
 				} else {
-					// 1.2. If url is not found, create a user with md5()'d password, permit=true
+					// Identity URL is new, so create a user with md5()'d password
 					@include_once( ABSPATH . 'wp-admin/upgrade-functions.php');	// 2.1
 				 	@include_once( ABSPATH . WPINC . '/registration-functions.php'); // 2.0.4
-				
-					$username = sanitize_user ( $response->identity_url );
+					
+					$username = $this->generate_new_username( $response->identity_url );
 					$password = substr( md5( uniqid( microtime() ) ), 0, 7);
 					
 					$user_id = wp_create_user( $username, $password );
 					if( WORDPRESSOPENIDREGISTRATION_DEBUG ) error_log("wp_create_user( $username, $password )  returned $user_id ");
 					
-					if( $user_id ) {
-						// created ok
-						
+					if( $user_id ) {	// created ok
 						update_usermeta( $user_id, 'registered_with_openid', true );
 						$temp_user_data=array( 'ID' => $user_id,
 							'user_url' => $response->identity_url,
