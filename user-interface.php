@@ -425,7 +425,9 @@
  */
 if( !function_exists( 'get_comment_openid' ) ) {
 	function get_comment_openid() {
-		if( get_comment_type() == 'openid' ) echo '<img src="'.OPENIDIMAGE.'" height="16" width="16" alt="OpenID" />';
+		global $comment_is_openid;
+		get_comment_type();
+		if( $comment_is_openid === true ) echo '<img src="'.OPENIDIMAGE.'" height="16" width="16" alt="OpenID" />';
 	}
 }
 
@@ -435,8 +437,23 @@ if( !function_exists( 'get_comment_openid' ) ) {
  */
 if( !function_exists( 'is_comment_openid' ) ) {
 	function is_comment_openid() {
-		return ( get_comment_type() == 'openid' );
+		global $comment_is_openid;
+		get_comment_type();
+		return ( $comment_is_openid === true );
 	}
+}
+
+if( !function_exists( 'mask_comment_type' ) ) {
+	function mask_comment_type( $comment_type ) {
+		global $comment_is_openid;
+		if( $comment_type === 'openid' ) {
+			$comment_is_openid = true;
+			return 'comment';
+		}
+		$comment_is_openid = false;
+		return $comment_type;
+	}
+	add_filter('get_comment_type', 'mask_comment_type' );
 }
 
 

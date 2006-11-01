@@ -803,7 +803,7 @@ function wordpressOpenIDRegistration_Load_Required_Files( $wordpressOpenIDRegist
 	$global_variables = array_keys($GLOBALS);
 	ini_set('include_path',ini_get('include_path').':'.dirname(__FILE__));   // Add plugin directory to include path temporarily
 	foreach( $wordpressOpenIDRegistration_Required_Files as $___k => $___v ) {
-		if( file_exists_in_path( $___k ) ) {			
+		if( file_exists_in_path( $___k ) ) {
 			if( include_once( $___k ) ) {
 				wordpressOpenIDRegistration_Status_Set('loading file: '.$___k, true, '');
 				continue;
@@ -828,6 +828,7 @@ add_option( 'oid_enable_commentform', true, 'Display OpenID box in comment form'
 if( class_exists('WordpressOpenIDRegistrationUI')) {
 	$wordpressOpenIDRegistrationUI = new WordpressOpenIDRegistrationUI();
 	$wordpressOpenIDRegistrationUI->startup();
+	if( WORDPRESSOPENIDREGISTRATION_DEBUG ) error_log("Poststrap Level 2.9: OID " . ($ui->oid->enabled? 'Enabled':'Disabled' ) );
 } else {
 	echo '<div><p><strong>The Wordpress OpenID Registration User Interface class could not be loaded. Make sure wpopenid/user-interface.php was uploaded properly.</strong></p></div>';
 }
