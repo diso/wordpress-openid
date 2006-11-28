@@ -263,6 +263,7 @@ if  ( !class_exists('WordpressOpenIDRegistration') ) {
 					// TODO: Better error handling.
 					if ( null === $auth_request ) {
 						$this->error = 'Could not discover an OpenID identity server endpoint at the url: ' . htmlentities( $claimed_url );
+						if( strpos( $claimed_url, '@' ) !== 0 ) { $this->error .= '<br/>The address you specified had an @ sign in it, but OpenID Identities are not email addresses, and should probably not contain an @ sign.'; }
 						break;
 					}
 
@@ -408,6 +409,7 @@ if  ( !class_exists('WordpressOpenIDRegistration') ) {
 
 			if ( null === $auth_request ) {
 				$this->error = 'Could not discover an OpenID identity server endpoint at the url: ' . htmlentities( $claimed_url );
+				if( strpos( $claimed_url, '@' ) !== 0 ) { $this->error .= '<br/>The address you specified had an @ sign in it, but OpenID Identities are not email addresses, and should probably not contain an @ sign.'; }
 				if( WORDPRESSOPENIDREGISTRATION_DEBUG ) error_log('OpenIDConsumer: ' . $this->error );
 				return;
 			}
