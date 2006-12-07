@@ -155,6 +155,32 @@
 	}
 	
 	function openid_wp_comment_form_ob( $html ) {
+		$block = array('address','blockquote','dsiv','dl','span',
+			'fieldset','h1','h2','h3','h4','h5','h6',
+			'p','ul','li', 'dd','dt');
+		
+		global $user_ID, $user_identity;
+		
+		if( $user_ID ) {
+			// Logged in already. Add the OpenID logo to the username, if it's there.
+			$html = preg_replace( '|(Logged in as (<a href="[^"]*">)+)|', '\\1<img src="'.OPENIDIMAGE.'" height="16" width="16" alt="[oid]" />' , $html );
+			return $html;
+			
+		} elseif ( get_option('comment_registration') ) {
+			// Not logged in already, login is required to leave comments. Add the form.
+			$openid = '<form method="post" action="' . get_option('siteurl') . 
+			'/wp-login.php?redirect_to= ' .  apply_filters('the_permalink', get_permalink() ) . '#respond">
+			 <p><label for="openid_url_comment_form">You can login with your OpenID!</label><br/>
+			 <input style="background: url(' . OPENIDIMAGE . ') no-repeat;
+			 background-position: 0 50%; padding-left: 18px;" type="text" name="openid_url" tabindex="6" id="openid_url_comment_form" size="22" />
+			 <input name="submit" type="submit" value="Login" /></p>
+			</form>';
+			$html = preg_replace( '%<(' . implode('|', $block) . ')( [^>]*)?>'.
+				'You must be <a href="[^"]*">logged in</a> to post a comment.</\\1>%',
+				'\\0' . $openid, $html );
+			return $html;
+		}
+		
 		// 1. Set aside everything outside the <FORM>
 		$matches = array();
 		$foundform = preg_match( '|(.*)<form([^>]*)>(.*)</form>(.*)|ism', $html, $matches );
@@ -168,10 +194,6 @@
 		$foundform = preg_match( '|<form(.*)>(.+)</form>|', $html, $matches );
 		
 		// 3. Find the <input ... name ... > segments, with block level containers.
-		$block = array('address','blockquote','dsiv','dl','span',
-			'fieldset','h1','h2','h3','h4','h5','h6',
-			'p','ul','li', 'dd','dt');
-
 		$rinput = '(<input[^>]*?name="([^"]+)"[^>]*?>)';
 		$rblock = '<(' . implode('|', $block) . ')( [^>]*)?>';
 		$rs = '(.*?)';
@@ -202,7 +224,7 @@
 		$author_name = trim(strip_tags($author));
 
 		$openid = str_replace(  array('name="author"', "$author_name"),
-			array('name="openid" class="commentform_openid"', 'Sign in with your OpenID'), $author );
+			array('name="openid_url" class="commentform_openid"', 'Sign in with your OpenID'), $author );
 
 		if( preg_match( '/id="[^"]+"/', $openid )) {
 			$openid = preg_replace( '/id="[^"]+"/', 'id="commentform_openid"', $openid );
@@ -221,19 +243,24 @@
 			$anonymous = $v['line'] . $anonymous;
 		}
 
-		// 7. Custom template
-		switch ($insert_tag) {
-			case 'li':
-				$n = "<li><h4>OpenID</h4></li>$openid\n<li><h4>Anonymous</h4></li>$anonymous\n";
-				break;
-			default:
-				$n = "<dl class=\"commentform_openid_list\"><dt><h4>OpenID</h4></dt><dd>$openid\n</dd><dt><h4>Anonymous</h4></dt><dd>$anonymous</dd></dl>\n";
-		}
-		$work = substr_replace( $work, $n, $insert_point, 0 );
+		if( count( $chunks )) {
+			// 7. Custom template
+			switch ($insert_tag) {
+				case 'li':
+					$n = "<li><h4>OpenID</h4></li>$openid\n<li><h4>Anonymous</h4></li>$anonymous\n";
+					break;
+				default:
+					$n = "<dl class=\"commentform_openid_list\"><dt><h4>OpenID</h4></dt><dd>$openid\n</dd><dt><h4>Anonymous</h4></dt><dd>$anonymous</dd></dl>\n";
+			}
+			$work = substr_replace( $work, $n, $insert_point, 0 );
+		
 
-		// 8. Reassemble
-		$final = "$form_pre<form$form_inner>\n$work\n</form>$form_post";
-		return $final;
+			// 8. Reassemble
+			$final = "$form_pre<form$form_inner>\n$work\n</form>$form_post";
+			return $final;
+		} else {
+			return $html;
+		}
 	}
 
 	/* Spam up the admin interface with warnings */

@@ -1,11 +1,8 @@
-1. Installing the JanRain PHP OpenID library version 1.2.0
+1. Installing the WPOpenID plugin, and the JanRain PHP OpenID library
 
-The plugin needs to find the following files in PHP's path, along with the full content of
-the Auth and Services directories from the library's compressed source archive. Directories
-such as Tests, admin, doc, examples are unnecessary.
-
- Auth/OpenID.php
- Services/Yadis/Yadis.php
+Like any Wordpress plugin, the wpopenid directory needs to be copied into Wordpress'
+wp-content/plugins/ directory. The JanRain PHP OpenID library is included in the
+plugin zip or tgz archive, and shouldn't require any additional installation.
 
 An example directory structure with the library installed in the plugin directory:
 
@@ -13,27 +10,30 @@ An example directory structure with the library installed in the plugin director
    wp-content/
      plugins/
        wpopenid/
+         README
          openid-registration.php
          user-interface.php
-         README
          images/
             openid.gif
          Auth/
            OpenID.php
            OpenID/
-             Consumer.php
+             Consumer.php ...
          Services/
            Yadis/
-             Yadis.php
+             Yadis.php ...
 
 
 2. Modifying theme's comments.php for better styles
 
 If a blog requires registration & login before accepting comments, then comments.php displays a
-link to the login form. Augment it with a quick and easy OpenID login form. If a blog permits
-anonymous commenting, then wrap the anonymous text fields with semantically valid markup
-indicating a choice between OpenID and Anonymous comments. Here is part of the modified
-comments.php from the default Kubrick theme.
+link to the login form. Augment it with a quick and easy OpenID login form.
+
+If a blog permits anonymous commenting, the plugin tries to modify the form to include
+an OpenID field, and then wrap the anonymous text fields with semantically valid markup
+indicating a choice between OpenID and Anonymous comments. You can turn this feature off
+in the OpenID Options pane, and modify your templates yourself. Here is part of the
+modified comments.php from the default Kubrick theme.
 
 
 
