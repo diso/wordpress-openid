@@ -291,8 +291,10 @@
 			if( function_exists('Auth_OpenID_detectMathLibrary') ) {
 				global $_Auth_OpenID_math_extensions;
 				$loaded_long_integer_library = Auth_OpenID_detectMathLibrary( $_Auth_OpenID_math_extensions );
+				wordpressOpenIDRegistration_Status_Set( 'Loaded long integer library', $loaded_long_integer_library==null?false:'info', $loaded_long_integer_library?$loaded_long_integer_library['extension']:'No long integer library is loaded! Key calculation will be very slow!' );
+			} else {
+				wordpressOpenIDRegistration_Status_Set( 'Loaded long integer library', false, 'The underlying OpenID library function Auth_OpenID_detectMathLibrary is not available. Install library first.' );
 			}
-			wordpressOpenIDRegistration_Status_Set( 'Loaded long integer library', $loaded_long_integer_library==null?false:'info', $loaded_long_integer_library?$loaded_long_integer_library['extension']:'No long integer library is loaded! Key calculation will be very slow!' );
 			
 			if( WORDPRESSOPENIDREGISTRATION_DEBUG ) error_log("Poststrap Level 3.5: OID " . ($this->oid->enabled? 'Enabled':'Disabled' ) );
 			
@@ -307,7 +309,7 @@
 				if(isset($curl_version['ssl_version']))	$curl_message = 'SSL: ' . $curl_version['ssl_version'] . '. ';
 			}
  			wordpressOpenIDRegistration_Status_Set( 'Curl version', function_exists('curl_version'), function_exists('curl_version') ? $curl_message :
-					'This PHP installation does not have support for libcurl. Some functionality, such as fetching https:// URLs, will be missing and performance will not be as good. See <a href="http://www.php.net/manual/en/ref.curl.php">php.net/manual/en/ref.curl.php</a> about enabling libcurl support for PHP.');
+					'This PHP installation does not have support for libcurl. Some functionality, such as fetching https:// URLs, will be missing and performance will slightly impared. See <a href="http://www.php.net/manual/en/ref.curl.php">php.net/manual/en/ref.curl.php</a> about enabling libcurl support for PHP.');
 			
 			/* Check for updates via SF RSS feed */
 			@include_once (ABSPATH . WPINC . '/rss.php');
@@ -469,7 +471,7 @@
 			foreach( $urls as $k=>$v ) {
 				?><tr class="alternate">
 					<th scope="row" style="text-align: center"><?php echo $v['uurl_id']; ?></td>
-					<td><a href="<?php echo $v['meta_value']; ?>"><?php echo $v['meta_value']; ?></a></td>
+					<td><a href="<?php echo $v['url']; ?>"><?php echo $v['url']; ?></a></td>
 					<td style="text-align: center"><a class="delete" href="?page=your-openid-identities&action=drop_identity&id=<?php echo $v['uurl_id']; ?>">Delete</a></td>
 				</tr><?php
 			}
