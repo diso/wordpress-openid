@@ -283,24 +283,12 @@
 			}
 			
 			wordpressOpenIDRegistration_Status_Set( 'Include Path', 'info', implode('<br/>', $list_of_paths ) );
-			wordpressOpenIDRegistration_Status_Set( 'PHP version', 'info', phpversion() );
-			wordpressOpenIDRegistration_Status_Set( 'library: GMP compiled into in PHP', ( extension_loaded('gmp') and @gmp_init(1) ), '<a href="http://www.php.net/gmp">GMP</a> does not appear to be built into PHP. This is highly recommended for performance reasons.' );
-			wordpressOpenIDRegistration_Status_Set( 'library: BCMath compiled into in PHP', ( extension_loaded('bcmath') and @bcadd(1,1)==2 ), '<a href="http://www.php.net/bc">BCMath</a> does not appear to be built into PHP. GMP is preferred.' );
-			
-			$loaded_long_integer_library = false;
-			if( function_exists('Auth_OpenID_detectMathLibrary') ) {
-				global $_Auth_OpenID_math_extensions;
-				$loaded_long_integer_library = Auth_OpenID_detectMathLibrary( $_Auth_OpenID_math_extensions );
-				wordpressOpenIDRegistration_Status_Set( 'Loaded long integer library', $loaded_long_integer_library==null?false:'info', $loaded_long_integer_library?$loaded_long_integer_library['extension']:'No long integer library is loaded! Key calculation will be very slow!' );
-			} else {
-				wordpressOpenIDRegistration_Status_Set( 'Loaded long integer library', false, 'The underlying OpenID library function Auth_OpenID_detectMathLibrary is not available. Install library first.' );
-			}
-			
-			if( WORDPRESSOPENIDREGISTRATION_DEBUG ) error_log("Poststrap Level 3.5: OID " . ($this->oid->enabled? 'Enabled':'Disabled' ) );
 			
 			global $wp_version;
-			wordpressOpenIDRegistration_Status_Set( 'Wordpress version', 'info', $wp_version );
+			wordpressOpenIDRegistration_Status_Set( 'WordPress version', 'info', $wp_version );
 			wordpressOpenIDRegistration_Status_Set( 'MySQL version', 'info', function_exists('mysql_get_client_info') ? mysql_get_client_info() : 'Mysql client information not available. Very strange, as Wordpress requires MySQL.' );
+
+			wordpressOpenIDRegistration_Status_Set( 'PHP version', 'info', phpversion() );
 			
 			$curl_message = '';
 			if( function_exists('curl_version') ) {
@@ -310,6 +298,21 @@
 			}
  			wordpressOpenIDRegistration_Status_Set( 'Curl version', function_exists('curl_version'), function_exists('curl_version') ? $curl_message :
 					'This PHP installation does not have support for libcurl. Some functionality, such as fetching https:// URLs, will be missing and performance will slightly impared. See <a href="http://www.php.net/manual/en/ref.curl.php">php.net/manual/en/ref.curl.php</a> about enabling libcurl support for PHP.');
+
+			/* Check for Long Integer math library */
+			wordpressOpenIDRegistration_Status_Set( 'library: GMP compiled into in PHP', ( extension_loaded('gmp') and @gmp_init(1) ), '<a href="http://www.php.net/gmp">GMP</a> does not appear to be built into PHP. This is highly recommended for performance reasons.' );
+			wordpressOpenIDRegistration_Status_Set( 'library: BCMath compiled into in PHP', ( extension_loaded('bcmath') and @bcadd(1,1)==2 ), '<a href="http://www.php.net/bc">BCMath</a> does not appear to be built into PHP. GMP is preferred.' );
+
+			$loaded_long_integer_library = false;
+			if( function_exists('Auth_OpenID_detectMathLibrary') ) {
+				global $_Auth_OpenID_math_extensions;
+				$loaded_long_integer_library = Auth_OpenID_detectMathLibrary( $_Auth_OpenID_math_extensions );
+				wordpressOpenIDRegistration_Status_Set( 'Loaded long integer library', $loaded_long_integer_library==null?false:'info', $loaded_long_integer_library?$loaded_long_integer_library['extension']:'No long integer library is loaded! Key calculation will be very slow!' );
+			} else {
+				wordpressOpenIDRegistration_Status_Set( 'Loaded long integer library', false, 'The underlying OpenID library function Auth_OpenID_detectMathLibrary is not available. Install library first.' );
+			}
+			
+
 			
 			/* Check for updates via SF RSS feed */
 			@include_once (ABSPATH . WPINC . '/rss.php');
@@ -321,22 +324,21 @@
 				$rss = @fetch_simplepie('http://sourceforge.net/export/rss2_projfiles.php?group_id=167532');
 				if ( $rss and $rss->get_item_quantity() > 0 ) {
 					$items = $rss->get_items(0,0);
-					preg_match( '/wpopenid ([0-9]+) released/', $items[0]->get_title(), $matches );
+					preg_match( '/wpopenid ([^ ]+) released/', $items[0]->get_title(), $matches );
 				}
 			} elseif ( function_exists( 'fetch_rss' )) {
 				$rss = @fetch_rss('http://sourceforge.net/export/rss2_projfiles.php?group_id=167532');
 				if( isset( $rss->items ) and 0 != count( $rss->items )) {
-					preg_match( '/wpopenid ([0-9]+) released/', $rss->items[0]['title'], $matches );
-				}				
+					preg_match( '/wpopenid ([^ ]+) released/', $rss->items[0]['title'], $matches );
+				}
 			}
 
-			if( WORDPRESSOPENIDREGISTRATION_DEBUG ) error_log("Poststrap Level 3.6: OID " . ($this->oid->enabled? 'Enabled':'Disabled' ) );
 
 			$vercmp_message = "Running version $plugin_version. ";
 			if( $matches[1] ) {
 				$vercmp_message .= "Latest stable release is $matches[1]. ";
 				switch( version_compare( (int)$plugin_version, (int)$matches[1] ) ) {
-					case 1: $vercmp_message .= 'Life on the edge.'; break;
+					case 1: $vercmp_message .= 'This revision is newer than the latest stable.'; break;
 					case 0: $vercmp_message .= 'Up to date.'; break;
 					case -1: $vercmp_message .= '<a href="http://sourceforge.net/project/showfiles.php?group_id=167532&package_id=190501">A new version of this plugin is available</a>.'; break;
 				}

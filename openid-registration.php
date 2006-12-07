@@ -181,7 +181,7 @@ if  ( !class_exists('WordpressOpenIDRegistration') ) {
 		function check_tables($retry=true) {
 			global $wpdb,$table_prefix;
 			if( null === $this->_store ) return false;
-			wordpressOpenIDRegistration_Status_Set('wordpress: table_prefix', isset($table_prefix)?'info':false, isset($table_prefix) ? $table_prefix : 'Wordpress $table_prefix must be set!');
+			wordpressOpenIDRegistration_Status_Set('database: Wordpress\' table_prefix', isset($table_prefix)?'info':false, isset($table_prefix) ? $table_prefix : 'Wordpress $table_prefix must be set!');
 
 			$ok = true;
 			$message = '';
@@ -849,7 +849,7 @@ if( class_exists('WordpressOpenIDRegistrationUI')) {
 	$wordpressOpenIDRegistrationUI->startup();
 	if( WORDPRESSOPENIDREGISTRATION_DEBUG ) error_log("Poststrap Level 2.9: OID " . ($wordpressOpenIDRegistrationUI->oid->enabled? 'Enabled':'Disabled' ) );
 } else {
-	echo '<div><p><strong>The Wordpress OpenID Registration User Interface class could not be loaded. Make sure wpopenid/user-interface.php was uploaded properly.</strong></p></div>';
+	echo '<div class="error"><p><strong>The Wordpress OpenID Registration User Interface class could not be loaded. Make sure wpopenid/user-interface.php was uploaded properly.</strong></p></div>';
 }
 
 ?>
