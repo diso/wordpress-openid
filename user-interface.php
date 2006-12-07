@@ -36,7 +36,9 @@
 			if( $this->oid->enabled ) {  // Add hooks to the Public Wordpress User Interface
 				if( WORDPRESSOPENIDREGISTRATION_DEBUG ) error_log("Bootstrap Level 2 OK");
 				add_action('wp_authenticate', array( $this->oid, 'wp_authenticate' ));
-				if( get_option('oid_enable_commentform') ) add_filter( 'comment_form', array( $this, 'openid_wp_comment_form' ) );
+				if( get_option('oid_enable_commentform') ) {
+					add_filter( 'comments_template', array( $this, 'setup_openid_wp_login_ob'));
+				}
 				if( get_option('oid_enable_loginform') ) {
 					add_action( 'login_form', array( $this, 'login_form_v2_insert_fields'));
 					add_action( 'register_form', array( $this, 'openid_wp_register_v2'));
@@ -141,22 +143,98 @@
 	function openid_wp_sidebar_loginout( $link ) {
 		return preg_replace( '#action=logout#', 'action=logout&redirect_to=' . urlencode($_SERVER["REQUEST_URI"]), $link );
 	}
-		
+	
+	
 	/*
-	 * Hook. Add OpenID login-n-comment box below the comment form.
+	 * Hook. Add OpenID login-n-comment box above the comment form.
+	 * Uses Output Buffering to rewrite the form html.
 	 */
-	function openid_wp_comment_form( $id ) {
-			global $current_user;
-			if( ! $current_user->id ) { // not logged in, draw a login form below the comment form
-				$style = get_option('oid_enable_selfstyle') ? ('style="background: url('.OPENIDIMAGE.') no-repeat;
-					background-position: 0 50%; padding-left: 18px;" ') : '';	
-				?>
-				<label for="openid_url_comment_form">Sign in with OpenID:</label><br/>	
-				<input <?php echo $style; ?> type="textbox" name="openid_url" tabindex="6" id="openid_url_comment_form" size="30" />
-				<?php
-			}
+	function setup_openid_wp_login_ob($string) {
+		ob_start( array( $this, "openid_wp_comment_form_ob" ) );
+		return $string;
 	}
+	
+	function openid_wp_comment_form_ob( $html ) {
+		// 1. Set aside everything outside the <FORM>
+		$matches = array();
+		$foundform = preg_match( '|(.*)<form([^>]*)>(.*)</form>(.*)|ism', $html, $matches );
+		$form_pre = $matches[1];
+		$form_post = $matches[4];
+		$form_inner = $matches[2];
 
+		// 2. Working on the segment in <form> ... </form>
+		$work = $matches[3];
+		$matches = array();
+		$foundform = preg_match( '|<form(.*)>(.+)</form>|', $html, $matches );
+		
+		// 3. Find the <input ... name ... > segments, with block level containers.
+		$block = array('address','blockquote','dsiv','dl','span',
+			'fieldset','h1','h2','h3','h4','h5','h6',
+			'p','ul','li', 'dd','dt');
+
+		$rinput = '(<input[^>]*?name="([^"]+)"[^>]*?>)';
+		$rblock = '<(' . implode('|', $block) . ')( [^>]*)?>';
+		$rs = '(.*?)';
+		$rblockend = '</\\1>(\s)+';
+		$r = '%' . $rblock . $rs . $rinput . $rs . $rblockend . '%ism';
+
+		$matches = array();
+		$num = preg_match_all( $r, $work, $matches, PREG_OFFSET_CAPTURE );
+
+		// 4. Set aside the standard anonymous fields
+		$fields = array( 'author','url','email' );
+		$chunks = array();
+		foreach( $matches[5] as $k=>$v ) {
+			if( in_array( strtolower($v[0]), $fields ) ) {
+				$chunks[] = array( 'line' => $matches[0][$k][0],
+									'startpos' => $matches[0][$k][1],
+									'starttag' => strtolower( $matches[1][$k][0] ),
+									'length' => strlen( $matches[0][$k][0] ) );
+			}
+		}
+
+		// 5. Grab starting position for re-insertion
+		$insert_point = $chunks[0]['startpos'];
+		$insert_tag = $chunks[0]['starttag'];
+
+		// 6. Create OpenID version of the Author line
+		$author = $chunks[0]['line'];
+		$author_name = trim(strip_tags($author));
+
+		$openid = str_replace(  array('name="author"', "$author_name"),
+			array('name="openid" class="commentform_openid"', 'Sign in with your OpenID'), $author );
+
+		if( preg_match( '/id="[^"]+"/', $openid )) {
+			$openid = preg_replace( '/id="[^"]+"/', 'id="commentform_openid"', $openid );
+			$openid = preg_replace( '/for="[^"]+"/', 'for="commentform_openid"', $openid );
+		} else {
+			$openid = preg_replace( '/name="/', 'id="commentform_openid" name="', $openid );
+		}
+
+		// 6. Remove the Anonymous chunks from the html source
+		$blocklength = 0;
+		$anonymous = '';
+		$chunks = array_reverse($chunks);
+		foreach( $chunks as $k=>$v ) {
+			$work = substr_replace( $work, '', $v['startpos'], $v['length'] );
+			$blocklength += $v['length'];
+			$anonymous = $v['line'] . $anonymous;
+		}
+
+		// 7. Custom template
+		switch ($insert_tag) {
+			case 'li':
+				$n = "<li><h4>OpenID</h4></li>$openid\n<li><h4>Anonymous</h4></li>$anonymous\n";
+				break;
+			default:
+				$n = "<dl class=\"commentform_openid_list\"><dt><h4>OpenID</h4></dt><dd>$openid\n</dd><dt><h4>Anonymous</h4></dt><dd>$anonymous</dd></dl>\n";
+		}
+		$work = substr_replace( $work, $n, $insert_point, 0 );
+
+		// 8. Reassemble
+		$final = "$form_pre<form$form_inner>\n$work\n</form>$form_post";
+		return $final;
+	}
 
 	/* Spam up the admin interface with warnings */
 	function admin_notices_plugin_problem_warning() {

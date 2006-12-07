@@ -263,7 +263,11 @@ if  ( !class_exists('WordpressOpenIDRegistration') ) {
 					// TODO: Better error handling.
 					if ( null === $auth_request ) {
 						$this->error = 'Could not discover an OpenID identity server endpoint at the url: ' . htmlentities( $claimed_url );
-						if( strpos( $claimed_url, '@' ) !== 0 ) { $this->error .= '<br/>The address you specified had an @ sign in it, but OpenID Identities are not email addresses, and should probably not contain an @ sign.'; }
+						if( strpos( $claimed_url, '@' ) !== 0 ) {
+							// Special case a failued url with an @ sign in it.
+							// Users entering email addresses are probably chewing soggy crayons.
+							$this->error .= '<br/>The address you specified had an @ sign in it, but OpenID Identities are not email addresses, and should probably not contain an @ sign.';
+						}
 						break;
 					}
 

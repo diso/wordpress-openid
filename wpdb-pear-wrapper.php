@@ -266,7 +266,6 @@ class Interpolater {
 		$callback = array(&$this, 'interpolate1');
 		$s = preg_replace_callback($this->pattern, $callback, $format_string);
 		if ($this->values) {
-			print_r($s);
 			trigger_error('Too many values for format string: ' . $format_string . " => " . implode(', ', $this->values), E_USER_ERROR);
 		}
 		$this->values = false;
