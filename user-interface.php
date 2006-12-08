@@ -6,7 +6,7 @@
   purpose: User Interface Elements for wpopenid
  */
 
-{
+if ( !class_exists('WordpressOpenIDRegistrationUI') ) {
   class WordpressOpenIDRegistrationUI {
 
 	var $oid;  // Hold core logic instance
@@ -124,11 +124,11 @@
 			}
 			if( $current_user->ID ) {
 				$chunk ='<li>Logged in as '
-					. ( get_usermeta($current_user->ID, 'permit_openid_login')
-					? ('<img src="'.OPENIDIMAGE.'" height="16" width="16" alt="[oid]" />') : '' )
+					. ( is_user_openid()
+					  ? ('<img src="'.OPENIDIMAGE.'" height="16" width="16" alt="[oid]" />') : '' )
 					. ( !empty($current_user->user_url)
-					? ('<a href="' . $current_user->user_url . '">' . htmlentities( $current_user->display_name ) . '</a>')
-					: htmlentities( $current_user->display_name )        ) . '</li>';
+					  ? ('<a href="' . $current_user->user_url . '">' . htmlentities( $current_user->display_name ) . '</a>')
+					  : htmlentities( $current_user->display_name )   ) . '</li>';
 			
 			} else {
 				$style = get_option('oid_enable_selfstyle') ? ('style="border: 1px solid #ccc; background: url('.OPENIDIMAGE.') no-repeat;
@@ -141,7 +141,8 @@
 	}
 
 	function openid_wp_sidebar_loginout( $link ) {
-		return preg_replace( '#action=logout#', 'action=logout&redirect_to=' . urlencode($_SERVER["REQUEST_URI"]), $link );
+		if( strstr('redirect_to', $link )) return $link;
+		return str_replace( 'action=logout', 'action=logout' . ini_get('arg_separator.output') . 'redirect_to=' . urlencode($_SERVER["REQUEST_URI"]), $link );
 	}
 	
 	
@@ -162,8 +163,10 @@
 		global $user_ID, $user_identity;
 		
 		if( $user_ID ) {
-			// Logged in already. Add the OpenID logo to the username, if it's there.
-			$html = preg_replace( '|(Logged in as (<a href="[^"]*">)+)|', '\\1<img src="'.OPENIDIMAGE.'" height="16" width="16" alt="[oid]" />' , $html );
+			// Logged in already. Add the OpenID logo to the username?
+			if( is_user_openid() ) {
+				return preg_replace( '|(Logged in as (<a[^>]*>)?)|', '\\1<img src="'.OPENIDIMAGE.'" height="16" width="16" alt="[oid]" />' , $html );
+			}
 			return $html;
 			
 		} elseif ( get_option('comment_registration') ) {
@@ -269,6 +272,7 @@
 		Check <a href="options-general.php?page=global-openid-options">OpenID Options</a> for
 		a full diagnositic report.</p></div><?php
 	}
+	
 	/*
 	 * Display and handle updates from the Admin screen options page.
 	 */
@@ -565,6 +569,12 @@ if( !function_exists( 'mask_comment_type' ) ) {
 	add_filter('get_comment_type', 'mask_comment_type' );
 }
 
+if( !function_exists('is_user_openid') ) {
+	function is_user_openid() {
+		global $current_user;
+		return ( null !== $current_user && get_usermeta($current_user->ID, 'registered_with_openid') );
+	}
+}
 
 /* openid_comment_form()
  * Replace the form provided by comments.php

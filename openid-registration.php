@@ -276,7 +276,7 @@ if  ( !class_exists('WordpressOpenIDRegistration') ) {
 					// TODO: Better error handling.
 					if ( null === $auth_request ) {
 						$this->error = 'Could not discover an OpenID identity server endpoint at the url: ' . htmlentities( $claimed_url );
-						if( strpos( $claimed_url, '@' ) !== 0 ) {
+						if( strpos( $claimed_url, '@' ) ) {
 							// Special case a failued url with an @ sign in it.
 							// Users entering email addresses are probably chewing soggy crayons.
 							$this->error .= '<br/>The address you specified had an @ sign in it, but OpenID Identities are not email addresses, and should probably not contain an @ sign.';
@@ -426,7 +426,7 @@ if  ( !class_exists('WordpressOpenIDRegistration') ) {
 
 			if ( null === $auth_request ) {
 				$this->error = 'Could not discover an OpenID identity server endpoint at the url: ' . htmlentities( $claimed_url );
-				if( strpos( $claimed_url, '@' ) !== 0 ) { $this->error .= '<br/>The address you specified had an @ sign in it, but OpenID Identities are not email addresses, and should probably not contain an @ sign.'; }
+				if( strpos( $claimed_url, '@' ) ) { $this->error .= '<br/>The address you specified had an @ sign in it, but OpenID Identities are not email addresses, and should probably not contain an @ sign.'; }
 				if( WORDPRESSOPENIDREGISTRATION_DEBUG ) error_log('OpenIDConsumer: ' . $this->error );
 				return;
 			}
@@ -437,7 +437,10 @@ if  ( !class_exists('WordpressOpenIDRegistration') ) {
 			if( $wordpressid ) $return_to .= "&wordpressid=$wordpressid";
 			if( !empty( $redirect_to ) ) $return_to .= '&redirect_to=' . urlencode( $redirect_to );
 			
-			// If we've never heard of this url before, add the SREG extension.
+			/* If we've never heard of this url before, add the SREG extension.
+				NOTE: Anonymous clients could attempt to authenticate with a series of OpenID urls, and
+				the presence or lack of SREG exposes whether a given OpenID has an account at this site. */
+				
 			if( $this->get_user_by_identity( $auth_request->endpoint->identity_url ) == NULL ) $auth_request->addExtensionArg('sreg', 'optional', 'nickname,email,fullname');
 			
 			$redirect_url = $auth_request->redirectURL( get_option('oid_trust_root'), $return_to );
