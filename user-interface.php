@@ -19,41 +19,59 @@ if ( !class_exists('WordpressOpenIDRegistrationUI') ) {
 		
 		add_action( 'admin_menu', array( $this, 'add_admin_panels' ) );
 		
-		if( class_exists('WordpressOpenIDRegistration'))
-			$this->oid = new WordpressOpenIDRegistration(); // Bootstrap Level 1
+		if( !class_exists('WordpressOpenIDRegistration')) {
+			error_log('WordpressOpenIDRegistration class not found. Ensure files are uploaded correctly.');
+			add_action('admin_notices', array( $this, 'admin_notices_plugin_problem_warning' ));
+			return;
+		}
+		
+		$this->oid = new WordpressOpenIDRegistration();
+		
+		if( null === $this->oid ) {
+			error_log('Could not create WordpressOpenIDRegistration object. Ensure files are uploaded correctly.');
+			add_action('admin_notices', array( $this, 'admin_notices_plugin_problem_warning' ));
+			return;
+		}
+		
+		$this->oid->startup_child_objects(); // Bootstrap Level 1
 
-		if( null !== $this->oid and $this->oid->enabled ) {  // Add hooks to the Public Wordpress User Interface
-			if( WORDPRESSOPENIDREGISTRATION_DEBUG ) error_log("Bootstrap Level 1 OK");
-			
-			foreach( $wordpressOpenIDRegistration_Status as $k=>$v) {
+		if( !$this->oid->enabled ) { // Something broke, can't start UI
+			error_log('WPOpenID core disabled.');
+			add_action('admin_notices', array( $this, 'admin_notices_plugin_problem_warning' ));
+			foreach( $wordpressOpenIDRegistration_Status as $k=>$v)
 				if( false === $v['state'] ) {
 					$this->oid->enabled = false;
 					error_log( 'OpenID consumer is Disabled: ' . $v['message'] . ' : By some requirement before starting UI.');
 				}
-			}
-			
-			$this->oid->startup(); // Bootstrap Level 2
-			if( $this->oid->enabled ) {  // Add hooks to the Public Wordpress User Interface
-				if( WORDPRESSOPENIDREGISTRATION_DEBUG ) error_log("Bootstrap Level 2 OK");
-				add_action('wp_authenticate', array( $this->oid, 'wp_authenticate' ));
-				if( get_option('oid_enable_commentform') ) {
-					add_filter( 'comments_template', array( $this, 'setup_openid_wp_login_ob'));
-				}
-				if( get_option('oid_enable_loginform') ) {
-					add_action( 'login_form', array( $this, 'login_form_v2_insert_fields'));
-					add_action( 'register_form', array( $this, 'openid_wp_register_v2'));
-					add_filter( 'login_errors', array( $this, 'login_form_v2_hide_username_password_errors'));
-					add_filter( 'register', array( $this, 'openid_wp_sidebar_register' ));
-				}
-				add_filter( 'loginout', array( $this, 'openid_wp_sidebar_loginout' ));
-			} else {
-				if( WORDPRESSOPENIDREGISTRATION_DEBUG ) error_log("Bootstrap Level 2 Fail");
-				add_action('admin_notices', array( $this, 'admin_notices_plugin_problem_warning' ));
-			}
-		} else {
-			if( WORDPRESSOPENIDREGISTRATION_DEBUG ) error_log("Bootstrap Level 1 Fail");
-			add_action('admin_notices', array( $this, 'admin_notices_plugin_problem_warning' ));
+			return;
 		}
+
+		// Add hooks to handle actions in Wordpress
+		add_action( 'wp_authenticate', array( $this->oid, 'wp_authenticate' ) ); // openid loop start
+		add_action( 'init', array( $this->oid, 'finish_login' ) ); // openid loop done
+
+		// Start and finish the redirect loop, for the admin pages profile.php & users.php
+		add_action( 'init', array( $this->oid, 'admin_page_handler' ) );
+
+		// Comment filtering
+		add_action( 'preprocess_comment', array( $this->oid, 'openid_wp_comment_tagging' ) );
+		add_filter( 'option_require_name_email', array( $this->oid, 'openid_bypass_option_require_name_email') );
+		add_filter( 'comment_notification_subject', array( $this->oid, 'openid_comment_notification_subject'), 10, 2 );
+		add_filter( 'comment_notification_text', array( $this->oid, 'openid_comment_notification_text'), 10, 2 );
+		
+		add_action( 'delete_user', array( $this->oid, 'drop_all_identities_for_user' ) );	// If user is dropped from database, remove their identities too.
+
+
+		if( get_option('oid_enable_commentform') ) {
+			add_filter( 'comments_template', array( $this, 'setup_openid_wp_login_ob'));
+		}
+		if( get_option('oid_enable_loginform') ) {
+			add_action( 'login_form', array( $this, 'login_form_v2_insert_fields'));
+			add_action( 'register_form', array( $this, 'openid_wp_register_v2'));
+			add_filter( 'login_errors', array( $this, 'login_form_v2_hide_username_password_errors'));
+			add_filter( 'register', array( $this, 'openid_wp_sidebar_register' ));
+		}
+		add_filter( 'loginout', array( $this, 'openid_wp_sidebar_loginout' ));
 	}
 	
 	function login_form_v2_hide_username_password_errors($r) {
@@ -148,10 +166,11 @@ if ( !class_exists('WordpressOpenIDRegistrationUI') ) {
 	
 	/*
 	 * Hook. Add OpenID login-n-comment box above the comment form.
-	 * Uses Output Buffering to rewrite the form html.
+	 * Uses Output Buffering to rewrite the comment form html.
 	 */
 	function setup_openid_wp_login_ob($string) {
-		ob_start( array( $this, "openid_wp_comment_form_ob" ) );
+		global $wordpressOpenIDRegistrationUI;
+		ob_start( array( $wordpressOpenIDRegistrationUI, "openid_wp_comment_form_ob" ) );
 		return $string;
 	}
 	
@@ -277,7 +296,7 @@ if ( !class_exists('WordpressOpenIDRegistrationUI') ) {
 	 * Display and handle updates from the Admin screen options page.
 	 */
 	function options_page() {
-			if( WORDPRESSOPENIDREGISTRATION_DEBUG ) error_log("Poststrap Level 3: OID " . ($this->oid->enabled? 'Enabled':'Disabled' ) );
+			if( WORDPRESSOPENIDREGISTRATION_DEBUG ) error_log("Poststrap Level 3.0: OID " . ($this->oid->enabled? 'Enabled':'Disabled' ) . ' (start of wordpress options page)' );
 		
 			// if we're posted back an update, let's set the values here
 			if ( isset($_POST['info_update']) ) {
@@ -415,10 +434,10 @@ if ( !class_exists('WordpressOpenIDRegistrationUI') ) {
      				<fieldset class="options">
      									
      					<table class="editform" cellspacing="2" cellpadding="5" width="100%">
-     					<tr valign="top"><th style="width: 10em; padding-top: 1.5em;">
-     						<label for="oid_trust_root">Trust root:</label>
+     					<tr valign="top"><th style="width: 10em;">
+     						<p><label for="oid_trust_root">Trust root:</label></p>
      					</th><td>
-     						<p><input type="text" size="50" name="oid_trust_root" id="oid_trust_root"
+							<p><input type="text" size="50" name="oid_trust_root" id="oid_trust_root"
      						value="<?php echo htmlentities(get_option('oid_trust_root')); ?>" /></p>
      						<p>Commenters will be asked whether they trust this url,
      						and its decedents, to know that they are logged in and control their identity url.
@@ -426,8 +445,8 @@ if ( !class_exists('WordpressOpenIDRegistrationUI') ) {
      						This should probably be <strong><?php echo $siteurl; ?></strong></p>
      					</td></tr>
      					
-     					<tr><th>
-     						<label for="enable_loginform">Login Form:</label>
+     					<tr valign="top"><th>
+     						<p><label for="enable_loginform">Login Form:</label></p>
      					</th><td>
      						<p><input type="checkbox" name="enable_loginform" id="enable_loginform" <?php
      						if( get_option('oid_enable_loginform') ) echo 'checked="checked"'
@@ -437,19 +456,20 @@ if ( !class_exists('WordpressOpenIDRegistrationUI') ) {
      						form.</p>
      					</td></tr>
 
-     					<tr><th>
-     						<label for="enable_commentform">Comment Form:</label>
+     					<tr valign="top"><th>
+     						<p><label for="enable_commentform">Comment Form:</label></p>
      					</th><td>
      						<p><input type="checkbox" name="enable_commentform" id="enable_commentform" <?php
      						if( get_option('oid_enable_commentform') ) echo 'checked="checked"'
      						?> />
      						<label for="enable_commentform">Add OpenID url box to the WordPress
-     						post comment form. In general, this should not be used. Rather, the
-							comment form should be tweaked as mentioned in the <em>readme</em></p>
+     						post comment form. This will work for most themes derived from Kubrick.
+							Template authors can tweak the comment form as mentioned in the
+							<a href="http://svn.sourceforge.net/viewvc/*checkout*/wpopenid/trunk/README">readme</a>.</p>
      					</td></tr>
      					
-     					<tr><th>
-     						<label for="enable_selfstyle">Internal Style:</label>
+     					<tr valign="top"><th>
+     						<p><label for="enable_selfstyle">Internal Style:</label></p>
      					</th><td>
      						<p><input type="checkbox" name="enable_selfstyle" id="enable_selfstyle" <?php
      						if( get_option('oid_enable_selfstyle') ) echo 'checked="checked"'

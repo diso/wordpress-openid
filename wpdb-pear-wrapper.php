@@ -4,14 +4,14 @@ if( class_exists( 'Auth_OpenID_MySQLStore' )) {
  class WP_OpenIDStore extends Auth_OpenID_MySQLStore {
     function WP_OpenIDStore()
     {
-        global $wpdb, $table_prefix;
+        global $wpdb;
 
         $conn = new WP_OpenIDConnection( $wpdb );
         parent::Auth_OpenID_MySQLStore(
             $conn,
-            $table_prefix . 'openid_settings',
-            $table_prefix . 'openid_associations',
-            $table_prefix . 'openid_nonces');
+            $wpdb->prefix . 'openid_settings',
+            $wpdb->prefix . 'openid_associations',
+            $wpdb->prefix . 'openid_nonces');
     }
 
     function isError($value)
