@@ -12,16 +12,13 @@ if ( !class_exists('WordpressOpenIDRegistrationUI') ) {
 	var $oid;  // Hold core logic instance
 	var $__flag_use_Viper007Bond_login_form = false;
 	
-	function WordpressOpenIDRegistrationUI() {}
-	
 	function startup() {
-		global $wordpressOpenIDRegistration_Status;
-		
-		add_action( 'admin_menu', array( $this, 'add_admin_panels' ) );
+		global $wordpressOpenIDRegistration_Status, $wordpressOpenIDRegistrationUI;
+		add_action( 'admin_menu', array( $wordpressOpenIDRegistrationUI, 'add_admin_panels' ) );
 		
 		if( !class_exists('WordpressOpenIDRegistration')) {
 			error_log('WordpressOpenIDRegistration class not found. Ensure files are uploaded correctly.');
-			add_action('admin_notices', array( $this, 'admin_notices_plugin_problem_warning' ));
+			add_action('admin_notices', array( $wordpressOpenIDRegistrationUI, 'admin_notices_plugin_problem_warning' ));
 			return;
 		}
 		
@@ -29,7 +26,7 @@ if ( !class_exists('WordpressOpenIDRegistrationUI') ) {
 		
 		if( null === $this->oid ) {
 			error_log('Could not create WordpressOpenIDRegistration object. Ensure files are uploaded correctly.');
-			add_action('admin_notices', array( $this, 'admin_notices_plugin_problem_warning' ));
+			add_action('admin_notices', array( $wordpressOpenIDRegistrationUI, 'admin_notices_plugin_problem_warning' ));
 			return;
 		}
 		
@@ -37,7 +34,7 @@ if ( !class_exists('WordpressOpenIDRegistrationUI') ) {
 
 		if( !$this->oid->enabled ) { // Something broke, can't start UI
 			error_log('WPOpenID core disabled.');
-			add_action('admin_notices', array( $this, 'admin_notices_plugin_problem_warning' ));
+			add_action('admin_notices', array( $wordpressOpenIDRegistrationUI, 'admin_notices_plugin_problem_warning' ));
 			foreach( $wordpressOpenIDRegistration_Status as $k=>$v)
 				if( false === $v['state'] ) {
 					$this->oid->enabled = false;
@@ -47,31 +44,31 @@ if ( !class_exists('WordpressOpenIDRegistrationUI') ) {
 		}
 
 		// Add hooks to handle actions in Wordpress
-		add_action( 'wp_authenticate', array( $this->oid, 'wp_authenticate' ) ); // openid loop start
-		add_action( 'init', array( $this->oid, 'finish_login' ) ); // openid loop done
+		add_action( 'wp_authenticate', array( $wordpressOpenIDRegistrationUI->oid, 'wp_authenticate' ) ); // openid loop start
+		add_action( 'init', array( $wordpressOpenIDRegistrationUI->oid, 'finish_login' ) ); // openid loop done
 
 		// Start and finish the redirect loop, for the admin pages profile.php & users.php
-		add_action( 'init', array( $this->oid, 'admin_page_handler' ) );
+		add_action( 'init', array( $wordpressOpenIDRegistrationUI->oid, 'admin_page_handler' ) );
 
 		// Comment filtering
-		add_action( 'preprocess_comment', array( $this->oid, 'openid_wp_comment_tagging' ) );
-		add_filter( 'option_require_name_email', array( $this->oid, 'openid_bypass_option_require_name_email') );
-		add_filter( 'comment_notification_subject', array( $this->oid, 'openid_comment_notification_subject'), 10, 2 );
-		add_filter( 'comment_notification_text', array( $this->oid, 'openid_comment_notification_text'), 10, 2 );
+		add_action( 'preprocess_comment', array( $wordpressOpenIDRegistrationUI->oid, 'openid_wp_comment_tagging' ) );
+		add_filter( 'option_require_name_email', array( $wordpressOpenIDRegistrationUI->oid, 'openid_bypass_option_require_name_email') );
+		add_filter( 'comment_notification_subject', array( $wordpressOpenIDRegistrationUI->oid, 'openid_comment_notification_subject'), 10, 2 );
+		add_filter( 'comment_notification_text', array( $wordpressOpenIDRegistrationUI->oid, 'openid_comment_notification_text'), 10, 2 );
 		
-		add_action( 'delete_user', array( $this->oid, 'drop_all_identities_for_user' ) );	// If user is dropped from database, remove their identities too.
+		add_action( 'delete_user', array( $wordpressOpenIDRegistrationUI->oid, 'drop_all_identities_for_user' ) );	// If user is dropped from database, remove their identities too.
 
 
 		if( get_option('oid_enable_commentform') ) {
-			add_filter( 'comments_template', array( $this, 'setup_openid_wp_login_ob'));
+			add_filter( 'comments_template', array( $wordpressOpenIDRegistrationUI, 'setup_openid_wp_login_ob'));
 		}
 		if( get_option('oid_enable_loginform') ) {
-			add_action( 'login_form', array( $this, 'login_form_v2_insert_fields'));
-			add_action( 'register_form', array( $this, 'openid_wp_register_v2'));
-			add_filter( 'login_errors', array( $this, 'login_form_v2_hide_username_password_errors'));
-			add_filter( 'register', array( $this, 'openid_wp_sidebar_register' ));
+			add_action( 'login_form', array( $wordpressOpenIDRegistrationUI, 'login_form_v2_insert_fields'));
+			add_action( 'register_form', array( $wordpressOpenIDRegistrationUI, 'openid_wp_register_v2'));
+			add_filter( 'login_errors', array( $wordpressOpenIDRegistrationUI, 'login_form_v2_hide_username_password_errors'));
+			add_filter( 'register', array( $wordpressOpenIDRegistrationUI, 'openid_wp_sidebar_register' ));
 		}
-		add_filter( 'loginout', array( $this, 'openid_wp_sidebar_loginout' ));
+		add_filter( 'loginout', array( $wordpressOpenIDRegistrationUI, 'openid_wp_sidebar_loginout' ));
 	}
 	
 	function login_form_v2_hide_username_password_errors($r) {
@@ -489,7 +486,8 @@ if ( !class_exists('WordpressOpenIDRegistrationUI') ) {
 	} // end function options_page
 
 	function add_admin_panels() {
-		add_options_page('Open ID options', 'OpenID', 8, 'global-openid-options', array( $this, 'options_page')  );
+		global $wordpressOpenIDRegistrationUI;
+		add_options_page('Open ID options', 'OpenID', 8, 'global-openid-options', array( $wordpressOpenIDRegistrationUI, 'options_page')  );
 		if( $this->oid->enabled ) add_submenu_page('profile.php', 'Your OpenID Identities', 'Your OpenID Identities', 'read', 'your-openid-identities', array($this, 'profile_panel') );
 	}
 
