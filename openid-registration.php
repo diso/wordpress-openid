@@ -10,7 +10,7 @@ Licence: Modified BSD, http://www.fsf.org/licensing/licenses/index_html#Modified
 */
 
 define ( 'OPENIDIMAGE', get_bloginfo('url') . '/wp-content/plugins/wpopenid/images/openid.gif' );
-define ( 'PLUGIN_VERSION', 82.42 );
+define ( 'PLUGIN_VERSION', 84 );
 
 /* Turn on logging of process via error_log() facility in PHP.
  * Used primarily for debugging, lots of output.
