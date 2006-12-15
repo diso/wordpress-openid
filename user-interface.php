@@ -14,6 +14,7 @@ if ( !class_exists('WordpressOpenIDRegistrationUI') ) {
 	
 	function startup() {
 		global $wordpressOpenIDRegistration_Status, $wordpressOpenIDRegistrationUI;
+		
 		add_action( 'admin_menu', array( $wordpressOpenIDRegistrationUI, 'add_admin_panels' ) );
 		
 		if( !class_exists('WordpressOpenIDRegistration')) {
@@ -30,17 +31,16 @@ if ( !class_exists('WordpressOpenIDRegistrationUI') ) {
 			return;
 		}
 		
-		$this->oid->startup_child_objects(); // Bootstrap Level 1
+		$this->oid->uptodate(); // Quick check for plugin OK state.
 
 		if( !$this->oid->enabled ) { // Something broke, can't start UI
 			error_log('WPOpenID plugin core is disabled -- Check Options -> OpenID tab for a full diagnositic report.');
 			add_action('admin_notices', array( $wordpressOpenIDRegistrationUI, 'admin_notices_plugin_problem_warning' ));
-			if( WORDPRESSOPENIDREGISTRATION_DEBUG ) return;
-			foreach( $wordpressOpenIDRegistration_Status as $k=>$v)
-				if( false === $v['state'] )
-					error_log( "WPOpenID Consumer is Disabled: [$k] " . strip_tags( $v['message'] ));
 			return;
 		}
+		
+		// Kickstart
+		register_activation_hook( 'wpopenid/openid-registration.php', array( $wordpressOpenIDRegistrationUI->oid, 'late_bind' ) );
 
 		// Add hooks to handle actions in Wordpress
 		add_action( 'wp_authenticate', array( $wordpressOpenIDRegistrationUI->oid, 'wp_authenticate' ) ); // openid loop start
@@ -306,7 +306,8 @@ if ( !class_exists('WordpressOpenIDRegistrationUI') ) {
 	 * Display and handle updates from the Admin screen options page.
 	 */
 	function options_page() {
-			if( WORDPRESSOPENIDREGISTRATION_DEBUG ) error_log("Poststrap Level 3.0: OID " . ($this->oid->enabled? 'Enabled':'Disabled' ) . ' (start of wordpress options page)' );
+			$this->oid->late_bind();
+			if( WORDPRESSOPENIDREGISTRATION_DEBUG ) error_log("WPOpenID Plugin: " . ($this->oid->enabled? 'Enabled':'Disabled' ) . ' (start of wordpress options page)' );
 		
 			// if we're posted back an update, let's set the values here
 			if ( isset($_POST['info_update']) ) {
@@ -509,11 +510,12 @@ if ( !class_exists('WordpressOpenIDRegistrationUI') ) {
 
 	function profile_panel() {
 		if( current_user_can('read') ) {
+			$this->oid->late_bind();
 		?>
 
 		<?php if( 'success' == $this->oid->action ) { ?>
 			<div class="updated"><p><strong>Success: <?php echo $this->oid->error; ?>.</strong></p></div>
-		<?php } elseif( '' !== $this->oid->error ) { ?>
+		<?php } elseif( $this->oid->error ) { ?>
 			<div class="error"><p><strong>Error: <?php echo $this->oid->error; ?>.</strong></p></div>
 		<?php } ?>
 

@@ -1,6 +1,6 @@
 <?php
 
-if( class_exists( 'Auth_OpenID_MySQLStore' )) {
+if( class_exists( 'Auth_OpenID_MySQLStore' ) && !class_exists('WP_OpenIDStore')) {
  class WP_OpenIDStore extends Auth_OpenID_MySQLStore {
     function WP_OpenIDStore()
     {
@@ -120,8 +120,7 @@ CREATE TABLE %s (
 	Modified to support setFetchMode() by Alan J Castonguay, 2006-06-16 
  */
 
-if ( !class_exists('WP_OpenIDConnection') ) {
- if (  class_exists('Auth_OpenID_DatabaseConnection') ) {
+if (  class_exists('Auth_OpenID_DatabaseConnection') && !class_exists('WP_OpenIDConnection') ) {
   class WP_OpenIDConnection extends Auth_OpenID_DatabaseConnection {
 	var $fetchmode = ARRAY_A;  // to fix PHP Fatal error:  Cannot use object of type stdClass as array in /usr/local/php5/lib/php/Auth/OpenID/SQLStore.php on line 495
 	
@@ -157,7 +156,6 @@ if ( !class_exists('WP_OpenIDConnection') ) {
 		if( DB_FETCHMODE_OBJECT == $mode ) $this->fetchmode = OBJECT;
 	}
   }
- }
 }
 
 
@@ -277,22 +275,21 @@ class Interpolater {
 /**
  * Interpolate MySQL queries
  */
-if  ( !class_exists('MySQLInterpolater') ) {
-class MySQLInterpolater extends Interpolater {
-	function MySQLInterpolater($dbconn=false) {
-		$this->dbconn = $dbconn;
-		$this->values = false;
-	}
+if  ( class_exists('Interpolater') && !class_exists('MySQLInterpolater') ) {
+	class MySQLInterpolater extends Interpolater {
+		function MySQLInterpolater($dbconn=false) {
+			$this->dbconn = $dbconn;
+			$this->values = false;
+		}
 	
-	function escapeString($s) {
-		if ($this->dbconn === false) {
-			return mysql_real_escape_string($s);
-		} else {
-			return mysql_real_escape_string($s, $this->dbconn);
+		function escapeString($s) {
+			if ($this->dbconn === false) {
+				return mysql_real_escape_string($s);
+			} else {
+				return mysql_real_escape_string($s, $this->dbconn);
+			}
 		}
 	}
 }
-}
-
 
 ?>

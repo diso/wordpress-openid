@@ -1,9 +1,13 @@
 Roadmap for MU support:
 Trustroot should have a * if constant( "VHOST" ) !== 'no'
 
-
+General usability:
 Returns from begin() need better error handling.
-Username should be normalized to http-domain-com-path-component-query-component
-
 Incompatible with Clutter Free. (Global vars?)
-Incompatible with K2's comments. (Comment type?)
+
+Performance:
+Verify late binding of library objects implementation.
+ - soft check against oid_plugin_enabled & oid_plugin_version options before showing UI elements.
+ - hard check before object creation, database operations, and during Options display.
+	- failed hard check sets oid_plugin_enabled = False, so subsequent soft check fails.
+
