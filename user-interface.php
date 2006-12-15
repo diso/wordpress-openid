@@ -410,6 +410,8 @@ if ( !class_exists('WordpressOpenIDRegistrationUI') ) {
 				$vercmp_message .= 'Could not contact sourceforge for latest version information.';
 			}
 			wordpressOpenIDRegistration_Status_Set( 'Plugin version', 'info', $vercmp_message);
+			wordpressOpenIDRegistration_Status_Set( 'Plugin Database Version', 'info', 'Plugin database is currently at revision ' . get_option('oid_plugin_version') );
+			
 			wordpressOpenIDRegistration_Status_Set( '<strong>Overall Plugin Status</strong>', ($this->oid->enabled), 'There are problems above that must be dealt with before the plugin can be used.' );
 
 			?>
