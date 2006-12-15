@@ -73,7 +73,6 @@ if  ( !class_exists('WordpressOpenIDRegistration') ) {
 			if( function_exists('Auth_OpenID_detectMathLibrary') ) {
 				global $_Auth_OpenID_math_extensions;
 				$loaded_long_integer_library = Auth_OpenID_detectMathLibrary( $_Auth_OpenID_math_extensions );
-				print_r($loaded_long_integer_library);
 				if( $loaded_long_integer_library === false ) {
 					// This PHP installation has no big integer math library. Define Auth_OpenID_NO_MATH_SUPPORT to use this library in dumb mode.
 					define( Auth_OpenID_NO_MATH_SUPPORT, true );
@@ -780,6 +779,8 @@ if( !function_exists( 'file_exists_in_path' ) ) {
 		$paths = explode(PATH_SEPARATOR, get_include_path());
 		foreach ($paths as $path) {
 			$fullpath = $path . DIRECTORY_SEPARATOR . $file;
+			if( substr( $path, 0, 1 ) == '.' && substr( $path, 0, 1 ) != '..' ) // Suggested by John Arnold
+				$fullpath = dirname( __FILE__ ) . DIRECTORY_SEPARATOR . $fullpath;
 			if (file_exists($fullpath)) return $fullpath;
 		}
 		return false;
@@ -800,6 +801,7 @@ function wordpressOpenIDRegistration_Status_Set($slug, $state, $message) {
 	}
 }
 
+if( WORDPRESSOPENIDREGISTRATION_DEBUG ) error_log("-------------------wpopenid-------------------");
 wordpressOpenIDRegistration_Status_Set('file:error_log', 'info', ini_get('error_log') ? ("Logging errors via PHP's error_log faculty to: " . ini_get('error_log')) : "PHP error_log is not set." );
 
 $wordpressOpenIDRegistration_Required_Files = array(
@@ -824,20 +826,25 @@ function wordpressOpenIDRegistration_Load_Required_Files( $wordpressOpenIDRegist
 		$_Services_Yadis_ns_map, $_Auth_OpenID_namespaces, $__UCSCHAR, $__IPRIVATE, $DEFAULT_PROXY,
 		$XRI_AUTHORITIES, $_escapeme_re, $_xref_re, $__Auth_OpenID_PEAR_AVAILABLE,
 		$_Auth_OpenID_math_extensions, $_Auth_OpenID_DEFAULT_MOD, $_Auth_OpenID_DEFAULT_GEN;
-	// $parts, $pair, $n, $m;  // Unnessessary global variables absorbed
-	$global_variables = array_keys($GLOBALS);
-	ini_set('include_path',ini_get('include_path').PATH_SEPARATOR.dirname(__FILE__));   // Add plugin directory to include path temporarily
+	$absorb = array( 'parts','pair','n','m', '___k','___v','___local_variables' );  // Unnessessary global variables absorbed
+	$___local_variables = array_keys( get_defined_vars() );
+	set_include_path( get_include_path() . PATH_SEPARATOR . dirname(__FILE__) );   // Add plugin directory to include path temporarily
 	foreach( $wordpressOpenIDRegistration_Required_Files as $___k => $___v ) {
-		if( file_exists_in_path( $___k ) ) {
-			if( include_once( $___k ) ) {
+		//if( file_exists_in_path( $___k ) ) {
+			if( @include_once( $___k ) ) {
 				wordpressOpenIDRegistration_Status_Set('loading file: '.$___k, true, '');
 				continue;
 			}
-		}
+		//}
 		wordpressOpenIDRegistration_Status_Set('file:'.$___k, false, $___v );
 		break;
 	}
-	ini_restore('include_path');  // Leave no footprints behind
+	restore_include_path();  // Leave no footprints behind
+
+	$___local_variables = array_diff( array_keys( get_defined_vars() ), $___local_variables );
+	foreach( $___local_variables as $___v ) if( !in_array( $___v, $absorb )) {
+		wordpressOpenIDRegistration_Status_Set('unknown library variable: '.$___v, false, 'This library variable is unknown, left unset.' );
+	}
 }
 
 /* Load required libraries into global context. */

@@ -17,7 +17,7 @@ if ( !class_exists('WordpressOpenIDRegistrationUI') ) {
 		add_action( 'admin_menu', array( $wordpressOpenIDRegistrationUI, 'add_admin_panels' ) );
 		
 		if( !class_exists('WordpressOpenIDRegistration')) {
-			error_log('WordpressOpenIDRegistration class not found. Ensure files are uploaded correctly.');
+			error_log('WPOpenID plugin core is disabled -- WordpressOpenIDRegistration class not found. Ensure files are uploaded correctly.');
 			add_action('admin_notices', array( $wordpressOpenIDRegistrationUI, 'admin_notices_plugin_problem_warning' ));
 			return;
 		}
@@ -25,7 +25,7 @@ if ( !class_exists('WordpressOpenIDRegistrationUI') ) {
 		$this->oid = new WordpressOpenIDRegistration();
 		
 		if( null === $this->oid ) {
-			error_log('Could not create WordpressOpenIDRegistration object. Ensure files are uploaded correctly.');
+			error_log('WPOpenID plugin core is disabled -- Could not create WordpressOpenIDRegistration object. Ensure files are uploaded correctly.');
 			add_action('admin_notices', array( $wordpressOpenIDRegistrationUI, 'admin_notices_plugin_problem_warning' ));
 			return;
 		}
@@ -33,13 +33,12 @@ if ( !class_exists('WordpressOpenIDRegistrationUI') ) {
 		$this->oid->startup_child_objects(); // Bootstrap Level 1
 
 		if( !$this->oid->enabled ) { // Something broke, can't start UI
-			error_log('WPOpenID core disabled.');
+			error_log('WPOpenID plugin core is disabled -- Check Options -> OpenID tab for a full diagnositic report.');
 			add_action('admin_notices', array( $wordpressOpenIDRegistrationUI, 'admin_notices_plugin_problem_warning' ));
+			if( WORDPRESSOPENIDREGISTRATION_DEBUG ) return;
 			foreach( $wordpressOpenIDRegistration_Status as $k=>$v)
-				if( false === $v['state'] ) {
-					$this->oid->enabled = false;
-					error_log( 'OpenID consumer is Disabled: ' . $v['message'] . ' : By some requirement before starting UI.');
-				}
+				if( false === $v['state'] )
+					error_log( "WPOpenID Consumer is Disabled: [$k] " . strip_tags( $v['message'] ));
 			return;
 		}
 
@@ -256,7 +255,8 @@ if ( !class_exists('WordpressOpenIDRegistrationUI') ) {
 			background-position: 0 50%; padding-left: 18px; " ') : '';
 			
 		$openid = str_replace(  array('name="author"', "$author_name"),
-			array( $style.'name="openid_url" class="commentform_openid"', 'Sign in with your OpenID <a href="http://www.openidenabled.com/openid/about-openid">?</a>'), $author );
+			array( $style.'name="openid_url" class="commentform_openid"',
+			'Sign in with your OpenID <a href="http://openid.net/">?</a>'), $author );
 
 		if( preg_match( '/id="[^"]+"/', $openid )) {
 			$openid = preg_replace( '/id="[^"]+"/', 'id="commentform_openid"', $openid );
@@ -418,7 +418,7 @@ if ( !class_exists('WordpressOpenIDRegistrationUI') ) {
 			</style>
 			<?php
 			if( $this->oid->enabled ) {	// Display status information
-				?><div id="openidrollup" class="updated"><p><strong>Status information:</strong></p><?php
+				?><div id="openidrollup" class="updated"><p><strong>Status information:</strong> All Systems Nominal</p><?php
 			} else {
 				?><div class="error"><p><strong>Plugin is currently disabled. Fix the problem, then Deactivate/Reactivate the plugin.</strong></p><?php
 			}
