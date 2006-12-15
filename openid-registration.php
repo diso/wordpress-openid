@@ -68,6 +68,18 @@ if  ( !class_exists('WordpressOpenIDRegistration') ) {
 				$this->enabled = false;
 				return false;
 			}
+			
+			$loaded_long_integer_library = false;
+			if( function_exists('Auth_OpenID_detectMathLibrary') ) {
+				global $_Auth_OpenID_math_extensions;
+				$loaded_long_integer_library = Auth_OpenID_detectMathLibrary( $_Auth_OpenID_math_extensions );
+				print_r($loaded_long_integer_library);
+				if( $loaded_long_integer_library === false ) {
+					// This PHP installation has no big integer math library. Define Auth_OpenID_NO_MATH_SUPPORT to use this library in dumb mode.
+					define( Auth_OpenID_NO_MATH_SUPPORT, true );
+				}
+			}
+			
 
 			if( !class_exists('WP_OpenIDStore') ) {
 				wordpressOpenIDRegistration_Status_Set('class: Auth_OpenID_MySQLStore', class_exists('Auth_OpenID_MySQLStore'), 'This class is provided by the JanRain library, used to store association and nonce data.');

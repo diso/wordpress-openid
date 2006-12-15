@@ -369,6 +369,9 @@ if ( !class_exists('WordpressOpenIDRegistrationUI') ) {
 				wordpressOpenIDRegistration_Status_Set( 'Loaded long integer library', false, 'The underlying OpenID library function Auth_OpenID_detectMathLibrary is not available. Install library first.' );
 			}
 			
+			if( defined( 'Auth_OpenID_NO_MATH_SUPPORT' ) ) {
+				wordpressOpenIDRegistration_Status_Set( 'Loaded long integer library', false, 'The OpenID Library is operating Dumb Mode, since it doesn\'t have a big integer library. Recommend installing GMP support.' );
+			}
 
 			
 			/* Check for updates via SF RSS feed */
