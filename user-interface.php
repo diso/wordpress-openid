@@ -252,8 +252,11 @@ if ( !class_exists('WordpressOpenIDRegistrationUI') ) {
 		$author = $chunks[0]['line'];
 		$author_name = trim(strip_tags($author));
 
+		$style = get_option('oid_enable_selfstyle') ? ('style="background: url('.OPENIDIMAGE.') no-repeat;
+			background-position: 0 50%; padding-left: 18px; " ') : '';
+			
 		$openid = str_replace(  array('name="author"', "$author_name"),
-			array('name="openid_url" class="commentform_openid"', 'Sign in with your OpenID'), $author );
+			array( $style.'name="openid_url" class="commentform_openid"', 'Sign in with your OpenID <a href="http://www.openidenabled.com/openid/about-openid">?</a>'), $author );
 
 		if( preg_match( '/id="[^"]+"/', $openid )) {
 			$openid = preg_replace( '/id="[^"]+"/', 'id="commentform_openid"', $openid );
