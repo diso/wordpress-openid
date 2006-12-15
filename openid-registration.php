@@ -2,7 +2,7 @@
 /*
 Plugin Name: OpenID Registration
 Plugin URI: http://sourceforge.net/projects/wpopenid/
-Description: Wordpress OpenID Registration, Authentication, and Commenting. Requires JanRain PHP OpenID library 1.2.0
+Description: Wordpress OpenID Registration, Authentication, and Commenting. Requires JanRain PHP OpenID library 1.2.1.
 Author: Alan J Castonguay, Hans Granqvist
 Author URI: http://blog.verselogic.net/projects/wordpress/wordpress-openid-plugin/
 Version: $Rev$
@@ -763,13 +763,11 @@ if  ( !class_exists('WordpressOpenIDRegistration') ) {
  */
 if( !function_exists( 'file_exists_in_path' ) ) {
 	function file_exists_in_path ($file) {
+		if (DIRECTORY_SEPARATOR !== '/') $file = str_replace ( '/', DIRECTORY_SEPARATOR, $file );
 		if( file_exists( $file ) ) return $file;
-		$relativeto = dirname( __FILE__ ) . DIRECTORY_SEPARATOR;
 		$paths = explode(PATH_SEPARATOR, get_include_path());
 		foreach ($paths as $path) {
 			$fullpath = $path . DIRECTORY_SEPARATOR . $file;
-			if( substr( $path, 0, 1 ) !== '/' )
-				$fullpath = $relativeto . $fullpath;
 			if (file_exists($fullpath)) return $fullpath;
 		}
 		return false;
@@ -804,6 +802,7 @@ $wordpressOpenIDRegistration_Required_Files = array(
 	'Auth/OpenID/Consumer.php' => 'Do you have the <a href="http://www.openidenabled.com/openid/libraries/php/">JanRain PHP OpenID library</a> installed in your path?'
 	);
 
+
 function wordpressOpenIDRegistration_Load_Required_Files( $wordpressOpenIDRegistration_Required_Files ) {
 	/* Library may declare global variables. Some of these are required by other
 	 * classes or functions in the library, and some are not. We're going to 
@@ -815,7 +814,7 @@ function wordpressOpenIDRegistration_Load_Required_Files( $wordpressOpenIDRegist
 		$_Auth_OpenID_math_extensions, $_Auth_OpenID_DEFAULT_MOD, $_Auth_OpenID_DEFAULT_GEN;
 	// $parts, $pair, $n, $m;  // Unnessessary global variables absorbed
 	$global_variables = array_keys($GLOBALS);
-	ini_set('include_path',ini_get('include_path').':'.dirname(__FILE__));   // Add plugin directory to include path temporarily
+	ini_set('include_path',ini_get('include_path').PATH_SEPARATOR.dirname(__FILE__));   // Add plugin directory to include path temporarily
 	foreach( $wordpressOpenIDRegistration_Required_Files as $___k => $___v ) {
 		if( file_exists_in_path( $___k ) ) {
 			if( include_once( $___k ) ) {

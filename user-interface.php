@@ -61,7 +61,9 @@ if ( !class_exists('WordpressOpenIDRegistrationUI') ) {
 
 		if( get_option('oid_enable_commentform') ) {
 			add_filter( 'comments_template', array( $wordpressOpenIDRegistrationUI, 'setup_openid_wp_login_ob'));
+			add_filter( 'get_comment_author_link', array( $wordpressOpenIDRegistrationUI, 'openid_comment_author_link_prefx'));
 		}
+
 		if( get_option('oid_enable_loginform') ) {
 			add_action( 'login_form', array( $wordpressOpenIDRegistrationUI, 'login_form_v2_insert_fields'));
 			add_action( 'register_form', array( $wordpressOpenIDRegistrationUI, 'openid_wp_register_v2'));
@@ -160,6 +162,14 @@ if ( !class_exists('WordpressOpenIDRegistrationUI') ) {
 		return str_replace( 'action=logout', 'action=logout' . ini_get('arg_separator.output') . 'redirect_to=' . urlencode($_SERVER["REQUEST_URI"]), $link );
 	}
 	
+	// Add OpenID logo beside username for theme.
+	function openid_comment_author_link_prefx( $html ) {
+		global $comment_is_openid;
+		get_comment_type();
+		if( $comment_is_openid === true )
+			return '<img src="'.OPENIDIMAGE.'" height="16" width="16" alt="OpenID" />' . $html;
+		return $html;
+	}
 	
 	/*
 	 * Hook. Add OpenID login-n-comment box above the comment form.
@@ -658,7 +668,6 @@ if( !function_exists( 'wpopenid_comment_form_post' ) ) {
 		<?php
 	}
 }
-
 
 
 ?>
