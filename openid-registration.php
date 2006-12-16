@@ -10,7 +10,7 @@ Licence: Modified BSD, http://www.fsf.org/licensing/licenses/index_html#Modified
 */
 
 define ( 'OPENIDIMAGE', get_bloginfo('url') . '/wp-content/plugins/wpopenid/images/openid.gif' );
-define ( 'PLUGIN_VERSION', (int)str_replace( '$Rev: ', '', '$Rev$') );
+define ( 'WPOPENID_PLUGIN_VERSION', (int)str_replace( '$Rev: ', '', '$Rev$') );
 
 /* Turn on logging of process via error_log() facility in PHP.
  * Used primarily for debugging, lots of output.
@@ -44,9 +44,9 @@ if  ( !class_exists('WordpressOpenIDRegistration') ) {
 
 		/* Soft verification of plugin activation OK */
 		function uptodate() {
-			if( get_option('oid_plugin_version') != PLUGIN_VERSION ) {  // Database version mismatch, force dbDelta() in admin interface.
+			if( get_option('oid_plugin_version') != WPOPENID_PLUGIN_VERSION ) {  // Database version mismatch, force dbDelta() in admin interface.
 				$this->enabled = false;
-				wordpressOpenIDRegistration_Status_Set('Plugin Database Version', false, 'Plugin database is out of date. ' . get_option('oid_plugin_version') . ' < ' . PLUGIN_VERSION );
+				wordpressOpenIDRegistration_Status_Set('Plugin Database Version', false, 'Plugin database is out of date. ' . get_option('oid_plugin_version') . ' < ' . WPOPENID_PLUGIN_VERSION );
 				update_option('oid_plugin_enabled', false);
 				return false;
 			}
@@ -143,7 +143,7 @@ if  ( !class_exists('WordpressOpenIDRegistration') ) {
 				$this->enabled = $this->check_tables();
 				if( !$this->uptodate() ) {
 					update_option('oid_plugin_enabled', true);
-					update_option('oid_plugin_version', PLUGIN_VERSION );
+					update_option('oid_plugin_version', WPOPENID_PLUGIN_VERSION );
 					$this->uptodate();
 				}
 			} else {

@@ -403,10 +403,10 @@ if ( !class_exists('WordpressOpenIDRegistrationUI') ) {
 			}
 
 
-			$vercmp_message = 'Running version ' . (int)PLUGIN_VERSION . '. ';
+			$vercmp_message = 'Running version ' . (int)WPOPENID_PLUGIN_VERSION . '. ';
 			if( $matches[1] ) {
 				$vercmp_message .= "Latest stable release is $matches[1]. ";
-				switch( version_compare( (int)PLUGIN_VERSION, (int)$matches[1] ) ) {
+				switch( version_compare( (int)WPOPENID_PLUGIN_VERSION, (int)$matches[1] ) ) {
 					case 1: $vercmp_message .= 'This revision is newer than the latest stable.'; break;
 					case 0: $vercmp_message .= 'Up to date.'; break;
 					case -1: $vercmp_message .= '<a href="http://sourceforge.net/project/showfiles.php?group_id=167532&package_id=190501">A new version of this plugin is available</a>.'; break;
