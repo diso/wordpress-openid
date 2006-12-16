@@ -388,7 +388,6 @@ if ( !class_exists('WordpressOpenIDRegistrationUI') ) {
 			@include_once (ABSPATH . WPINC . '/rss.php');
 			@include_once (ABSPATH . WPINC . '/rss-functions.php');
 			$plugins = get_plugins();
-			$plugin_version = (int)str_replace( '$Rev: ', '', $plugins['wpopenid/openid-registration.php']['Version'] );
 			$matches = array();
 			if( function_exists( 'fetch_simplepie' )) {
 				$rss = @fetch_simplepie('http://sourceforge.net/export/rss2_projfiles.php?group_id=167532');
@@ -404,10 +403,10 @@ if ( !class_exists('WordpressOpenIDRegistrationUI') ) {
 			}
 
 
-			$vercmp_message = "Running version $plugin_version. ";
+			$vercmp_message = 'Running version ' . (int)PLUGIN_VERSION . '. ';
 			if( $matches[1] ) {
 				$vercmp_message .= "Latest stable release is $matches[1]. ";
-				switch( version_compare( (int)$plugin_version, (int)$matches[1] ) ) {
+				switch( version_compare( (int)PLUGIN_VERSION, (int)$matches[1] ) ) {
 					case 1: $vercmp_message .= 'This revision is newer than the latest stable.'; break;
 					case 0: $vercmp_message .= 'Up to date.'; break;
 					case -1: $vercmp_message .= '<a href="http://sourceforge.net/project/showfiles.php?group_id=167532&package_id=190501">A new version of this plugin is available</a>.'; break;
@@ -416,7 +415,7 @@ if ( !class_exists('WordpressOpenIDRegistrationUI') ) {
 				$vercmp_message .= 'Could not contact sourceforge for latest version information.';
 			}
 			wordpressOpenIDRegistration_Status_Set( 'Plugin version', 'info', $vercmp_message);
-			wordpressOpenIDRegistration_Status_Set( 'Plugin Database Version', 'info', 'Plugin database is currently at revision ' . get_option('oid_plugin_version') );
+			wordpressOpenIDRegistration_Status_Set( 'Plugin Database Version', 'info', 'Plugin database is currently at revision ' . get_option('oid_plugin_version') . '.' );
 			
 			wordpressOpenIDRegistration_Status_Set( '<strong>Overall Plugin Status</strong>', ($this->oid->enabled), 'There are problems above that must be dealt with before the plugin can be used.' );
 
