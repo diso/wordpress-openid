@@ -376,6 +376,12 @@ if ( !class_exists('WordpressOpenIDRegistrationUI') ) {
 			if( defined( 'Auth_OpenID_NO_MATH_SUPPORT' ) ) {
 				wordpressOpenIDRegistration_Status_Set( 'Loaded long integer library', false, 'The OpenID Library is operating Dumb Mode, since it doesn\'t have a big integer library. Recommend installing GMP support.' );
 			}
+			if( defined( 'Auth_OpenID_RAND_SOURCE' ) ) {
+				wordpressOpenIDRegistration_Status_Set( 'Cryptographic Randomness Source', (Auth_OpenID_RAND_SOURCE===null) ? false: 'info' ,
+					(Auth_OpenID_RAND_SOURCE===null)
+					? '/dev/urandom unavailable, using an <a href="http://php.net/mt_rand">insecure random number generator</a>. <a href="http://www.php.net/manual/en/features.safe-mode.php#ini.open-basedir">open_basedir</a> is "' . ini_get('open_basedir') . '"'
+					: Auth_OpenID_RAND_SOURCE );
+			}
 
 			
 			/* Check for updates via SF RSS feed */

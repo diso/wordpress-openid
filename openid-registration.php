@@ -65,6 +65,11 @@ if  ( !class_exists('WordpressOpenIDRegistration') ) {
 
 			if( WORDPRESSOPENIDREGISTRATION_DEBUG ) error_log('WPOpenID Plugin: Late Binding Now');
 			
+			$f = @fopen( '/dev/urandom', 'r');
+            if ($f === false) {
+                define( 'Auth_OpenID_RAND_SOURCE', null );
+            }
+			
 			/* include_once() all required library files */
 			global $wordpressOpenIDRegistration_Required_Files;
 			wordpressOpenIDRegistration_Load_Required_Files( $wordpressOpenIDRegistration_Required_Files );
