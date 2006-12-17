@@ -85,6 +85,20 @@ modified comments.php from the default Kubrick theme.
 <?php endif; ?>
 
 
-3. Useful hooks
+3. Useful Hooks
 
-Provided are get_comments_openid() & is_comment_openid().
+For use in Wordpress template files, exist the following functions:
+
+	Anywhere:
+	is_user_openid() - return true if the currently logged in user registered with OpenID.
+
+	In the LOOP:
+	is_comment_openid() - return true if the current comment was left by a user logged in with OpenID.
+	get_comment_openid() - prints OpenID logo if is_comment_openid() is true.
+	
+	Comment Form:
+	wpopenid_comment_form() - 
+
+4. Form Element Names
+
+	On a comment form: 
