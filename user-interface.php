@@ -139,7 +139,7 @@ if ( !class_exists('WordpressOpenIDRegistrationUI') ) {
 				$link = preg_replace( '#<a href="' . get_settings('siteurl') . '/wp-admin/">Site Admin</a>#', '<a href="' . get_settings('siteurl') . '/wp-admin/profile.php">' . __('Profile') . '</a>', $link );
 			}
 			if( $current_user->ID ) {
-				$chunk ='<li>Logged in as '
+				$chunk ='<li class="wpopenid_login_item">Logged in as '
 					. ( is_user_openid()
 					  ? ('<img src="'.OPENIDIMAGE.'" height="16" width="16" alt="[oid]" />') : '' )
 					. ( !empty($current_user->user_url)
@@ -149,7 +149,7 @@ if ( !class_exists('WordpressOpenIDRegistrationUI') ) {
 			} else {
 				$style = get_option('oid_enable_selfstyle') ? ('style="border: 1px solid #ccc; background: url('.OPENIDIMAGE.') no-repeat;
 					background-position: 0 50%; padding-left: 18px; " ') : '';
-				$chunk ='<li><form method="post" action="wp-login.php" style="display:inline;">
+				$chunk ='<li class="wpopenid_login_item"><form method="post" action="wp-login.php" style="display:inline;">
 					<input ' . $style . 'class="openid_url_sidebar" name="openid_url" size="17" />
 					<input type="hidden" name="redirect_to" value="'. $_SERVER["REQUEST_URI"] .'" /></form></li>';
 			}
@@ -157,7 +157,8 @@ if ( !class_exists('WordpressOpenIDRegistrationUI') ) {
 	}
 
 	function openid_wp_sidebar_loginout( $link ) {
-		if( strstr('redirect_to', $link )) return $link;
+		if( '' == $link ) return '';
+		if( strpos('redirect_to', $link )) return $link;
 		return str_replace( 'action=logout', 'action=logout' . ini_get('arg_separator.output') . 'redirect_to=' . urlencode($_SERVER["REQUEST_URI"]), $link );
 	}
 	

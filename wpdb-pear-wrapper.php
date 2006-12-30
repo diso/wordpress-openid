@@ -54,16 +54,15 @@ if( class_exists( 'Auth_OpenID_MySQLStore' ) && !class_exists('WP_OpenIDStore'))
         $this->sql['nonce_table'] =
             "
 CREATE TABLE %s (
-  nonce char(8) UNIQUE,
-  expires int(11),
-  PRIMARY KEY  (nonce)
+  nonce char(8) PRIMARY KEY,
+  expires int(11)
 )
 ";
 
         $this->sql['assoc_table'] =
             "
 CREATE TABLE %s (
-  server_url blob,
+  server_url text NOT NULL,
   handle varchar(255),
   secret blob,
   issued int(11),
@@ -76,9 +75,8 @@ CREATE TABLE %s (
         $this->sql['settings_table'] =
             "
 CREATE TABLE %s (
-  setting varchar(128) UNIQUE,
-  value blob,
-  PRIMARY KEY  (setting)
+  setting varchar(128) PRIMARY KEY,
+  value blob
 )
 ";
 
