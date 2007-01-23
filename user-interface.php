@@ -80,7 +80,8 @@ if ( !class_exists('WordpressOpenIDRegistrationUI') ) {
 	}
 
 	function login_form_v2_insert_fields() {
-		$this->__flag_use_Viper007Bond_login_form = true;
+		global $wordpressOpenIDRegistrationUI;
+		$wordpressOpenIDRegistrationUI->__flag_use_Viper007Bond_login_form = true;
 		$style = get_option('oid_enable_selfstyle') ? ('style="background: #f4f4f4 url('.OPENIDIMAGE.') no-repeat;
 			background-position: 0 50%; padding-left: 18px;" ') : '';
 		?>
@@ -98,21 +99,23 @@ if ( !class_exists('WordpressOpenIDRegistrationUI') ) {
 	 *  Replaces parts of the wp-login.php form.
 	 */
 	function openid_wp_login_ob( $form ) {
-			if( $this->__flag_use_Viper007Bond_login_form ) return $form;
-			global $redirect_to;
+		global $wordpressOpenIDRegistrationUI;
+		if( $wordpressOpenIDRegistrationUI->__flag_use_Viper007Bond_login_form ) return $form;
 
-			$style = get_option('oid_enable_selfstyle') ? ('style="background: #f4f4f4 url('.OPENIDIMAGE.') no-repeat;
-				background-position: 0 50%; padding-left: 18px;" ') : '';
-				
-			$newform = '<h2>WordPress User</h2>';
-			$form = preg_replace( '#<form[^>]*>#', '\\0 <h2>WordPress User:</h2>', $form, 1 );
+		global $redirect_to;
+
+		$style = get_option('oid_enable_selfstyle') ? ('style="background: #f4f4f4 url('.OPENIDIMAGE.') no-repeat;
+			background-position: 0 50%; padding-left: 18px;" ') : '';
 			
-			$newform = '<p align="center">-or-</p><h2>OpenID Identity:</h2><p><label>'
-				.__('OpenID Identity Url:').
-				' <small><a href="http://openid.net/">' . __('What is this?') . '</a></small><br/><input ' . $style
-				.'type="text" class="input openid_url" name="openid_url" id="log" size="20" tabindex="5" /></label></p>';
-			$form = preg_replace( '#<p class="submit">#', $newform . '\\0' , $form, 1 );
-			return $form;
+		$newform = '<h2>WordPress User</h2>';
+		$form = preg_replace( '#<form[^>]*>#', '\\0 <h2>WordPress User:</h2>', $form, 1 );
+		
+		$newform = '<p align="center">-or-</p><h2>OpenID Identity:</h2><p><label>'
+			.__('OpenID Identity Url:').
+			' <small><a href="http://openid.net/">' . __('What is this?') . '</a></small><br/><input ' . $style
+			.'type="text" class="input openid_url" name="openid_url" id="log" size="20" tabindex="5" /></label></p>';
+		$form = preg_replace( '#<p class="submit">#', $newform . '\\0' , $form, 1 );
+		return $form;
 	}
 
 

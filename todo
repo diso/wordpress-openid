@@ -1,5 +1,6 @@
 Roadmap for MU support:
 Trustroot should have a * if constant( "VHOST" ) !== 'no'
+table_prefix not being used correctly for table creation.
 
 General usability:
 Returns from begin() need better error handling.
