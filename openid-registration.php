@@ -5,12 +5,12 @@ Plugin URI: http://sourceforge.net/projects/wpopenid/
 Description: Wordpress OpenID Registration, Authentication, and Commenting. Requires JanRain PHP OpenID library 1.2.1.  Includes Will Norris's <a href="http://willnorris.com/2007/02/unobtrusive-wpopenid">Unobtrusive OpenID</a> patch.
 Author: Alan J Castonguay, Hans Granqvist
 Author URI: http://blog.verselogic.net/projects/wordpress/wordpress-openid-plugin/
-Version: $Rev: 5 $
+Version: $Rev: 6 $
 Licence: Modified BSD, http://www.fsf.org/licensing/licenses/index_html#ModifiedBSD
 */
 
 define ( 'OPENIDIMAGE', get_bloginfo('url') . '/wp-content/plugins/wpopenid/images/openid.gif' );
-define ( 'WPOPENID_PLUGIN_VERSION', (int)str_replace( '$Rev: 5 $') );
+define ( 'WPOPENID_PLUGIN_VERSION', (int)str_replace( '$Rev: 6 $') );
 
 /* Turn on logging of process via error_log() facility in PHP.
  * Used primarily for debugging, lots of output.
@@ -908,7 +908,7 @@ function wordpressOpenIDRegistration_Load_Required_Files( $wordpressOpenIDRegist
 		$_Auth_OpenID_math_extensions, $_Auth_OpenID_DEFAULT_MOD, $_Auth_OpenID_DEFAULT_GEN;
 	$absorb = array( 'parts','pair','n','m', '___k','___v','___local_variables' );  // Unnessessary global variables absorbed
 	$___local_variables = array_keys( get_defined_vars() );
-	set_include_path( get_include_path() . PATH_SEPARATOR . dirname(__FILE__) );   // Add plugin directory to include path temporarily
+	set_include_path( dirname(__FILE__) . PATH_SEPARATOR . get_include_path() );   // Add plugin directory to include path temporarily
 	foreach( $wordpressOpenIDRegistration_Required_Files as $___k => $___v ) {
 		//if( file_exists_in_path( $___k ) ) {
 			if( @include_once( $___k ) ) {
