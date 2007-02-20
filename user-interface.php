@@ -213,6 +213,11 @@ if ( !class_exists('WordpressOpenIDRegistrationUI') ) {
 			return $html;
 		}
 		
+		if (get_option('oid_enable_unobtrusive') && get_option('oid_enable_selfstyle')) {
+			$newhtml = preg_replace( '|(.*<label for="url">(.*?)?)((</small>)?</label>.*)|', '\\1 <a id="openid_enabled_link" href="http://openid.net" style="background: url(\''.OPENIDIMAGE.'\') center left no-repeat; padding-left: 18px;">(OpenID Enabled)</a>\\3', $html );
+			return $newhtml;
+		} else {
+			
 		// 1. Set aside everything outside the <FORM>
 		$matches = array();
 		$foundform = preg_match( '|(.*)<form([^>]*)>(.*)</form>(.*)|ism', $html, $matches );
@@ -296,6 +301,7 @@ if ( !class_exists('WordpressOpenIDRegistrationUI') ) {
 			return $final;
 		} else {
 			return $html;
+		}
 		}
 	}
 
@@ -518,8 +524,7 @@ if ( !class_exists('WordpressOpenIDRegistrationUI') ) {
 							unobtrusive mode causes the existing website field in the login form to be used for OpenIDs.  
 							When a comment is submitted with a website, we first see if that is a valid OpenID.  If so, 
 							then we continue on logging the user in with their OpenID, otherwise we treat it as a normal 
-							comment.  If you enable unobtrusive mode, then it only makes sense to disable 
-							<i>Comment Form</i> above.</p>
+							comment.</p>
      					</td></tr>
 
      					</table>
