@@ -1,16 +1,16 @@
 <?php
 /*
-Plugin Name: OpenID Registration
-Plugin URI: http://sourceforge.net/projects/wpopenid/
-Description: Wordpress OpenID Registration, Authentication, and Commenting. Requires JanRain PHP OpenID library 1.2.1.  Includes Will Norris's <a href="http://willnorris.com/2007/02/unobtrusive-wpopenid">Unobtrusive OpenID</a> patch.
-Author: Alan J Castonguay, Hans Granqvist
-Author URI: http://blog.verselogic.net/projects/wordpress/wordpress-openid-plugin/
-Version: $Rev: 9 $
+Plugin Name: Wordpress OpenID (+)
+Plugin URI: http://willnorris.com/projects/wpopenid/
+Description: Wordpress OpenID Registration, Authentication, and Commenting.   This is a fork of the <a href="http://verselogic.net/projects/wordpress/wordpress-openid-plugin/">original wpopenid project</a> by <a href="http://verselogic.net">Alan Castonguay</a> and Hans Granqvist, with hopes of merging it upstream in the near future.  (URLs and such have been changed so as not to confuse the two plugins.)
+Author: Will Norris
+Author URI: http://willnorris.com/
+Version: 1.0
 Licence: Modified BSD, http://www.fsf.org/licensing/licenses/index_html#ModifiedBSD
 */
 
 define ( 'OPENIDIMAGE', get_option('siteurl') . '/wp-content/plugins/wpopenid/images/openid.gif' );
-define ( 'WPOPENID_PLUGIN_VERSION', (int)str_replace( '$Rev ', '', '$Rev: 9 $') );
+define ( 'WPOPENID_PLUGIN_VERSION', (int)str_replace( '$Rev ', '', '$Rev: 13 $') );
 
 /* Turn on logging of process via error_log() facility in PHP.
  * Used primarily for debugging, lots of output.
