@@ -5,19 +5,19 @@ Plugin URI: http://sourceforge.net/projects/wpopenid/
 Description: Wordpress OpenID Registration, Authentication, and Commenting. Requires JanRain PHP OpenID library 1.2.1.  Includes Will Norris's <a href="http://willnorris.com/2007/02/unobtrusive-wpopenid">Unobtrusive OpenID</a> patch.
 Author: Alan J Castonguay, Hans Granqvist
 Author URI: http://blog.verselogic.net/projects/wordpress/wordpress-openid-plugin/
-Version: $Rev: 6 $
+Version: $Rev: 8 $
 Licence: Modified BSD, http://www.fsf.org/licensing/licenses/index_html#ModifiedBSD
 */
 
 define ( 'OPENIDIMAGE', get_bloginfo('url') . '/wp-content/plugins/wpopenid/images/openid.gif' );
-define ( 'WPOPENID_PLUGIN_VERSION', (int)str_replace( '$Rev: 6 $') );
+define ( 'WPOPENID_PLUGIN_VERSION', (int)str_replace( '$Rev ', '', '$Rev: 8 $') );
 
 /* Turn on logging of process via error_log() facility in PHP.
  * Used primarily for debugging, lots of output.
  * For production use, leave this set to false.
  */
 
-define ( 'WORDPRESSOPENIDREGISTRATION_DEBUG', false );
+define ( 'WORDPRESSOPENIDREGISTRATION_DEBUG', true );
 if( WORDPRESSOPENIDREGISTRATION_DEBUG ) {
 	ini_set('display_errors', true);   // try to turn on verbose PHP error reporting
 	if( ! ini_get('error_log') ) ini_set('error_log', ABSPATH . get_option('upload_path') . '/php.log' );
@@ -595,14 +595,25 @@ if  ( !class_exists('WordpressOpenIDRegistration') ) {
 						}
 
 						$sreg = $response->extensionResponse('sreg');
-						if( isset( $sreg['email'])) $temp_user_data['user_email'] = $sreg['email'];
-						if( isset( $sreg['nickname'])) $temp_user_data['nickname'] = $temp_user_data['user_nicename'] = $temp_user_data['display_name'] =$sreg['nickname'];
-						if( isset( $sreg['fullname'])) {
-							$namechunks = explode( ' ', $sreg['fullname'], 2 );
-							if( isset($namechunks[0]) ) $temp_user_data['first_name'] = $namechunks[0];
-							if( isset($namechunks[1]) ) $temp_user_data['last_name'] = $namechunks[1];
-							$temp_user_data['display_name'] = $sreg['fullname'];
+						if ($sreg) {
+							if( isset( $sreg['email'])) $temp_user_data['user_email'] = $sreg['email'];
+							if( isset( $sreg['nickname'])) $temp_user_data['nickname'] = $temp_user_data['user_nicename'] = $temp_user_data['display_name'] =$sreg['nickname'];
+							if( isset( $sreg['fullname'])) {
+								$namechunks = explode( ' ', $sreg['fullname'], 2 );
+								if( isset($namechunks[0]) ) $temp_user_data['first_name'] = $namechunks[0];
+								if( isset($namechunks[1]) ) $temp_user_data['last_name'] = $namechunks[1];
+								$temp_user_data['display_name'] = $sreg['fullname'];
+							}
+						} else {
+							if( isset( $_SESSION['oid_comment_author_email'])) $temp_user_data['user_email'] = $_SESSION['oid_comment_author_email'];
+							if( isset( $_SESSION['oid_comment_author_name'])) {
+								$namechunks = explode( ' ', $_SESSION['oid_comment_author_name'], 2 );
+								if( isset($namechunks[0]) ) $temp_user_data['first_name'] = $namechunks[0];
+								if( isset($namechunks[1]) ) $temp_user_data['last_name'] = $namechunks[1];
+								$temp_user_data['display_name'] = $_SESSION['oid_comment_author_name'];
+							}
 						}
+
 						if( WORDPRESSOPENIDREGISTRATION_DEBUG ) error_log("OpenIDConsumer: Created new user $user_id : $username and metadata: " . var_export( $temp_user_data, true ) );
 						
 						// Insert the new wordpress user into the database
@@ -720,20 +731,15 @@ if  ( !class_exists('WordpressOpenIDRegistration') ) {
 		
 		function comment_set_cookie( $content ) {
 			$commenttext = trim( $content );
-			setcookie('comment_content_' . COOKIEHASH, $commenttext, time() + 3600, COOKIEPATH, COOKIE_DOMAIN);
-			setcookie('comment_content_' . COOKIEHASH, $commenttext, time() + 3600, SITECOOKIEPATH, COOKIE_DOMAIN);
+			$_SESSION['oid_comment_content'] = $commenttext;
 		}
 
 		function comment_clear_cookie( ) {
-			setcookie('comment_content_' . COOKIEHASH, ' ', time() - 31536000, COOKIEPATH, COOKIE_DOMAIN);
-			setcookie('comment_content_' . COOKIEHASH, ' ', time() - 31536000, SITECOOKIEPATH, COOKIE_DOMAIN);
+			unset($_SESSION['oid_comment_content']);
 		}
 
 		function comment_get_cookie( ) {
-			if( !empty($_COOKIE) )
-				if ( !empty($_COOKIE[ 'comment_content_' . COOKIEHASH ] ) )
-					return trim( $_COOKIE[ 'comment_content_' . COOKIEHASH ] );
-			return false;
+			return trim($_SESSION['oid_comment_content']);
 		}
 
 		/* Called when comment is submitted by get_option('require_name_email') */
@@ -779,6 +785,8 @@ if  ( !class_exists('WordpressOpenIDRegistration') ) {
 			if( !empty( $_POST[$url_field] ) ) {  // Comment form's OpenID url is filled in.
 				if( !$this->late_bind() ) return; // something is broken
 				$this->comment_set_cookie( stripslashes( $comment['comment_content'] ) );
+				$_SESSION['oid_comment_author_name'] = $comment['comment_author'];
+				$_SESSION['oid_comment_author_email'] = $comment['comment_author_email'];
 				$this->start_login( $_POST[$url_field], get_permalink( $comment['comment_post_ID'] ), 'commentopenid', $comment['comment_post_ID'] );
 				
 				// Failure to redirect at all, the URL is malformed or unreachable. Display the login form with the error.
