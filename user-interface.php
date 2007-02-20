@@ -152,7 +152,7 @@ if ( !class_exists('WordpressOpenIDRegistrationUI') ) {
 			} else {
 				$style = get_option('oid_enable_selfstyle') ? ('style="border: 1px solid #ccc; background: url('.OPENIDIMAGE.') no-repeat;
 					background-position: 0 50%; padding-left: 18px; " ') : '';
-				$chunk ='<li class="wpopenid_login_item"><form method="post" action="wp-login.php" style="display:inline;">
+				$chunk ='<li class="wpopenid_login_item"><form method="post" action="'.get_settings('siteurl').'/wp-login.php" style="display:inline;">
 					<input ' . $style . 'class="openid_url_sidebar" name="openid_url" size="17" />
 					<input type="hidden" name="redirect_to" value="'. $_SERVER["REQUEST_URI"] .'" /></form></li>';
 			}
