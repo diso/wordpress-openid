@@ -5,12 +5,12 @@ Plugin URI: http://sourceforge.net/projects/wpopenid/
 Description: Wordpress OpenID Registration, Authentication, and Commenting. Requires JanRain PHP OpenID library 1.2.1.  Includes Will Norris's <a href="http://willnorris.com/2007/02/unobtrusive-wpopenid">Unobtrusive OpenID</a> patch.
 Author: Alan J Castonguay, Hans Granqvist
 Author URI: http://blog.verselogic.net/projects/wordpress/wordpress-openid-plugin/
-Version: $Rev: 3 $
+Version: $Rev: 4 $
 Licence: Modified BSD, http://www.fsf.org/licensing/licenses/index_html#ModifiedBSD
 */
 
 define ( 'OPENIDIMAGE', get_bloginfo('url') . '/wp-content/plugins/wpopenid/images/openid.gif' );
-define ( 'WPOPENID_PLUGIN_VERSION', (int)str_replace( '$Rev ', '', '$Rev: 3 $') );
+define ( 'WPOPENID_PLUGIN_VERSION', (int)str_replace( '$Rev ', '', '$Rev: 4 $') );
 
 /* Turn on logging of process via error_log() facility in PHP.
  * Used primarily for debugging, lots of output.
@@ -589,6 +589,11 @@ if  ( !class_exists('WordpressOpenIDRegistration') ) {
 							'user_nicename' => $response->identity_url,
 							'display_name' => $response->identity_url );
 
+						// create proper website URL if OpenID is an i-name
+						if (preg_match('/^[\=\@\+].+$/', $response->identity_url)) {
+							$temp_user_data['user_url'] = 'http://xri.net/' . $response->identity_url;
+						}
+
 						$sreg = $response->extensionResponse('sreg');
 						if( isset( $sreg['email'])) $temp_user_data['user_email'] = $sreg['email'];
 						if( isset( $sreg['nickname'])) $temp_user_data['nickname'] = $temp_user_data['user_nicename'] = $temp_user_data['display_name'] =$sreg['nickname'];
@@ -596,6 +601,7 @@ if  ( !class_exists('WordpressOpenIDRegistration') ) {
 							$namechunks = explode( ' ', $sreg['fullname'], 2 );
 							if( isset($namechunks[0]) ) $temp_user_data['first_name'] = $namechunks[0];
 							if( isset($namechunks[1]) ) $temp_user_data['last_name'] = $namechunks[1];
+							$temp_user_data['display_name'] = $sreg['fullname'];
 						}
 						if( WORDPRESSOPENIDREGISTRATION_DEBUG ) error_log("OpenIDConsumer: Created new user $user_id : $username and metadata: " . var_export( $temp_user_data, true ) );
 						
