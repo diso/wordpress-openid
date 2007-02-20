@@ -50,7 +50,7 @@ if ( !class_exists('WordpressOpenIDRegistrationUI') ) {
 		add_action( 'init', array( $wordpressOpenIDRegistrationUI->oid, 'admin_page_handler' ) );
 
 		// Comment filtering
-		add_action( 'preprocess_comment', array( $wordpressOpenIDRegistrationUI->oid, 'openid_wp_comment_tagging' ) );
+		add_action( 'preprocess_comment', array( $wordpressOpenIDRegistrationUI->oid, 'openid_wp_comment_tagging' ), -99999 );
 		add_filter( 'option_require_name_email', array( $wordpressOpenIDRegistrationUI->oid, 'openid_bypass_option_require_name_email') );
 		add_filter( 'comment_notification_subject', array( $wordpressOpenIDRegistrationUI->oid, 'openid_comment_notification_subject'), 10, 2 );
 		add_filter( 'comment_notification_text', array( $wordpressOpenIDRegistrationUI->oid, 'openid_comment_notification_text'), 10, 2 );
