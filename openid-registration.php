@@ -2,22 +2,22 @@
 /*
 Plugin Name: OpenID Registration
 Plugin URI: http://sourceforge.net/projects/wpopenid/
-Description: Wordpress OpenID Registration, Authentication, and Commenting. Requires JanRain PHP OpenID library 1.2.1.
+Description: Wordpress OpenID Registration, Authentication, and Commenting. Requires JanRain PHP OpenID library 1.2.1.  Includes Will Norris's <a href="http://willnorris.com/2007/02/unobtrusive-wpopenid">Unobtrusive OpenID</a> patch.
 Author: Alan J Castonguay, Hans Granqvist
 Author URI: http://blog.verselogic.net/projects/wordpress/wordpress-openid-plugin/
-Version: $Rev: 2 $
+Version: $Rev: 3 $
 Licence: Modified BSD, http://www.fsf.org/licensing/licenses/index_html#ModifiedBSD
 */
 
 define ( 'OPENIDIMAGE', get_bloginfo('url') . '/wp-content/plugins/wpopenid/images/openid.gif' );
-define ( 'WPOPENID_PLUGIN_VERSION', (int)str_replace( '$Rev ', '', '$Rev: 2 $') );
+define ( 'WPOPENID_PLUGIN_VERSION', (int)str_replace( '$Rev ', '', '$Rev: 3 $') );
 
 /* Turn on logging of process via error_log() facility in PHP.
  * Used primarily for debugging, lots of output.
  * For production use, leave this set to false.
  */
 
-define ( 'WORDPRESSOPENIDREGISTRATION_DEBUG', true );
+define ( 'WORDPRESSOPENIDREGISTRATION_DEBUG', false );
 if( WORDPRESSOPENIDREGISTRATION_DEBUG ) {
 	ini_set('display_errors', true);   // try to turn on verbose PHP error reporting
 	if( ! ini_get('error_log') ) ini_set('error_log', ABSPATH . get_option('upload_path') . '/php.log' );
@@ -459,12 +459,19 @@ if  ( !class_exists('WordpressOpenIDRegistration') ) {
 		 * If using comment form, specify optional parameters action=commentopenid and wordpressid=PostID.
 		 */
 		function start_login( $claimed_url, $redirect_to, $action='loginopenid', $wordpressid=0 ) {
+			global $openid_auth_request;
+
 			if ( empty( $claimed_url ) ) return; // do nothing.
 			
 			if( !$this->late_bind() ) return; // something is broken
-			set_error_handler( array($this, 'customer_error_handler'));
-			$auth_request = $this->_consumer->begin( $claimed_url );
-			restore_error_handler();
+
+			if ( null !== $auth_request) {
+				$auth_request = $openid_auth_request;
+			} else {
+				set_error_handler( array($this, 'customer_error_handler'));
+				$auth_request = $this->_consumer->begin( $claimed_url );
+				restore_error_handler();
+			}
 
 			if ( null === $auth_request ) {
 				$this->error = 'Could not discover an OpenID identity server endpoint at the url: ' . htmlentities( $claimed_url );
@@ -475,7 +482,7 @@ if  ( !class_exists('WordpressOpenIDRegistration') ) {
 			
 			if( WORDPRESSOPENIDREGISTRATION_DEBUG ) error_log('OpenIDConsumer: Is an OpenID url. Starting redirect.');
 			
-			$return_to = get_bloginfo('url') . "/wp-login.php?action=$action";
+			$return_to = get_option('siteurl') . "/wp-login.php?action=$action";
 			if( $wordpressid ) $return_to .= "&wordpressid=$wordpressid";
 			if( !empty( $redirect_to ) ) $return_to .= '&redirect_to=' . urlencode( $redirect_to );
 			
@@ -725,9 +732,27 @@ if  ( !class_exists('WordpressOpenIDRegistration') ) {
 
 		/* Called when comment is submitted by get_option('require_name_email') */
 		function openid_bypass_option_require_name_email( $value ) {
-			if( !empty( $_POST['openid_url'] ) ) {	// same criteria as the hijack in openid_wp_comment_tagging
-				return false;
+			global $openid_auth_request;
+
+			if (get_option('oid_enable_unobtrusive')) {
+				if (!empty($_POST['url'])) {
+					if ($this->late_bind()) { 
+						// check if url is valid OpenID by forming an auth request
+						set_error_handler( array($this, 'customer_error_handler'));
+						$openid_auth_request = $this->_consumer->begin( $_POST['url'] );
+						restore_error_handler();
+
+						if (null !== $openid_auth_request) {
+							return false;
+						}
+					}
+				}
+			} else {
+				if( !empty( $_POST['openid_url'] ) ) {	// same criteria as the hijack in openid_wp_comment_tagging
+					return false;
+				}
 			}
+
 			return $value;
 		}
 		
@@ -743,17 +768,21 @@ if  ( !class_exists('WordpressOpenIDRegistration') ) {
 				$comment['comment_type']='openid';
 			}
 			
-			if( !empty( $_POST['openid_url'] ) ) {  // Comment form's OpenID url is filled in.
+			$url_field = (get_option('oid_enable_unobtrusive') ? 'url' : 'openid_url');
+
+			if( !empty( $_POST[$url_field] ) ) {  // Comment form's OpenID url is filled in.
 				if( !$this->late_bind() ) return; // something is broken
 				$this->comment_set_cookie( stripslashes( $comment['comment_content'] ) );
-				$this->start_login( $_POST['openid_url'], get_permalink( $comment['comment_post_ID'] ), 'commentopenid', $comment['comment_post_ID'] );
+				$this->start_login( $_POST[$url_field], get_permalink( $comment['comment_post_ID'] ), 'commentopenid', $comment['comment_post_ID'] );
 				
 				// Failure to redirect at all, the URL is malformed or unreachable. Display the login form with the error.
-				global $error;
-				$error = $this->error;
-				$_POST['openid_url'] = '';
-				include( ABSPATH . 'wp-login.php' );
-				exit();
+				if (!get_option('oid_enable_unobtrusive')) {
+					global $error;
+					$error = $this->error;
+					$_POST['openid_url'] = '';
+					include( ABSPATH . 'wp-login.php' );
+					exit();
+				}
 			}
 			
 			return $comment;
@@ -902,6 +931,7 @@ add_option( 'oid_enable_loginform', true, 'Display OpenID box in login form' );
 add_option( 'oid_enable_commentform', true, 'Display OpenID box in comment form' );
 add_option( 'oid_plugin_enabled', true, 'Currently hooking into Wordpress' );
 add_option( 'oid_plugin_version', 0, 'OpenID plugin database store version' );
+add_option( 'oid_enable_unobtrusive', false, 'Look for OpenID in the existing website input field' );
 
 /* Instantiate User Interface class */
 @include_once('user-interface.php');

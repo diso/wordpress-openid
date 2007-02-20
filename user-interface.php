@@ -329,6 +329,7 @@ if ( !class_exists('WordpressOpenIDRegistrationUI') ) {
 				update_option( 'oid_enable_selfstyle', isset($_POST['enable_selfstyle']) ? true : false );
 				update_option( 'oid_enable_loginform', isset($_POST['enable_loginform']) ? true : false );
 				update_option( 'oid_enable_commentform', isset($_POST['enable_commentform']) ? true : false );
+				update_option( 'oid_enable_unobtrusive', isset($_POST['enable_unobtrusive']) ? true : false );
 				
 				if ($error !== '') {
 					echo '<div class="error"><p><strong>At least one of Open ID options was NOT updated</strong>'.$error.'</p></div>';
@@ -504,6 +505,21 @@ if ( !class_exists('WordpressOpenIDRegistrationUI') ) {
      						such as those in the wp-login page, the comments area, and the sidebar.
      						The included styles are tested to work with the default themes.
      						For custom themeing, turn this off and apply your own styles to the form elements.</p>
+     					</td></tr>
+
+     					<tr valign="top"><th>
+     						<p><label for="enable_unobtrusive">Unobtrusive Mode:</label></p>
+     					</th><td>
+     						<p><input type="checkbox" name="enable_unobtrusive" id="enable_unobtrusive" <?php
+     						if( get_option('oid_enable_unobtrusive') ) echo 'checked="checked"'
+     						?> />
+     						<label for="enable_unobtrusive">Use Unobtrusive Mode</label></p>
+							<p>Inspired by <a href="http://www.intertwingly.net/blog/2006/12/28/Unobtrusive-OpenID">Sam Ruby</a>, 
+							unobtrusive mode causes the existing website field in the login form to be used for OpenIDs.  
+							When a comment is submitted with a website, we first see if that is a valid OpenID.  If so, 
+							then we continue on logging the user in with their OpenID, otherwise we treat it as a normal 
+							comment.  If you enable unobtrusive mode, then it only makes sense to disable 
+							<i>Comment Form</i> above.</p>
      					</td></tr>
 
      					</table>
