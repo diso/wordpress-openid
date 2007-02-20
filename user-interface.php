@@ -529,7 +529,7 @@ if ( !class_exists('WordpressOpenIDRegistrationUI') ) {
 
      					</table>
      				</fieldset>
-     				<input type="submit" name="info_update" value="<?php _e('Update options') ?> »" />
+     				<p class="submit"><input type="submit" name="info_update" value="<?php _e('Update options') ?> »" /></p>
      			</div></form>
     			<?php
 	} // end function options_page
