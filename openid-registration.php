@@ -5,12 +5,12 @@ Plugin URI: http://willnorris.com/projects/wpopenid/
 Description: Wordpress OpenID Registration, Authentication, and Commenting.   This is a fork of the <a href="http://verselogic.net/projects/wordpress/wordpress-openid-plugin/">original wpopenid project</a> by <a href="http://verselogic.net">Alan Castonguay</a> and Hans Granqvist, with hopes of merging it upstream in the near future.  (URLs and such have been changed so as not to confuse the two plugins.)
 Author: Will Norris
 Author URI: http://willnorris.com/
-Version: 1.0
+Version: $Rev: 15 $
 Licence: Modified BSD, http://www.fsf.org/licensing/licenses/index_html#ModifiedBSD
 */
 
 define ( 'OPENIDIMAGE', get_option('siteurl') . '/wp-content/plugins/wpopenid/images/openid.gif' );
-define ( 'WPOPENID_PLUGIN_VERSION', (int)str_replace( '$Rev ', '', '$Rev: 13 $') );
+define ( 'WPOPENID_PLUGIN_VERSION', (int)str_replace( '$Rev ', '', '$Rev: 15 $') );
 
 /* Turn on logging of process via error_log() facility in PHP.
  * Used primarily for debugging, lots of output.
@@ -57,10 +57,10 @@ if  ( !class_exists('WordpressOpenIDRegistration') ) {
 		/* 
 		 * Initialize required store and consumer, making a few sanity checks.
 		 */
-		function late_bind() {
+		function late_bind($reload = false) {
 			static $done = false;
 			$this->enabled = true; // Be Optimistic
-			if( $done ) return $this->uptodate();
+			if( $done && !$reload ) return $this->uptodate();
 			$done = true;
 
 			if( WORDPRESSOPENIDREGISTRATION_DEBUG ) error_log('WPOpenID Plugin: Late Binding Now');
@@ -465,7 +465,7 @@ if  ( !class_exists('WordpressOpenIDRegistration') ) {
 			
 			if( !$this->late_bind() ) return; // something is broken
 
-			if ( null !== $auth_request) {
+			if ( null !== $openid_auth_request) {
 				$auth_request = $openid_auth_request;
 			} else {
 				set_error_handler( array($this, 'customer_error_handler'));
@@ -783,7 +783,7 @@ if  ( !class_exists('WordpressOpenIDRegistration') ) {
 			$url_field = (get_option('oid_enable_unobtrusive') ? 'url' : 'openid_url');
 
 			if( !empty( $_POST[$url_field] ) ) {  // Comment form's OpenID url is filled in.
-				if( !$this->late_bind() ) return; // something is broken
+				if( !$this->late_bind(true) ) return; // something is broken
 				$this->comment_set_cookie( stripslashes( $comment['comment_content'] ) );
 				$_SESSION['oid_comment_author_name'] = $comment['comment_author'];
 				$_SESSION['oid_comment_author_email'] = $comment['comment_author_email'];
