@@ -57,6 +57,9 @@ if ( !class_exists('WordpressOpenIDRegistrationUI') ) {
 		
 		add_action( 'delete_user', array( $wordpressOpenIDRegistrationUI->oid, 'drop_all_identities_for_user' ) );	// If user is dropped from database, remove their identities too.
 
+		if( get_option('oid_enable_unobtrusive') ) {
+			add_action( 'wp_head', array( $wordpressOpenIDRegistrationUI, 'openid_unobtrusive_js'));
+		}
 
 		if( get_option('oid_enable_commentform') ) {
 			add_filter( 'comments_template', array( $wordpressOpenIDRegistrationUI, 'setup_openid_wp_login_ob'));
@@ -184,6 +187,23 @@ if ( !class_exists('WordpressOpenIDRegistrationUI') ) {
 		return $string;
 	}
 	
+	function openid_unobtrusive_js() {
+		echo '
+		<script type="text/javascript">
+			var openidTextVisible = false;
+			function toggleOpenIDText() {
+				if (openidTextVisible) {
+					Effect.Fade(\'openid_unobtrusive_text\');
+				} else {
+					Effect.Appear(\'openid_unobtrusive_text\');
+				}
+				openidTextVisible = !openidTextVisible;
+
+				return false;
+			}
+		</script>';
+	}
+
 	function openid_wp_comment_form_ob( $html ) {
 		$block = array('address','blockquote','dsiv','dl','span',
 			'fieldset','h1','h2','h3','h4','h5','h6',
@@ -214,7 +234,18 @@ if ( !class_exists('WordpressOpenIDRegistrationUI') ) {
 		}
 		
 		if (get_option('oid_enable_unobtrusive') && get_option('oid_enable_selfstyle')) {
-			$newhtml = preg_replace( '|(.*<label for="url">(.*?)?)((</small>)?</label>.*)|', '\\1 <a id="openid_enabled_link" href="http://openid.net" style="background: url(\''.OPENIDIMAGE.'\') center left no-repeat; padding-left: 18px;">(OpenID Enabled)</a>\\3', $html );
+			$unobtrusive_html = '<a id="openid_enabled_link" onclick="return toggleOpenIDText();" href="http://openid.net" style="background: url(\''.OPENIDIMAGE.'\') center left no-repeat; padding-left: 18px;">(OpenID Enabled)</a>
+				<div id="openid_unobtrusive_text" style="display: none;">
+					If you have an OpenID, you may fill it in here.  If your 
+					OpenID provider provides a name and email, those values 
+					will be used instead of the values here.  <a 
+					href="http://openid.net">Learn more about OpenID</a> or <a 
+					href="http://openid.net/wiki/index.php/Public_OpenID_providers">find 
+					an OpenID provider</a>.
+				</div>
+				';
+
+			$newhtml = preg_replace( '|(.*<label for="url">(.*?)?)((</small>)?</label>.*)|', '\\1'.$unobtrusive_html.'\\3', $html );
 			return $newhtml;
 		} else {
 			
