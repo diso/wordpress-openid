@@ -60,5 +60,5 @@ a full list of subversion commits that have been made since the last release can
 = version 1.0 (also known as r13) =
 a full list of svn commit messages can be found [here][changelog-1.0]
 
-[changelog-unreleased]: http://dev.wp-plugins.org/log/openid/trunk/?action=follow_copy&rev=11281&stop_rev=11273&mode=follow_copy&verbose=on
+[changelog-unreleased]: http://dev.wp-plugins.org/log/openid/trunk/?action=follow_copy&stop_rev=11273&mode=follow_copy&verbose=on
 [changelog-1.0]: http://dev.wp-plugins.org/log/openid/trunk/?action=follow_copy&rev=11272&stop_rev=11260&mode=follow_copy&verbose=on
