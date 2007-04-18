@@ -5,12 +5,12 @@ Plugin URI: http://willnorris.com/projects/wpopenid/
 Description: Wordpress OpenID Registration, Authentication, and Commenting.   This is a fork of the <a href="http://verselogic.net/projects/wordpress/wordpress-openid-plugin/">original wpopenid project</a> by <a href="http://verselogic.net">Alan Castonguay</a> and Hans Granqvist, with hopes of merging it upstream in the near future.  (URLs and such have been changed so as not to confuse the two plugins.)
 Author: Will Norris
 Author URI: http://willnorris.com/
-Version: $Rev: 27 $
+Version: $Rev: 28 $
 Licence: Modified BSD, http://www.fsf.org/licensing/licenses/index_html#ModifiedBSD
 */
 
 define ( 'OPENIDIMAGE', get_option('siteurl') . '/wp-content/plugins/wpopenid/images/openid.gif' );
-define ( 'WPOPENID_PLUGIN_VERSION', (int)str_replace( '$Rev ', '', '$Rev: 27 $') );
+define ( 'WPOPENID_PLUGIN_VERSION', (int)str_replace( '$Rev ', '', '$Rev: 28 $') );
 
 /* Turn on logging of process via error_log() facility in PHP.
  * Used primarily for debugging, lots of output.
@@ -572,84 +572,17 @@ if  ( !class_exists('WordpressOpenIDRegistration') ) {
 					}
 					
 				} else {
-					// Identity URL is new, so create a user with md5()'d password
-					@include_once( ABSPATH . 'wp-admin/upgrade-functions.php');	// 2.1
-				 	@include_once( ABSPATH . WPINC . '/registration-functions.php'); // 2.0.4
-					
-					$username = $this->generate_new_username( $response->identity_url );
-					$password = substr( md5( uniqid( microtime() ) ), 0, 7);
-					
-					$user_id = wp_create_user( $username, $password );
-					if( WORDPRESSOPENIDREGISTRATION_DEBUG ) error_log("wp_create_user( $username, $password )  returned $user_id ");
-					
-					if( $user_id ) {	// created ok
-						update_usermeta( $user_id, 'registered_with_openid', true );
-						$temp_user_data=array( 'ID' => $user_id,
-							'user_url' => $response->identity_url,
-							'user_nicename' => $response->identity_url,
-							'display_name' => $response->identity_url );
 
-						// create proper website URL if OpenID is an i-name
-						if (preg_match('/^[\=\@\+].+$/', $response->identity_url)) {
-							$temp_user_data['user_url'] = 'http://xri.net/' . $response->identity_url;
-						}
+					global $oid_user_data;
+					global $oid_user;
+					$oid_user_data =& $this->get_user_data($response);
 
-						$sreg = $response->extensionResponse('sreg');
-						if ($sreg) {
-							if( isset( $sreg['email'])) $temp_user_data['user_email'] = $sreg['email'];
-							if( isset( $sreg['nickname'])) $temp_user_data['nickname'] = $temp_user_data['user_nicename'] = $temp_user_data['display_name'] =$sreg['nickname'];
-							if( isset( $sreg['fullname'])) {
-								$namechunks = explode( ' ', $sreg['fullname'], 2 );
-								if( isset($namechunks[0]) ) $temp_user_data['first_name'] = $namechunks[0];
-								if( isset($namechunks[1]) ) $temp_user_data['last_name'] = $namechunks[1];
-								$temp_user_data['display_name'] = $sreg['fullname'];
-							}
-						} else {
-							if( isset( $_SESSION['oid_comment_author_email'])) $temp_user_data['user_email'] = $_SESSION['oid_comment_author_email'];
-							if( isset( $_SESSION['oid_comment_author_name'])) {
-								$namechunks = explode( ' ', $_SESSION['oid_comment_author_name'], 2 );
-								if( isset($namechunks[0]) ) $temp_user_data['first_name'] = $namechunks[0];
-								if( isset($namechunks[1]) ) $temp_user_data['last_name'] = $namechunks[1];
-								$temp_user_data['display_name'] = $_SESSION['oid_comment_author_name'];
-							}
-						}
-
-						if( WORDPRESSOPENIDREGISTRATION_DEBUG ) error_log("OpenIDConsumer: Created new user $user_id : $username and metadata: " . var_export( $temp_user_data, true ) );
-						
-						// Insert the new wordpress user into the database
-						wp_update_user( $temp_user_data );
-						$user = new WP_User( $user_id );
-
-						if( ! wp_login( $user->user_login, md5($user->user_pass), true ) ) {
-							$this->error = "User was created fine, but wp_login() for the new user failed. This is probably a bug.";
-							$this->action= 'error';
-							error_log( $this->error );
-							break;
-						}
-						
-						// Call the usual user-registration hooks
-						do_action('user_register', $user_id);
-						wp_new_user_notification( $user->user_login );
-						
-						wp_clearcookie();
-						wp_setcookie( $user->user_login, md5($user->user_pass), true, '', '', true );
-						
-						// Bind the provided identity to the just-created user
-						global $userdata;
-						$userdata = get_userdata( $user_id );
-						$this->insert_identity( $response->identity_url );
-						
-						$this->action = 'redirect';
-						
-						if ( !$user->has_cap('edit_posts') ) $redirect_to = '/wp-admin/profile.php';
-						
-						
+					if ( get_option('oid_enable_localaccounts') ) {
+						$oid_user = $this->create_new_user($response, $oid_user_data);	
 					} else {
-						// failed to create user for some reason.
-						$this->error = "OpenID authentication successful, but failed to create Wordpress user. This is probably a bug.";
-						$this->action= 'error';
-						error_log( $this->error );
+						$this->action = 'redirect';
 					}
+
 				}
 				break;
 
@@ -666,52 +599,7 @@ if  ( !class_exists('WordpressOpenIDRegistration') ) {
 				if ( !empty( $_GET['redirect_to'] )) $redirect_to = $_GET['redirect_to'];
 				
 				if( $_GET['action'] == 'commentopenid' ) {
-					/* Transparent inline login and commenting.
-					 * There's a cookie containing the comment text.
-					 * Post it and redirect to the permalink.
-					 */
-					
-					$comment_content = $this->comment_get_cookie();
-					$this->comment_clear_cookie();
-					
-					if ( '' == trim($comment_content) )
-						die( __('Error: please type a comment.') );
-					
-					if( WORDPRESSOPENIDREGISTRATION_DEBUG ) error_log('OpenIDConsumer: action=commentopenid  redirect_to=' . $redirect_to);
-					if( WORDPRESSOPENIDREGISTRATION_DEBUG ) error_log('OpenIDConsumer: comment_content = ' . $comment_content);
-					
-					nocache_headers();
-					
-					// Do essentially the same thing as wp-comments-post.php
-					global $wpdb;
-					$comment_post_ID = (int) $_GET['wordpressid'];
-					$status = $wpdb->get_row("SELECT post_status, comment_status FROM $wpdb->posts WHERE ID = '$comment_post_ID'");
-					if ( empty($status->comment_status) ) {
-						do_action('comment_id_not_found', $comment_post_ID);
-						exit();
-					} elseif ( 'closed' ==  $status->comment_status ) {
-						do_action('comment_closed', $comment_post_ID);
-						die( __('Sorry, comments are closed for this item.') );
-					} elseif ( 'draft' == $status->post_status ) {
-						do_action('comment_on_draft', $comment_post_ID);
-						exit;
-					}
-					
-					if ( !$user->ID )
-						die( __('Sorry, you must be logged in to post a comment.')
-							.' If OpenID isn\'t working for you, try anonymous commenting.' );
-					
-					$comment_author       = $wpdb->escape($user->display_name);
-					$comment_author_email = $wpdb->escape($user->user_email);
-					$comment_author_url   = $wpdb->escape($user->user_url);
-					$comment_type         = 'openid';
-					$user_ID              = $user->ID;
-					$this->flag_doing_openid_comment = true;
-
-					$commentdata = compact('comment_post_ID', 'comment_author', 'comment_author_email',
-												'comment_author_url', 'comment_content', 'comment_type', 'user_ID');
-
-					$comment_id = wp_new_comment( $commentdata );
+					$this->post_comment($oid_user_data);
 				}
 				
 				if( $redirect_to == '/wp-admin' and !$user->has_cap('edit_posts') ) $redirect_to = '/wp-admin/profile.php';
@@ -722,6 +610,151 @@ if  ( !class_exists('WordpressOpenIDRegistration') ) {
 			$action=$this->action; 
 
 		}
+
+
+		function create_new_user($response, &$oid_user_data) {
+			// Identity URL is new, so create a user with md5()'d password
+			@include_once( ABSPATH . 'wp-admin/upgrade-functions.php');	// 2.1
+			@include_once( ABSPATH . WPINC . '/registration-functions.php'); // 2.0.4
+
+			$username = $this->generate_new_username( $response->identity_url );
+			$password = substr( md5( uniqid( microtime() ) ), 0, 7);
+			
+			$user_id = wp_create_user( $username, $password );
+			if( WORDPRESSOPENIDREGISTRATION_DEBUG ) error_log("wp_create_user( $username, $password )  returned $user_id ");
+
+			if( $user_id ) {	// created ok
+
+				$oid_user_data['ID'] = $user_id;
+				update_usermeta( $user_id, 'registered_with_openid', true );
+
+				if( WORDPRESSOPENIDREGISTRATION_DEBUG ) error_log("OpenIDConsumer: Created new user $user_id : $username and metadata: " . var_export( $oid_user_data, true ) );
+				
+				// Insert the new wordpress user into the database
+				wp_update_user( $oid_user_data );
+				$user = new WP_User( $user_id );
+
+				if( ! wp_login( $user->user_login, md5($user->user_pass), true ) ) {
+					$this->error = "User was created fine, but wp_login() for the new user failed. This is probably a bug.";
+					$this->action= 'error';
+					error_log( $this->error );
+					break;
+				}
+				
+				// Call the usual user-registration hooks
+				do_action('user_register', $user_id);
+				wp_new_user_notification( $user->user_login );
+				
+				wp_clearcookie();
+				wp_setcookie( $user->user_login, md5($user->user_pass), true, '', '', true );
+				
+				// Bind the provided identity to the just-created user
+				global $userdata;
+				$userdata = get_userdata( $user_id );
+				$this->insert_identity( $response->identity_url );
+				
+				$this->action = 'redirect';
+				
+				if ( !$user->has_cap('edit_posts') ) $redirect_to = '/wp-admin/profile.php';
+				
+			} else {
+				// failed to create user for some reason.
+				$this->error = "OpenID authentication successful, but failed to create Wordpress user. This is probably a bug.";
+				$this->action= 'error';
+				error_log( $this->error );
+			}
+
+		}
+
+
+		function get_user_data($response) {
+			$oid_user_data = array( 'ID' => null,
+				'user_url' => $response->identity_url,
+				'user_nicename' => $response->identity_url,
+				'display_name' => $response->identity_url );
+		
+			// create proper website URL if OpenID is an i-name
+			if (preg_match('/^[\=\@\+].+$/', $response->identity_url)) {
+				$oid_user_data['user_url'] = 'http://xri.net/' . $response->identity_url;
+			}
+
+			$sreg = $response->extensionResponse('sreg');
+			if ($sreg) {
+				if( isset( $sreg['email'])) $oid_user_data['user_email'] = $sreg['email'];
+				if( isset( $sreg['nickname'])) $oid_user_data['nickname'] = $oid_user_data['user_nicename'] = $oid_user_data['display_name'] =$sreg['nickname'];
+				if( isset( $sreg['fullname'])) {
+					$namechunks = explode( ' ', $sreg['fullname'], 2 );
+					if( isset($namechunks[0]) ) $oid_user_data['first_name'] = $namechunks[0];
+					if( isset($namechunks[1]) ) $oid_user_data['last_name'] = $namechunks[1];
+					$oid_user_data['display_name'] = $sreg['fullname'];
+				}
+			} else {
+				if( isset( $_SESSION['oid_comment_author_email'])) $oid_user_data['user_email'] = $_SESSION['oid_comment_author_email'];
+				if( isset( $_SESSION['oid_comment_author_name'])) {
+					$namechunks = explode( ' ', $_SESSION['oid_comment_author_name'], 2 );
+					if( isset($namechunks[0]) ) $oid_user_data['first_name'] = $namechunks[0];
+					if( isset($namechunks[1]) ) $oid_user_data['last_name'] = $namechunks[1];
+					$oid_user_data['display_name'] = $_SESSION['oid_comment_author_name'];
+				}
+			}
+
+			return $oid_user_data;
+		}
+
+
+		function post_comment(&$oid_user_data) {
+			/* Transparent inline login and commenting.
+			 * The comment text is in the session.
+			 * Post it and redirect to the permalink.
+			 */
+			
+			$comment_content = $this->comment_get_cookie();
+			$this->comment_clear_cookie();
+			
+			if ( '' == trim($comment_content) )
+				die( __('Error: please type a comment.') );
+			
+			if( WORDPRESSOPENIDREGISTRATION_DEBUG ) error_log('OpenIDConsumer: action=commentopenid  redirect_to=' . $redirect_to);
+			if( WORDPRESSOPENIDREGISTRATION_DEBUG ) error_log('OpenIDConsumer: comment_content = ' . $comment_content);
+			
+			nocache_headers();
+			
+			// Do essentially the same thing as wp-comments-post.php
+			global $wpdb;
+			$comment_post_ID = (int) $_GET['wordpressid'];
+			$status = $wpdb->get_row("SELECT post_status, comment_status FROM $wpdb->posts WHERE ID = '$comment_post_ID'");
+			if ( empty($status->comment_status) ) {
+				do_action('comment_id_not_found', $comment_post_ID);
+				exit();
+			} elseif ( 'closed' ==  $status->comment_status ) {
+				do_action('comment_closed', $comment_post_ID);
+				die( __('Sorry, comments are closed for this item.') );
+			} elseif ( 'draft' == $status->post_status ) {
+				do_action('comment_on_draft', $comment_post_ID);
+				exit;
+			}
+			
+			/*
+			if ( !$user->ID )
+				die( __('Sorry, you must be logged in to post a comment.')
+					.' If OpenID isn\'t working for you, try anonymous commenting.' );
+			 */
+			
+			$comment_author       = $wpdb->escape($oid_user_data['display_name']);
+			$comment_author_email = $wpdb->escape($oid_user_data['user_email']);
+			$comment_author_url   = $wpdb->escape($oid_user_data['user_url']);
+			$comment_type         = 'openid';
+			$user_ID              = $oid_user_data['ID'];
+			$this->flag_doing_openid_comment = true;
+
+			$commentdata = compact('comment_post_ID', 'comment_author', 'comment_author_email',
+										'comment_author_url', 'comment_content', 'comment_type', 'user_ID');
+
+			error_log(var_export($commentdata, true));
+
+			$comment_id = wp_new_comment( $commentdata );
+		}
+
 
 
 		/* These functions are used to store the comment
@@ -982,6 +1015,7 @@ add_option( 'oid_enable_commentform', true, 'Display OpenID box in comment form'
 add_option( 'oid_plugin_enabled', true, 'Currently hooking into Wordpress' );
 add_option( 'oid_plugin_version', 0, 'OpenID plugin database store version' );
 add_option( 'oid_enable_unobtrusive', false, 'Look for OpenID in the existing website input field' );
+add_option( 'oid_enable_localaccounts', true, 'Create local wordpress accounts for new users who sign in with an OpenID.' );
 
 /* Instantiate User Interface class */
 @include_once('user-interface.php');

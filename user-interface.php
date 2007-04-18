@@ -368,6 +368,7 @@ if ( !class_exists('WordpressOpenIDRegistrationUI') ) {
 				update_option( 'oid_enable_loginform', isset($_POST['enable_loginform']) ? true : false );
 				update_option( 'oid_enable_commentform', isset($_POST['enable_commentform']) ? true : false );
 				update_option( 'oid_enable_unobtrusive', isset($_POST['enable_unobtrusive']) ? true : false );
+				update_option( 'oid_enable_localaccounts', isset($_POST['enable_localaccounts']) ? true : false );
 				
 				if ($error !== '') {
 					echo '<div class="error"><p><strong>At least one of Open ID options was NOT updated</strong>'.$error.'</p></div>';
@@ -557,6 +558,16 @@ if ( !class_exists('WordpressOpenIDRegistrationUI') ) {
 							When a comment is submitted with a website, we first see if that is a valid OpenID.  If so, 
 							then we continue on logging the user in with their OpenID, otherwise we treat it as a normal 
 							comment.</p>
+     					</td></tr>
+
+     					<tr valign="top"><th>
+     						<p><label for="enable_localaccounts">Local Accounts:</label></p>
+     					</th><td>
+     						<p><input type="checkbox" name="enable_localaccounts" id="enable_localaccounts" <?php
+     						if( get_option('oid_enable_localaccounts') ) echo 'checked="checked"'
+     						?> />
+     						<label for="enable_localaccounts">Create Local Accounts</label></p>
+							<p>If enabled, a local wordpress account will be created for each commenter who logs in with an OpenID.</p>
      					</td></tr>
 
      					</table>
