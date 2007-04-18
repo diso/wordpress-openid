@@ -5,12 +5,12 @@ Plugin URI: http://willnorris.com/projects/wpopenid/
 Description: Wordpress OpenID Registration, Authentication, and Commenting.   This is a fork of the <a href="http://verselogic.net/projects/wordpress/wordpress-openid-plugin/">original wpopenid project</a> by <a href="http://verselogic.net">Alan Castonguay</a> and Hans Granqvist, with hopes of merging it upstream in the near future.  (URLs and such have been changed so as not to confuse the two plugins.)
 Author: Will Norris
 Author URI: http://willnorris.com/
-Version: $Rev: 29 $
+Version: $Rev: 30 $
 Licence: Modified BSD, http://www.fsf.org/licensing/licenses/index_html#ModifiedBSD
 */
 
 define ( 'OPENIDIMAGE', get_option('siteurl') . '/wp-content/plugins/wpopenid/images/openid.gif' );
-define ( 'WPOPENID_PLUGIN_VERSION', (int)str_replace( '$Rev ', '', '$Rev: 29 $') );
+define ( 'WPOPENID_PLUGIN_VERSION', (int)str_replace( '$Rev ', '', '$Rev: 30 $') );
 
 /* Turn on logging of process via error_log() facility in PHP.
  * Used primarily for debugging, lots of output.
@@ -754,7 +754,7 @@ if  ( !class_exists('WordpressOpenIDRegistration') ) {
 
 			error_log(var_export($_SESSION, true));
 			if ( !$user_id ) :
-				setcookie('comment_author_' . COOKIEHASH, $_SESSION['oid_comment_author'], time() + 30000000, COOKIEPATH, COOKIE_DOMAIN);
+				setcookie('comment_author_' . COOKIEHASH, $_SESSION['oid_comment_author_name'], time() + 30000000, COOKIEPATH, COOKIE_DOMAIN);
 				setcookie('comment_author_email_' . COOKIEHASH, $_SESSION['oid_comment_author_email'], time() + 30000000, COOKIEPATH, COOKIE_DOMAIN);
 				setcookie('comment_author_url_' . COOKIEHASH, clean_url($_SESSION['oid_comment_author_url']), time() + 30000000, COOKIEPATH, COOKIE_DOMAIN);
 
