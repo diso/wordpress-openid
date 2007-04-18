@@ -5,12 +5,12 @@ Plugin URI: http://willnorris.com/projects/wpopenid/
 Description: Wordpress OpenID Registration, Authentication, and Commenting.   This is a fork of the <a href="http://verselogic.net/projects/wordpress/wordpress-openid-plugin/">original wpopenid project</a> by <a href="http://verselogic.net">Alan Castonguay</a> and Hans Granqvist, with hopes of merging it upstream in the near future.  (URLs and such have been changed so as not to confuse the two plugins.)
 Author: Will Norris
 Author URI: http://willnorris.com/
-Version: $Rev: 28 $
+Version: $Rev: 29 $
 Licence: Modified BSD, http://www.fsf.org/licensing/licenses/index_html#ModifiedBSD
 */
 
 define ( 'OPENIDIMAGE', get_option('siteurl') . '/wp-content/plugins/wpopenid/images/openid.gif' );
-define ( 'WPOPENID_PLUGIN_VERSION', (int)str_replace( '$Rev ', '', '$Rev: 28 $') );
+define ( 'WPOPENID_PLUGIN_VERSION', (int)str_replace( '$Rev ', '', '$Rev: 29 $') );
 
 /* Turn on logging of process via error_log() facility in PHP.
  * Used primarily for debugging, lots of output.
@@ -601,7 +601,7 @@ if  ( !class_exists('WordpressOpenIDRegistration') ) {
 				if( $_GET['action'] == 'commentopenid' ) {
 					$this->post_comment($oid_user_data);
 				}
-				
+
 				if( $redirect_to == '/wp-admin' and !$user->has_cap('edit_posts') ) $redirect_to = '/wp-admin/profile.php';
 				wp_redirect( $redirect_to );
 			}
@@ -752,6 +752,16 @@ if  ( !class_exists('WordpressOpenIDRegistration') ) {
 
 			error_log(var_export($commentdata, true));
 
+			error_log(var_export($_SESSION, true));
+			if ( !$user_id ) :
+				setcookie('comment_author_' . COOKIEHASH, $_SESSION['oid_comment_author'], time() + 30000000, COOKIEPATH, COOKIE_DOMAIN);
+				setcookie('comment_author_email_' . COOKIEHASH, $_SESSION['oid_comment_author_email'], time() + 30000000, COOKIEPATH, COOKIE_DOMAIN);
+				setcookie('comment_author_url_' . COOKIEHASH, clean_url($_SESSION['oid_comment_author_url']), time() + 30000000, COOKIEPATH, COOKIE_DOMAIN);
+
+				// save openid url in a separate cookie so wordpress doesn't muck with it when we read it back in later
+				setcookie('comment_author_openid_' . COOKIEHASH, $_SESSION['oid_comment_author_url'], time() + 30000000, COOKIEPATH, COOKIE_DOMAIN);
+			endif;
+				
 			$comment_id = wp_new_comment( $commentdata );
 		}
 
@@ -820,6 +830,7 @@ if  ( !class_exists('WordpressOpenIDRegistration') ) {
 				$this->comment_set_cookie( stripslashes( $comment['comment_content'] ) );
 				$_SESSION['oid_comment_author_name'] = $comment['comment_author'];
 				$_SESSION['oid_comment_author_email'] = $comment['comment_author_email'];
+				$_SESSION['oid_comment_author_url'] = $_POST[$url_field];
 				$this->start_login( $_POST[$url_field], get_permalink( $comment['comment_post_ID'] ), 'commentopenid', $comment['comment_post_ID'] );
 				
 				// Failure to redirect at all, the URL is malformed or unreachable. Display the login form with the error.
@@ -837,16 +848,9 @@ if  ( !class_exists('WordpressOpenIDRegistration') ) {
 
 
 
-		/*
-		 * Sanity check for urls entered in Options pane. Needs to permit HTTPS.
-		 */
-		function openid_is_url($url) {
-			return !preg_match( '#^http(s)?\\:\\/\\/[a-z0-9\-]+\.([a-z0-9\-]+\.)?\\/[a-z]+#i',$url );
-		}
-		
-		
 		/* Hooks to clean up wp_notify_postauthor() emails
 		 * Tries to call as few functions as required */
+		/* These are necessary because our comment_type is 'openid', but wordpress is expecting 'comment' */
 		function openid_comment_notification_text( $notify_message_original, $comment_id ) {
 			if( $this->flag_doing_openid_comment ) {
 				$comment = get_comment( $comment_id );
@@ -899,23 +903,41 @@ if  ( !class_exists('WordpressOpenIDRegistration') ) {
 		function comments_awaiting_moderation(&$comments, $post_id) {
 			global $wpdb, $user_ID;
 
-			if ($user_ID) {
+			$commenter = wp_get_current_commenter();
+			extract($commenter);
 
-				$commenter = wp_get_current_commenter();
-				extract($commenter);
+			$author_db = $wpdb->escape($comment_author);
+			$email_db  = $wpdb->escape($comment_author_email);
+			$url_db  = $wpdb->escape($comment_author_url);
 
-				$additional = $wpdb->get_results("SELECT * FROM $wpdb->comments WHERE comment_post_ID = '$post_id' AND " .
-					"user_id = '$user_ID' AND comment_author != '$author_db' AND comment_author_email != '$email_db' AND ".
-					"comment_approved = '0' ORDER BY comment_date");
+			$additional = $wpdb->get_results("SELECT * FROM $wpdb->comments WHERE comment_post_ID = '$post_id' AND " .
+				"(comment_author_url = '$url_db' OR (user_id != 0 AND user_id = '$user_ID')) AND comment_author != '$author_db' " .
+				"AND comment_author_email != '$email_db' AND comment_approved = '0' ORDER BY comment_date");
 
-				if ($additional) {
-					$comments = array_merge($comments, $additional);
-					usort($comments, create_function('$a,$b', 'return strcmp($a->comment_date_gmt, $b->comment_date_gmt);'));
-				}
+			if ($additional) {
+				$comments = array_merge($comments, $additional);
+				usort($comments, create_function('$a,$b', 'return strcmp($a->comment_date_gmt, $b->comment_date_gmt);'));
 			}
 
 			return $comments;
 		}
+
+
+		/**
+		 *
+		 */
+		function sanitize_comment_cookies() {
+			if ( isset($_COOKIE['comment_author_openid_'.COOKIEHASH]) ) { 
+
+				// this might be an i-name, so we don't want to run clean_url()
+				remove_filter('pre_comment_author_url', 'clean_url');
+
+				$comment_author_url = apply_filters('pre_comment_author_url', $_COOKIE['comment_author_openid_'.COOKIEHASH]);
+				$comment_author_url = stripslashes($comment_author_url);
+				$_COOKIE['comment_author_url_'.COOKIEHASH] = $comment_author_url;
+			}
+		}
+
 
 	} // end class definition
 } // end if-class-exists test

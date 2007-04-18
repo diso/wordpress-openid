@@ -55,6 +55,7 @@ if ( !class_exists('WordpressOpenIDRegistrationUI') ) {
 		add_filter( 'comment_notification_subject', array( $wordpressOpenIDRegistrationUI->oid, 'openid_comment_notification_subject'), 10, 2 );
 		add_filter( 'comment_notification_text', array( $wordpressOpenIDRegistrationUI->oid, 'openid_comment_notification_text'), 10, 2 );
 		add_filter( 'comments_array', array( $wordpressOpenIDRegistrationUI->oid, 'comments_awaiting_moderation'), 10, 2);
+		add_action( 'sanitize_comment_cookies', array( $wordpressOpenIDRegistrationUI->oid, 'sanitize_comment_cookies'), 15);
 		
 		add_action( 'delete_user', array( $wordpressOpenIDRegistrationUI->oid, 'drop_all_identities_for_user' ) );	// If user is dropped from database, remove their identities too.
 
@@ -358,7 +359,7 @@ if ( !class_exists('WordpressOpenIDRegistrationUI') ) {
 				if( $trust == null ) $trust = get_settings('siteurl');
 				
 				$error = '';
-				if( $this->oid->openid_is_url($trust) ) {
+				if( $trust = clean_url($trust) ) {
 					update_option('oid_trust_root', $trust);
 				} else {
 					$error .= "<p/>".$trust." is not a url!";
@@ -465,7 +466,7 @@ if ( !class_exists('WordpressOpenIDRegistrationUI') ) {
 
 			?>
 			<style>
-				div#openidrollup:hover dl { display: block; }
+				/*div#openidrollup:hover dl { display: block; } */
 				div#openidrollup dl { display: none; }
 			</style>
 			<?php
