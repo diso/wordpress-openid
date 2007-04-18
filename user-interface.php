@@ -190,19 +190,25 @@ if ( !class_exists('WordpressOpenIDRegistrationUI') ) {
 	}
 	
 	function openid_unobtrusive_js() {
-		echo '
-		<script type="text/javascript">
-			var openidTextVisible = false;
-			function toggleOpenIDText() {
-				if (openidTextVisible) {
-					Effect.Fade(\'openid_unobtrusive_text\');
-				} else {
-					Effect.Appear(\'openid_unobtrusive_text\');
-				}
-				openidTextVisible = !openidTextVisible;
+		global $wp_version;
 
-				return false;
-			}
+		# jQuery is standard in wordpress 2.2+
+		if ($wp_version < '2.2') echo '<script type="text/javascript" src="http://code.jquery.com/jquery-latest.pack.js"></script>';
+
+		echo '
+		<style type="text/css">
+			#openid_enabled_link { background: url(\''.OPENIDIMAGE.'\') center left no-repeat; padding-left: 18px; }
+		</style>
+
+		<script type="text/javascript">
+			jQuery(document).ready( function() {
+				jQuery(\'#openid_unobtrusive_text\').hide();
+
+				jQuery(\'#openid_enabled_link\').click( function() {
+					jQuery(\'#openid_unobtrusive_text\').toggle(400); 
+					return false;
+				});
+			});
 		</script>';
 	}
 
@@ -236,8 +242,8 @@ if ( !class_exists('WordpressOpenIDRegistrationUI') ) {
 		}
 		
 		if (get_option('oid_enable_unobtrusive') && get_option('oid_enable_selfstyle')) {
-			$unobtrusive_html = '<a id="openid_enabled_link" onclick="return toggleOpenIDText();" href="http://openid.net" style="background: url(\''.OPENIDIMAGE.'\') center left no-repeat; padding-left: 18px;">(OpenID Enabled)</a>
-				<div id="openid_unobtrusive_text" style="display: none;">
+			$unobtrusive_html = '<a id="openid_enabled_link" href="http://openid.net">(OpenID Enabled)</a>
+				<div id="openid_unobtrusive_text">
 					If you have an OpenID, you may fill it in here.  If your 
 					OpenID provider provides a name and email, those values 
 					will be used instead of the values here.  <a 
