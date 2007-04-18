@@ -54,6 +54,7 @@ if ( !class_exists('WordpressOpenIDRegistrationUI') ) {
 		add_filter( 'option_require_name_email', array( $wordpressOpenIDRegistrationUI->oid, 'openid_bypass_option_require_name_email') );
 		add_filter( 'comment_notification_subject', array( $wordpressOpenIDRegistrationUI->oid, 'openid_comment_notification_subject'), 10, 2 );
 		add_filter( 'comment_notification_text', array( $wordpressOpenIDRegistrationUI->oid, 'openid_comment_notification_text'), 10, 2 );
+		add_filter( 'comments_array', array( $wordpressOpenIDRegistrationUI->oid, 'comments_awaiting_moderation'), 10, 2);
 		
 		add_action( 'delete_user', array( $wordpressOpenIDRegistrationUI->oid, 'drop_all_identities_for_user' ) );	// If user is dropped from database, remove their identities too.
 

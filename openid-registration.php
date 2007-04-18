@@ -5,12 +5,12 @@ Plugin URI: http://willnorris.com/projects/wpopenid/
 Description: Wordpress OpenID Registration, Authentication, and Commenting.   This is a fork of the <a href="http://verselogic.net/projects/wordpress/wordpress-openid-plugin/">original wpopenid project</a> by <a href="http://verselogic.net">Alan Castonguay</a> and Hans Granqvist, with hopes of merging it upstream in the near future.  (URLs and such have been changed so as not to confuse the two plugins.)
 Author: Will Norris
 Author URI: http://willnorris.com/
-Version: $Rev: 15 $
+Version: $Rev: 27 $
 Licence: Modified BSD, http://www.fsf.org/licensing/licenses/index_html#ModifiedBSD
 */
 
 define ( 'OPENIDIMAGE', get_option('siteurl') . '/wp-content/plugins/wpopenid/images/openid.gif' );
-define ( 'WPOPENID_PLUGIN_VERSION', (int)str_replace( '$Rev ', '', '$Rev: 15 $') );
+define ( 'WPOPENID_PLUGIN_VERSION', (int)str_replace( '$Rev ', '', '$Rev: 27 $') );
 
 /* Turn on logging of process via error_log() facility in PHP.
  * Used primarily for debugging, lots of output.
@@ -846,6 +846,42 @@ if  ( !class_exists('WordpressOpenIDRegistration') ) {
 				}
 			}
 			return $subject;
+		}
+
+
+		/**
+		 * Wordpress only displays comments that are awaiting moderation if the 
+		 * name and email address stored in the user's cookies match those on 
+		 * the comment.  This is a problem since if the user logged in with 
+		 * OpenID, they may never have filled out the name and email input 
+		 * fields but there comment _will_ have values resulting in them never 
+		 * seeing their comment.  
+		 *
+		 * This filter performs an additional query if the current user is 
+		 * logged in, and grabs any comments awaiting moderation that they 
+		 * posted.
+		 *
+		 * @bug-filed http://trac.wordpress.org/ticket/4108/
+		 */
+		function comments_awaiting_moderation(&$comments, $post_id) {
+			global $wpdb, $user_ID;
+
+			if ($user_ID) {
+
+				$commenter = wp_get_current_commenter();
+				extract($commenter);
+
+				$additional = $wpdb->get_results("SELECT * FROM $wpdb->comments WHERE comment_post_ID = '$post_id' AND " .
+					"user_id = '$user_ID' AND comment_author != '$author_db' AND comment_author_email != '$email_db' AND ".
+					"comment_approved = '0' ORDER BY comment_date");
+
+				if ($additional) {
+					$comments = array_merge($comments, $additional);
+					usort($comments, create_function('$a,$b', 'return strcmp($a->comment_date_gmt, $b->comment_date_gmt);'));
+				}
+			}
+
+			return $comments;
 		}
 
 	} // end class definition
