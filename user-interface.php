@@ -60,7 +60,8 @@ if ( !class_exists('WordpressOpenIDRegistrationUI') ) {
 		add_action( 'delete_user', array( $wordpressOpenIDRegistrationUI->oid, 'drop_all_identities_for_user' ) );	// If user is dropped from database, remove their identities too.
 
 		if( get_option('oid_enable_unobtrusive') ) {
-			add_action( 'wp_head', array( $wordpressOpenIDRegistrationUI, 'openid_unobtrusive_js'));
+			add_action( 'init', array( $wordpressOpenIDRegistrationUI, 'unobtrusive_setup'));
+			add_action( 'wp_head', array( $wordpressOpenIDRegistrationUI, 'unobtrusive_head'));
 		}
 
 		if( get_option('oid_enable_commentform') ) {
@@ -189,27 +190,17 @@ if ( !class_exists('WordpressOpenIDRegistrationUI') ) {
 		return $string;
 	}
 	
-	function openid_unobtrusive_js() {
-		global $wp_version;
-
+	function unobtrusive_setup() {
 		# jQuery is standard in wordpress 2.2+
-		if ($wp_version < '2.2') echo '<script type="text/javascript" src="http://code.jquery.com/jquery-latest.pack.js"></script>';
+		wp_register_script('jquery', 'http://code.jquery.com/jquery-latest.pack.js', null, '1.1.2');
+		wp_register_script('wpopenid', '/wp-content/plugins/wpopenid/openid.js', array('jquery'), WPOPENID_PLUGIN_VERSION);
+	}
+
+	function unobtrusive_head() {
+		wp_print_scripts('wpopenid');
 
 		echo '
-		<style type="text/css">
-			#openid_enabled_link { background: url(\''.OPENIDIMAGE.'\') center left no-repeat; padding-left: 18px; }
-		</style>
-
-		<script type="text/javascript">
-			jQuery(document).ready( function() {
-				jQuery(\'#openid_unobtrusive_text\').hide();
-
-				jQuery(\'#openid_enabled_link\').click( function() {
-					jQuery(\'#openid_unobtrusive_text\').toggle(400); 
-					return false;
-				});
-			});
-		</script>';
+			<link rel="stylesheet" type="text/css" href="'.get_option('siteurl').'/wp-content/plugins/wpopenid/openid.css?ver='.WPOPENID_PLUGIN_VERSION.'" />';
 	}
 
 	function openid_wp_comment_form_ob( $html ) {
