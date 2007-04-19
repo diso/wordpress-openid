@@ -427,6 +427,7 @@ if ( !class_exists('WordpressOpenIDRegistrationUI') ) {
 
 			
 			/* Check for updates via SF RSS feed */
+			/*
 			@include_once (ABSPATH . WPINC . '/rss.php');
 			@include_once (ABSPATH . WPINC . '/rss-functions.php');
 			$plugins = get_plugins();
@@ -456,6 +457,7 @@ if ( !class_exists('WordpressOpenIDRegistrationUI') ) {
 			} else {
 				$vercmp_message .= 'Could not contact sourceforge for latest version information.';
 			}
+			 */
 			wordpressOpenIDRegistration_Status_Set( 'Plugin version', 'info', $vercmp_message);
 			wordpressOpenIDRegistration_Status_Set( 'Plugin Database Version', 'info', 'Plugin database is currently at revision ' . get_option('oid_plugin_version') . '.' );
 			
@@ -463,7 +465,7 @@ if ( !class_exists('WordpressOpenIDRegistrationUI') ) {
 
 			?>
 			<style>
-				/*div#openidrollup:hover dl { display: block; } */
+				div#openidrollup:hover dl { display: block; }
 				div#openidrollup dl { display: none; }
 			</style>
 			<?php

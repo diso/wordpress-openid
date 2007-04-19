@@ -10,8 +10,10 @@ Licence: Modified BSD, http://www.fsf.org/licensing/licenses/index_html#Modified
 */
 
 define ( 'OPENIDIMAGE', get_option('siteurl') . '/wp-content/plugins/wpopenid/images/openid.gif' );
-define ( 'WPOPENID_PLUGIN_REVISION', '$Rev$');
-define ( 'WPOPENID_PLUGIN_VERSION', preg_replace( '/\$Rev: (.+) \$/', 'svn-\\1', WPOPENID_PLUGIN_REVISION) );
+define ( 'WPOPENID_PLUGIN_VERSION', preg_replace( '/\$Rev: (.+) \$/', 'svn-\\1', 
+	'$Rev$') ); // this needs to be on a separate line so that svn:keywords can work its magic
+define ( 'WPOPENID_DB_VERSION', 11258);
+
 
 /* Turn on logging of process via error_log() facility in PHP.
  * Used primarily for debugging, lots of output.
@@ -45,9 +47,9 @@ if  ( !class_exists('WordpressOpenIDRegistration') ) {
 
 		/* Soft verification of plugin activation OK */
 		function uptodate() {
-			if( get_option('oid_plugin_version') != WPOPENID_PLUGIN_VERSION ) {  // Database version mismatch, force dbDelta() in admin interface.
+			if( get_option('oid_db_version') != WPOPENID_DB_VERSION ) {  // Database version mismatch, force dbDelta() in admin interface.
 				$this->enabled = false;
-				wordpressOpenIDRegistration_Status_Set('Plugin Database Version', false, 'Plugin database is out of date. ' . get_option('oid_plugin_version') . ' < ' . WPOPENID_PLUGIN_VERSION );
+				wordpressOpenIDRegistration_Status_Set('Plugin Database Version', false, 'Plugin database is out of date. ' . get_option('oid_db_version') . ' != ' . WPOPENID_PLUGIN_VERSION );
 				update_option('oid_plugin_enabled', false);
 				return false;
 			}
@@ -145,6 +147,7 @@ if  ( !class_exists('WordpressOpenIDRegistration') ) {
 				if( !$this->uptodate() ) {
 					update_option('oid_plugin_enabled', true);
 					update_option('oid_plugin_version', WPOPENID_PLUGIN_VERSION );
+					update_option('oid_db_version', WPOPENID_DB_VERSION );
 					$this->uptodate();
 				}
 			} else {
@@ -1036,7 +1039,8 @@ add_option( 'oid_enable_selfstyle', true, 'Use internal style rules' );
 add_option( 'oid_enable_loginform', true, 'Display OpenID box in login form' );
 add_option( 'oid_enable_commentform', true, 'Display OpenID box in comment form' );
 add_option( 'oid_plugin_enabled', true, 'Currently hooking into Wordpress' );
-add_option( 'oid_plugin_version', 0, 'OpenID plugin database store version' );
+add_option( 'oid_plugin_version', 0, 'OpenID plugin version' );
+add_option( 'oid_db_version', 0, 'OpenID plugin database store version' );
 add_option( 'oid_enable_unobtrusive', false, 'Look for OpenID in the existing website input field' );
 add_option( 'oid_enable_localaccounts', true, 'Create local wordpress accounts for new users who sign in with an OpenID.' );
 
