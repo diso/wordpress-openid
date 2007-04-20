@@ -186,7 +186,7 @@ if ( !class_exists('WordpressOpenIDRegistrationUI') ) {
 	 */
 	function setup_openid_wp_login_ob($string) {
 		global $wordpressOpenIDRegistrationUI;
-		ob_start( array( $wordpressOpenIDRegistrationUI, "openid_wp_comment_form_ob" ) );
+		ob_start( array( &$wordpressOpenIDRegistrationUI, "openid_wp_comment_form_ob" ) );
 		return $string;
 	}
 	
@@ -204,7 +204,7 @@ if ( !class_exists('WordpressOpenIDRegistrationUI') ) {
 	}
 
 	function openid_wp_comment_form_ob( $html ) {
-		$block = array('address','blockquote','dsiv','dl','span',
+		$block = array('address','blockquote','div','dl','span',
 			'fieldset','h1','h2','h3','h4','h5','h6',
 			'p','ul','li', 'dd','dt');
 		

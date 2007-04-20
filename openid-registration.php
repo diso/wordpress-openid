@@ -272,7 +272,7 @@ if  ( !class_exists('WordpressOpenIDRegistration') ) {
 			
 			if( get_option('oid_enable_loginform') ) {
 				global $wordpressOpenIDRegistrationUI;
-				ob_start( array( $wordpressOpenIDRegistrationUI, 'openid_wp_login_ob' ) );
+				ob_start( array( &$wordpressOpenIDRegistrationUI, 'openid_wp_login_ob' ) );
 			}
 		}
 
@@ -513,7 +513,7 @@ if  ( !class_exists('WordpressOpenIDRegistration') ) {
 				case 'wp-login.php':
 					if( $action == 'register' ) {
 						global $wordpressOpenIDRegistrationUI;
-						ob_start( array( $wordpressOpenIDRegistrationUI, 'openid_wp_register_ob' ) );
+						ob_start( array( &$wordpressOpenIDRegistrationUI, 'openid_wp_register_ob' ) );
 						return;
 					}
 					if ( !isset( $_GET['openid_mode'] ) ) return;
@@ -525,7 +525,7 @@ if  ( !class_exists('WordpressOpenIDRegistration') ) {
 
 				case 'wp-register.php':
 					global $wordpressOpenIDRegistrationUI;
-					ob_start( array( $wordpressOpenIDRegistrationUI, 'openid_wp_register_ob' ) );
+					ob_start( array( &$wordpressOpenIDRegistrationUI, 'openid_wp_register_ob' ) );
 					return;
 
 				default:
