@@ -19,12 +19,14 @@ OpenID to assure their identity as the author of the comment and provide a
 framework for future OpenID-based services (reputation and trust, for
 example).
 
-This plugin was started as a port of Alan Castonguay's [wpopenid][] plugin, and
+This plugin was started as a fork of Alan Castonguay's [wpopenid][] plugin, and
 has since added a number of significant features and bug-fixes to the excellent
-foundation Alan provided.
+foundation Alan provided.  Special thanks to [Mike Giarlo][] for donating the
+`openid` project space.
 
 [open standard]: http://openid.net/
 [wpopenid]: http://verselogic.net/projects/wordpress/wordpress-openid-plugin/
+[Mike Giarlo]: http://www.lackoftalent.org/michael/blog/
 
 
 == Installation ==
