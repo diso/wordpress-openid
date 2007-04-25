@@ -9,9 +9,8 @@ Version: $Rev$
 Licence: Modified BSD, http://www.fsf.org/licensing/licenses/index_html#ModifiedBSD
 */
 
-// this needs improvement. possible solution <http://comox.textdrive.com/pipermail/wp-hackers/2006-January/004212.html>
-define ( 'WPOPENID_PLUGIN_URL', get_option('siteurl') . '/wp-content/plugins/openid' );  
-define ( 'OPENIDIMAGE', WPOPENID_PLUGIN_URL . '/images/openid.gif' );
+define ( 'WPOPENID_PLUGIN_PATH', '/wp-content/plugins/' . basename(dirname(__FILE__)) );  
+define ( 'OPENIDIMAGE', get_option('siteurl') . WPOPENID_PLUGIN_PATH . '/images/openid.gif' );
 
 define ( 'WPOPENID_PLUGIN_VERSION', preg_replace( '/\$Rev: (.+) \$/', 'svn-\\1', 
 	'$Rev$') ); // this needs to be on a separate line so that svn:keywords can work its magic
