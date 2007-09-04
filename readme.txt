@@ -3,7 +3,7 @@ Contributors: wnorris
 Tags: openid
 Requires at least: 2.0
 Tested up to: 2.1.2
-Stable tag: trunk
+Stable tag: 1.0.1
 
 Allow the use of OpenID for authentication of users and commenters.
 
