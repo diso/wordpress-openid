@@ -1,5 +1,9 @@
 <?php
 
+require_once 'Auth/OpenID/DatabaseConnection.php';
+require_once 'Auth/OpenID/SQLStore.php';
+require_once 'Auth/OpenID/MySQLStore.php';
+
 if( class_exists( 'Auth_OpenID_MySQLStore' ) && !class_exists('WP_OpenIDStore')) {
  class WP_OpenIDStore extends Auth_OpenID_MySQLStore {
     function WP_OpenIDStore()
@@ -9,8 +13,8 @@ if( class_exists( 'Auth_OpenID_MySQLStore' ) && !class_exists('WP_OpenIDStore'))
         $conn = new WP_OpenIDConnection( $wpdb );
         parent::Auth_OpenID_MySQLStore(
             $conn,
-            $wpdb->prefix . 'openid_settings',
             $wpdb->prefix . 'openid_associations',
+            $wpdb->prefix . 'openid_settings',
             $wpdb->prefix . 'openid_nonces');
     }
 
@@ -38,7 +42,6 @@ if( class_exists( 'Auth_OpenID_MySQLStore' ) && !class_exists('WP_OpenIDStore'))
         $statements = array(
             $this->sql['nonce_table'],
             $this->sql['assoc_table'],
-            $this->sql['settings_table'],
                             );
         $sql = implode(';', $statements);
         dbDelta($sql);
@@ -54,37 +57,25 @@ if( class_exists( 'Auth_OpenID_MySQLStore' ) && !class_exists('WP_OpenIDStore'))
         $this->sql['nonce_table'] =
             "
 CREATE TABLE %s (
-  nonce char(8) PRIMARY KEY,
-  expires int(11)
+  server_url blob,
+  timestamp int(11),
+  salt char(40),
+  UNIQUE KEY server_url (server_url(255),timestamp,salt)
 )
 ";
 
         $this->sql['assoc_table'] =
             "
 CREATE TABLE %s (
-  server_url text NOT NULL,
+  server_url blob,
   handle varchar(255),
   secret blob,
   issued int(11),
   lifetime int(11),
   assoc_type varchar(64),
-  PRIMARY KEY  (server_url(30),handle)
+  PRIMARY KEY  (server_url(255),handle)
 )
 ";
-
-        $this->sql['settings_table'] =
-            "
-CREATE TABLE %s (
-  setting varchar(128) PRIMARY KEY,
-  value blob
-)
-";
-
-        $this->sql['create_auth'] =
-            "INSERT INTO %s VALUES ('auth_key', %%s)";
-
-        $this->sql['get_auth'] =
-            "SELECT value FROM %s WHERE setting = 'auth_key'";
 
         $this->sql['set_assoc'] =
             "REPLACE INTO %s VALUES (%%s, %%s, %%s, %%d, %%d, %%s)";
@@ -101,13 +92,10 @@ CREATE TABLE %s (
             "DELETE FROM %s WHERE server_url = %%s AND handle = %%s";
 
         $this->sql['add_nonce'] =
-            "REPLACE INTO %s (nonce, expires) VALUES (%%s, %%d)";
+            "REPLACE INTO %s (server_url, timestamp, salt) VALUES (%%s, %%d, %%s)";
 
-        $this->sql['get_nonce'] =
-            "SELECT * FROM %s WHERE nonce = %%s";
-
-        $this->sql['remove_nonce'] =
-            "DELETE FROM %s WHERE nonce = %%s";
+        $this->sql['get_expired'] =
+            "SELECT server_url FROM %s WHERE issued + lifetime < %%s";
     }
  }
 }

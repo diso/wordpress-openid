@@ -1,4 +1,21 @@
-#openid_enabled_link { 
+#openid_enabled_link, .openid_link {
 	background: url('images/openid.gif') center left no-repeat; 
 	padding-left: 18px; 
 }
+
+input#openid_url {
+	background: url('images/openid.gif') center left no-repeat; 
+	background-color: #FFF;
+	padding-left: 18px;
+	border: 1px solid #ccc;
+}
+
+/* fix link color on wp-login.php */
+body.login form#loginform a, 
+body.login form#registerform a {
+	color: #FFF;
+}
+
+#commentform.openid fieldset { border: 0; }
+/* add div#page in front so as not to apply to minimalist sandbox themes */
+div#page #commentform.openid fieldset input { margin-left: 2em; }

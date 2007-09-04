@@ -7,7 +7,7 @@
  *
  * LICENSE: See the COPYING file included in this distribution.
  *
- * @package Yadis
+ * @package OpenID
  * @author JanRain, Inc. <openid@janrain.com>
  * @copyright 2005 Janrain, Inc.
  * @license http://www.gnu.org/copyleft/lesser.html LGPL
@@ -16,16 +16,16 @@
 /**
  * Interface import
  */
-require_once "Services/Yadis/HTTPFetcher.php";
+require_once "Auth/Yadis/HTTPFetcher.php";
 
 /**
- * A paranoid {@link Services_Yadis_HTTPFetcher} class which uses CURL
+ * A paranoid {@link Auth_Yadis_HTTPFetcher} class which uses CURL
  * for fetching.
  *
- * @package Yadis
+ * @package OpenID
  */
-class Services_Yadis_ParanoidHTTPFetcher extends Services_Yadis_HTTPFetcher {
-    function Services_Yadis_ParanoidHTTPFetcher()
+class Auth_Yadis_ParanoidHTTPFetcher extends Auth_Yadis_HTTPFetcher {
+    function Auth_Yadis_ParanoidHTTPFetcher()
     {
         $this->reset();
     }
@@ -113,7 +113,7 @@ class Services_Yadis_ParanoidHTTPFetcher extends Services_Yadis_HTTPFetcher {
                     }
                 }
 
-                return new Services_Yadis_HTTPResponse($url, $code,
+                return new Auth_Yadis_HTTPResponse($url, $code,
                                                     $new_headers, $body);
             }
 
@@ -126,7 +126,7 @@ class Services_Yadis_ParanoidHTTPFetcher extends Services_Yadis_HTTPFetcher {
         return null;
     }
 
-    function post($url, $body)
+    function post($url, $body, $extra_headers = null)
     {
         $this->reset();
 
@@ -159,7 +159,11 @@ class Services_Yadis_ParanoidHTTPFetcher extends Services_Yadis_HTTPFetcher {
 
         curl_close($c);
 
-        $new_headers = array();
+        if ($extra_headers === null) {
+            $new_headers = null;
+        } else {
+            $new_headers = $extra_headers;
+        }
 
         foreach ($this->headers as $header) {
             if (preg_match("/:/", $header)) {
@@ -169,8 +173,8 @@ class Services_Yadis_ParanoidHTTPFetcher extends Services_Yadis_HTTPFetcher {
 
         }
 
-        return new Services_Yadis_HTTPResponse($url, $code,
-                                               $new_headers, $body);
+        return new Auth_Yadis_HTTPResponse($url, $code,
+                                           $new_headers, $body);
     }
 }
 

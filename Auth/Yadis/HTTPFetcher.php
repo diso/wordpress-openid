@@ -7,14 +7,14 @@
  *
  * LICENSE: See the COPYING file included in this distribution.
  *
- * @package Yadis
+ * @package OpenID
  * @author JanRain, Inc. <openid@janrain.com>
  * @copyright 2005 Janrain, Inc.
  * @license http://www.gnu.org/copyleft/lesser.html LGPL
  */
 
-class Services_Yadis_HTTPResponse {
-    function Services_Yadis_HTTPResponse($final_url = null, $status = null,
+class Auth_Yadis_HTTPResponse {
+    function Auth_Yadis_HTTPResponse($final_url = null, $status = null,
                                          $headers = null, $body = null)
     {
         $this->final_url = $final_url;
@@ -30,9 +30,9 @@ class Services_Yadis_HTTPResponse {
  * fetcher for some reason.
  *
  * @access private
- * @package Yadis
+ * @package OpenID
  */
-class Services_Yadis_HTTPFetcher {
+class Auth_Yadis_HTTPFetcher {
 
     var $timeout = 20; // timeout in seconds.
 
