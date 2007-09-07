@@ -97,8 +97,8 @@ if ( !class_exists('WordpressOpenIDInterface') ) {
 		return str_replace( 'action=logout', 'action=logout' . ini_get('arg_separator.output') . 'redirect_to=' . urlencode($_SERVER["REQUEST_URI"]), $link );
 	}
 	
-	// Add OpenID logo beside username for theme.
-	function comment_author_link_prefx( $html ) {
+	// Add OpenID class to author link
+	function comment_author_link( $html ) {
 		global $comment_is_openid;
 		get_comment_type();
 		if( $comment_is_openid === true ) {

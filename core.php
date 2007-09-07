@@ -79,7 +79,7 @@ if  ( !class_exists('WordpressOpenID') ) {
 			add_filter( 'comment_notification_text', array( $this->logic, 'comment_notification_text'), 10, 2 );
 			add_filter( 'comments_array', array( $this->logic, 'comments_awaiting_moderation'), 10, 2);
 			add_action( 'sanitize_comment_cookies', array( $this->logic, 'sanitize_comment_cookies'), 15);
-			
+
 			add_action( 'delete_user', array( $this->logic, 'drop_all_identities_for_user' ) );	// If user is dropped from database, remove their identities too.
 
 			if (get_option('oid_enable_selfstyle')) {
@@ -88,9 +88,9 @@ if  ( !class_exists('WordpressOpenID') ) {
 			}
 
 			add_action( 'init', array( $this->interface, 'js_setup'));
+			add_filter( 'get_comment_author_link', array( $this->interface, 'comment_author_link'));
 
 			if( get_option('oid_enable_commentform') ) {
-				add_filter( 'get_comment_author_link', array( $this->interface, 'comment_author_link_prefx'));
 				add_action( 'comment_form', array( $this->interface, 'comment_form'));
 			}
 
