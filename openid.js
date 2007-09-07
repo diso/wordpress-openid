@@ -2,10 +2,13 @@ jQuery(document).ready( function() {
 	jQuery('#openid_rollup dl').toggle();
 
 	jQuery('#openid_rollup_link').click( function() {
-		jQuery('#openid_rollup dl').toggle(); 
 		return false;
 	});
 });
+
+function stylize_profilelink() {
+	jQuery('#commentform a[@href$=/wp-admin/profile.php]').addClass('openid_link');;
+}
 
 function add_openid_to_comment_form(unobtrusive_mode) {
 
@@ -20,7 +23,6 @@ function add_openid_to_comment_form(unobtrusive_mode) {
 						'<a href="http://openid.net/wiki/index.php/Public_OpenID_providers">find an OpenID provider</a>.' +
 					'</div> ';
 
-		var label = jQuery('#commentform label[@for=url]');
 		var children = jQuery(':visible:hastext', label);
 
 		if (children.length > 0)

@@ -88,7 +88,9 @@ if  ( !class_exists('WordpressOpenID') ) {
 			}
 
 			add_action( 'init', array( $this->interface, 'js_setup'));
+
 			add_filter( 'get_comment_author_link', array( $this->interface, 'comment_author_link'));
+			add_action( 'comment_form', array( $this->interface, 'comment_profilelink'));
 
 			if( get_option('oid_enable_commentform') ) {
 				add_action( 'comment_form', array( $this->interface, 'comment_form'));

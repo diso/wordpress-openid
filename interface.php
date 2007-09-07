@@ -124,6 +124,12 @@ if ( !class_exists('WordpressOpenIDInterface') ) {
 	}
 
 
+	function comment_profilelink() {
+		if (is_user_openid()) {
+			echo '<script type="text/javascript">stylize_profilelink()</script>';
+		}
+	}
+
 	function comment_form() {
 		echo '<script type="text/javascript">add_openid_to_comment_form('.(get_option('oid_enable_unobtrusive')?'true':'false').')</script>';
 	}
