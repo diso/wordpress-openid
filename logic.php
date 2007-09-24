@@ -964,35 +964,38 @@ $wordpressOpenIDRegistration_Required_Files = array(
 	);
 
 
-function wordpressOpenIDRegistration_Load_Required_Files( $wordpressOpenIDRegistration_Required_Files ) {
-	/* Library may declare global variables. Some of these are required by other
-	 * classes or functions in the library, and some are not. We're going to 
-	 * permit only the required global variables to be created.
-	 */
-	global $__Auth_Yadis_defaultParser, $__Auth_Yadis_xml_extensions,
-		$_Auth_Yadis_ns_map, $_Auth_OpenID_namespaces, $__UCSCHAR, $__IPRIVATE, $DEFAULT_PROXY,
-		$XRI_AUTHORITIES, $_escapeme_re, $_xref_re, $__Auth_OpenID_PEAR_AVAILABLE,
-		$_Auth_OpenID_math_extensions, $_Auth_OpenID_DEFAULT_MOD, $_Auth_OpenID_DEFAULT_GEN,
-		$Auth_OpenID_OPENID_PROTOCOL_FIELDS, $Auth_OpenID_registered_aliases, $Auth_OpenID_SKEW,
-		$Auth_OpenID_sreg_data_fields;
-	$absorb = array( 'parts','pair','n','m', '___k','___v','___local_variables' );  // Unnessessary global variables absorbed
-	$___local_variables = array_keys( get_defined_vars() );
-	set_include_path( dirname(__FILE__) . PATH_SEPARATOR . get_include_path() );   // Add plugin directory to include path temporarily
-	foreach( $wordpressOpenIDRegistration_Required_Files as $___k => $___v ) {
-		//if( file_exists_in_path( $___k ) ) {
-			if( @include_once( $___k ) ) {
-				wordpressOpenIDRegistration_Status_Set('loading file: '.$___k, true, '');
-				continue;
-			}
-		//}
-		wordpressOpenIDRegistration_Status_Set('file:'.$___k, false, $___v );
-		break;
-	}
-	restore_include_path();  // Leave no footprints behind
+if (!function_exists('wordpressOpenIDRegistration_Load_Required_Files')) {
+	function wordpressOpenIDRegistration_Load_Required_Files( $wordpressOpenIDRegistration_Required_Files ) {
+		/* Library may declare global variables. Some of these are required by other
+		 * classes or functions in the library, and some are not. We're going to 
+		 * permit only the required global variables to be created.
+		 */
+		global $__Auth_Yadis_defaultParser, $__Auth_Yadis_xml_extensions,
+			$_Auth_Yadis_ns_map, $_Auth_OpenID_namespaces, $__UCSCHAR, $__IPRIVATE, $DEFAULT_PROXY,
+			$XRI_AUTHORITIES, $_escapeme_re, $_xref_re, $__Auth_OpenID_PEAR_AVAILABLE,
+			$_Auth_OpenID_math_extensions, $_Auth_OpenID_DEFAULT_MOD, $_Auth_OpenID_DEFAULT_GEN,
+			$Auth_OpenID_OPENID_PROTOCOL_FIELDS, $Auth_OpenID_registered_aliases, $Auth_OpenID_SKEW,
+			$Auth_OpenID_sreg_data_fields;
+		$absorb = array( 'parts','pair','n','m', '___k','___v','___local_variables' );  // Unnessessary global variables absorbed
+		$___local_variables = array_keys( get_defined_vars() );
+		set_include_path( dirname(__FILE__) . PATH_SEPARATOR . get_include_path() );   // Add plugin directory to include path temporarily
+		foreach( $wordpressOpenIDRegistration_Required_Files as $___k => $___v ) {
+			//if( file_exists_in_path( $___k ) ) {
+				if( @include_once( $___k ) ) {
+					wordpressOpenIDRegistration_Status_Set('loading file: '.$___k, true, '');
+					continue;
+				}
+			//}
+			wordpressOpenIDRegistration_Status_Set('file:'.$___k, false, $___v );
+			break;
+		}
+		restore_include_path();  // Leave no footprints behind
 
-	$___local_variables = array_diff( array_keys( get_defined_vars() ), $___local_variables );
-	foreach( $___local_variables as $___v ) if( !in_array( $___v, $absorb )) {
-		wordpressOpenIDRegistration_Status_Set('unknown library variable: '.$___v, false, 'This library variable is unknown, left unset.' );
+		$___local_variables = array_diff( array_keys( get_defined_vars() ), $___local_variables );
+		foreach( $___local_variables as $___v ) if( !in_array( $___v, $absorb )) {
+			wordpressOpenIDRegistration_Status_Set('unknown library variable: '.$___v, false, 'This library variable is unknown, left unset.' );
+		}
 	}
 }
+
 ?>
