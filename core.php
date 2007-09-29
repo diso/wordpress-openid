@@ -44,16 +44,16 @@ if  ( !class_exists('WordpressOpenID') ) {
 		var $logic;
 		var $interface;
 
-		function __construct() {
-			$this->interface = new WordpressOpenIDInterface($this);
-			$this->logic = new WordpressOpenIDLogic();
-
+		function WordpressOpenID() {
 			$this->path = '/wp-content/plugins/openid';
 			$this->fullpath = get_option('siteurl').$this->path;
+
+			$this->logic = new WordpressOpenIDLogic();
+			$this->interface = new WordpressOpenIDInterface($this, $this->logic);
 		}
 
 		function startup() {
-			if( WORDPRESSOPENIDREGISTRATION_DEBUG ) error_log("WPOpenID Status: userinterface hooks: " . ($this->interface->oid->enabled? 'Enabled':'Disabled' ) . ' (finished including and instantiating, passing control back to wordpress)' );
+			if( WORDPRESSOPENIDREGISTRATION_DEBUG ) error_log("WPOpenID Status: userinterface hooks: " . ($this->interface->logic->enabled? 'Enabled':'Disabled' ) . ' (finished including and instantiating, passing control back to wordpress)' );
 
 			$this->interface->startup();
 			

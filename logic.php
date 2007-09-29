@@ -13,6 +13,7 @@ if  ( !class_exists('WordpressOpenIDLogic') ) {
 		var $identity_url_table_name;
 		var $flag_doing_openid_comment = false;
 
+		var $bind_done = false;
 
 		/* Soft verification of plugin activation OK */
 		function uptodate() {
@@ -48,7 +49,8 @@ if  ( !class_exists('WordpressOpenIDLogic') ) {
 			if (!isset($this->_consumer)) {
 				require_once 'Auth/OpenID/Consumer.php';
 
-				$this->_consumer = new Auth_OpenID_Consumer($this->getStore());
+				$store = $this->getStore();
+				$this->_consumer = new Auth_OpenID_Consumer($store);
 				if( null === $this->_consumer ) {
 					wordpressOpenIDRegistration_Status_Set('object: OpenID Consumer', false, 'OpenID consumer could not be created properly.');
 					wordpressOpenIDRegistration_Status_Set('class: Auth_OpenID_Consumer', class_exists('Auth_OpenID_Consumer'),  'This class is provided by the JanRain library, does the heavy lifting.');
@@ -65,10 +67,9 @@ if  ( !class_exists('WordpressOpenIDLogic') ) {
 		 * Initialize required store and consumer, making a few sanity checks.
 		 */
 		function late_bind($reload = false) {
-			static $done = false;
 			$this->enabled = true; // Be Optimistic
-			if( $done && !$reload ) return $this->uptodate();
-			$done = true;
+			if( $this->bind_done && !$reload ) return $this->uptodate();
+			$this->bind_done = true;
 
 			if( WORDPRESSOPENIDREGISTRATION_DEBUG ) error_log('WPOpenID Plugin: Late Binding Now');
 			
@@ -89,13 +90,15 @@ if  ( !class_exists('WordpressOpenIDLogic') ) {
 				wordpressOpenIDRegistration_Status_Set('database: Wordpress\' table prefix', 'info', $wpdb->prefix );
 				$this->identity_url_table_name = ($wpdb->prefix . 'openid_identities');
 			} else {
-				wordpressOpenIDRegistration_Status_Set('database: Wordpress\' table prefix', false, 'Wordpress $wpdb->prefix must be set! Plugin is probably being loaded wrong.');
+				wordpressOpenIDRegistration_Status_Set('database: Wordpress\' table prefix', false, 
+					'Wordpress $wpdb->prefix must be set! Plugin is probably being loaded wrong.');
 				$this->enabled = false;
 			}
-			
 
 			if( false === get_option('oid_trust_root') or '' === get_option('oid_trust_root') ) {
-				wordpressOpenIDRegistration_Status_Set('Option: Trust Root', 'info', 'You must specify the Trust Root paramater on the OpenID Options page. Commenters will be asked whether they trust this url, and its decedents, to know that they are logged in and control their identity url. Include the trailing slash.');
+				wordpressOpenIDRegistration_Status_Set('Option: Trust Root', 'info', 'You must specify the Trust Root paramater '
+					+ 'on the OpenID Options page. Commenters will be asked whether they trust this url, and its decedents, to '
+					+ 'know that they are logged in and control their identity url. Include the trailing slash.');
 			}
 			
 			if( WORDPRESSOPENIDREGISTRATION_DEBUG ) error_log("Bootstrap -- checking tables");
@@ -132,7 +135,8 @@ if  ( !class_exists('WordpressOpenIDLogic') ) {
 				return false;				
 			}
 			require_once(ABSPATH . '/wp-admin/upgrade-functions.php');
-			$this->getStore()->dbDelta();
+			$store =& $this->getStore();
+			$store->dbDelta();
 			
 			// Table for storing UserID <---> URL associations.
 			$identity_url_table_sql = "CREATE TABLE $this->identity_url_table_name (
@@ -161,11 +165,12 @@ if  ( !class_exists('WordpressOpenIDLogic') ) {
 				return;
 			}
 			if( WORDPRESSOPENIDREGISTRATION_DEBUG ) error_log('Dropping all database tables.');
-			$sql = 'drop table '. $this->getStore()->associations_table_name;
+			$store =& $this->getStore();
+			$sql = 'drop table '. $store->associations_table_name;
 			$wpdb->query($sql);
-			$sql = 'drop table '. $this->getStore()->nonces_table_name;
+			$sql = 'drop table '. $store->nonces_table_name;
 			$wpdb->query($sql);
-			$sql = 'drop table '. $this->getStore()->settings_table_name;
+			$sql = 'drop table '. $store->settings_table_name;
 			$wpdb->query($sql);
 		}
 		
@@ -174,12 +179,13 @@ if  ( !class_exists('WordpressOpenIDLogic') ) {
 		 */
 		function check_tables($retry=true) {
 			$this->late_bind();
-			if( null === $this->getStore() ) return false; // Can't check tables if the store object isn't created
+			$store =& $this->getStore();
+			if( null === $store ) return false; // Can't check tables if the store object isn't created
 
 			global $wpdb;
 			$ok = true;
 			$message = '';
-			$tables = array( $this->getStore()->associations_table_name, $this->getStore()->nonces_table_name,
+			$tables = array( $store->associations_table_name, $store->nonces_table_name,
 				$this->identity_url_table_name );
 			foreach( $tables as $t ) {
 				$message .= empty($message) ? '' : '<br/>';
@@ -233,6 +239,8 @@ if  ( !class_exists('WordpressOpenIDLogic') ) {
 		/* Start and finish the redirect loop, for the admin pages profile.php & users.php
 		 */
 		function admin_page_handler() {
+			global $wp_version;
+
 			if( !isset( $_GET['page'] )) return;
 			if( 'your-openid-identities' != plugin_basename( stripslashes($_GET['page']) ) ) return;
 
@@ -241,8 +249,11 @@ if  ( !class_exists('WordpressOpenIDLogic') ) {
 			$this->action = $_REQUEST['action'];
 			
 			require_once(ABSPATH . 'wp-admin/admin-functions.php');
-			require_once(ABSPATH . 'wp-admin/admin-db.php');
-			require_once(ABSPATH . 'wp-admin/upgrade-functions.php');
+
+			if ($wp_version < '2.3') {
+				require_once(ABSPATH . 'wp-admin/admin-db.php');
+				require_once(ABSPATH . 'wp-admin/upgrade-functions.php');
+			}
 
 			auth_redirect();
 			nocache_headers();
@@ -263,7 +274,8 @@ if  ( !class_exists('WordpressOpenIDLogic') ) {
 					if( WORDPRESSOPENIDREGISTRATION_DEBUG ) error_log('OpenIDConsumer: Attempting bind for "' . $claimed_url . '"');
 
 					set_error_handler( array($this, 'customer_error_handler'));
-					$auth_request = $this->getConsumer()->begin( $claimed_url );
+					$consumer = $this->getConsumer();
+					$auth_request = $consumer->begin( $claimed_url );
 					restore_error_handler();
 
 					// TODO: Better error handling.
@@ -365,7 +377,8 @@ if  ( !class_exists('WordpressOpenIDLogic') ) {
 		
 		function finish_openid_auth() {
 			set_error_handler( array($this, 'customer_error_handler'));
-			$response = $this->getConsumer()->complete();
+			$consumer = $this->getConsumer();
+			$response = $consumer->complete();
 			restore_error_handler();
 			
 			switch( $response->status ) {
@@ -404,21 +417,24 @@ if  ( !class_exists('WordpressOpenIDLogic') ) {
 		/* Application-specific database operations */
 		function get_my_identities( $id = 0 ) {
 			$this->late_bind();
+			$store =& $this->getStore();
 			global $userdata;
 			if( !$this->enabled ) return array();
-			if( $id ) return $this->getStore()->connection->getOne( "SELECT url FROM $this->identity_url_table_name WHERE user_id = %s AND uurl_id = %s",
+			if( $id ) return $store->connection->getOne( "SELECT url FROM $this->identity_url_table_name WHERE user_id = %s AND uurl_id = %s",
 					array( (int)$userdata->ID, (int)$id ) );
-			return $this->getStore()->connection->getAll( "SELECT uurl_id,url FROM $this->identity_url_table_name WHERE user_id = %s",
+			return $store->connection->getAll( "SELECT uurl_id,url FROM $this->identity_url_table_name WHERE user_id = %s",
 				array( (int)$userdata->ID ) );
 		}
 
 		function insert_identity($url) {
-			$this->late_bind();
 			global $userdata, $wpdb;
+			$this->late_bind();
+			$store =& $this->getStore();
+
 			if( !$this->enabled ) return false;
 			$old_show_errors = $wpdb->show_errors;
 			if( $old_show_errors ) $wpdb->hide_errors();
-			$ret = @$this->getStore()->connection->query( "INSERT INTO $this->identity_url_table_name (user_id,url,hash) VALUES ( %s, %s, MD5(%s) )",
+			$ret = @$store->connection->query( "INSERT INTO $this->identity_url_table_name (user_id,url,hash) VALUES ( %s, %s, MD5(%s) )",
 				array( (int)$userdata->ID, $url, $url ) );
 			if( $old_show_errors ) $wpdb->show_errors();
 			return $ret;
@@ -426,23 +442,29 @@ if  ( !class_exists('WordpressOpenIDLogic') ) {
 		
 		function drop_all_identities_for_user($userid) {
 			$this->late_bind();
+			$store =& $this->getStore();
+
 			if( !$this->enabled ) return false;
-			return $this->getStore()->connection->query( "DELETE FROM $this->identity_url_table_name WHERE user_id = %s", 
+			return $store->connection->query( "DELETE FROM $this->identity_url_table_name WHERE user_id = %s", 
 				array( (int)$userid ) );
 		}
 		
 		function drop_identity($id) {
-			$this->late_bind();
 			global $userdata;
+			$this->late_bind();
+			$store =& $this->getStore();
+
 			if( !$this->enabled ) return false;
-			return $this->getStore()->connection->query( "DELETE FROM $this->identity_url_table_name WHERE user_id = %s AND uurl_id = %s",
+			return $store->connection->query( "DELETE FROM $this->identity_url_table_name WHERE user_id = %s AND uurl_id = %s",
 				array( (int)$userdata->ID, (int)$id ) );
 		}
 		
 		function get_user_by_identity($url) {
 			$this->late_bind();
+			$store =& $this->getStore();
+
 			if( !$this->enabled ) return false;
-			return $this->getStore()->connection->getOne( "SELECT user_id FROM $this->identity_url_table_name WHERE url = %s",
+			return $store->connection->getOne( "SELECT user_id FROM $this->identity_url_table_name WHERE url = %s",
 				array( $url ) );
 		}
 
@@ -490,7 +512,8 @@ if  ( !class_exists('WordpressOpenIDLogic') ) {
 				$auth_request = $openid_auth_request;
 			} else {
 				set_error_handler( array($this, 'customer_error_handler'));
-				$auth_request = $this->getConsumer()->begin( $claimed_url );
+				$consumer = $this->getConsumer();
+				$auth_request = $consumer->begin( $claimed_url );
 				restore_error_handler();
 			}
 
@@ -805,7 +828,8 @@ if  ( !class_exists('WordpressOpenIDLogic') ) {
 					if ($this->late_bind()) { 
 						// check if url is valid OpenID by forming an auth request
 						set_error_handler( array($this, 'customer_error_handler'));
-						$openid_auth_request = $this->getConsumer()->begin( $_POST['url'] );
+						$consumer = $this->getConsumer();
+						$openid_auth_request = $consumer->begin( $_POST['url'] );
 						restore_error_handler();
 
 						if (null !== $openid_auth_request) {

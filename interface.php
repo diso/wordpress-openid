@@ -12,9 +12,9 @@ if ( !class_exists('WordpressOpenIDInterface') ) {
 	var $logic;  // Hold core logic instance
 	var $core;  // Hold core instance
 	
-	function __construct($core) {
+	function WordpressOpenIDInterface($core, $logic) {
 		$this->core =& $core;
-		$this->logic =& $this->core->logic;
+		$this->logic =& $logic;
 	}
 
 	function startup() {
@@ -131,7 +131,10 @@ if ( !class_exists('WordpressOpenIDInterface') ) {
 	}
 
 	function comment_form() {
-		echo '<script type="text/javascript">add_openid_to_comment_form('.(get_option('oid_enable_unobtrusive')?'true':'false').')</script>';
+		global $user_ID;
+		if (!$user_ID) {
+			echo '<script type="text/javascript">add_openid_to_comment_form('.(get_option('oid_enable_unobtrusive')?'true':'false').')</script>';
+		}
 	}
 
 
