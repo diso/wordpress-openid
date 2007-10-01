@@ -6,16 +6,23 @@ require_once 'Auth/OpenID/MySQLStore.php';
 
 if( class_exists( 'Auth_OpenID_MySQLStore' ) && !class_exists('WP_OpenIDStore')) {
  class WP_OpenIDStore extends Auth_OpenID_MySQLStore {
+
+	var $associations_table_name;
+	var $nonces_table_name;
+
     function WP_OpenIDStore()
     {
         global $wpdb;
 
+		$this->assocations_table_name = $wpdb->prefix . 'openid_associations';
+		$this->nonces_table_name = $wpdb->prefix . 'openid_nonces';
+
         $conn = new WP_OpenIDConnection( $wpdb );
         parent::Auth_OpenID_MySQLStore(
             $conn,
-            $wpdb->prefix . 'openid_associations',
-            $wpdb->prefix . 'openid_settings',
-            $wpdb->prefix . 'openid_nonces');
+            $this->associations_table_name,
+            $this->nonces_table_name
+		);
     }
 
     function isError($value)

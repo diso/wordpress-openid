@@ -126,6 +126,7 @@ if  ( !class_exists('WordpressOpenIDLogic') ) {
 		 * Create tables if needed by running dbDelta calls. Upgrade safe. Called on plugin activate.
 		 */
 		function create_tables() {
+			global $wp_version;
 			$this->late_bind();
 			if( false == $this->enabled ) {  // do nothing if something bad happened
 				$this->error = 'OpenID Consumer could not be activated, something bad happened. Skipping table create. Check libraries.';
@@ -139,7 +140,12 @@ if  ( !class_exists('WordpressOpenIDLogic') ) {
 				echo $this->error;
 				return false;				
 			}
-			require_once(ABSPATH . '/wp-admin/upgrade-functions.php');
+
+			if ($wp_version < '2.3') {
+				require_once(ABSPATH . 'wp-admin/admin-db.php');
+				require_once(ABSPATH . '/wp-admin/upgrade-functions.php');
+			}
+
 			$store =& $this->getStore();
 			$store->dbDelta();
 			
@@ -159,23 +165,22 @@ if  ( !class_exists('WordpressOpenIDLogic') ) {
 		}
 		
 		/*
-		 * Cleanup by dropping nonce, association, and settings tables. Called on plugin deactivate.
+		 * Cleanup by dropping nonce and association tables. Called on plugin deactivate.
 		 */
 		function destroy_tables() {
-			$this->late_bind();
 			global $wpdb;
+			$this->late_bind();
 			if( $this->getStore() == null) {
 				$this->error = 'OpenIDConsumer: Disabled. Cannot locate libraries, therefore cannot clean up database tables. Fix the libraries, or drop the tables yourself.';
 				$this->core->log->notice($this->error);
 				return;
 			}
-			$this->core->eog->debug('Dropping all database tables.');
+			$this->core->log->debug('Dropping all database tables.');
 			$store =& $this->getStore();
+			error_log("store = $store");
 			$sql = 'drop table '. $store->associations_table_name;
 			$wpdb->query($sql);
 			$sql = 'drop table '. $store->nonces_table_name;
-			$wpdb->query($sql);
-			$sql = 'drop table '. $store->settings_table_name;
 			$wpdb->query($sql);
 		}
 		
