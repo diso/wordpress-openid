@@ -449,8 +449,12 @@ if  ( !class_exists('WordpressOpenIDLogic') ) {
 			$ret = @$store->connection->query( "INSERT INTO $this->identity_url_table_name (user_id,url,hash) VALUES ( %s, %s, MD5(%s) )",
 				array( (int)$userdata->ID, $url, $url ) );
 			if( $old_show_errors ) $wpdb->show_errors();
-			if($foaf = $this->fetch_foaf_profile($url)) update_usermeta((int)$userdata->ID, 'foaf', $foaf);
-			if($sioc = $this->fetch_sioc_profile($url)) update_usermeta((int)$userdata->ID, 'sioc', $sioc);
+
+			if (get_option('oid_enable_foaf')) {
+				if($foaf = $this->fetch_foaf_profile($url)) update_usermeta((int)$userdata->ID, 'foaf', $foaf);
+				if($sioc = $this->fetch_sioc_profile($url)) update_usermeta((int)$userdata->ID, 'sioc', $sioc);
+			}
+
 			return $ret;
 		}
 
@@ -467,20 +471,31 @@ if  ( !class_exists('WordpressOpenIDLogic') ) {
 		 * (http://apassant.net/blog/2007/09/23/retrieving-foaf-profile-from-openid/)
 		 */
 		function fetch_auto_discovery($url, $type) {	
+			$profile = null;
 			$html = file_get_contents($url);
 			preg_match_all('/<head.*<link.*rel="meta".*title="'.$type.'".*href="(.*)".*\/>.*<\/head>/Usi', $html, $links);
+
 			if($links) {
 				if($link = $links[1][0]) {
 					$ex = parse_url($link);
-					if($ex['scheme']) return $link;
-					elseif(substr($ex['path'], 0, 1) == '/') {
-						$ex = parse_url($url);
-						return $ex['scheme'].'://'.$ex['host'].$link;
+					if ($ex['scheme']) {
+						$profile = $link;
 					}
-					else return $url.$link;
+					elseif (substr($ex['path'], 0, 1) == '/') {
+						$ex = parse_url($url);
+						$profile = $ex['scheme'].'://'.$ex['host'].$link;
+					}
+					else {
+						$profile =  $url.$link;
+					}
 				}
 			}
-			return null;
+
+			if ($profile) {
+				$this->core->log->debug("found $type profile: $profile");
+			}
+
+			return $profile;
 		}
 
 		

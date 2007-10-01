@@ -117,6 +117,7 @@ if  ( !class_exists('WordpressOpenID') ) {
 			add_option( 'oid_db_version', 0, 'OpenID plugin database store version' );
 			add_option( 'oid_enable_unobtrusive', false, 'Look for OpenID in the existing website input field' );
 			add_option( 'oid_enable_localaccounts', true, 'Create local wordpress accounts for new users who sign in with an OpenID.' );
+			add_option( 'oid_enable_foaf', true, 'Auto-discover FOAF/SIOC URLs for newly created accounts.' );
 		}
 
 		function setStatus($slug, $state, $message) {

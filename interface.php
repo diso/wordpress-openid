@@ -169,6 +169,7 @@ if ( !class_exists('WordpressOpenIDInterface') ) {
 				update_option( 'oid_enable_commentform', isset($_POST['enable_commentform']) ? true : false );
 				update_option( 'oid_enable_unobtrusive', isset($_POST['enable_unobtrusive']) ? true : false );
 				update_option( 'oid_enable_localaccounts', isset($_POST['enable_localaccounts']) ? true : false );
+				update_option( 'oid_enable_foaf', isset($_POST['enable_foaf']) ? true : false );
 				
 				if ($error !== '') {
 					echo '<div class="error"><p><strong>At least one of Open ID options was NOT updated</strong>'.$error.'</p></div>';
@@ -307,6 +308,25 @@ if ( !class_exists('WordpressOpenIDInterface') ) {
 								wordpress accounts using their OpenID by enabling "<a href="?">Anyone can register</a>" as 
 								well as "Login Form" below.</p>
 
+							</td>
+						</tr>
+
+						<tr valign="top">
+							<th style="width: 33%" scope="row">Enable FOAF/SIOC:</th>
+							<td>
+								<p><input type="checkbox" name="enable_foaf" id="enable_foaf" <?php
+								if ( get_option('users_can_register') ) {
+									if ( get_option('oid_enable_foaf') ) echo 'checked="checked"';
+								} else {
+									echo 'disabled="disabled"';
+								}
+								?> />
+								<label for="enable_foaf">Enable FOAF/SIOC Auto-discovery</label>
+
+								<p>For newly created accounts, attempt to auto-discovery a 
+								<a href="http://foaf-project.org/">FOAF</a> or <a href="http://sioc-project.org/">SIOC</a> 
+								profile.  If found, the URL will be saved as metadata on the new account as <em>foaf</em> and 
+								<em>sioc</em> respectively. (Props to <a href="http://apassant.net/">Alexandre Passant</a>.)</p>
 							</td>
 						</tr>
 						</table>
