@@ -16,6 +16,9 @@ define ( 'WPOPENID_PLUGIN_VERSION', preg_replace( '/\$Rev: (.+) \$/', 'svn-\\1',
 	'$Rev$') ); // this needs to be on a separate line so that svn:keywords can work its magic
 define ( 'WPOPENID_DB_VERSION', 11260);
 
+// valid values are debug, info, notice, warning, err, crit, alert, emerg
+define ( 'WPOPENID_LOG_LEVEL', 'debug');
+
 //set_include_path( dirname(__FILE__) . PATH_SEPARATOR . get_include_path() );   // Add plugin directory to include path temporarily
 
 require_once('logic.php');
@@ -138,7 +141,8 @@ if (isset($wp_version)) {
 		$log = &Log::singleton('error_log', PEAR_LOG_TYPE_SYSTEM, 'WPOpenID');
 
 		// Set the log level
-		$log->setMask(Log::UPTO(PEAR_LOG_DEBUG));
+		$log_level = constant('PEAR_LOG_' . strtoupper(WPOPENID_LOG_LEVEL));
+		$log->setMask(Log::UPTO($log_level));
 	}
 
 	$openid = new WordpressOpenID($log);
