@@ -11,23 +11,21 @@ if ( !class_exists('WordpressOpenIDInterface') ) {
 
 	var $logic;  // Hold core logic instance
 	var $core;  // Hold core instance
-	
-	function WordpressOpenIDInterface($core, $logic) {
+
+	function WordpressOpenIDInterface($core) {
 		$this->core =& $core;
-		$this->logic =& $logic;
+		$this->logic =& $core->logic;
 	}
 
 	function startup() {
-		global $wordpressOpenIDRegistration_Status;
-		
 		if( !class_exists('WordpressOpenIDLogic')) {
-			error_log('WPOpenID plugin core is disabled -- WordpressOpenIDLogic class not found. Ensure files are uploaded correctly.');
+			$this->core->log->error('WPOpenID plugin core is disabled -- WordpressOpenIDLogic class not found. Ensure files are uploaded correctly.');
 			add_action('admin_notices', array( $this, 'admin_notices_plugin_problem_warning' ));
 			return;
 		}
 		
 		if( null === $this->logic ) {
-			error_log('WPOpenID plugin core is disabled -- Could not create WordpressOpenIDLogic object. Ensure files are uploaded correctly.');
+			$this->core->log->error('WPOpenID plugin core is disabled -- Could not create WordpressOpenIDLogic object. Ensure files are uploaded correctly.');
 			add_action('admin_notices', array( $this, 'admin_notices_plugin_problem_warning' ));
 			return;
 		}
@@ -35,7 +33,7 @@ if ( !class_exists('WordpressOpenIDInterface') ) {
 		$this->logic->uptodate(); // Quick check for plugin OK state.
 
 		if( !$this->logic->enabled ) { // Something broke, can't start UI
-			error_log('WPOpenID plugin core is disabled -- Check Options -> OpenID tab for a full diagnositic report.');
+			$this->core->log->error('WPOpenID plugin core is disabled -- Check Options -> OpenID tab for a full diagnositic report.');
 			add_action('admin_notices', array( $this, 'admin_notices_plugin_problem_warning' ));
 			return;
 		}
@@ -115,6 +113,7 @@ if ( !class_exists('WordpressOpenIDInterface') ) {
 		wp_enqueue_script( 'jquery' );
 		wp_enqueue_script( 'interface' );
 		wp_enqueue_script('jquery.textnode', $this->core->path . '/jquery.textnode.js', array('jquery'), WPOPENID_PLUGIN_VERSION);
+		wp_enqueue_script('jquery.xpath', $this->core->path . '/jquery.xpath.js', array('jquery'), WPOPENID_PLUGIN_VERSION);
 		wp_enqueue_script('openid', $this->core->path . '/openid.js', array('jquery','jquery.textnode'), WPOPENID_PLUGIN_VERSION);
 	}
 
@@ -150,7 +149,7 @@ if ( !class_exists('WordpressOpenIDInterface') ) {
 	 */
 	function options_page() {
 			$this->logic->late_bind();
-			if( WORDPRESSOPENIDREGISTRATION_DEBUG ) error_log("WPOpenID Plugin: " . ($this->logic->enabled? 'Enabled':'Disabled' ) . ' (start of wordpress options page)' );
+			$this->core->log->debug("WPOpenID Plugin: " . ($this->logic->enabled? 'Enabled':'Disabled' ) . ' (start of wordpress options page)' );
 		
 			// if we're posted back an update, let's set the values here
 			if ( isset($_POST['info_update']) ) {
@@ -188,13 +187,13 @@ if ( !class_exists('WordpressOpenIDInterface') ) {
 				$list_of_paths[] = $fullpath;
 			}
 			
-			wordpressOpenIDRegistration_Status_Set( 'Include Path', 'info', implode('<br/>', $list_of_paths ) );
+			$this->core->setStatus( 'Include Path', 'info', implode('<br/>', $list_of_paths ) );
 			
 			global $wp_version;
-			wordpressOpenIDRegistration_Status_Set( 'WordPress version', 'info', $wp_version );
-			wordpressOpenIDRegistration_Status_Set( 'MySQL version', 'info', function_exists('mysql_get_client_info') ? mysql_get_client_info() : 'Mysql client information not available. Very strange, as Wordpress requires MySQL.' );
+			$this->core->setStatus( 'WordPress version', 'info', $wp_version );
+			$this->core->setStatus( 'MySQL version', 'info', function_exists('mysql_get_client_info') ? mysql_get_client_info() : 'Mysql client information not available. Very strange, as Wordpress requires MySQL.' );
 
-			wordpressOpenIDRegistration_Status_Set( 'PHP version', 'info', phpversion() );
+			$this->core->setStatus( 'PHP version', 'info', phpversion() );
 			
 			$curl_message = '';
 			if( function_exists('curl_version') ) {
@@ -202,39 +201,39 @@ if ( !class_exists('WordpressOpenIDInterface') ) {
 				if(isset($curl_version['version']))  	$curl_message = 'Version ' . $curl_version['version'] . '. ';
 				if(isset($curl_version['ssl_version']))	$curl_message = 'SSL: ' . $curl_version['ssl_version'] . '. ';
 			}
- 			wordpressOpenIDRegistration_Status_Set( 'Curl version', function_exists('curl_version'), function_exists('curl_version') ? $curl_message :
+ 			$this->core->setStatus( 'Curl version', function_exists('curl_version'), function_exists('curl_version') ? $curl_message :
 					'This PHP installation does not have support for libcurl. Some functionality, such as fetching https:// URLs, will be missing and performance will slightly impared. See <a href="http://www.php.net/manual/en/ref.curl.php">php.net/manual/en/ref.curl.php</a> about enabling libcurl support for PHP.');
 
 			/* Check for Long Integer math library */
-			wordpressOpenIDRegistration_Status_Set( 'library: GMP compiled into in PHP', ( extension_loaded('gmp') and @gmp_init(1) ), '<a href="http://www.php.net/gmp">GMP</a> does not appear to be built into PHP. This is highly recommended for performance reasons.' );
-			wordpressOpenIDRegistration_Status_Set( 'library: BCMath compiled into in PHP', ( extension_loaded('bcmath') and @bcadd(1,1)==2 ), '<a href="http://www.php.net/bc">BCMath</a> does not appear to be built into PHP. GMP is preferred.' );
+			$this->core->setStatus( 'library: GMP compiled into in PHP', ( extension_loaded('gmp') and @gmp_init(1) ), '<a href="http://www.php.net/gmp">GMP</a> does not appear to be built into PHP. This is highly recommended for performance reasons.' );
+			$this->core->setStatus( 'library: BCMath compiled into in PHP', ( extension_loaded('bcmath') and @bcadd(1,1)==2 ), '<a href="http://www.php.net/bc">BCMath</a> does not appear to be built into PHP. GMP is preferred.' );
 
 			/*
 			$loaded_long_integer_library = false;
 			if( function_exists('Auth_OpenID_detectMathLibrary') ) {
 				global $_Auth_OpenID_math_extensions;
 				$loaded_long_integer_library = Auth_OpenID_detectMathLibrary( $_Auth_OpenID_math_extensions );
-				wordpressOpenIDRegistration_Status_Set( 'Loaded long integer library', $loaded_long_integer_library==null?false:'info', $loaded_long_integer_library?$loaded_long_integer_library['extension']:'No long integer library is loaded! Key calculation will be very slow!' );
+				$this->core->setStatus( 'Loaded long integer library', $loaded_long_integer_library==null?false:'info', $loaded_long_integer_library?$loaded_long_integer_library['extension']:'No long integer library is loaded! Key calculation will be very slow!' );
 			} else {
-				wordpressOpenIDRegistration_Status_Set( 'Loaded long integer library', false, 'The underlying OpenID library function Auth_OpenID_detectMathLibrary is not available. Install library first.' );
+				$this->core->setStatus( 'Loaded long integer library', false, 'The underlying OpenID library function Auth_OpenID_detectMathLibrary is not available. Install library first.' );
 			}
 			 */
 			
 			if( defined( 'Auth_OpenID_NO_MATH_SUPPORT' ) ) {
-				wordpressOpenIDRegistration_Status_Set( 'Loaded long integer library', false, 'The OpenID Library is operating Dumb Mode, since it doesn\'t have a big integer library. Recommend installing GMP support.' );
+				$this->core->setStatus( 'Loaded long integer library', false, 'The OpenID Library is operating Dumb Mode, since it doesn\'t have a big integer library. Recommend installing GMP support.' );
 			}
 			if( defined( 'Auth_OpenID_RAND_SOURCE' ) ) {
-				wordpressOpenIDRegistration_Status_Set( 'Cryptographic Randomness Source', (Auth_OpenID_RAND_SOURCE===null) ? false: 'info' ,
+				$this->core->setStatus( 'Cryptographic Randomness Source', (Auth_OpenID_RAND_SOURCE===null) ? false: 'info' ,
 					(Auth_OpenID_RAND_SOURCE===null)
 					? '/dev/urandom unavailable, using an <a href="http://php.net/mt_rand">insecure random number generator</a>. <a href="http://www.php.net/manual/en/features.safe-mode.php#ini.open-basedir">open_basedir</a> is "' . ini_get('open_basedir') . '"'
 					: Auth_OpenID_RAND_SOURCE );
 			}
 
 			
-			wordpressOpenIDRegistration_Status_Set( 'Plugin version', 'info', $vercmp_message);
-			wordpressOpenIDRegistration_Status_Set( 'Plugin Database Version', 'info', 'Plugin database is currently at revision ' . get_option('oid_plugin_version') . '.' );
+			$this->core->setStatus( 'Plugin version', 'info', $vercmp_message);
+			$this->core->setStatus( 'Plugin Database Version', 'info', 'Plugin database is currently at revision ' . get_option('oid_plugin_version') . '.' );
 			
-			wordpressOpenIDRegistration_Status_Set( '<strong>Overall Plugin Status</strong>', ($this->logic->enabled), 'There are problems above that must be dealt with before the plugin can be used.' );
+			$this->core->setStatus( '<strong>Overall Plugin Status</strong>', ($this->logic->enabled), 'There are problems above that must be dealt with before the plugin can be used.' );
 
 
 			if( $this->logic->enabled ) {	// Display status information
@@ -242,12 +241,11 @@ if ( !class_exists('WordpressOpenIDInterface') ) {
 			} else {
 				?><div class="error"><p><strong>Plugin is currently disabled. Fix the problem, then Deactivate/Reactivate the plugin.</strong></p><?php
 			}
-			global $wordpressOpenIDRegistration_Status;
 			
 			?>
 			<dl>
 			<?php
-				foreach( $wordpressOpenIDRegistration_Status as $k=>$v ) {
+				foreach( $this->core->status as $k=>$v ) {
 					if( $v['state'] === false ) { echo "<dt><span style='color:red;'>[FAIL]</span> $k </dt>"; }
 					elseif( $v['state'] === true ) { echo "<dt><span style='color:green;'>[OK]</span> $k </dt>"; }
 					else { echo "<dt><span style='color:grey;'>[INFO]</span> $k </dt>"; }
@@ -259,100 +257,119 @@ if ( !class_exists('WordpressOpenIDInterface') ) {
 			
 			
 			// Display the options page form
-			$siteurl = get_option('siteurl');
+			$siteurl = get_option('home');
 			if( substr( $siteurl, -1, 1 ) !== '/' ) $siteurl .= '/';
 			?>
-			<form method="post"><div class="wrap">
+			<div class="wrap">
 				<h2>OpenID Registration Options</h2>
+				<form method="post">
+     				<p class="submit"><input type="submit" name="info_update" value="<?php _e('Update options') ?> &raquo;" /></p>
+
      				<fieldset class="options">
+						<legend>General Options</legend>
      									
-     					<table class="editform" cellspacing="2" cellpadding="5" width="100%">
-
-     					<tr valign="top"><th style="width: 10em;">
-     						<p><label for="oid_trust_root">Trust root:</label></p>
-     					</th><td>
-							<p><input type="text" size="50" name="oid_trust_root" id="oid_trust_root"
-     						value="<?php echo htmlentities(get_option('oid_trust_root')); ?>" /></p>
-     						<p>Commenters will be asked whether they trust this url,
-     						and its decedents, to know that they are logged in and control their identity url.
-     						Include the trailing slash.
-     						This should probably be <strong><?php echo $siteurl; ?></strong></p>
-     					</td></tr>
+     					<table class="optiontable editform" cellspacing="2" cellpadding="5" width="100%">
+						<tr valign="top">
+							<th style="width: 33%" scope="row">Trust root:</th>
+							<td>
+								<p><input type="text" size="50" name="oid_trust_root" id="oid_trust_root"
+     							value="<?php echo htmlentities(get_option('oid_trust_root')); ?>" /></p>
+     							<p>Commenters will be asked whether they trust this url,
+     							and its decedents, to know that they are logged in and control their identity url.
+     							Include the trailing slash.
+     							This should probably be <strong><?php echo $siteurl; ?></strong></p>
+							</td>
+						</tr>
+						</table>
+					</fieldset>
      					
-     					<tr valign="top"><th>
-     						<p><label for="enable_localaccounts">Local Accounts:</label></p>
-     					</th><td>
-     						<p><input type="checkbox" name="enable_localaccounts" id="enable_localaccounts" <?php
-							if ( get_option('users_can_register') ) {
-     							if ( get_option('oid_enable_localaccounts') ) echo 'checked="checked"';
-							} else {
-								echo 'disabled="disabled"';
-							}
-     						?> />
-     						<label for="enable_localaccounts">Create Local Accounts</label>
-							<?php if (!get_option('users_can_register')) 
-								  echo '<span class="error">This option cannot be enabled until "Anyone can register" is also enabled <a href="?">here</a></span>'; ?>
-							</p>
+     				<fieldset class="options">
+						<legend>Behavior</legend>
+     									
+     					<table class="optiontable editform" cellspacing="2" cellpadding="5" width="100%">
+						<tr valign="top">
+							<th style="width: 33%" scope="row">Local Accounts:</th>
+							<td>
+								<p><input type="checkbox" name="enable_localaccounts" id="enable_localaccounts" <?php
+								if ( get_option('users_can_register') ) {
+									if ( get_option('oid_enable_localaccounts') ) echo 'checked="checked"';
+								} else {
+									echo 'disabled="disabled"';
+								}
+								?> />
+								<label for="enable_localaccounts">Create Local Accounts</label>
+								<?php if (!get_option('users_can_register')) 
+									  echo '<span class="error">This option cannot be enabled until "Anyone can register" is also enabled <a href="?">here</a></span>'; ?>
+								</p>
 
-							<p>If enabled, a local wordpress account will automatically be created for each commenter 
-							who uses an OpenID.  Even with this option disabled, you may allow users to create local 
-							wordpress accounts using their OpenID by enabling "<a href="?">Anyone can register</a>" as 
-							well as "Login Form" below.</p>
+								<p>If enabled, a local wordpress account will automatically be created for each commenter 
+								who uses an OpenID.  Even with this option disabled, you may allow users to create local 
+								wordpress accounts using their OpenID by enabling "<a href="?">Anyone can register</a>" as 
+								well as "Login Form" below.</p>
 
-     					</td></tr>
+							</td>
+						</tr>
+						</table>
+					</fieldset>
 
-     					<tr valign="top"><th>
-     						<p><label for="enable_loginform">Login Form:</label></p>
-     					</th><td>
-     						<p><input type="checkbox" name="enable_loginform" id="enable_loginform" <?php
-     						if( get_option('oid_enable_loginform') ) echo 'checked="checked"'
-     						?> />
-     						<label for="enable_loginform">Add OpenID url box to the WordPress
-     						<a href="<?php bloginfo('wpurl'); ?>/wp-login.php"><?php _e('Login') ?></a>
-     						form.</p>
-     					</td></tr>
+     				<fieldset class="options">
+						<legend>Look &amp; Feel</legend>
+     									
+     					<table class="optiontable editform" cellspacing="2" cellpadding="5" width="100%">
+						<tr valign="top">
+							<th>Login Form:</th>
+							<td>
+								<p><input type="checkbox" name="enable_loginform" id="enable_loginform" <?php
+								if( get_option('oid_enable_loginform') ) echo 'checked="checked"'
+								?> />
+								<label for="enable_loginform">Add OpenID url box to the WordPress
+								<a href="<?php bloginfo('wpurl'); ?>/wp-login.php"><?php _e('Login') ?></a>
+								form.</p>
+							</td>
+						</tr>
 
-     					<tr valign="top"><th>
-     						<p><label for="enable_commentform">Comment Form:</label></p>
-     					</th><td>
-     						<p><input type="checkbox" name="enable_commentform" id="enable_commentform" <?php
-     						if( get_option('oid_enable_commentform') ) echo 'checked="checked"'
-     						?> />
-     						<label for="enable_commentform">Add OpenID url box to the WordPress
-     						post comment form. This will work for most themes derived from Kubrick or Sandbox.
-							Template authors can tweak the comment form as mentioned in the
-							<a href="#">readme</a>.</p>
-     					</td></tr>
-     					
-     					<tr valign="top"><th>
-     						<p><label for="enable_selfstyle">Internal Style:</label></p>
-     					</th><td>
-     						<p><input type="checkbox" name="enable_selfstyle" id="enable_selfstyle" <?php
-     						if( get_option('oid_enable_selfstyle') ) echo 'checked="checked"'
-     						?> />
-     						<label for="enable_selfstyle">Use Internal Style Rules</label></p>
-							<p>Include basic stylesheet for OpenID elements.  This primarily adds the OpenID logo to appropriate 
-							input fields and next to author's name of posts that were made with an OpenID.</p>
-     					</td></tr>
+						<tr valign="top">
+							<th>Comment Form:</th>
+							<td>
+								<p><input type="checkbox" name="enable_commentform" id="enable_commentform" <?php
+								if( get_option('oid_enable_commentform') ) echo 'checked="checked"'
+								?> />
+								<label for="enable_commentform">Add OpenID url box to the WordPress post comment form.</label></p>
 
-     					<tr valign="top"><th>
-     						<p><label for="enable_unobtrusive">Unobtrusive Mode:</label></p>
-     					</th><td>
-     						<p><input type="checkbox" name="enable_unobtrusive" id="enable_unobtrusive" <?php
-     						if( get_option('oid_enable_unobtrusive') ) echo 'checked="checked"'
-     						?> />
-     						<label for="enable_unobtrusive">Use Unobtrusive Mode</label></p>
-							<p>Inspired by <a href="http://www.intertwingly.net/blog/2006/12/28/Unobtrusive-OpenID">Sam Ruby</a>, 
-							unobtrusive mode causes the existing website field in the login form to be used for OpenIDs.  
-							When a comment is submitted with a website, we first see if that is a valid OpenID.  If so, 
-							then we continue on logging the user in with their OpenID, otherwise we treat it as a normal 
-							comment.</p>
-     					</td></tr>
+								<p> This will work for most themes derived from Kubrick or Sandbox.
+								Template authors can tweak the comment form as described in the
+								<a href="<?php echo $this->core->fullpath?>/readme.txt">readme</a>.</p>
+								<br />
 
+								<p><input type="checkbox" name="enable_unobtrusive" id="enable_unobtrusive" <?php
+								if( get_option('oid_enable_unobtrusive') ) echo 'checked="checked"'
+								?> />
+								<label for="enable_unobtrusive">Use Unobtrusive Mode</label></p>
+								<p>Inspired by <a href="http://www.intertwingly.net/blog/2006/12/28/Unobtrusive-OpenID">Sam Ruby</a>, 
+								unobtrusive mode causes the existing website field in the login form to be used for OpenIDs.  
+								When a comment is submitted with a website, we first see if that is a valid OpenID.  If so, 
+								then we continue on logging the user in with their OpenID, otherwise we treat it as a normal 
+								comment.</p>
+							</td>
+						</tr>
+
+						<tr valign="top">
+							<th>Internal Style:</th>
+							<td>
+								<p><input type="checkbox" name="enable_selfstyle" id="enable_selfstyle" <?php
+								if( get_option('oid_enable_selfstyle') ) echo 'checked="checked"'
+								?> />
+								<label for="enable_selfstyle">Use Internal Style Rules</label></p>
+								<p>Include basic stylesheet for OpenID elements.  This primarily adds the OpenID logo to appropriate 
+								input fields and next to author's name of posts that were made with an OpenID.</p>
+							</td>
+						</tr>
      					</table>
      				</fieldset>
-     				<p class="submit"><input type="submit" name="info_update" value="<?php _e('Update options') ?> »" /></p>
-     			</div></form>
+
+     				<p class="submit"><input type="submit" name="info_update" value="<?php _e('Update options') ?> &raquo;" /></p>
+     			</form>
+			</div>
     			<?php
 	} // end function options_page
 

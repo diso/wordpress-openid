@@ -17,21 +17,14 @@ define ( 'WPOPENID_PLUGIN_VERSION', preg_replace( '/\$Rev: (.+) \$/', 'svn-\\1',
 define ( 'WPOPENID_DB_VERSION', 11260);
 
 //set_include_path( dirname(__FILE__) . PATH_SEPARATOR . get_include_path() );   // Add plugin directory to include path temporarily
-error_log(get_include_path());
 
 require_once('logic.php');
 require_once('interface.php');
 
-/* Turn on logging of process via error_log() facility in PHP.
- * Used primarily for debugging, lots of output.
- * For production use, leave this set to false.
- */
-
-define ( 'WORDPRESSOPENIDREGISTRATION_DEBUG', true );
-if( WORDPRESSOPENIDREGISTRATION_DEBUG ) {
-	ini_set('display_errors', true);   // try to turn on verbose PHP error reporting
-	if( ! ini_get('error_log') ) ini_set('error_log', ABSPATH . get_option('upload_path') . '/php.log' );
-	ini_set('error_reporting', 2039);
+// Try loading PEAR_Log from normal include_path.  If we can't find it, include the copy of PEAR_Log bundled with the plugin
+@include_once('Log.php');
+if (!class_exists('Log')) {
+	@include_once('OpenIDLog.php');
 }
 
 @session_start();
@@ -44,20 +37,25 @@ if  ( !class_exists('WordpressOpenID') ) {
 		var $logic;
 		var $interface;
 
-		function WordpressOpenID() {
+		var $log;
+		var $status = array();
+
+		function WordpressOpenID($log) {
 			$this->path = '/wp-content/plugins/openid';
 			$this->fullpath = get_option('siteurl').$this->path;
 
-			$this->logic = new WordpressOpenIDLogic();
-			$this->interface = new WordpressOpenIDInterface($this, $this->logic);
+			$this->log =& $log;
+
+			$this->logic = new WordpressOpenIDLogic($this);
+			$this->interface = new WordpressOpenIDInterface($this);
 		}
 
 		function startup() {
-			if( WORDPRESSOPENIDREGISTRATION_DEBUG ) error_log("WPOpenID Status: userinterface hooks: " . ($this->interface->logic->enabled? 'Enabled':'Disabled' ) . ' (finished including and instantiating, passing control back to wordpress)' );
+			$this->log->debug("Status: userinterface hooks: " . ($this->logic->enabled? 'Enabled':'Disabled' ) . ' (finished including and instantiating, passing control back to wordpress)' );
 
 			$this->interface->startup();
 			
-			// -- register actions and filters
+			// -- register actions and filters -- //
 			
 			add_action( 'admin_menu', array( $this->interface, 'add_admin_panels' ) );
 
@@ -69,7 +67,7 @@ if  ( !class_exists('WordpressOpenID') ) {
 			add_action( 'wp_authenticate', array( $this->logic, 'wp_authenticate' ) ); // openid loop start
 			add_action( 'init', array( $this->logic, 'finish_login' ) ); // openid loop done
 
-			// Start and finish the redirect loop, for the admin pages profile.php & users.php
+			// Start and finish the redirect loop for the admin pages profile.php & users.php
 			add_action( 'init', array( $this->logic, 'admin_page_handler' ) );
 
 			// Comment filtering
@@ -79,8 +77,9 @@ if  ( !class_exists('WordpressOpenID') ) {
 			add_filter( 'comment_notification_text', array( $this->logic, 'comment_notification_text'), 10, 2 );
 			add_filter( 'comments_array', array( $this->logic, 'comments_awaiting_moderation'), 10, 2);
 			add_action( 'sanitize_comment_cookies', array( $this->logic, 'sanitize_comment_cookies'), 15);
-
-			add_action( 'delete_user', array( $this->logic, 'drop_all_identities_for_user' ) );	// If user is dropped from database, remove their identities too.
+			
+			// If user is dropped from database, remove their identities too.
+			add_action( 'delete_user', array( $this->logic, 'drop_all_identities_for_user' ) );	
 
 			if (get_option('oid_enable_selfstyle')) {
 				add_action( 'wp_head', array( $this->interface, 'style'));
@@ -117,48 +116,40 @@ if  ( !class_exists('WordpressOpenID') ) {
 			add_option( 'oid_enable_localaccounts', true, 'Create local wordpress accounts for new users who sign in with an OpenID.' );
 		}
 
+		function setStatus($slug, $state, $message) {
+			$this->status[$slug] = array('state'=>$state,'message'=>$message);
+			if( $state === true ) { 
+				$_state = 'ok'; 
+			}
+			elseif( $state === false ) { 
+				$_state = 'fail'; 
+			}
+			else { 
+				$_state = ''.($state); 
+			}
 
+			$this->log->debug('Status: ' . strip_tags($slug) . " [$_state]" . ( ($_state==='ok') ? '': strip_tags(str_replace('<br/>'," ", ': ' . $message))  ) );
+		}
 	}
 }
 
 if (isset($wp_version)) {
-	$openid = new WordpressOpenID();
+	if (class_exists('Log')) {
+		$log = &Log::singleton('error_log', PEAR_LOG_TYPE_SYSTEM, 'WPOpenID');
+
+		// Set the log level
+		$log->setMask(Log::UPTO(PEAR_LOG_DEBUG));
+	}
+
+	$openid = new WordpressOpenID($log);
 	$openid->startup();
 }
-
-
-/* State of the Plugin */
-$wordpressOpenIDRegistration_Status = array();
-
-function wordpressOpenIDRegistration_Status_Set($slug, $state, $message) {
-	global $wordpressOpenIDRegistration_Status;
-	$wordpressOpenIDRegistration_Status[$slug] = array('state'=>$state,'message'=>$message);
-	if( !$state or WORDPRESSOPENIDREGISTRATION_DEBUG ) {
-		if( $state === true ) { $_state = 'ok'; }
-		elseif( $state === false ) { $_state = 'fail'; }
-		else { $_state = ''.($state); }
-		error_log('WPOpenID Status: ' . strip_tags($slug) . " [$_state]" . ( ($_state==='ok') ? '': strip_tags(str_replace('<br/>'," ", ': ' . $message))  ) );
-	}
-}
-
-
 
 
 /* Exposed functions, designed for use in templates.
  * Specifically inside `foreach ($comments as $comment)` in comments.php
  */
 
-
-/*  get_comment_openid()
- *  If the current comment was submitted with OpenID, output an <img> tag with the OpenID logo
- */
-if( !function_exists( 'get_comment_openid' ) ) {
-	function get_comment_openid() {
-		global $comment_is_openid;
-		get_comment_type();
-		if( $comment_is_openid === true ) echo '<img src="'.OPENIDIMAGE.'" height="16" width="16" alt="OpenID" />';
-	}
-}
 
 /* is_comment_openid()
  * If the current comment was submitted with OpenID, return true
@@ -191,4 +182,5 @@ if( !function_exists('is_user_openid') ) {
 		return ( null !== $current_user && get_usermeta($current_user->ID, 'registered_with_openid') );
 	}
 }
+
 ?>
