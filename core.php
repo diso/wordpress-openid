@@ -19,7 +19,7 @@ define ( 'WPOPENID_DB_VERSION', 11260);
 // valid values are debug, info, notice, warning, err, crit, alert, emerg
 define ( 'WPOPENID_LOG_LEVEL', 'debug');
 
-//set_include_path( dirname(__FILE__) . PATH_SEPARATOR . get_include_path() );   // Add plugin directory to include path temporarily
+set_include_path( dirname(__FILE__) . PATH_SEPARATOR . get_include_path() );   // Add plugin directory to include path temporarily
 
 require_once('logic.php');
 require_once('interface.php');
