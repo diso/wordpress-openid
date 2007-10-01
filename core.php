@@ -27,7 +27,7 @@ require_once('interface.php');
 // Try loading PEAR_Log from normal include_path.  If we can't find it, include the copy of PEAR_Log bundled with the plugin
 @include_once('Log.php');
 if (!class_exists('Log')) {
-	@include_once('OpenIDLog.php');
+	require_once('OpenIDLog.php');
 }
 
 @session_start();
