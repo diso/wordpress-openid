@@ -337,7 +337,7 @@ if ( !class_exists('WordpressOpenIDInterface') ) {
      									
      					<table class="optiontable editform" cellspacing="2" cellpadding="5" width="100%">
 						<tr valign="top">
-							<th>Login Form:</th>
+							<th style="width: 33%" scope="row">Login Form:</th>
 							<td>
 								<p><input type="checkbox" name="enable_loginform" id="enable_loginform" <?php
 								if( get_option('oid_enable_loginform') ) echo 'checked="checked"'
@@ -349,7 +349,7 @@ if ( !class_exists('WordpressOpenIDInterface') ) {
 						</tr>
 
 						<tr valign="top">
-							<th>Comment Form:</th>
+							<th style="width: 33%" scope="row">Comment Form:</th>
 							<td>
 								<p><input type="checkbox" name="enable_commentform" id="enable_commentform" <?php
 								if( get_option('oid_enable_commentform') ) echo 'checked="checked"'
@@ -374,7 +374,7 @@ if ( !class_exists('WordpressOpenIDInterface') ) {
 						</tr>
 
 						<tr valign="top">
-							<th>Internal Style:</th>
+							<th style="width: 33%" scope="row">Internal Style:</th>
 							<td>
 								<p><input type="checkbox" name="enable_selfstyle" id="enable_selfstyle" <?php
 								if( get_option('oid_enable_selfstyle') ) echo 'checked="checked"'
