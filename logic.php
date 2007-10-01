@@ -141,7 +141,9 @@ if  ( !class_exists('WordpressOpenIDLogic') ) {
 				return false;				
 			}
 
-			if ($wp_version < '2.3') {
+			if ($wp_version >= '2.3') {
+				require_once(ABSPATH . '/wp-admin/upgrade.php');
+			} else {
 				require_once(ABSPATH . 'wp-admin/admin-db.php');
 				require_once(ABSPATH . '/wp-admin/upgrade-functions.php');
 			}
@@ -447,8 +449,40 @@ if  ( !class_exists('WordpressOpenIDLogic') ) {
 			$ret = @$store->connection->query( "INSERT INTO $this->identity_url_table_name (user_id,url,hash) VALUES ( %s, %s, MD5(%s) )",
 				array( (int)$userdata->ID, $url, $url ) );
 			if( $old_show_errors ) $wpdb->show_errors();
+			if($foaf = $this->fetch_foaf_profile($url)) update_usermeta((int)$userdata->ID, 'foaf', $foaf);
+			if($sioc = $this->fetch_sioc_profile($url)) update_usermeta((int)$userdata->ID, 'sioc', $sioc);
 			return $ret;
 		}
+
+		function fetch_foaf_profile($url) {
+			return $this->fetch_auto_discovery($url, 'foaf');
+		}
+
+		function fetch_sioc_profile($url) {
+			return $this->fetch_auto_discovery($url, 'sioc');
+		}
+		 
+		/*
+		 * FOAF and SIOC auto-discovery thanks to Alexandre Passant
+		 * (http://apassant.net/blog/2007/09/23/retrieving-foaf-profile-from-openid/)
+		 */
+		function fetch_auto_discovery($url, $type) {	
+			$html = file_get_contents($url);
+			preg_match_all('/<head.*<link.*rel="meta".*title="'.$type.'".*href="(.*)".*\/>.*<\/head>/Usi', $html, $links);
+			if($links) {
+				if($link = $links[1][0]) {
+					$ex = parse_url($link);
+					if($ex['scheme']) return $link;
+					elseif(substr($ex['path'], 0, 1) == '/') {
+						$ex = parse_url($url);
+						return $ex['scheme'].'://'.$ex['host'].$link;
+					}
+					else return $url.$link;
+				}
+			}
+			return null;
+		}
+
 		
 		function drop_all_identities_for_user($userid) {
 			$this->late_bind();
