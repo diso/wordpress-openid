@@ -323,7 +323,7 @@ if ( !class_exists('WordpressOpenIDInterface') ) {
 								?> />
 								<label for="enable_foaf">Enable FOAF/SIOC Auto-discovery</label>
 
-								<p>For newly created accounts, attempt to auto-discovery a 
+								<p>For newly created accounts, attempt to auto-discover a 
 								<a href="http://foaf-project.org/">FOAF</a> or <a href="http://sioc-project.org/">SIOC</a> 
 								profile.  If found, the URL will be saved as metadata on the new account as <em>foaf</em> and 
 								<em>sioc</em> respectively. (Props to <a href="http://apassant.net/">Alexandre Passant</a>.)</p>
