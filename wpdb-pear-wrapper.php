@@ -64,9 +64,9 @@ if( class_exists( 'Auth_OpenID_MySQLStore' ) && !class_exists('WP_OpenIDStore'))
         $this->sql['nonce_table'] =
             "
 CREATE TABLE %s (
-  server_url blob,
+  server_url varchar(255) CHARACTER SET latin1,
   timestamp int(11),
-  salt char(40),
+  salt char(40) CHARACTER SET latin1,
   UNIQUE KEY server_url (server_url(255),timestamp,salt)
 )
 ";
@@ -74,8 +74,8 @@ CREATE TABLE %s (
         $this->sql['assoc_table'] =
             "
 CREATE TABLE %s (
-  server_url blob,
-  handle varchar(255),
+  server_url varchar(255) CHARSET latin1,
+  handle varchar(255) CHARACTER SET latin1,
   secret blob,
   issued int(11),
   lifetime int(11),
