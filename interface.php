@@ -236,17 +236,17 @@ class WordpressOpenIDInterface {
 							<td>
 								<?php 
 									if (get_option('users_can_register')) {
-										$input_attr = 'checked="checked"';
+										$accounts_attr = get_option('oid_enable_localaccounts') ? 'checked="checked"' : 'disabled="disabled"';
+										$foaf_attr = get_option('oid_enable_foaf') ? 'checked="checked"' : 'disabled="disabled"';
 									}
 									else {
-										$input_attr = 'disabled="disabled"';
 										echo '<p class="error">This option requires that "Anyone can register" '
 											. 'be enabled <a href="?">here</a>.</p>';
 									}
 								?>
 
 								<p><input type="checkbox" name="enable_localaccounts" id="enable_localaccounts" <?php 
-									echo $input_attr; ?> />
+									echo $accounts_attr; ?> />
 								<label for="enable_localaccounts">Create Local Accounts</label>
 								</p>
 
@@ -262,7 +262,7 @@ class WordpressOpenIDInterface {
 						<tr valign="top">
 							<th style="width: 33%" scope="row">Enable FOAF/SIOC:</th>
 							<td>
-								<p><input type="checkbox" name="enable_foaf" id="enable_foaf" <?php echo $input_attr; ?> />
+								<p><input type="checkbox" name="enable_foaf" id="enable_foaf" <?php echo $foaf_attr; ?> />
 								<label for="enable_foaf">Enable FOAF/SIOC Auto-discovery</label>
 
 								<p>For newly created accounts, attempt to auto-discover a 
