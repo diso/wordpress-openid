@@ -207,7 +207,6 @@ if  ( !class_exists('WordpressOpenIDLogic') ) {
 			}
 			$this->core->log->debug('Dropping all database tables.');
 			$store =& $this->getStore();
-			error_log("store = $store");
 			$sql = 'drop table '. $store->associations_table_name;
 			$wpdb->query($sql);
 			$sql = 'drop table '. $store->nonces_table_name;
@@ -992,7 +991,6 @@ if  ( !class_exists('WordpressOpenIDLogic') ) {
 				$comment['comment_type']='openid';
 			}
 			
-			//error_log(var_dump($comment, true));
 			$url_field = (get_option('oid_enable_unobtrusive') ? 'url' : 'openid_url');
 
 			if( !empty( $_POST[$url_field] ) ) {  // Comment form's OpenID url is filled in.
