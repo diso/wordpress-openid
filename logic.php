@@ -716,6 +716,15 @@ if  ( !class_exists('WordpressOpenIDLogic') ) {
 						do_action('wp_login', $user_login);
 						wp_clearcookie();
 						wp_setcookie($user->user_login, md5($user->user_pass), true, '', '', true);
+						
+						// put user data into an array to be stored with the comment itself
+						$oid_user_data = array( 
+							'ID' => $user->ID,
+							'user_url' => $user->user_url,
+							'user_nicename' => $user->user_nicename,
+							'display_name' => $user->display_name, 
+						);
+
 						$this->action = 'redirect';
 						if ( !$user->has_cap('edit_posts') ) $redirect_to = '/wp-admin/profile.php';
 
