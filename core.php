@@ -115,16 +115,16 @@ if  ( !class_exists('WordpressOpenID') ) {
 			$initial_trust_root = get_option('siteurl');
 			if (substr($initial_trust_root, -1, 1) != '/') $initial_trust_root .= '/';
 
-			add_option( 'oid_trust_root', $initial_trust_root, 'The Open ID trust root' );
-			add_option( 'oid_enable_selfstyle', true, 'Use internal style rules' );
-			add_option( 'oid_enable_loginform', true, 'Display OpenID box in login form' );
-			add_option( 'oid_enable_commentform', true, 'Display OpenID box in comment form' );
-			add_option( 'oid_plugin_enabled', true, 'Currently hooking into Wordpress' );
-			add_option( 'oid_plugin_version', 0, 'OpenID plugin version' );
-			add_option( 'oid_db_version', 0, 'OpenID plugin database store version' );
-			add_option( 'oid_enable_unobtrusive', false, 'Look for OpenID in the existing website input field' );
-			add_option( 'oid_enable_localaccounts', true, 'Create local wordpress accounts for new users who sign in with an OpenID.' );
-			add_option( 'oid_enable_foaf', true, 'Auto-discover FOAF/SIOC URLs for newly created accounts.' );
+			add_option( 'oid_trust_root', $initial_trust_root);
+			add_option( 'oid_enable_selfstyle', true );
+			add_option( 'oid_enable_loginform', true );
+			add_option( 'oid_enable_commentform', true );
+			add_option( 'oid_plugin_enabled', true );
+			add_option( 'oid_plugin_version', 0 );
+			add_option( 'oid_db_version', 0 );
+			add_option( 'oid_enable_unobtrusive', false );
+			add_option( 'oid_enable_localaccounts', true );
+			add_option( 'oid_enable_foaf', true );
 		}
 
 		function setStatus($slug, $state, $message) {
