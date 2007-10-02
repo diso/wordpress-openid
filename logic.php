@@ -1,13 +1,18 @@
 <?php
+/**
+ * logic.php
+ *
+ * Dual License: GPL & Modified BSD
+ */
 if  ( !class_exists('WordpressOpenIDLogic') ) {
 	class WordpressOpenIDLogic {
 
 		var $core;
-		var $_store;	// Hold the WP_OpenIDStore and
-		var $_consumer; // Auth_OpenID_Consumer internally.
+		var $_store;	  // WP_OpenIDStore
+		var $_consumer;   // Auth_OpenID_Consumer
 		
-		var $error;		// User friendly error message, defaults to ''.
-		var $action;	// Internal action tag. '', 'error', 'redirect'.
+		var $error;		  // User friendly error message, defaults to ''.
+		var $action;	  // Internal action tag. '', 'error', 'redirect'.
 
 		var $enabled = true;
 
@@ -16,12 +21,17 @@ if  ( !class_exists('WordpressOpenIDLogic') ) {
 
 		var $bind_done = false;
 
+		/**
+		 * Constructor.
+		 */
 		function WordpressOpenIDLogic($core) {
 			$this->core =& $core;
 		}
 
+
 		/* Soft verification of plugin activation OK */
 		function uptodate() {
+			$this->core->log->debug('checking if database is up to date');
 			if( get_option('oid_db_version') != WPOPENID_DB_VERSION ) {  // Database version mismatch, force dbDelta() in admin interface.
 				$this->enabled = false;
 				$this->core->setStatus('Plugin Database Version', false, 'Plugin database is out of date. ' . get_option('oid_db_version') . ' != ' . WPOPENID_DB_VERSION );
@@ -32,6 +42,9 @@ if  ( !class_exists('WordpressOpenIDLogic') ) {
 			return $this->enabled;
 		}
 		
+		/**
+		 * Get the internal SQL Store.  If it is not already initialized, do so.
+		 */
 		function getStore() {
 			if (!isset($this->_store)) {
 				require_once 'wpdb-pear-wrapper.php';
@@ -50,6 +63,9 @@ if  ( !class_exists('WordpressOpenIDLogic') ) {
 			return $this->_store;
 		}
 
+		/**
+		 * Get the internal OpenID Consumer object.  If it is not already initialized, do so.
+		 */
 		function getConsumer() {
 			if (!isset($this->_consumer)) {
 				require_once 'Auth/OpenID/Consumer.php';
@@ -68,16 +84,19 @@ if  ( !class_exists('WordpressOpenIDLogic') ) {
 			return $this->_consumer;
 		}
 		
-		/* 
+		/** 
 		 * Initialize required store and consumer, making a few sanity checks.
 		 */
 		function late_bind($reload = false) {
+			$this->core->log->debug('beginning late binding');
+
 			$this->enabled = true; // Be Optimistic
-			if( $this->bind_done && !$reload ) return $this->uptodate();
+			if( $this->bind_done && !$reload ) {
+				$this->core->log->debug('we\'ve already done the late bind... moving on');
+				return $this->uptodate();
+			}
 			$this->bind_done = true;
 
-			$this->core->log->debug('WPOpenID Plugin: Late Binding Now');
-			
 			$f = @fopen( '/dev/urandom', 'r');
             if ($f === false) {
                 define( 'Auth_OpenID_RAND_SOURCE', null );
@@ -128,13 +147,15 @@ if  ( !class_exists('WordpressOpenIDLogic') ) {
 		function create_tables() {
 			global $wp_version;
 			$this->late_bind();
+			$store =& $this->getStore();
+
 			if( false == $this->enabled ) {  // do nothing if something bad happened
 				$this->error = 'OpenID Consumer could not be activated, something bad happened. Skipping table create. Check libraries.';
 				$this->core->log->debug($this->error);
 				echo $this->error;
 				return false;
 			}
-			if( null == $this->getStore() ) {
+			if( null == $store ) {
 				$this->error = 'OpenID Consumer could not be activated, because the store could not be created properly. Are the database files in place?';
 				$this->core->log->debug($this->error);
 				echo $this->error;
@@ -148,10 +169,9 @@ if  ( !class_exists('WordpressOpenIDLogic') ) {
 				require_once(ABSPATH . '/wp-admin/upgrade-functions.php');
 			}
 
-			$store =& $this->getStore();
 			$store->dbDelta();
 			
-			// Table for storing UserID <---> URL associations.
+			// Table for storing UserID <--> URL associations.
 			$identity_url_table_sql = "CREATE TABLE $this->identity_url_table_name (
 				uurl_id bigint(20) NOT NULL auto_increment,
 				user_id bigint(20) NOT NULL default '0',

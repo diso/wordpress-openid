@@ -53,17 +53,18 @@ if  ( !class_exists('WordpressOpenID') ) {
 			$this->interface = new WordpressOpenIDInterface($this);
 		}
 
+		/**
+		 * This is the main bootstrap method that gets things started.
+		 */
 		function startup() {
 			$this->log->debug("Status: userinterface hooks: " . ($this->logic->enabled? 'Enabled':'Disabled' ) . ' (finished including and instantiating, passing control back to wordpress)' );
 
-			$this->interface->startup();
-			
 			// -- register actions and filters -- //
 			
 			add_action( 'admin_menu', array( $this->interface, 'add_admin_panels' ) );
 
 			// Kickstart
-			register_activation_hook( $this->path.'/core.php', array( $this->logic, 'late_bind' ) );
+			//register_activation_hook( $this->path.'/core.php', array( $this->logic, 'late_bind' ) );
 			register_deactivation_hook( $this->path.'/core.php', array( $this->logic, 'destroy_tables' ) );
 
 			// Add hooks to handle actions in Wordpress
@@ -84,6 +85,7 @@ if  ( !class_exists('WordpressOpenID') ) {
 			// If user is dropped from database, remove their identities too.
 			add_action( 'delete_user', array( $this->logic, 'drop_all_identities_for_user' ) );	
 
+			// include internal stylesheet
 			if (get_option('oid_enable_selfstyle')) {
 				add_action( 'wp_head', array( $this->interface, 'style'));
 				add_action( 'login_head', array( $this->interface, 'style'));
@@ -98,13 +100,12 @@ if  ( !class_exists('WordpressOpenID') ) {
 				add_action( 'comment_form', array( $this->interface, 'comment_form'));
 			}
 
+			// add OpenID input field to wp-login.php
 			if( get_option('oid_enable_loginform') ) {
 				add_action( 'login_form', array( $this->interface, 'login_form'));
 				add_action( 'register_form', array( $this->interface, 'register_form'));
 				add_filter( 'login_errors', array( $this->interface, 'login_form_hide_username_password_errors'));
-				add_filter( 'register', array( $this->interface, 'sidebar_register' ));
 			}
-			add_filter( 'loginout', array( $this->interface, 'sidebar_loginout' ));
 
 
 			// Add custom OpenID options
