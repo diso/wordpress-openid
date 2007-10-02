@@ -938,6 +938,11 @@ if  ( !class_exists('WordpressOpenIDLogic') ) {
 					time() + 30000000, COOKIEPATH, COOKIE_DOMAIN);
 			}	
 
+			// comment approval
+			if ( get_option('oid_enable_approval') ) {
+				add_filter('pre_comment_approved', array($this, 'comment_approval'));
+			}
+
 			$comment_id = wp_new_comment( $commentdata );
 		}
 
@@ -1062,6 +1067,15 @@ if  ( !class_exists('WordpressOpenIDLogic') ) {
 			return $subject;
 		}
 
+
+		/**
+		 * This filter callback is only set when a new OpenID comment is made.  
+		 * For now it just approves all OpenID comments, but later it could do 
+		 * more complicated logic like whitelists.
+		 **/
+		function comment_approval($approved) {
+			return 1;
+		}
 
 		/**
 		 * Get any additional comments awaiting moderation by this user.  Wordpress

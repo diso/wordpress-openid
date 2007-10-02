@@ -110,7 +110,6 @@ if  ( !class_exists('WordpressOpenID') ) {
 				add_filter( 'login_errors', array( $this->interface, 'login_form_hide_username_password_errors'));
 			}
 
-
 			// Add custom OpenID options
 			$initial_trust_root = get_option('siteurl');
 			if (substr($initial_trust_root, -1, 1) != '/') $initial_trust_root .= '/';
@@ -123,8 +122,9 @@ if  ( !class_exists('WordpressOpenID') ) {
 			add_option( 'oid_plugin_version', 0 );
 			add_option( 'oid_db_version', 0 );
 			add_option( 'oid_enable_unobtrusive', false );
-			add_option( 'oid_enable_localaccounts', true );
-			add_option( 'oid_enable_foaf', true );
+			add_option( 'oid_enable_localaccounts', false );
+			add_option( 'oid_enable_foaf', false );
+			add_option( 'oid_enable_approval', false );
 		}
 
 		function setStatus($slug, $state, $message) {

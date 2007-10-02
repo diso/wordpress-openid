@@ -187,8 +187,14 @@ class WordpressOpenIDInterface {
 				update_option( 'oid_enable_loginform', isset($_POST['enable_loginform']) ? true : false );
 				update_option( 'oid_enable_commentform', isset($_POST['enable_commentform']) ? true : false );
 				update_option( 'oid_enable_unobtrusive', isset($_POST['enable_unobtrusive']) ? true : false );
-				update_option( 'oid_enable_localaccounts', isset($_POST['enable_localaccounts']) ? true : false );
-				update_option( 'oid_enable_foaf', isset($_POST['enable_foaf']) ? true : false );
+				update_option( 'oid_enable_approval', isset($_POST['enable_approval']) ? true : false );
+
+				update_option( 'oid_enable_localaccounts', 
+					(isset($_POST['enable_localaccounts']) && get_option('users_can_register')) ? true : false );
+
+				update_option( 'oid_enable_foaf', 
+					(isset($_POST['enable_foaf']) && get_option('users_can_register')) ? true : false );
+
 				
 				if ($error !== '') {
 					echo '<div class="error"><p><strong>At least one of OpenID options was NOT updated</strong>'.$error.'</p></div>';
@@ -270,6 +276,21 @@ class WordpressOpenIDInterface {
 								<a href="http://sioc-project.org/">SIOC</a> profile.  If found, the URL will 
 								be saved as metadata on the new account as <em>foaf</em> and <em>sioc</em> 
 								respectively. (Props to <a href="http://apassant.net/">Alexandre Passant</a>.)
+								</p>
+							</td>
+						</tr>
+
+						<tr valign="top">
+							<th style="width: 33%" scope="row">Automatic Approval:</th>
+							<td>
+								<p><input type="checkbox" name="enable_approval" id="enable_approval" <?php 
+									echo get_option('oid_enable_approval') ? 'checked="checked"' : ''; ?> />
+								<label for="enable_approval">Enable OpenID comment auto-approval</label>
+
+								<p>For now this option will cause comments made with OpenIDs to be automatically 
+								approved.  Since most spammers haven't started using OpenID yet, this is probably 
+								pretty safe.  More importantly however, this could be a foundation on which to build 
+								more advanced automatic approval such as whitelists or a third-party trust service.
 								</p>
 							</td>
 						</tr>
