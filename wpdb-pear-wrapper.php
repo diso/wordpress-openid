@@ -14,7 +14,7 @@ if( class_exists( 'Auth_OpenID_MySQLStore' ) && !class_exists('WP_OpenIDStore'))
     {
         global $wpdb;
 
-		$this->assocations_table_name = $wpdb->prefix . 'openid_associations';
+		$this->associations_table_name = $wpdb->prefix . 'openid_associations';
 		$this->nonces_table_name = $wpdb->prefix . 'openid_nonces';
 
         $conn = new WP_OpenIDConnection( $wpdb );
