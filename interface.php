@@ -20,12 +20,18 @@ class WordpressOpenIDInterface {
 	}
 
 	
+	/**
+	 * Provide more useful OpenID error message to the user.
+	 *
+	 * @filter: login_errors
+	 **/
 	function login_form_hide_username_password_errors($r) {
 		if( $_POST['openid_url']
 			or $_GET['action'] == 'loginopenid'
 			or $_GET['action'] == 'commentopenid' ) return $this->logic->error;
 		return $r;
 	}
+
 
 	/**
 	 * Add OpenID input field to wp-login.php
@@ -80,10 +86,14 @@ class WordpressOpenIDInterface {
 	function js_setup() {
 		wp_enqueue_script( 'jquery' );
 		wp_enqueue_script( 'interface' );
-		wp_enqueue_script('jquery.textnode', $this->core->path . '/jquery.textnode.js', array('jquery'), WPOPENID_PLUGIN_VERSION);
-		wp_enqueue_script('jquery.xpath', $this->core->path . '/jquery.xpath.js', array('jquery'), WPOPENID_PLUGIN_VERSION);
-		wp_enqueue_script('openid', $this->core->path . '/openid.js', array('jquery','jquery.textnode'), WPOPENID_PLUGIN_VERSION);
+		wp_enqueue_script('jquery.textnode', $this->core->path . '/jquery.textnode.js', 
+			array('jquery'), WPOPENID_PLUGIN_VERSION);
+		wp_enqueue_script('jquery.xpath', $this->core->path . '/jquery.xpath.js', 
+			array('jquery'), WPOPENID_PLUGIN_VERSION);
+		wp_enqueue_script('openid', $this->core->path . '/openid.js', 
+			array('jquery','jquery.textnode'), WPOPENID_PLUGIN_VERSION);
 	}
+
 
 	/**
 	 * Include internal stylesheet.
@@ -91,8 +101,9 @@ class WordpressOpenIDInterface {
 	 * @action: wp_head, login_head
 	 **/
 	function style() {
+		$css_path = $this->core->fullpath . '/openid.css?ver='.WPOPENID_PLUGIN_VERSION;
 		echo '
-			<link rel="stylesheet" type="text/css" href="' . $this->core->fullpath . '/openid.css?ver='.WPOPENID_PLUGIN_VERSION.'" />';
+			<link rel="stylesheet" type="text/css" href="'.$css_path.'" />';
 	}
 
 
@@ -107,6 +118,7 @@ class WordpressOpenIDInterface {
 		}
 	}
 
+
 	/**
 	 * Print jQuery call to modify comment form.
 	 *
@@ -115,12 +127,15 @@ class WordpressOpenIDInterface {
 	function comment_form() {
 		global $user_ID;
 		if (!$user_ID) {
-			echo '<script type="text/javascript">add_openid_to_comment_form('.(get_option('oid_enable_unobtrusive')?'true':'false').')</script>';
+			$unobtrusive = get_option('oid_enable_unobtrusive') ? 'true' : 'false';
+			echo '<script type="text/javascript">add_openid_to_comment_form('.$unobtrusive.')</script>';
 		}
 	}
 
 
-	/* Spam up the admin interface with warnings */
+	/**
+	 * Spam up the admin interface with warnings.
+	 **/
 	function admin_notices_plugin_problem_warning() {
 		?><div class="error"><p><strong>The Wordpress OpenID plugin is not active.</strong>
 		Check <a href="options-general.php?page=global-openid-options">OpenID Options</a> for
@@ -134,12 +149,16 @@ class WordpressOpenIDInterface {
 	 * @action: admin_menu
 	 **/
 	function add_admin_panels() {
-		add_options_page('Open ID options', 'OpenID', 8, 'global-openid-options', array( $this, 'options_page')  );
+		add_options_page('Open ID options', 'OpenID', 8, 'global-openid-options', 
+			array( $this, 'options_page')  );
+
 		if( $this->logic->enabled ) {
-			$hookname =	add_submenu_page('profile.php', 'Your OpenID Identities', 'Your OpenID Identities', 'read', 'your-openid-identities', array($this, 'profile_panel') );
+			$hookname =	add_submenu_page('profile.php', 'Your OpenID Identities', 'Your OpenID Identities', 
+				'read', 'your-openid-identities', array($this, 'profile_panel') );
 			add_action("admin_head-$hookname", array( $this, 'style' ));
 		}
 	}
+
 
 	/*
 	 * Display and handle updates from the Admin screen options page.
@@ -148,7 +167,8 @@ class WordpressOpenIDInterface {
 	 */
 	function options_page() {
 			$this->logic->late_bind();
-			$this->core->log->debug("WPOpenID Plugin: " . ($this->logic->enabled? 'Enabled':'Disabled' ) . ' (start of wordpress options page)' );
+			$this->core->log->debug("WPOpenID Plugin: " . ($this->logic->enabled? 'Enabled':'Disabled' ) 
+				. ' (start of wordpress options page)' );
 		
 			// if we're posted back an update, let's set the values here
 			if ( isset($_POST['info_update']) ) {
@@ -171,7 +191,7 @@ class WordpressOpenIDInterface {
 				update_option( 'oid_enable_foaf', isset($_POST['enable_foaf']) ? true : false );
 				
 				if ($error !== '') {
-					echo '<div class="error"><p><strong>At least one of Open ID options was NOT updated</strong>'.$error.'</p></div>';
+					echo '<div class="error"><p><strong>At least one of OpenID options was NOT updated</strong>'.$error.'</p></div>';
 				} else {
 					echo '<div class="updated"><p><strong>Open ID options updated</strong></p></div>';
 				}
@@ -199,9 +219,9 @@ class WordpressOpenIDInterface {
 								<p><input type="text" size="50" name="oid_trust_root" id="oid_trust_root"
      							value="<?php echo htmlentities(get_option('oid_trust_root')); ?>" /></p>
      							<p>Commenters will be asked whether they trust this url,
-     							and its decedents, to know that they are logged in and control their identity url.
-     							Include the trailing slash.
-     							This should probably be <strong><?php echo $siteurl; ?></strong></p>
+								and its decedents, to know that they are logged in and control their 
+								identity url.  Include the trailing slash.  This should probably be 
+								<strong><?php echo $siteurl; ?></strong></p>
 							</td>
 						</tr>
 						</table>
@@ -226,10 +246,11 @@ class WordpressOpenIDInterface {
 									  echo '<span class="error">This option cannot be enabled until "Anyone can register" is also enabled <a href="?">here</a></span>'; ?>
 								</p>
 
-								<p>If enabled, a local wordpress account will automatically be created for each commenter 
-								who uses an OpenID.  Even with this option disabled, you may allow users to create local 
-								wordpress accounts using their OpenID by enabling "<a href="?">Anyone can register</a>" as 
-								well as "Login Form" below.</p>
+								<p>If enabled, a local wordpress account will automatically be created for 
+								each commenter who uses an OpenID.  Even with this option disabled, you may 
+								allow users to create local wordpress accounts using their OpenID by 
+								enabling "<a href="?">Anyone can register</a>" as well as "Login Form" 
+								below.</p>
 
 							</td>
 						</tr>
@@ -247,9 +268,11 @@ class WordpressOpenIDInterface {
 								<label for="enable_foaf">Enable FOAF/SIOC Auto-discovery</label>
 
 								<p>For newly created accounts, attempt to auto-discover a 
-								<a href="http://foaf-project.org/">FOAF</a> or <a href="http://sioc-project.org/">SIOC</a> 
-								profile.  If found, the URL will be saved as metadata on the new account as <em>foaf</em> and 
-								<em>sioc</em> respectively. (Props to <a href="http://apassant.net/">Alexandre Passant</a>.)</p>
+								<a href="http://foaf-project.org/">FOAF</a> or 
+								<a href="http://sioc-project.org/">SIOC</a> profile.  If found, the URL will 
+								be saved as metadata on the new account as <em>foaf</em> and <em>sioc</em> 
+								respectively. (Props to <a href="http://apassant.net/">Alexandre Passant</a>.)
+								</p>
 							</td>
 						</tr>
 						</table>
@@ -277,7 +300,8 @@ class WordpressOpenIDInterface {
 								<p><input type="checkbox" name="enable_commentform" id="enable_commentform" <?php
 								if( get_option('oid_enable_commentform') ) echo 'checked="checked"'
 								?> />
-								<label for="enable_commentform">Add OpenID url box to the WordPress post comment form.</label></p>
+								<label for="enable_commentform">Add OpenID url box to the WordPress post 
+								comment form.</label></p>
 
 								<p> This will work for most themes derived from Kubrick or Sandbox.
 								Template authors can tweak the comment form as described in the
@@ -417,8 +441,10 @@ class WordpressOpenIDInterface {
 		$curl_message = '';
 		if( function_exists('curl_version') ) {
 			$curl_version = curl_version;
-			if(isset($curl_version['version']))  	$curl_message = 'Version ' . $curl_version['version'] . '. ';
-			if(isset($curl_version['ssl_version']))	$curl_message = 'SSL: ' . $curl_version['ssl_version'] . '. ';
+			if(isset($curl_version['version']))  	
+				$curl_message = 'Version ' . $curl_version['version'] . '. ';
+			if(isset($curl_version['ssl_version']))	
+				$curl_message = 'SSL: ' . $curl_version['ssl_version'] . '. ';
 		}
 		$this->core->setStatus( 'Curl version', function_exists('curl_version'), function_exists('curl_version') ? $curl_message :
 				'This PHP installation does not have support for libcurl. Some functionality, such as fetching https:// URLs, will be missing and performance will slightly impared. See <a href="http://www.php.net/manual/en/ref.curl.php">php.net/manual/en/ref.curl.php</a> about enabling libcurl support for PHP.');
@@ -439,9 +465,11 @@ class WordpressOpenIDInterface {
 
 		
 		$this->core->setStatus( 'Plugin version', 'info', $vercmp_message);
-		$this->core->setStatus( 'Plugin Database Version', 'info', 'Plugin database is currently at revision ' . get_option('oid_plugin_version') . '.' );
+		$this->core->setStatus( 'Plugin Database Version', 'info', 'Plugin database is currently at revision '
+			. get_option('oid_plugin_version') . '.' );
 		
-		$this->core->setStatus( '<strong>Overall Plugin Status</strong>', ($this->logic->enabled), 'There are problems above that must be dealt with before the plugin can be used.' );
+		$this->core->setStatus( '<strong>Overall Plugin Status</strong>', ($this->logic->enabled), 
+			'There are problems above that must be dealt with before the plugin can be used.' );
 
 
 		if( $this->logic->enabled ) {	// Display status information

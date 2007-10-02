@@ -32,9 +32,11 @@ if  ( !class_exists('WordpressOpenIDLogic') ) {
 		/* Soft verification of plugin activation OK */
 		function uptodate() {
 			$this->core->log->debug('checking if database is up to date');
-			if( get_option('oid_db_version') != WPOPENID_DB_VERSION ) {  // Database version mismatch, force dbDelta() in admin interface.
+			if( get_option('oid_db_version') != WPOPENID_DB_VERSION ) {  
+				// Database version mismatch, force dbDelta() in admin interface.
 				$this->enabled = false;
-				$this->core->setStatus('Plugin Database Version', false, 'Plugin database is out of date. ' . get_option('oid_db_version') . ' != ' . WPOPENID_DB_VERSION );
+				$this->core->setStatus('Plugin Database Version', false, 'Plugin database is out of date. ' 
+					. get_option('oid_db_version') . ' != ' . WPOPENID_DB_VERSION );
 				update_option('oid_plugin_enabled', false);
 				return false;
 			}
@@ -51,9 +53,10 @@ if  ( !class_exists('WordpressOpenIDLogic') ) {
 
 				$this->_store = new WP_OpenIDStore();
 				if (null === $this->_store) {
-					$this->core->setStatus('object: OpenID Store', false, 'OpenID store could not be created properly.');
-					$this->core->setStatus('class: Auth_OpenID_MySQLStore', class_exists('Auth_OpenID_MySQLStore'), 'This class is provided by the JanRain library, used to store association and nonce data.');
-					$this->core->setStatus('class: WP_OpenIDStore', class_exists('WP_OpenIDStore'),  'This class is provided by the plugin, used to wrap the Wordpress database for PEAR-style database access. It\'s provided by <code>wpdb-pear-wrapper.php</code>, did you upload it?');
+
+					$this->core->setStatus('object: OpenID Store', false, 
+						'OpenID store could not be created properly.');
+
 					$this->enabled = false;
 				} else {
 					$this->core->setStatus('object: OpenID Store', true, 'OpenID store created properly.');
@@ -73,11 +76,13 @@ if  ( !class_exists('WordpressOpenIDLogic') ) {
 				$store = $this->getStore();
 				$this->_consumer = new Auth_OpenID_Consumer($store);
 				if( null === $this->_consumer ) {
-					$this->core->setStatus('object: OpenID Consumer', false, 'OpenID consumer could not be created properly.');
-					$this->core->setStatus('class: Auth_OpenID_Consumer', class_exists('Auth_OpenID_Consumer'),  'This class is provided by the JanRain library, does the heavy lifting.');
+					$this->core->setStatus('object: OpenID Consumer', false, 
+						'OpenID consumer could not be created properly.');
+
 					$this->enabled = false;
 				} else {
-					$this->core->setStatus('object: OpenID Consumer', true, 'OpenID consumer created properly.');
+					$this->core->setStatus('object: OpenID Consumer', true, 
+						'OpenID consumer created properly.');
 				}
 			}
 
@@ -85,7 +90,9 @@ if  ( !class_exists('WordpressOpenIDLogic') ) {
 		}
 		
 		/** 
-		 * Initialize required store and consumer, making a few sanity checks.
+		 * Initialize required store and consumer and make a few sanity checks.  This method 
+		 * does a lot of the heavy lifting to get everything initialized, so we don't call it 
+		 * until we actually need it.
 		 */
 		function late_bind($reload = false) {
 			$this->core->log->debug('beginning late binding');
@@ -102,27 +109,24 @@ if  ( !class_exists('WordpressOpenIDLogic') ) {
                 define( 'Auth_OpenID_RAND_SOURCE', null );
             }
 			
-			/* include_once() all required library files */
-			global $wordpressOpenIDRegistration_Required_Files;
-			wordpressOpenIDRegistration_Load_Required_Files( $wordpressOpenIDRegistration_Required_Files );
+			// include required JanRain OpenID library files
+			set_include_path( dirname(__FILE__) . PATH_SEPARATOR . get_include_path() );   
+			require_once('Auth/OpenID/Discover.php');
+			require_once('Auth/OpenID/DatabaseConnection.php');
+			require_once('Auth/OpenID/MySQLStore.php');
+			require_once('Auth/OpenID/Consumer.php');
+			require_once('Auth/OpenID/SReg.php');
+			restore_include_path();
 
-			/* Fetch Wordpress' table prefix, preference to 2.1 $wpdb->prefix.
-			   If passing paramater to WP_OpenIDStore() constructor is bad, we can
-			   store the value in $wpdb->prefix ourselves. */
 			global $wpdb;
-			if( isset( $wpdb->prefix ) ) {
-				$this->core->setStatus('database: Wordpress\' table prefix', 'info', $wpdb->prefix );
-				$this->identity_url_table_name = ($wpdb->prefix . 'openid_identities');
-			} else {
-				$this->core->setStatus('database: Wordpress\' table prefix', false, 
-					'Wordpress $wpdb->prefix must be set! Plugin is probably being loaded wrong.');
-				$this->enabled = false;
-			}
+			$this->core->setStatus('database: Wordpress\' table prefix', 'info', $wpdb->prefix );
+			$this->identity_url_table_name = ($wpdb->prefix . 'openid_identities');
 
 			if( false === get_option('oid_trust_root') or '' === get_option('oid_trust_root') ) {
-				$this->core->setStatus('Option: Trust Root', 'info', 'You must specify the Trust Root paramater '
-					+ 'on the OpenID Options page. Commenters will be asked whether they trust this url, and its decedents, to '
-					+ 'know that they are logged in and control their identity url. Include the trailing slash.');
+				$this->core->setStatus('Option: Trust Root', 'info', 'You must specify the Trust Root '
+					. 'paramater on the OpenID Options page. Commenters will be asked whether they trust '
+					. 'this url, and its decedents, to know that they are logged in and control their '
+					. 'identity url. Include the trailing slash.');
 			}
 			
 			$this->core->log->debug("Bootstrap -- checking tables");
@@ -150,13 +154,15 @@ if  ( !class_exists('WordpressOpenIDLogic') ) {
 			$store =& $this->getStore();
 
 			if( false == $this->enabled ) {  // do nothing if something bad happened
-				$this->error = 'OpenID Consumer could not be activated, something bad happened. Skipping table create. Check libraries.';
+				$this->error = 'OpenID Consumer could not be activated, something bad happened. Skipping '
+					. 'table create. Check libraries.';
 				$this->core->log->debug($this->error);
 				echo $this->error;
 				return false;
 			}
 			if( null == $store ) {
-				$this->error = 'OpenID Consumer could not be activated, because the store could not be created properly. Are the database files in place?';
+				$this->error = 'OpenID Consumer could not be activated, because the store could not be '
+					. 'created properly. Are the database files in place?';
 				$this->core->log->debug($this->error);
 				echo $this->error;
 				return false;				
@@ -185,7 +191,8 @@ if  ( !class_exists('WordpressOpenIDLogic') ) {
 			
 			dbDelta($identity_url_table_sql);
 		}
-		
+
+
 		/*
 		 * Cleanup by dropping nonce and association tables. Called on plugin deactivate.
 		 */
@@ -193,7 +200,8 @@ if  ( !class_exists('WordpressOpenIDLogic') ) {
 			global $wpdb;
 			$this->late_bind();
 			if( $this->getStore() == null) {
-				$this->error = 'OpenIDConsumer: Disabled. Cannot locate libraries, therefore cannot clean up database tables. Fix the libraries, or drop the tables yourself.';
+				$this->error = 'OpenIDConsumer: Disabled. Cannot locate libraries, therefore cannot clean '
+					. 'up database tables. Fix the libraries, or drop the tables yourself.';
 				$this->core->log->notice($this->error);
 				return;
 			}
@@ -206,6 +214,7 @@ if  ( !class_exists('WordpressOpenIDLogic') ) {
 			$wpdb->query($sql);
 		}
 		
+
 		/*
 		 * Check to see whether the none, association, and settings tables exist.
 		 */
@@ -230,7 +239,8 @@ if  ( !class_exists('WordpressOpenIDLogic') ) {
 			}
 			
 			if( $retry and !$ok) {
-				$this->core->setStatus( 'database tables', false, 'Tables not created properly. Trying to create..' );
+				$this->core->setStatus( 'database tables', false, 'Tables not created properly. Trying to '
+					. 'create..' );
 				$this->create_tables();
 				$ok = $this->check_tables( false );
 			} else {
@@ -238,7 +248,8 @@ if  ( !class_exists('WordpressOpenIDLogic') ) {
 			}
 			return $ok;
 		}
-		
+
+
 		/*
 		 * Customer error handler for calls into the JanRain library
 		 */
@@ -268,8 +279,9 @@ if  ( !class_exists('WordpressOpenIDLogic') ) {
 		}
 
 
-		/* Start and finish the redirect loop, for the admin pages profile.php & users.php
-		 */
+		/**
+		 * Start and finish the redirect loop, for the admin pages profile.php & users.php
+		 **/
 		function admin_page_handler() {
 			global $wp_version;
 
@@ -312,17 +324,20 @@ if  ( !class_exists('WordpressOpenIDLogic') ) {
 
 					// TODO: Better error handling.
 					if ( null === $auth_request ) {
-						$this->error = 'Could not discover an OpenID identity server endpoint at the url: ' . htmlentities( $claimed_url );
+						$this->error = 'Could not discover an OpenID identity server endpoint at the url: '
+							. htmlentities( $claimed_url );
 						if( strpos( $claimed_url, '@' ) ) {
 							// Special case a failed url with an @ sign in it.
 							// Users entering email addresses are probably chewing soggy crayons.
-							$this->error .= '<br/>The address you specified had an @ sign in it, but OpenID Identities are not email addresses, and should probably not contain an @ sign.';
+							$this->error .= '<br/>The address you specified had an @ sign in it, but '
+								. 'OpenID Identities are not email addresses, and should probably not '
+								. 'contain an @ sign.';
 						}
 						break;
 					}
 
 					global $userdata;
-					if( $userdata->ID === $this->get_user_by_identity( $auth_request->endpoint->identity_url )) {
+					if($userdata->ID === $this->get_user_by_identity($auth_request->endpoint->identity_url)) {
 						$this->error = 'The specified url is already bound to this account, dummy';
 						break;
 					}
@@ -343,7 +358,8 @@ if  ( !class_exists('WordpressOpenIDLogic') ) {
 					if (!$identity_url) break;
 
 					if( !$this->insert_identity( $identity_url ) ) {
-						$this->error = 'OpenID assertion successful, but this URL is already claimed by another user on this blog. This is probably a bug';
+						$this->error = 'OpenID assertion successful, but this URL is already claimed by '
+							. 'another user on this blog. This is probably a bug';
 					} else {
 						$this->action = 'success';
 					}
@@ -363,7 +379,8 @@ if  ( !class_exists('WordpressOpenIDLogic') ) {
 					}
 					
 					if( $this->drop_identity( $_GET['id'] ) ) {
-						$this->error = 'Identity url delete successful. <b>' . $deleted_identity_url . '</b> removed';
+						$this->error = 'Identity url delete successful. <b>' . $deleted_identity_url 
+							. '</b> removed';
 						$this->action= 'success';
 						break;
 					}
@@ -452,10 +469,16 @@ if  ( !class_exists('WordpressOpenIDLogic') ) {
 			$store =& $this->getStore();
 			global $userdata;
 			if( !$this->enabled ) return array();
-			if( $id ) return $store->connection->getOne( "SELECT url FROM $this->identity_url_table_name WHERE user_id = %s AND uurl_id = %s",
+			if( $id ) {
+				return $store->connection->getOne( 
+					"SELECT url FROM $this->identity_url_table_name WHERE user_id = %s AND uurl_id = %s",
 					array( (int)$userdata->ID, (int)$id ) );
-			return $store->connection->getAll( "SELECT uurl_id,url FROM $this->identity_url_table_name WHERE user_id = %s",
-				array( (int)$userdata->ID ) );
+			} else {
+
+				return $store->connection->getAll( 
+					"SELECT uurl_id,url FROM $this->identity_url_table_name WHERE user_id = %s",
+					array( (int)$userdata->ID ) );
+			}
 		}
 
 		function insert_identity($url) {
@@ -466,13 +489,17 @@ if  ( !class_exists('WordpressOpenIDLogic') ) {
 			if( !$this->enabled ) return false;
 			$old_show_errors = $wpdb->show_errors;
 			if( $old_show_errors ) $wpdb->hide_errors();
-			$ret = @$store->connection->query( "INSERT INTO $this->identity_url_table_name (user_id,url,hash) VALUES ( %s, %s, MD5(%s) )",
+			$ret = @$store->connection->query( 
+				"INSERT INTO $this->identity_url_table_name (user_id,url,hash) VALUES ( %s, %s, MD5(%s) )",
 				array( (int)$userdata->ID, $url, $url ) );
 			if( $old_show_errors ) $wpdb->show_errors();
 
 			if (get_option('oid_enable_foaf')) {
-				if($foaf = $this->fetch_foaf_profile($url)) update_usermeta((int)$userdata->ID, 'foaf', $foaf);
-				if($sioc = $this->fetch_sioc_profile($url)) update_usermeta((int)$userdata->ID, 'sioc', $sioc);
+				if($foaf = $this->fetch_foaf_profile($url)) 
+					update_usermeta((int)$userdata->ID, 'foaf', $foaf);
+
+				if($sioc = $this->fetch_sioc_profile($url)) 
+					update_usermeta((int)$userdata->ID, 'sioc', $sioc);
 			}
 
 			return $ret;
@@ -493,7 +520,8 @@ if  ( !class_exists('WordpressOpenIDLogic') ) {
 		function fetch_auto_discovery($url, $type) {	
 			$profile = null;
 			$html = file_get_contents($url);
-			preg_match_all('/<head.*<link.*rel="meta".*title="'.$type.'".*href="(.*)".*\/>.*<\/head>/Usi', $html, $links);
+			preg_match_all('/<head.*<link.*rel="meta".*title="'.$type.'".*href="(.*)".*\/>.*<\/head>/Usi', 
+				$html, $links);
 
 			if($links) {
 				if($link = $links[1][0]) {
@@ -524,7 +552,8 @@ if  ( !class_exists('WordpressOpenIDLogic') ) {
 			$store =& $this->getStore();
 
 			if( !$this->enabled ) return false;
-			return $store->connection->query( "DELETE FROM $this->identity_url_table_name WHERE user_id = %s", 
+			return $store->connection->query( 
+				"DELETE FROM $this->identity_url_table_name WHERE user_id = %s", 
 				array( (int)$userid ) );
 		}
 		
@@ -534,7 +563,8 @@ if  ( !class_exists('WordpressOpenIDLogic') ) {
 			$store =& $this->getStore();
 
 			if( !$this->enabled ) return false;
-			return $store->connection->query( "DELETE FROM $this->identity_url_table_name WHERE user_id = %s AND uurl_id = %s",
+			return $store->connection->query( 
+				"DELETE FROM $this->identity_url_table_name WHERE user_id = %s AND uurl_id = %s",
 				array( (int)$userdata->ID, (int)$id ) );
 		}
 		
@@ -543,7 +573,8 @@ if  ( !class_exists('WordpressOpenIDLogic') ) {
 			$store =& $this->getStore();
 
 			if( !$this->enabled ) return false;
-			return $store->connection->getOne( "SELECT user_id FROM $this->identity_url_table_name WHERE url = %s",
+			return $store->connection->getOne( 
+				"SELECT user_id FROM $this->identity_url_table_name WHERE url = %s",
 				array( $url ) );
 		}
 
@@ -597,8 +628,12 @@ if  ( !class_exists('WordpressOpenIDLogic') ) {
 			}
 
 			if ( null === $auth_request ) {
-				$this->error = 'Could not discover an OpenID identity server endpoint at the url: ' . htmlentities( $claimed_url );
-				if( strpos( $claimed_url, '@' ) ) { $this->error .= '<br/>The address you specified had an @ sign in it, but OpenID Identities are not email addresses, and should probably not contain an @ sign.'; }
+				$this->error = 'Could not discover an OpenID identity server endpoint at the url: ' 
+					. htmlentities( $claimed_url );
+				if( strpos( $claimed_url, '@' ) ) { 
+					$this->error .= '<br/>The address you specified had an @ sign in it, but OpenID '
+						. 'Identities are not email addresses, and should probably not contain an @ sign.'; 
+				}
 				$this->core->log->debug('OpenIDConsumer: ' . $this->error );
 				return;
 			}
@@ -676,7 +711,8 @@ if  ( !class_exists('WordpressOpenIDLogic') ) {
 					$user = new WP_User( $matching_user_id );
 					
 					if( wp_login( $user->user_login, md5($user->user_pass), true ) ) {
-						$this->core->log->debug("OpenIDConsumer: Returning user logged in: $user->user_login"); 
+						$this->core->log->debug('OpenIDConsumer: Returning user logged in: '
+							.$user->user_login); 
 						do_action('wp_login', $user_login);
 						wp_clearcookie();
 						wp_setcookie($user->user_login, md5($user->user_pass), true, '', '', true);
@@ -684,7 +720,8 @@ if  ( !class_exists('WordpressOpenIDLogic') ) {
 						if ( !$user->has_cap('edit_posts') ) $redirect_to = '/wp-admin/profile.php';
 
 					} else {
-						$this->error = "OpenID authentication valid, but Wordpress login failed. OpenID login disabled for this account.";
+						$this->error = 'OpenID authentication valid, but Wordpress login failed. '
+							. 'OpenID login disabled for this account.';
 						$this->action = 'error';
 					}
 					
@@ -708,7 +745,8 @@ if  ( !class_exists('WordpressOpenIDLogic') ) {
 			}
 			
 
-			$this->core->log->debug('OpenIDConsumer: Finish Auth for "' . $response->identity_url . '". ' . $this->error );
+			$this->core->log->debug('OpenIDConsumer: Finish Auth for "' . $response->identity_url . 
+				'". ' . $this->error );
 			
 			if( $this->action == 'redirect' ) {
 				if ( !empty( $_GET['redirect_to'] )) $redirect_to = $_GET['redirect_to'];
@@ -717,7 +755,9 @@ if  ( !class_exists('WordpressOpenIDLogic') ) {
 					$this->post_comment($oid_user_data);
 				}
 
-				if( $redirect_to == '/wp-admin' and !$user->has_cap('edit_posts') ) $redirect_to = '/wp-admin/profile.php';
+				if( $redirect_to == '/wp-admin' and !$user->has_cap('edit_posts') ) 
+					$redirect_to = '/wp-admin/profile.php';
+
 				wp_redirect( $redirect_to );
 			}
 
@@ -743,14 +783,16 @@ if  ( !class_exists('WordpressOpenIDLogic') ) {
 				$oid_user_data['ID'] = $user_id;
 				update_usermeta( $user_id, 'registered_with_openid', true );
 
-				$this->core->log->debug("OpenIDConsumer: Created new user $user_id : $username and metadata: " . var_export( $oid_user_data, true ) );
+				$this->core->log->debug("OpenIDConsumer: Created new user $user_id : $username and metadata: "
+					. var_export( $oid_user_data, true ) );
 				
 				// Insert the new wordpress user into the database
 				wp_update_user( $oid_user_data );
 				$user = new WP_User( $user_id );
 
 				if( ! wp_login( $user->user_login, md5($user->user_pass), true ) ) {
-					$this->error = "User was created fine, but wp_login() for the new user failed. This is probably a bug.";
+					$this->error = 'User was created fine, but wp_login() for the new user failed. '
+						. 'This is probably a bug.';
 					$this->action= 'error';
 					$this->core->log->error( $this->error );
 					break;
@@ -774,7 +816,8 @@ if  ( !class_exists('WordpressOpenIDLogic') ) {
 				
 			} else {
 				// failed to create user for some reason.
-				$this->error = "OpenID authentication successful, but failed to create Wordpress user. This is probably a bug.";
+				$this->error = 'OpenID authentication successful, but failed to create Wordpress user. '
+					. 'This is probably a bug.';
 				$this->action= 'error';
 				$this->core->log->error( $this->error );
 			}
@@ -795,8 +838,12 @@ if  ( !class_exists('WordpressOpenIDLogic') ) {
 
 			if ($sreg) {
 				if( isset( $sreg['email'])) $oid_user_data['user_email'] = $sreg['email'];
-				if( isset( $sreg['nickname'])) $oid_user_data['nickname'] = $oid_user_data['user_nicename'] = $oid_user_data['display_name'] =$sreg['nickname'];
-				if( isset( $sreg['fullname'])) {
+				if( isset( $sreg['nickname'])) {
+					$oid_user_data['nickname'] = $sreg['nickname'];
+					$oid_user_data['user_nicename'] = $sreg['nickname'];
+					$oid_user_data['display_name'] = $sreg['nickname'];
+				}
+				if( isset($sreg['fullname']) ) {
 					$namechunks = explode( ' ', $sreg['fullname'], 2 );
 					if( isset($namechunks[0]) ) $oid_user_data['first_name'] = $namechunks[0];
 					if( isset($namechunks[1]) ) $oid_user_data['last_name'] = $namechunks[1];
@@ -804,7 +851,8 @@ if  ( !class_exists('WordpressOpenIDLogic') ) {
 				}
 			} else {
 				$comment = $this->get_comment();
-				if( isset( $comment['comment_author_email'])) $oid_user_data['user_email'] = $comment['comment_author_email'];
+				if( isset( $comment['comment_author_email'])) 
+					$oid_user_data['user_email'] = $comment['comment_author_email'];
 				if( isset( $comment['comment_author'])) {
 					$namechunks = explode( ' ', $comment['comment_author'], 2 );
 					if( isset($namechunks[0]) ) $oid_user_data['first_name'] = $namechunks[0];
@@ -838,7 +886,8 @@ if  ( !class_exists('WordpressOpenIDLogic') ) {
 			// Do essentially the same thing as wp-comments-post.php
 			global $wpdb;
 			$comment_post_ID = (int) $_GET['wordpressid'];
-			$status = $wpdb->get_row("SELECT post_status, comment_status FROM $wpdb->posts WHERE ID = '$comment_post_ID'");
+			$status = $wpdb->get_row("SELECT post_status, comment_status FROM $wpdb->posts "
+				. "WHERE ID = '$comment_post_ID'");
 			if ( empty($status->comment_status) ) {
 				do_action('comment_id_not_found', $comment_post_ID);
 				exit();
@@ -866,18 +915,20 @@ if  ( !class_exists('WordpressOpenIDLogic') ) {
 			$commentdata = compact('comment_post_ID', 'comment_author', 'comment_author_email',
 										'comment_author_url', 'comment_content', 'comment_type', 'user_ID');
 
-			//error_log(var_export($commentdata, true));
-			//error_log(var_export($_SESSION, true));
-			
-			if ( !$user_id ) :
-				setcookie('comment_author_' . COOKIEHASH, $comment['comment_author'], time() + 30000000, COOKIEPATH, COOKIE_DOMAIN);
-				setcookie('comment_author_email_' . COOKIEHASH, $comment['comment_author_email'], time() + 30000000, COOKIEPATH, COOKIE_DOMAIN);
-				setcookie('comment_author_url_' . COOKIEHASH, clean_url($comment['comment_author_url']), time() + 30000000, COOKIEPATH, COOKIE_DOMAIN);
+			if ( !$user_id ) {
+				setcookie('comment_author_' . COOKIEHASH, $comment['comment_author'], 
+					time() + 30000000, COOKIEPATH, COOKIE_DOMAIN);
+				setcookie('comment_author_email_' . COOKIEHASH, $comment['comment_author_email'], 
+					time() + 30000000, COOKIEPATH, COOKIE_DOMAIN);
+				setcookie('comment_author_url_' . COOKIEHASH, clean_url($comment['comment_author_url']), 
+					time() + 30000000, COOKIEPATH, COOKIE_DOMAIN);
 
-				// save openid url in a separate cookie so wordpress doesn't muck with it when we read it back in later
-				setcookie('comment_author_openid_' . COOKIEHASH, $comment['comment_author_openid'], time() + 30000000, COOKIEPATH, COOKIE_DOMAIN);
-			endif;
-				
+				// save openid url in a separate cookie so wordpress doesn't muck with it when we 
+				// read it back in later
+				setcookie('comment_author_openid_' . COOKIEHASH, $comment['comment_author_openid'], 
+					time() + 30000000, COOKIEPATH, COOKIE_DOMAIN);
+			}	
+
 			$comment_id = wp_new_comment( $commentdata );
 		}
 
@@ -947,9 +998,11 @@ if  ( !class_exists('WordpressOpenIDLogic') ) {
 			if( !empty( $_POST[$url_field] ) ) {  // Comment form's OpenID url is filled in.
 				$comment['comment_author_openid'] = $_POST[$url_field];
 				$this->set_comment($comment);
-				$this->start_login( $_POST[$url_field], get_permalink( $comment['comment_post_ID'] ), 'commentopenid', $comment['comment_post_ID'] );
+				$this->start_login( $_POST[$url_field], get_permalink( $comment['comment_post_ID'] ), 
+					'commentopenid', $comment['comment_post_ID'] );
 				
-				// Failure to redirect at all, the URL is malformed or unreachable. Display the login form with the error.
+				// Failure to redirect at all, the URL is malformed or unreachable. 
+				// Display the login form with the error.
 				if (!get_option('oid_enable_unobtrusive')) {
 					global $error;
 					$error = $this->error;
@@ -1026,13 +1079,16 @@ if  ( !class_exists('WordpressOpenIDLogic') ) {
 			$email_db  = $wpdb->escape($comment_author_email);
 			$url_db  = $wpdb->escape($comment_author_url);
 
-			$additional = $wpdb->get_results("SELECT * FROM $wpdb->comments WHERE comment_post_ID = '$post_id' AND " .
-				"(comment_author_url = '$url_db' OR (user_id != 0 AND user_id = '$user_ID')) AND comment_author != '$author_db' " .
-				"AND comment_author_email != '$email_db' AND comment_approved = '0' ORDER BY comment_date");
+			$additional = $wpdb->get_results("SELECT * FROM $wpdb->comments WHERE "
+				. "comment_post_ID = '$post_id' AND (comment_author_url = '$url_db' OR "
+				. "(user_id != 0 AND user_id = '$user_ID')) AND comment_author != '$author_db' "
+				. "AND comment_author_email != '$email_db' AND comment_approved = '0' "
+				. "ORDER BY comment_date");
 
 			if ($additional) {
 				$comments = array_merge($comments, $additional);
-				usort($comments, create_function('$a,$b', 'return strcmp($a->comment_date_gmt, $b->comment_date_gmt);'));
+				usort($comments, create_function('$a,$b', 
+					'return strcmp($a->comment_date_gmt, $b->comment_date_gmt);'));
 			}
 
 			return $comments;
@@ -1048,7 +1104,8 @@ if  ( !class_exists('WordpressOpenIDLogic') ) {
 				// this might be an i-name, so we don't want to run clean_url()
 				remove_filter('pre_comment_author_url', 'clean_url');
 
-				$comment_author_url = apply_filters('pre_comment_author_url', $_COOKIE['comment_author_openid_'.COOKIEHASH]);
+				$comment_author_url = apply_filters('pre_comment_author_url', 
+					$_COOKIE['comment_author_openid_'.COOKIEHASH]);
 				$comment_author_url = stripslashes($comment_author_url);
 				$_COOKIE['comment_author_url_'.COOKIEHASH] = $comment_author_url;
 			}
@@ -1057,48 +1114,5 @@ if  ( !class_exists('WordpressOpenIDLogic') ) {
 
 	} // end class definition
 } // end if-class-exists test
-
-$wordpressOpenIDRegistration_Required_Files = array(
-	'Auth/OpenID/Discover.php' => 'Do you have the <a href="http://www.openidenabled.com/openid/libraries/php/">JanRain PHP OpenID library</a> installed in your path?',
-	'Auth/OpenID/DatabaseConnection.php' => 'Do you have the <a href="http://www.openidenabled.com/openid/libraries/php/">JanRain PHP OpenID library</a> installed in your path?',
-	'Auth/OpenID/MySQLStore.php' => 'Do you have the <a href="http://www.openidenabled.com/openid/libraries/php/">JanRain PHP OpenID library</a> installed in your path?',
-	'Auth/OpenID/Consumer.php' => 'Do you have the <a href="http://www.openidenabled.com/openid/libraries/php/">JanRain PHP OpenID library</a> installed in your path?',
-	'Auth/OpenID/SReg.php' => 'Do you have the <a href="http://www.openidenabled.com/openid/libraries/php/">JanRain PHP OpenID library</a> installed in your path?',
-	);
-
-
-if (!function_exists('wordpressOpenIDRegistration_Load_Required_Files')) {
-	function wordpressOpenIDRegistration_Load_Required_Files( $wordpressOpenIDRegistration_Required_Files ) {
-		/* Library may declare global variables. Some of these are required by other
-		 * classes or functions in the library, and some are not. We're going to 
-		 * permit only the required global variables to be created.
-		 */
-		global $__Auth_Yadis_defaultParser, $__Auth_Yadis_xml_extensions,
-			$_Auth_Yadis_ns_map, $_Auth_OpenID_namespaces, $__UCSCHAR, $__IPRIVATE, $DEFAULT_PROXY,
-			$XRI_AUTHORITIES, $_escapeme_re, $_xref_re, $__Auth_OpenID_PEAR_AVAILABLE,
-			$_Auth_OpenID_math_extensions, $_Auth_OpenID_DEFAULT_MOD, $_Auth_OpenID_DEFAULT_GEN,
-			$Auth_OpenID_OPENID_PROTOCOL_FIELDS, $Auth_OpenID_registered_aliases, $Auth_OpenID_SKEW,
-			$Auth_OpenID_sreg_data_fields, $openid;
-		$absorb = array( 'parts','pair','n','m', '___k','___v','___local_variables' );  // Unnessessary global variables absorbed
-		$___local_variables = array_keys( get_defined_vars() );
-		set_include_path( dirname(__FILE__) . PATH_SEPARATOR . get_include_path() );   // Add plugin directory to include path temporarily
-		foreach( $wordpressOpenIDRegistration_Required_Files as $___k => $___v ) {
-			//if( file_exists_in_path( $___k ) ) {
-				if( @include_once( $___k ) ) {
-					$openid->setStatus('loading file: '.$___k, true, '');
-					continue;
-				}
-			//}
-			$this->core->setStatus('file:'.$___k, false, $___v );
-			break;
-		}
-		restore_include_path();  // Leave no footprints behind
-
-		$___local_variables = array_diff( array_keys( get_defined_vars() ), $___local_variables );
-		foreach( $___local_variables as $___v ) if( !in_array( $___v, $absorb )) {
-			$this->core->setStatus('unknown library variable: '.$___v, false, 'This library variable is unknown, left unset.' );
-		}
-	}
-}
 
 ?>
