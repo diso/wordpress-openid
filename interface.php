@@ -234,16 +234,20 @@ class WordpressOpenIDInterface {
 						<tr valign="top">
 							<th style="width: 33%" scope="row">Local Accounts:</th>
 							<td>
-								<p><input type="checkbox" name="enable_localaccounts" id="enable_localaccounts" <?php
-								if ( get_option('users_can_register') ) {
-									if ( get_option('oid_enable_localaccounts') ) echo 'checked="checked"';
-								} else {
-									echo 'disabled="disabled"';
-								}
-								?> />
+								<?php 
+									if (get_option('users_can_register')) {
+										$input_attr = 'checked="checked"';
+									}
+									else {
+										$input_attr = 'disabled="disabled"';
+										echo '<p class="error">This option requires that "Anyone can register" '
+											. 'be enabled <a href="?">here</a>.</p>';
+									}
+								?>
+
+								<p><input type="checkbox" name="enable_localaccounts" id="enable_localaccounts" <?php 
+									echo $input_attr; ?> />
 								<label for="enable_localaccounts">Create Local Accounts</label>
-								<?php if (!get_option('users_can_register')) 
-									  echo '<span class="error">This option cannot be enabled until "Anyone can register" is also enabled <a href="?">here</a></span>'; ?>
 								</p>
 
 								<p>If enabled, a local wordpress account will automatically be created for 
@@ -258,13 +262,7 @@ class WordpressOpenIDInterface {
 						<tr valign="top">
 							<th style="width: 33%" scope="row">Enable FOAF/SIOC:</th>
 							<td>
-								<p><input type="checkbox" name="enable_foaf" id="enable_foaf" <?php
-								if ( get_option('users_can_register') ) {
-									if ( get_option('oid_enable_foaf') ) echo 'checked="checked"';
-								} else {
-									echo 'disabled="disabled"';
-								}
-								?> />
+								<p><input type="checkbox" name="enable_foaf" id="enable_foaf" <?php echo $input_attr; ?> />
 								<label for="enable_foaf">Enable FOAF/SIOC Auto-discovery</label>
 
 								<p>For newly created accounts, attempt to auto-discover a 
