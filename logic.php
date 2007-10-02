@@ -1064,18 +1064,9 @@ if  ( !class_exists('WordpressOpenIDLogic') ) {
 
 
 		/**
-		 * Wordpress only displays comments that are awaiting moderation if the 
-		 * name and email address stored in the user's cookies match those on 
-		 * the comment.  This is a problem since if the user logged in with 
-		 * OpenID, they may never have filled out the name and email input 
-		 * fields but their comment _will_ have values resulting in them never 
-		 * seeing their comment.  
-		 *
-		 * This filter performs an additional query if the current user is 
-		 * logged in, and grabs any comments awaiting moderation that they 
-		 * posted.
-		 *
-		 * @bug-filed http://trac.wordpress.org/ticket/4108/
+		 * Get any additional comments awaiting moderation by this user.  Wordpress
+		 * core has been udpated to grab most, but we still do one last check for
+		 * OpenID comments that have a URL match with the current user.
 		 */
 		function comments_awaiting_moderation(&$comments, $post_id) {
 			global $wpdb, $user_ID;
@@ -1087,17 +1078,25 @@ if  ( !class_exists('WordpressOpenIDLogic') ) {
 			$email_db  = $wpdb->escape($comment_author_email);
 			$url_db  = $wpdb->escape($comment_author_url);
 
-			$additional = $wpdb->get_results("SELECT * FROM $wpdb->comments WHERE "
-				. "comment_post_ID = '$post_id' AND (comment_author_url = '$url_db' OR "
-				. "(user_id != 0 AND user_id = '$user_ID')) AND comment_author != '$author_db' "
-				. "AND comment_author_email != '$email_db' AND comment_approved = '0' "
-				. "ORDER BY comment_date");
+			if ($url_db) {
+				$additional = $wpdb->get_results(
+					"SELECT * FROM $wpdb->comments"
+					. " WHERE comment_post_ID = '$post_id'"
+					. " AND comment_type = 'openid'"             // get OpenID comments
+					. " AND comment_author_url = '$url_db'"      // where only the URL matches
+					. ($user_ID ? " AND user_id != '$user_ID'" : '')
+					. ($author_db ? " AND comment_author != '$author_db'" : '')
+					. ($email_db ? " AND comment_author_email != '$email_db'" : '')
+					. " AND comment_approved = '0'"
+					. " ORDER BY comment_date");
 
-			if ($additional) {
-				$comments = array_merge($comments, $additional);
-				usort($comments, create_function('$a,$b', 
-					'return strcmp($a->comment_date_gmt, $b->comment_date_gmt);'));
+				if ($additional) {
+					$comments = array_merge($comments, $additional);
+					usort($comments, create_function('$a,$b', 
+						'return strcmp($a->comment_date_gmt, $b->comment_date_gmt);'));
+				}
 			}
+
 
 			return $comments;
 		}
