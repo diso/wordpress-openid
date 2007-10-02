@@ -169,7 +169,7 @@ if  ( !class_exists('WordpressOpenIDLogic') ) {
 			}
 
 			if ($wp_version >= '2.3') {
-				require_once(ABSPATH . '/wp-admin/upgrade.php');
+				require_once(ABSPATH . '/wp-admin/includes/upgrade.php');
 			} else {
 				require_once(ABSPATH . 'wp-admin/admin-db.php');
 				require_once(ABSPATH . '/wp-admin/upgrade-functions.php');
