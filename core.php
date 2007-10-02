@@ -112,7 +112,10 @@ if  ( !class_exists('WordpressOpenID') ) {
 
 
 			// Add custom OpenID options
-			add_option( 'oid_trust_root', get_settings('siteurl'), 'The Open ID trust root' );
+			$initial_trust_root = get_option('siteurl');
+			if (substr($initial_trust_root, -1, 1) != '/') $initial_trust_root .= '/';
+
+			add_option( 'oid_trust_root', $initial_trust_root, 'The Open ID trust root' );
 			add_option( 'oid_enable_selfstyle', true, 'Use internal style rules' );
 			add_option( 'oid_enable_loginform', true, 'Display OpenID box in login form' );
 			add_option( 'oid_enable_commentform', true, 'Display OpenID box in comment form' );
