@@ -86,11 +86,11 @@ class WordpressOpenIDInterface {
 	function js_setup() {
 		wp_enqueue_script( 'jquery' );
 		wp_enqueue_script( 'interface' );
-		wp_enqueue_script('jquery.textnode', $this->core->path . '/jquery.textnode.js', 
+		wp_enqueue_script('jquery.textnode', $this->core->path . '/files/jquery.textnode.js', 
 			array('jquery'), WPOPENID_PLUGIN_VERSION);
-		wp_enqueue_script('jquery.xpath', $this->core->path . '/jquery.xpath.js', 
+		wp_enqueue_script('jquery.xpath', $this->core->path . '/files/jquery.xpath.js', 
 			array('jquery'), WPOPENID_PLUGIN_VERSION);
-		wp_enqueue_script('openid', $this->core->path . '/openid.js', 
+		wp_enqueue_script('openid', $this->core->path . '/files/openid.js', 
 			array('jquery','jquery.textnode'), WPOPENID_PLUGIN_VERSION);
 	}
 
@@ -101,7 +101,7 @@ class WordpressOpenIDInterface {
 	 * @action: wp_head, login_head
 	 **/
 	function style() {
-		$css_path = $this->core->fullpath . '/openid.css?ver='.WPOPENID_PLUGIN_VERSION;
+		$css_path = $this->core->fullpath . '/files/openid.css?ver='.WPOPENID_PLUGIN_VERSION;
 		echo '
 			<link rel="stylesheet" type="text/css" href="'.$css_path.'" />';
 	}
