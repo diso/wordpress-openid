@@ -6,29 +6,31 @@ Description: Wordpress OpenID Registration, Authentication, and Commenting.   Th
 Author: Will Norris
 Author URI: http://willnorris.com/
 Version: $Rev$
-Licence: Modified BSD, http://www.fsf.org/licensing/licenses/index_html#ModifiedBSD
+License: Modified BSD, http://www.fsf.org/licensing/licenses/index_html#ModifiedBSD
 */
 
-#define ( 'WPOPENID_PLUGIN_PATH', '/wp-content/plugins/' . basename(dirname(__FILE__)) );  
 define ( 'WPOPENID_PLUGIN_PATH', '/wp-content/plugins/openid');
 
 define ( 'WPOPENID_PLUGIN_VERSION', preg_replace( '/\$Rev: (.+) \$/', 'svn-\\1', 
 	'$Rev$') ); // this needs to be on a separate line so that svn:keywords can work its magic
-define ( 'WPOPENID_DB_VERSION', 11260);
 
-// valid values are debug, info, notice, warning, err, crit, alert, emerg
-define ( 'WPOPENID_LOG_LEVEL', 'debug');
+define ( 'WPOPENID_DB_VERSION', 11260);      // last plugin version that required database schema changes
 
-//set_include_path( dirname(__FILE__) . PATH_SEPARATOR . get_include_path() );   // Add plugin directory to include path temporarily
+
+define ( 'WPOPENID_LOG_LEVEL', 'debug');     // valid values are debug, info, notice, warning, err, crit, alert, emerg
+
+set_include_path( dirname(__FILE__) . PATH_SEPARATOR . get_include_path() );   // Add plugin directory to include path temporarily
 
 require_once('logic.php');
 require_once('interface.php');
 
-// Try loading PEAR_Log from normal include_path.  If we can't find it, include the copy of PEAR_Log bundled with the plugin
-@include_once('Log.php');
-if (!class_exists('Log')) {
-	@include_once('OpenIDLog.php');
+
+@include_once('Log.php');                   // Try loading PEAR_Log from normal include_path.  
+if (!class_exists('Log')) {                 // If we can't find it, include the copy of 
+	require_once('OpenIDLog.php');          // PEAR_Log bundled with the plugin
 }
+
+restore_include_path();
 
 @session_start();
 
@@ -44,7 +46,7 @@ if  ( !class_exists('WordpressOpenID') ) {
 		var $status = array();
 
 		function WordpressOpenID($log) {
-			$this->path = '/wp-content/plugins/openid';
+			$this->path = WPOPENID_PLUGIN_PATH;
 			$this->fullpath = get_option('siteurl').$this->path;
 
 			$this->log =& $log;
@@ -53,17 +55,19 @@ if  ( !class_exists('WordpressOpenID') ) {
 			$this->interface = new WordpressOpenIDInterface($this);
 		}
 
+		/**
+		 * This is the main bootstrap method that gets things started.
+		 */
 		function startup() {
-			$this->log->debug("Status: userinterface hooks: " . ($this->logic->enabled? 'Enabled':'Disabled' ) . ' (finished including and instantiating, passing control back to wordpress)' );
+			$this->log->debug("Status: userinterface hooks: " . ($this->logic->enabled? 'Enabled':'Disabled' ) 
+				. ' (finished including and instantiating, passing control back to wordpress)' );
 
-			$this->interface->startup();
-			
 			// -- register actions and filters -- //
 			
 			add_action( 'admin_menu', array( $this->interface, 'add_admin_panels' ) );
 
 			// Kickstart
-			register_activation_hook( $this->path.'/core.php', array( $this->logic, 'late_bind' ) );
+			//register_activation_hook( $this->path.'/core.php', array( $this->logic, 'late_bind' ) );
 			register_deactivation_hook( $this->path.'/core.php', array( $this->logic, 'destroy_tables' ) );
 
 			// Add hooks to handle actions in Wordpress
@@ -84,6 +88,7 @@ if  ( !class_exists('WordpressOpenID') ) {
 			// If user is dropped from database, remove their identities too.
 			add_action( 'delete_user', array( $this->logic, 'drop_all_identities_for_user' ) );	
 
+			// include internal stylesheet
 			if (get_option('oid_enable_selfstyle')) {
 				add_action( 'wp_head', array( $this->interface, 'style'));
 				add_action( 'login_head', array( $this->interface, 'style'));
@@ -98,13 +103,12 @@ if  ( !class_exists('WordpressOpenID') ) {
 				add_action( 'comment_form', array( $this->interface, 'comment_form'));
 			}
 
+			// add OpenID input field to wp-login.php
 			if( get_option('oid_enable_loginform') ) {
 				add_action( 'login_form', array( $this->interface, 'login_form'));
 				add_action( 'register_form', array( $this->interface, 'register_form'));
 				add_filter( 'login_errors', array( $this->interface, 'login_form_hide_username_password_errors'));
-				add_filter( 'register', array( $this->interface, 'sidebar_register' ));
 			}
-			add_filter( 'loginout', array( $this->interface, 'sidebar_loginout' ));
 
 
 			// Add custom OpenID options
@@ -138,13 +142,11 @@ if  ( !class_exists('WordpressOpenID') ) {
 }
 
 if (isset($wp_version)) {
-	if (class_exists('Log')) {
-		$log = &Log::singleton('error_log', PEAR_LOG_TYPE_SYSTEM, 'WPOpenID');
+	$log = &Log::singleton('error_log', PEAR_LOG_TYPE_SYSTEM, 'WPOpenID');
 
-		// Set the log level
-		$log_level = constant('PEAR_LOG_' . strtoupper(WPOPENID_LOG_LEVEL));
-		$log->setMask(Log::UPTO($log_level));
-	}
+	// Set the log level
+	$log_level = constant('PEAR_LOG_' . strtoupper(WPOPENID_LOG_LEVEL));
+	$log->setMask(Log::UPTO($log_level));
 
 	$openid = new WordpressOpenID($log);
 	$openid->startup();
