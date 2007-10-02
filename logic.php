@@ -111,6 +111,7 @@ if  ( !class_exists('WordpressOpenIDLogic') ) {
 			
 			// include required JanRain OpenID library files
 			set_include_path( dirname(__FILE__) . PATH_SEPARATOR . get_include_path() );   
+			$this->core->log->debug('temporary include path for importing = ' . get_include_path());
 			require_once('Auth/OpenID/Discover.php');
 			require_once('Auth/OpenID/DatabaseConnection.php');
 			require_once('Auth/OpenID/MySQLStore.php');
