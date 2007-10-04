@@ -758,10 +758,17 @@ if  ( !class_exists('WordpressOpenIDLogic') ) {
 				'". ' . $this->error );
 			
 			if( $this->action == 'redirect' ) {
-				if ( !empty( $_GET['redirect_to'] )) $redirect_to = $_GET['redirect_to'];
-				
+				if ( !empty( $_GET['redirect_to'] )) {
+					$redirect_to = $_GET['redirect_to'];
+				} else if ( !empty($_REQUEST['comment_post_ID']) ) {
+					$redirect_to = get_permalink($_REQUEST['comment_post_ID']);
+				}
+					
 				if( $_GET['action'] == 'commentopenid' ) {
-					$this->post_comment($oid_user_data);
+					$comment_id = $this->post_comment($oid_user_data);
+					$redirect_to .= '#comment-' . $comment_id;
+					$comment = get_comment($comment_id);
+					$redirect_to = apply_filters('comment_post_redirect', $redirect_to, $comment);
 				}
 
 				if( $redirect_to == '/wp-admin' and !$user->has_cap('edit_posts') ) 
@@ -943,7 +950,7 @@ if  ( !class_exists('WordpressOpenIDLogic') ) {
 				add_filter('pre_comment_approved', array($this, 'comment_approval'));
 			}
 
-			$comment_id = wp_new_comment( $commentdata );
+			return wp_new_comment( $commentdata );
 		}
 
 
