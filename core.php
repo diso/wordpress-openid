@@ -145,7 +145,8 @@ if  ( !class_exists('WordpressOpenID') ) {
 }
 
 if (isset($wp_version)) {
-	$log = &Log::singleton('error_log', PEAR_LOG_TYPE_SYSTEM, 'WPOpenID');
+	#$log = &Log::singleton('error_log', PEAR_LOG_TYPE_SYSTEM, 'WPOpenID');
+	$log = &Log::singleton('file', ABSPATH . get_option('upload_path') . '/php.log', 'WPOpenID');
 
 	// Set the log level
 	$log_level = constant('PEAR_LOG_' . strtoupper(WPOPENID_LOG_LEVEL));
