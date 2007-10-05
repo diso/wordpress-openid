@@ -242,10 +242,12 @@ class WordpressOpenIDInterface {
 							<td>
 								<?php 
 									if (get_option('users_can_register')) {
-										$accounts_attr = get_option('oid_enable_localaccounts') ? 'checked="checked"' : 'disabled="disabled"';
-										$foaf_attr = get_option('oid_enable_foaf') ? 'checked="checked"' : 'disabled="disabled"';
+										$accounts_attr = get_option('oid_enable_localaccounts') ? 'checked="checked"' : '';
+										$foaf_attr = get_option('oid_enable_foaf') ? 'checked="checked"' : '';
 									}
 									else {
+										$accounts_attr = 'disabled="disabled"';
+										$foaf_attr = 'disabled="disabled"';
 										echo '<p class="error">This option requires that "Anyone can register" '
 											. 'be enabled <a href="?">here</a>.</p>';
 									}
