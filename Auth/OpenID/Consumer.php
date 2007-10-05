@@ -1298,7 +1298,7 @@ class Auth_OpenID_GenericConsumer {
         $resp = $this->fetcher->post($server_url, $body);
 
         if ($resp === null) {
-            return null;
+            return Auth_OpenID_ServerErrorContainer::fromMessage('');
         }
 
         $response_message = Auth_OpenID_Message::fromKVForm($resp->body);
