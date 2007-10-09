@@ -108,7 +108,7 @@ CREATE TABLE %s (
 }
 
 /* 
-	WP_OpenIDConnection class implements a PEAR-style database connection using the Wordpress WPDB object.
+	WP_OpenIDConnection class implements a PEAR-style database connection using the WordPress WPDB object.
 	Written by Josh Hoyt
 	Modified to support setFetchMode() by Alan J Castonguay, 2006-06-16 
  */

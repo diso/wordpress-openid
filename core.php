@@ -1,8 +1,8 @@
 <?php
 /*
-Plugin Name: Wordpress OpenID (+)
+Plugin Name: WordPress OpenID (+)
 Plugin URI: http://willnorris.com/projects/wpopenid/
-Description: Wordpress OpenID Registration, Authentication, and Commenting.   This is a fork of the <a href="http://verselogic.net/projects/wordpress/wordpress-openid-plugin/">original wpopenid project</a> by <a href="http://verselogic.net">Alan Castonguay</a> and Hans Granqvist, with hopes of merging it upstream in the near future.  (URLs and such have been changed so as not to confuse the two plugins.)
+Description: WordPress OpenID Registration, Authentication, and Commenting.   This is a fork of the <a href="http://verselogic.net/projects/wordpress/wordpress-openid-plugin/">original wpopenid project</a> by <a href="http://verselogic.net">Alan Castonguay</a> and Hans Granqvist, with hopes of merging it upstream in the near future.  (URLs and such have been changed so as not to confuse the two plugins.)
 Author: Will Norris
 Author URI: http://willnorris.com/
 Version: $Rev$
@@ -17,7 +17,7 @@ define ( 'WPOPENID_PLUGIN_VERSION', preg_replace( '/\$Rev: (.+) \$/', 'svn-\\1',
 define ( 'WPOPENID_DB_VERSION', 20675);      // last plugin version that required database schema changes
 
 
-define ( 'WPOPENID_LOG_LEVEL', 'debug');     // valid values are debug, info, notice, warning, err, crit, alert, emerg
+define ( 'WPOPENID_LOG_LEVEL', 'warning');     // valid values are debug, info, notice, warning, err, crit, alert, emerg
 
 set_include_path( dirname(__FILE__) . PATH_SEPARATOR . get_include_path() );   // Add plugin directory to include path temporarily
 
@@ -60,7 +60,7 @@ if  ( !class_exists('WordpressOpenID') ) {
 		 */
 		function startup() {
 			$this->log->debug("Status: userinterface hooks: " . ($this->logic->enabled? 'Enabled':'Disabled' ) 
-				. ' (finished including and instantiating, passing control back to wordpress)' );
+				. ' (finished including and instantiating, passing control back to WordPress)' );
 
 			// -- register actions and filters -- //
 			
@@ -70,7 +70,7 @@ if  ( !class_exists('WordpressOpenID') ) {
 			//register_activation_hook( $this->path.'/core.php', array( $this->logic, 'late_bind' ) );
 			register_deactivation_hook( $this->path.'/core.php', array( $this->logic, 'destroy_tables' ) );
 
-			// Add hooks to handle actions in Wordpress
+			// Add hooks to handle actions in WordPress
 			add_action( 'wp_authenticate', array( $this->logic, 'wp_authenticate' ) ); // openid loop start
 			add_action( 'init', array( $this->logic, 'finish_login' ) ); // openid loop done
 
@@ -123,7 +123,6 @@ if  ( !class_exists('WordpressOpenID') ) {
 			add_option( 'oid_db_version', 0 );
 			add_option( 'oid_enable_unobtrusive', false );
 			add_option( 'oid_enable_localaccounts', false );
-			add_option( 'oid_enable_foaf', false );
 			add_option( 'oid_enable_approval', false );
 		}
 

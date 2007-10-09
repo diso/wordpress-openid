@@ -120,7 +120,7 @@ if  ( !class_exists('WordpressOpenIDLogic') ) {
 			restore_include_path();
 
 			global $wpdb;
-			$this->core->setStatus('database: Wordpress\' table prefix', 'info', $wpdb->prefix );
+			$this->core->setStatus('database: WordPress\' table prefix', 'info', $wpdb->prefix );
 			$this->identity_url_table_name = ($wpdb->prefix . 'openid_identities');
 
 			if( false === get_option('oid_trust_root') or '' === get_option('oid_trust_root') ) {
@@ -262,7 +262,7 @@ if  ( !class_exists('WordpressOpenIDLogic') ) {
 		/*
 		 * Hook - called as wp_authenticate
 		 * If we're doing openid authentication ($_POST['openid_url'] is set), start the consumer & redirect
-		 * Otherwise, return and let Wordpress handle the login and/or draw the form.
+		 * Otherwise, return and let WordPress handle the login and/or draw the form.
 		 * Uses output buffering to modify the form. 
 		 */
 		function wp_authenticate( &$username ) {
@@ -729,7 +729,7 @@ if  ( !class_exists('WordpressOpenIDLogic') ) {
 						if ( !$user->has_cap('edit_posts') ) $redirect_to = '/wp-admin/profile.php';
 
 					} else {
-						$this->error = 'OpenID authentication valid, but Wordpress login failed. '
+						$this->error = 'OpenID authentication valid, but WordPress login failed. '
 							. 'OpenID login disabled for this account.';
 						$this->action = 'error';
 					}
@@ -832,7 +832,7 @@ if  ( !class_exists('WordpressOpenIDLogic') ) {
 				
 			} else {
 				// failed to create user for some reason.
-				$this->error = 'OpenID authentication successful, but failed to create Wordpress user. '
+				$this->error = 'OpenID authentication successful, but failed to create WordPress user. '
 					. 'This is probably a bug.';
 				$this->action= 'error';
 				$this->core->log->error( $this->error );
@@ -1085,7 +1085,7 @@ if  ( !class_exists('WordpressOpenIDLogic') ) {
 		}
 
 		/**
-		 * Get any additional comments awaiting moderation by this user.  Wordpress
+		 * Get any additional comments awaiting moderation by this user.  WordPress
 		 * core has been udpated to grab most, but we still do one last check for
 		 * OpenID comments that have a URL match with the current user.
 		 */

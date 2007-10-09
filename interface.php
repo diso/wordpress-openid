@@ -85,7 +85,7 @@ class WordpressOpenIDInterface {
 	 **/
 	function js_setup() {
 		wp_enqueue_script( 'jquery' );
-		wp_enqueue_script( 'interface' );
+		//wp_enqueue_script( 'interface' );
 		wp_enqueue_script('jquery.textnode', $this->core->path . '/files/jquery.textnode.js', 
 			array('jquery'), WPOPENID_PLUGIN_VERSION);
 		wp_enqueue_script('jquery.xpath', $this->core->path . '/files/jquery.xpath.js', 
@@ -137,7 +137,7 @@ class WordpressOpenIDInterface {
 	 * Spam up the admin interface with warnings.
 	 **/
 	function admin_notices_plugin_problem_warning() {
-		?><div class="error"><p><strong>The Wordpress OpenID plugin is not active.</strong>
+		?><div class="error"><p><strong>The WordPress OpenID plugin is not active.</strong>
 		Check <a href="options-general.php?page=global-openid-options">OpenID Options</a> for
 		a full diagnositic report.</p></div><?php
 	}
@@ -168,7 +168,7 @@ class WordpressOpenIDInterface {
 	function options_page() {
 			$this->logic->late_bind();
 			$this->core->log->debug("WPOpenID Plugin: " . ($this->logic->enabled? 'Enabled':'Disabled' ) 
-				. ' (start of wordpress options page)' );
+				. ' (start of WordPress options page)' );
 		
 			// if we're posted back an update, let's set the values here
 			if ( isset($_POST['info_update']) ) {
@@ -191,9 +191,6 @@ class WordpressOpenIDInterface {
 
 				update_option( 'oid_enable_localaccounts', 
 					(isset($_POST['enable_localaccounts']) && get_option('users_can_register')) ? true : false );
-
-				update_option( 'oid_enable_foaf', 
-					(isset($_POST['enable_foaf']) && get_option('users_can_register')) ? true : false );
 
 				
 				if ($error !== '') {
@@ -243,11 +240,9 @@ class WordpressOpenIDInterface {
 								<?php 
 									if (get_option('users_can_register')) {
 										$accounts_attr = get_option('oid_enable_localaccounts') ? 'checked="checked"' : '';
-										$foaf_attr = get_option('oid_enable_foaf') ? 'checked="checked"' : '';
 									}
 									else {
 										$accounts_attr = 'disabled="disabled"';
-										$foaf_attr = 'disabled="disabled"';
 										echo '<p class="error">This option requires that "Anyone can register" '
 											. 'be enabled <a href="?">here</a>.</p>';
 									}
@@ -258,27 +253,12 @@ class WordpressOpenIDInterface {
 								<label for="enable_localaccounts">Create Local Accounts</label>
 								</p>
 
-								<p>If enabled, a local wordpress account will automatically be created for 
+								<p>If enabled, a local WordPress account will automatically be created for 
 								each commenter who uses an OpenID.  Even with this option disabled, you may 
-								allow users to create local wordpress accounts using their OpenID by 
+								allow users to create local WordPress accounts using their OpenID by 
 								enabling "<a href="?">Anyone can register</a>" as well as "Login Form" 
 								below.</p>
 
-							</td>
-						</tr>
-
-						<tr valign="top">
-							<th style="width: 33%" scope="row">Enable FOAF/SIOC:</th>
-							<td>
-								<p><input type="checkbox" name="enable_foaf" id="enable_foaf" <?php echo $foaf_attr; ?> />
-								<label for="enable_foaf">Enable FOAF/SIOC Auto-discovery</label>
-
-								<p>For newly created accounts, attempt to auto-discover a 
-								<a href="http://foaf-project.org/">FOAF</a> or 
-								<a href="http://sioc-project.org/">SIOC</a> profile.  If found, the URL will 
-								be saved as metadata on the new account as <em>foaf</em> and <em>sioc</em> 
-								respectively. (Props to <a href="http://apassant.net/">Alexandre Passant</a>.)
-								</p>
 							</td>
 						</tr>
 
@@ -395,8 +375,8 @@ class WordpressOpenIDInterface {
 		$urls = $this->logic->get_my_identities();
 
 		if( count($urls) ) : ?>
-			<p>There are <?php echo count($urls); ?> OpenID identities associated with this Wordpress user.
-			You can login with any of these urls, or your Wordpress username and password.</p>
+			<p>There are <?php echo count($urls); ?> OpenID identities associated with this WordPress user.
+			You can login with any of these urls, or your WordPress username and password.</p>
 
 			<table class="widefat">
 			<thead>
@@ -422,8 +402,8 @@ class WordpressOpenIDInterface {
 			<?php
 		else:
 			echo '
-			<p>There are no OpenID identity urls associated with this Wordpress user.
-			You can login with your Wordpress username and password.</p>';
+			<p>There are no OpenID identity urls associated with this WordPress user.
+			You can login with your WordPress username and password.</p>';
 		endif; ?>
 
 		<p>
@@ -455,7 +435,7 @@ class WordpressOpenIDInterface {
 		
 		global $wp_version;
 		$this->core->setStatus( 'WordPress version', 'info', $wp_version );
-		$this->core->setStatus( 'MySQL version', 'info', function_exists('mysql_get_client_info') ? mysql_get_client_info() : 'Mysql client information not available. Very strange, as Wordpress requires MySQL.' );
+		$this->core->setStatus( 'MySQL version', 'info', function_exists('mysql_get_client_info') ? mysql_get_client_info() : 'Mysql client information not available. Very strange, as WordPress requires MySQL.' );
 
 		$this->core->setStatus( 'PHP version', 'info', phpversion() );
 		
