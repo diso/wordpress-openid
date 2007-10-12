@@ -87,11 +87,11 @@ class WordpressOpenIDInterface {
 		wp_enqueue_script( 'jquery' );
 		//wp_enqueue_script( 'interface' );
 		wp_enqueue_script('jquery.textnode', $this->core->path . '/files/jquery.textnode.js', 
-			array('jquery'), WPOPENID_PLUGIN_VERSION);
+			array('jquery'), WPOPENID_PLUGIN_REVISION);
 		wp_enqueue_script('jquery.xpath', $this->core->path . '/files/jquery.xpath.js', 
-			array('jquery'), WPOPENID_PLUGIN_VERSION);
+			array('jquery'), WPOPENID_PLUGIN_REVISION);
 		wp_enqueue_script('openid', $this->core->path . '/files/openid.js', 
-			array('jquery','jquery.textnode'), WPOPENID_PLUGIN_VERSION);
+			array('jquery','jquery.textnode'), WPOPENID_PLUGIN_REVISION);
 	}
 
 
@@ -101,7 +101,7 @@ class WordpressOpenIDInterface {
 	 * @action: wp_head, login_head
 	 **/
 	function style() {
-		$css_path = $this->core->fullpath . '/files/openid.css?ver='.WPOPENID_PLUGIN_VERSION;
+		$css_path = $this->core->fullpath . '/files/openid.css?ver='.WPOPENID_PLUGIN_REVISION;
 		echo '
 			<link rel="stylesheet" type="text/css" href="'.$css_path.'" />';
 	}
@@ -465,9 +465,9 @@ class WordpressOpenIDInterface {
 		}
 
 		
-		$this->core->setStatus( 'Plugin version', 'info', $vercmp_message);
-		$this->core->setStatus( 'Plugin Database Version', 'info', 'Plugin database is currently at revision '
-			. get_option('oid_plugin_version') . '.' );
+		$this->core->setStatus( 'Plugin Revision', 'info', WPOPENID_PLUGIN_REVISION);
+		$this->core->setStatus( 'Plugin Database Revision', 'info', 'Plugin database is currently at revision '
+			. get_option('oid_db_revision') . '.' );
 		
 		$this->core->setStatus( '<strong>Overall Plugin Status</strong>', ($this->logic->enabled), 
 			'There are problems above that must be dealt with before the plugin can be used.' );

@@ -11,10 +11,10 @@ License: Modified BSD, http://www.fsf.org/licensing/licenses/index_html#Modified
 
 define ( 'WPOPENID_PLUGIN_PATH', '/wp-content/plugins/openid');
 
-define ( 'WPOPENID_PLUGIN_VERSION', preg_replace( '/\$Rev: (.+) \$/', 'svn-\\1', 
+define ( 'WPOPENID_PLUGIN_REVISION', preg_replace( '/\$Rev: (.+) \$/', 'svn-\\1', 
 	'$Rev$') ); // this needs to be on a separate line so that svn:keywords can work its magic
 
-define ( 'WPOPENID_DB_VERSION', 20675);      // last plugin version that required database schema changes
+define ( 'WPOPENID_DB_REVISION', 20675);      // last plugin revision that required database schema changes
 
 
 define ( 'WPOPENID_LOG_LEVEL', 'debug');     // valid values are debug, info, notice, warning, err, crit, alert, emerg
@@ -119,8 +119,8 @@ if  ( !class_exists('WordpressOpenID') ) {
 			add_option( 'oid_enable_loginform', true );
 			add_option( 'oid_enable_commentform', true );
 			add_option( 'oid_plugin_enabled', true );
-			add_option( 'oid_plugin_version', 0 );
-			add_option( 'oid_db_version', 0 );
+			add_option( 'oid_plugin_revision', 0 );
+			add_option( 'oid_db_revision', 0 );
 			add_option( 'oid_enable_unobtrusive', false );
 			add_option( 'oid_enable_localaccounts', false );
 			add_option( 'oid_enable_approval', false );

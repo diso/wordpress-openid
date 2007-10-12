@@ -32,11 +32,11 @@ if  ( !class_exists('WordpressOpenIDLogic') ) {
 		/* Soft verification of plugin activation OK */
 		function uptodate() {
 			$this->core->log->debug('checking if database is up to date');
-			if( get_option('oid_db_version') != WPOPENID_DB_VERSION ) {  
+			if( get_option('oid_db_revision') != WPOPENID_DB_REVISION ) {  
 				// Database version mismatch, force dbDelta() in admin interface.
 				$this->enabled = false;
 				$this->core->setStatus('Plugin Database Version', false, 'Plugin database is out of date. ' 
-					. get_option('oid_db_version') . ' != ' . WPOPENID_DB_VERSION );
+					. get_option('oid_db_revision') . ' != ' . WPOPENID_DB_REVISION );
 				update_option('oid_plugin_enabled', false);
 				return false;
 			}
@@ -135,8 +135,8 @@ if  ( !class_exists('WordpressOpenIDLogic') ) {
 				$this->enabled = $this->check_tables();
 				if( !$this->uptodate() ) {
 					update_option('oid_plugin_enabled', true);
-					update_option('oid_plugin_version', WPOPENID_PLUGIN_VERSION );
-					update_option('oid_db_version', WPOPENID_DB_VERSION );
+					update_option('oid_plugin_revision', WPOPENID_PLUGIN_REVISION );
+					update_option('oid_db_revision', WPOPENID_DB_REVISION );
 					$this->uptodate();
 				}
 			} else {
