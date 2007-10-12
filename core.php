@@ -5,7 +5,7 @@ Plugin URI: http://willnorris.com/projects/wpopenid/
 Description: WordPress OpenID Registration, Authentication, and Commenting.   This is a fork of the <a href="http://verselogic.net/projects/wordpress/wordpress-openid-plugin/">original wpopenid project</a> by <a href="http://verselogic.net">Alan Castonguay</a> and Hans Granqvist, with hopes of merging it upstream in the near future.  (URLs and such have been changed so as not to confuse the two plugins.)
 Author: Will Norris
 Author URI: http://willnorris.com/
-Version: $Rev$
+Version: trunk
 License: Modified BSD, http://www.fsf.org/licensing/licenses/index_html#ModifiedBSD
 */
 
@@ -17,7 +17,7 @@ define ( 'WPOPENID_PLUGIN_VERSION', preg_replace( '/\$Rev: (.+) \$/', 'svn-\\1',
 define ( 'WPOPENID_DB_VERSION', 20675);      // last plugin version that required database schema changes
 
 
-define ( 'WPOPENID_LOG_LEVEL', 'warning');     // valid values are debug, info, notice, warning, err, crit, alert, emerg
+define ( 'WPOPENID_LOG_LEVEL', 'debug');     // valid values are debug, info, notice, warning, err, crit, alert, emerg
 
 set_include_path( dirname(__FILE__) . PATH_SEPARATOR . get_include_path() );   // Add plugin directory to include path temporarily
 
