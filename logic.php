@@ -841,160 +841,45 @@ if  ( !class_exists('WordpressOpenIDLogic') ) {
 		}
 
 
-		/**
-		 * Get profile data for a given user.  Data is retrieved from, in order of preference: 
-		 * sreg, hcard, foaf, comment form.  If none of these are available for a particular 
-		 * field, the identity URL is used.
-		 **/
 		function get_user_data($identity_url, $sreg) {
-
-			// default everything to the identity URL
-			$user_data = array( 'ID' => null,
+			$oid_user_data = array( 'ID' => null,
 				'user_url' => $identity_url,
 				'user_nicename' => $identity_url,
 				'display_name' => $identity_url );
 		
 			// create proper website URL if OpenID is an i-name
 			if (preg_match('/^[\=\@\+].+$/', $identity_url)) {
-				$user_data['user_url'] = 'http://xri.net/' . $identity_url;
+				$oid_user_data['user_url'] = 'http://xri.net/' . $identity_url;
 			}
 
-			if ($sreg && 0) {
-				if( isset( $sreg['email'])) $user_data['user_email'] = $sreg['email'];
+			if ($sreg) {
+				if( isset( $sreg['email'])) $oid_user_data['user_email'] = $sreg['email'];
 				if( isset( $sreg['nickname'])) {
-					$user_data['nickname'] = $sreg['nickname'];
-					$user_data['user_nicename'] = $sreg['nickname'];
-					$user_data['display_name'] = $sreg['nickname'];
+					$oid_user_data['nickname'] = $sreg['nickname'];
+					$oid_user_data['user_nicename'] = $sreg['nickname'];
+					$oid_user_data['display_name'] = $sreg['nickname'];
 				}
 				if( isset($sreg['fullname']) ) {
 					$namechunks = explode( ' ', $sreg['fullname'], 2 );
-					if( isset($namechunks[0]) ) $user_data['first_name'] = $namechunks[0];
-					if( isset($namechunks[1]) ) $user_data['last_name'] = $namechunks[1];
-					$user_data['display_name'] = $sreg['fullname'];
+					if( isset($namechunks[0]) ) $oid_user_data['first_name'] = $namechunks[0];
+					if( isset($namechunks[1]) ) $oid_user_data['last_name'] = $namechunks[1];
+					$oid_user_data['display_name'] = $sreg['fullname'];
 				}
-			} elseif ($hcard_data = $this->get_hcard_data($identity_url)) {
-
-			} elseif ($foaf_data = $this->get_foaf_data($identity_url)) {
-				$this->core->log->debug("found FOAF data for $identity_url");
-				// TODO
 			} else {
 				$comment = $this->get_comment();
 				if( isset( $comment['comment_author_email'])) 
-					$user_data['user_email'] = $comment['comment_author_email'];
+					$oid_user_data['user_email'] = $comment['comment_author_email'];
 				if( isset( $comment['comment_author'])) {
 					$namechunks = explode( ' ', $comment['comment_author'], 2 );
-					if( isset($namechunks[0]) ) $user_data['first_name'] = $namechunks[0];
-					if( isset($namechunks[1]) ) $user_data['last_name'] = $namechunks[1];
-					$user_data['display_name'] = $comment['comment_author'];
+					if( isset($namechunks[0]) ) $oid_user_data['first_name'] = $namechunks[0];
+					if( isset($namechunks[1]) ) $oid_user_data['last_name'] = $namechunks[1];
+					$oid_user_data['display_name'] = $comment['comment_author'];
 				}
-
 			}
 
-			return $user_data;
+			return $oid_user_data;
 		}
 
-
-		/**
-		 * Get sreg data for a given identity URL if possible.
-		 *
-		 * == This doesn't work yet ==
-		 **/
-		function get_sreg_data($identity_url, $data) {
-		}
-
-
-		/**
-		 * Get hCard data for a given identity URL if possible.
-		 *
-		 * == This doesn't work yet ==
-		 **/
-		function get_hcard_data($identity_url, $data) {
-			if ($data['display_name'] && $data['email']) {
-				$this->core->log->debug('DisplayName and Email already populated... skipping hcard');
-				return $data;
-			}
-
-			if (phpversion('dom') == null) {
-				$this->core->log->debug("Don't have required DOM library to parse hcard data");
-				return $data;
-			}
-
-			@include('hkit/hkit.class.php');
-			if (!class_exists('HKit')) { 
-				$this->core->log->debug("Unable to find class HKit... skipping hcard data");
-				return $data; 
-			}
-
-			$h = new HKit();
-			$result = $h->getByURL('hcard', $identity_url);
-
-			if (sizeof($result) > 0) {
-				$this->core->log->info("found hCard data for $identity_url");
-				$hcard = $result[0];
-			} else {
-				return $data;
-			}
-
-			if (isset($hcard['fn'])) {
-				$namechunks = explode(' ', $hcard['fn'], 2);
-
-				// first name
-				if (!$data['first_name']) {
-					if (isset($hcard['n']['given-name'])) {
-						$data['first_name'] = $hcard['n']['given-name'];
-					} elseif (isset($namechunks[0]) ) {
-						$data['first_name'] = $namechunks[0];
-					}
-				}
-
-				// last name
-				if (!$data['last_name']) {
-					if (isset($hcard['n']['family-name'])) {
-						$data['last_name'] = $hcard['n']['family-name'];
-					} elseif (isset($namechunks[1]) ) {
-						$data['last_name'] = $namechunks[1];
-					}
-				}
-
-				$data['display_name'] = $hcard['fn'];
-			}
-
-			if (isset($hcard['email'])) {
-				$data['email'] = $hcard['email'];
-			}
-
-			return $data;
-		}
-
-		/**
-		 * Get FOAF data for a given identity URL if possible.
-		 *
-		 * == This doesn't work yet ==
-		 **/
-		function get_foaf_data($identity_url, $data) {
-			if ($data['display_name'] && $data['email']) {
-				$this->core->log->debug('DisplayName and Email already populated... skipping foaf');
-				return $data;
-			}
-
-			if (phpversion('dom') == null) {
-				$this->core->log->debug("Don't have required DOM library to parse foaf data");
-				return $data;
-			}
-
-			$foaf_url = ''; // TODO: discover FOAF URL
-
-			@include('phoaf/FoafApi.php');
-			if (!class_exists('FoafModel')) { 
-				$this->core->log->debug("Unable to find class FoafModel... skipping foaf data");
-				return $data; 
-			}
-
-			$m = new FoafModel($foaf_url);
-			$person = $m->root();
-
-			return $data;
-		}
 
 		function post_comment(&$oid_user_data) {
 			/* Transparent inline login and commenting.
