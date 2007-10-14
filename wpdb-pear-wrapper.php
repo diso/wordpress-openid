@@ -74,7 +74,7 @@ CREATE TABLE %s (
         $this->sql['assoc_table'] =
             "
 CREATE TABLE %s (
-  server_url varchar(255) CHARSET latin1,
+  server_url varchar(255) CHARACTER SET latin1,
   handle varchar(255) CHARACTER SET latin1,
   secret blob,
   issued int(11),
