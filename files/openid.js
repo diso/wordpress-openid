@@ -20,8 +20,8 @@ function add_openid_to_comment_form(unobtrusive_mode) {
 					'<div id="openid_unobtrusive_text">' +
 						'If you have an OpenID, you may fill it in here.  If your OpenID provider provides ' + 
 						'a name and email, those values will be used instead of the values here.  ' + 
-						'<a href="http://openid.net">Learn more about OpenID</a> or ' + 
-						'<a href="http://openid.net/wiki/index.php/Public_OpenID_providers">find an OpenID provider</a>.' +
+						'<a href="http://openid.net/what/">Learn more about OpenID</a> or ' + 
+						'<a href="http://openid.net/get/">find an OpenID provider</a>.' +
 					'</div> ';
 
 		var label = jQuery('#commentform label[@for=url]');
