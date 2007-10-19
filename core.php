@@ -89,10 +89,8 @@ if  ( !class_exists('WordpressOpenID') ) {
 			add_action( 'delete_user', array( $this->logic, 'drop_all_identities_for_user' ) );	
 
 			// include internal stylesheet
-			if (get_option('oid_enable_selfstyle')) {
-				add_action( 'wp_head', array( $this->interface, 'style'));
-				add_action( 'login_head', array( $this->interface, 'style'));
-			}
+			add_action( 'wp_head', array( $this->interface, 'style'));
+			add_action( 'login_head', array( $this->interface, 'style'));
 
 			add_action( 'init', array( $this->interface, 'js_setup'));
 
@@ -115,13 +113,12 @@ if  ( !class_exists('WordpressOpenID') ) {
 			if (substr($initial_trust_root, -1, 1) != '/') $initial_trust_root .= '/';
 
 			add_option( 'oid_trust_root', $initial_trust_root);
-			add_option( 'oid_enable_selfstyle', true );
 			add_option( 'oid_enable_loginform', true );
 			add_option( 'oid_enable_commentform', true );
 			add_option( 'oid_plugin_enabled', true );
 			add_option( 'oid_plugin_revision', 0 );
 			add_option( 'oid_db_revision', 0 );
-			add_option( 'oid_enable_unobtrusive', false );
+			add_option( 'oid_enable_unobtrusive', true );
 			add_option( 'oid_enable_localaccounts', false );
 			add_option( 'oid_enable_approval', false );
 		}

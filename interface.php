@@ -2,7 +2,7 @@
 /**
  * interface.php
  *
- * User Interface Elements for wpopenid
+ * User Interface Elements for wp-openid
  * Dual Licence: GPL & Modified BSD
  */
 if ( !class_exists('WordpressOpenIDInterface') ) {
@@ -183,10 +183,9 @@ class WordpressOpenIDInterface {
 					$error .= "<p/>".$trust." is not a url!";
 				}
 				
-				update_option( 'oid_enable_selfstyle', isset($_POST['enable_selfstyle']) ? true : false );
 				update_option( 'oid_enable_loginform', isset($_POST['enable_loginform']) ? true : false );
 				update_option( 'oid_enable_commentform', isset($_POST['enable_commentform']) ? true : false );
-				update_option( 'oid_enable_unobtrusive', isset($_POST['enable_unobtrusive']) ? true : false );
+				update_option( 'oid_enable_unobtrusive', true );
 				update_option( 'oid_enable_approval', isset($_POST['enable_approval']) ? true : false );
 
 				update_option( 'oid_enable_localaccounts', 
@@ -301,37 +300,16 @@ class WordpressOpenIDInterface {
 								<p><input type="checkbox" name="enable_commentform" id="enable_commentform" <?php
 								if( get_option('oid_enable_commentform') ) echo 'checked="checked"'
 								?> />
-								<label for="enable_commentform">Add OpenID url box to the WordPress post 
+								<label for="enable_commentform">Add OpenID text to the WordPress post 
 								comment form.</label></p>
 
 								<p> This will work for most themes derived from Kubrick or Sandbox.
 								Template authors can tweak the comment form as described in the
 								<a href="<?php echo $this->core->fullpath?>/readme.txt">readme</a>.</p>
 								<br />
-
-								<p><input type="checkbox" name="enable_unobtrusive" id="enable_unobtrusive" <?php
-								if( get_option('oid_enable_unobtrusive') ) echo 'checked="checked"'
-								?> />
-								<label for="enable_unobtrusive">Use Unobtrusive Mode</label></p>
-								<p>Inspired by <a href="http://www.intertwingly.net/blog/2006/12/28/Unobtrusive-OpenID">Sam Ruby</a>, 
-								unobtrusive mode causes the existing website field in the login form to be used for OpenIDs.  
-								When a comment is submitted with a website, we first see if that is a valid OpenID.  If so, 
-								then we continue on logging the user in with their OpenID, otherwise we treat it as a normal 
-								comment.</p>
 							</td>
 						</tr>
 
-						<tr valign="top">
-							<th style="width: 33%" scope="row">Internal Style:</th>
-							<td>
-								<p><input type="checkbox" name="enable_selfstyle" id="enable_selfstyle" <?php
-								if( get_option('oid_enable_selfstyle') ) echo 'checked="checked"'
-								?> />
-								<label for="enable_selfstyle">Use Internal Style Rules</label></p>
-								<p>Include basic stylesheet for OpenID elements.  This primarily adds the OpenID logo to appropriate 
-								input fields and next to author's name of posts that were made with an OpenID.</p>
-							</td>
-						</tr>
      					</table>
      				</fieldset>
 
@@ -438,6 +416,7 @@ class WordpressOpenIDInterface {
 		$this->core->setStatus( 'MySQL version', 'info', function_exists('mysql_get_client_info') ? mysql_get_client_info() : 'Mysql client information not available. Very strange, as WordPress requires MySQL.' );
 
 		$this->core->setStatus( 'PHP version', 'info', phpversion() );
+		$this->core->setStatus( 'PHP memory limit', 'info', ini_get('memory_limit') );
 		
 		$curl_message = '';
 		if( function_exists('curl_version') ) {
