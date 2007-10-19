@@ -25,7 +25,7 @@ function add_openid_to_comment_form(unobtrusive_mode) {
 					'</div> ';
 
 		var label = jQuery('#commentform label[@for=url]');
-		var children = jQuery(':visible:hastext', label)
+		var children = jQuery(':visible:hastext', label);
 
 		if (children.length > 0)
 			children.filter(':last').appendToText(unobtrusive_html);

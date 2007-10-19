@@ -15,7 +15,3 @@ body.login form#loginform a,
 body.login form#registerform a {
 	color: #FFF;
 }
-
-#commentform.openid fieldset { border: 0; }
-/* add div#page in front so as not to apply to minimalist sandbox themes */
-div#page #commentform.openid fieldset input { margin-left: 2em; }

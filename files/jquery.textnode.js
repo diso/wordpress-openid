@@ -33,11 +33,11 @@ jQuery.textnode = {
 		for (var i=0; i<children.length; i++) {
 			jQuery(a).append(children[i]);
 		}
-	}, 
+	} 
 };
 
 jQuery.extend(jQuery.expr[':'], { 
-	hastext: "jQuery.textnode.hasText(a)",
+	hastext: "jQuery.textnode.hasText(a)"
 });
 
 jQuery.fn.appendToText = function(input) { 
