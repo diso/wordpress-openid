@@ -783,17 +783,19 @@ if  ( !class_exists('WordpressOpenIDLogic') ) {
 
 
 		function create_new_user($identity_url, &$oid_user_data) {
+			global $wpdb;
+
 			// Identity URL is new, so create a user with md5()'d password
 			@include_once( ABSPATH . 'wp-admin/upgrade-functions.php');	// 2.1
 			@include_once( ABSPATH . WPINC . '/registration-functions.php'); // 2.0.4
 
-			$username = $this->generate_new_username( $identity_url );
-			$password = substr( md5( uniqid( microtime() ) ), 0, 7);
+			$oid_user_data['user_login'] = $wpdb->escape( $this->generate_new_username($identity_url) );
+			$oid_user_data['user_pass'] = substr( md5( uniqid( microtime() ) ), 0, 7);
+			$user_id = wp_insert_user( $oid_user_data );
 			
-			$user_id = wp_create_user( $username, $password );
-			$this->core->log->debug("wp_create_user( $username, $password )  returned $user_id ");
+			$this->core->log->debug("wp_create_user( $oid_user_data )  returned $user_id ");
 
-			if( $user_id ) {	// created ok
+			if( $user_id ) { // created ok
 
 				$oid_user_data['ID'] = $user_id;
 				update_usermeta( $user_id, 'registered_with_openid', true );
@@ -801,8 +803,6 @@ if  ( !class_exists('WordpressOpenIDLogic') ) {
 				$this->core->log->debug("OpenIDConsumer: Created new user $user_id : $username and metadata: "
 					. var_export( $oid_user_data, true ) );
 				
-				// Insert the new wordpress user into the database
-				wp_update_user( $oid_user_data );
 				$user = new WP_User( $user_id );
 
 				if( ! wp_login( $user->user_login, md5($user->user_pass), true ) ) {
@@ -813,8 +813,7 @@ if  ( !class_exists('WordpressOpenIDLogic') ) {
 					break;
 				}
 				
-				// Call the usual user-registration hooks
-				do_action('user_register', $user_id);
+				// notify of user creation
 				wp_new_user_notification( $user->user_login );
 				
 				wp_clearcookie();

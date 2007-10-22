@@ -152,7 +152,7 @@ class WordpressOpenIDInterface {
 			array( $this, 'options_page')  );
 
 		if( $this->logic->enabled ) {
-			$hookname =	add_submenu_page('profile.php', 'Your OpenID Identities', 'Your OpenID Identities', 
+			$hookname =	add_submenu_page('profile.php', 'Your OpenIDs', 'Your OpenIDs', 
 				'read', 'your-openid-identities', array($this, 'profile_panel') );
 			add_action("admin_head-$hookname", array( $this, 'style' ));
 		}
@@ -269,19 +269,18 @@ class WordpressOpenIDInterface {
 		?>
 
 		<div class="wrap">
-			<h2>OpenID Identities</h2>
+			<h2>Your OpenID Identities</h2>
 
-			<p>The following OpenID Identity Urls<a title="What is OpenID?" href="http://openid.net/">?</a> 
+			<p>The following OpenIDs <a title="What is OpenID?" href="http://openid.net/">?</a> 
 			are tied to this user account. You can login with equivalent permissions using any of the 
-			following identity urls.</p>
+			following identity URLs.</p>
 
 		<?php
 		
 		$urls = $this->logic->get_my_identities();
 
 		if( count($urls) ) : ?>
-			<p>There are <?php echo count($urls); ?> OpenID identities associated with this WordPress user.
-			You can login with any of these urls, or your WordPress username and password.</p>
+			<p>There are <?php echo count($urls); ?> OpenID identities associated with this WordPress user.</p>
 
 			<table class="widefat">
 			<thead>
@@ -307,8 +306,7 @@ class WordpressOpenIDInterface {
 			<?php
 		else:
 			echo '
-			<p>There are no OpenID identity urls associated with this WordPress user.
-			You can login with your WordPress username and password.</p>';
+			<p class="error">There are no OpenIDs associated with this WordPress user.</p>';
 		endif; ?>
 
 		<p>
