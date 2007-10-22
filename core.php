@@ -102,14 +102,11 @@ if  ( !class_exists('WordpressOpenID') ) {
 			}
 
 			// add OpenID input field to wp-login.php
-			if( get_option('oid_enable_loginform') ) {
-				add_action( 'login_form', array( $this->interface, 'login_form'));
-				add_action( 'register_form', array( $this->interface, 'register_form'));
-				add_filter( 'login_errors', array( $this->interface, 'login_form_hide_username_password_errors'));
-			}
+			add_action( 'login_form', array( $this->interface, 'login_form'));
+			add_action( 'register_form', array( $this->interface, 'register_form'));
+			add_filter( 'login_errors', array( $this->interface, 'login_form_hide_username_password_errors'));
 
 			// Add custom OpenID options
-			add_option( 'oid_enable_loginform', true );
 			add_option( 'oid_enable_commentform', true );
 			add_option( 'oid_plugin_enabled', true );
 			add_option( 'oid_plugin_revision', 0 );

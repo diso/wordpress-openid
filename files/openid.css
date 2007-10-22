@@ -7,6 +7,7 @@ body.login #openid_url {
 	background-color: #FFF;
 	padding-left: 18px;
 	border: 1px solid #ccc;
+	width: 15em;
 }
 
 /* fix link color on wp-login.php */

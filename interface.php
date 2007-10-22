@@ -174,7 +174,6 @@ class WordpressOpenIDInterface {
 			
 				$error = '';
 				
-				update_option( 'oid_enable_loginform', isset($_POST['enable_loginform']) ? true : false );
 				update_option( 'oid_enable_commentform', isset($_POST['enable_commentform']) ? true : false );
 				update_option( 'oid_enable_approval', isset($_POST['enable_approval']) ? true : false );
 
@@ -222,18 +221,6 @@ class WordpressOpenIDInterface {
 						<legend>Look &amp; Feel</legend>
      									
      					<table class="optiontable editform" cellspacing="2" cellpadding="5" width="100%">
-						<tr valign="top">
-							<th style="width: 33%" scope="row">Login Form:</th>
-							<td>
-								<p><input type="checkbox" name="enable_loginform" id="enable_loginform" <?php
-								if( get_option('oid_enable_loginform') ) echo 'checked="checked"'
-								?> />
-								<label for="enable_loginform">Add OpenID url box to the WordPress
-								<a href="<?php bloginfo('wpurl'); ?>/wp-login.php"><?php _e('Login') ?></a>
-								form.</p>
-							</td>
-						</tr>
-
 						<tr valign="top">
 							<th style="width: 33%" scope="row">Comment Form:</th>
 							<td>

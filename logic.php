@@ -973,17 +973,17 @@ if  ( !class_exists('WordpressOpenIDLogic') ) {
 		function bypass_option_require_name_email( $value ) {
 			global $openid_auth_request;
 
-			if (array_key_exists('openid_url', $_REQUEST)) {
-				if( !empty( $_REQUEST['openid_url'] ) ) {
+			if (array_key_exists('openid_url', $_POST)) {
+				if( !empty( $_POST['openid_url'] ) ) {
 					return false;
 				}
 			} else {
-				if (!empty($_REQUEST['url'])) {
+				if (!empty($_POST['url'])) {
 					if ($this->late_bind()) { 
 						// check if url is valid OpenID by forming an auth request
 						set_error_handler( array($this, 'customer_error_handler'));
 						$consumer = $this->getConsumer();
-						$openid_auth_request = $consumer->begin( $_REQUEST['url'] );
+						$openid_auth_request = $consumer->begin( $_POST['url'] );
 						restore_error_handler();
 
 						if (null !== $openid_auth_request) {
@@ -1012,7 +1012,7 @@ if  ( !class_exists('WordpressOpenIDLogic') ) {
 				$comment['comment_type']='openid';
 			}
 			
-			$openid_url = (array_key_exists('openid_url', $_REQUEST) ? $_REQUEST['openid_url'] : $_REQUEST['url']);
+			$openid_url = (array_key_exists('openid_url', $_POST) ? $_POST['openid_url'] : $_POST['url']);
 
 			if( !empty($openid_url) ) {  // Comment form's OpenID url is filled in.
 				$comment['comment_author_openid'] = $openid_url;
