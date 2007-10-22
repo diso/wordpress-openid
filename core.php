@@ -109,10 +109,6 @@ if  ( !class_exists('WordpressOpenID') ) {
 			}
 
 			// Add custom OpenID options
-			$initial_trust_root = get_option('siteurl');
-			if (substr($initial_trust_root, -1, 1) != '/') $initial_trust_root .= '/';
-
-			add_option( 'oid_trust_root', $initial_trust_root);
 			add_option( 'oid_enable_loginform', true );
 			add_option( 'oid_enable_commentform', true );
 			add_option( 'oid_plugin_enabled', true );
@@ -160,6 +156,13 @@ if (isset($wp_version)) {
  * If the current comment was submitted with OpenID, return true
  * useful for  <?php echo ( is_comment_openid() ? 'Submitted with OpenID' : '' ); ?>
  */
+
+if( !function_exists( 'openid_input' ) ) {
+	function openid_input() {
+		return '<input type="text" id="openid_url" name="openid_url" />';
+	}
+}
+
 if( !function_exists( 'is_comment_openid' ) ) {
 	function is_comment_openid() {
 		global $comment_is_openid;

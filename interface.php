@@ -172,15 +172,7 @@ class WordpressOpenIDInterface {
 			// if we're posted back an update, let's set the values here
 			if ( isset($_POST['info_update']) ) {
 			
-				$trust = $_POST['oid_trust_root'];
-				if( $trust == null ) $trust = get_option('siteurl');
-				
 				$error = '';
-				if( $trust = clean_url($trust) ) {
-					update_option('oid_trust_root', $trust);
-				} else {
-					$error .= "<p/>".$trust." is not a url!";
-				}
 				
 				update_option( 'oid_enable_loginform', isset($_POST['enable_loginform']) ? true : false );
 				update_option( 'oid_enable_commentform', isset($_POST['enable_commentform']) ? true : false );
@@ -205,24 +197,6 @@ class WordpressOpenIDInterface {
 				<form method="post">
      				<p class="submit"><input type="submit" name="info_update" value="<?php _e('Update options') ?> &raquo;" /></p>
 
-     				<fieldset class="options">
-						<legend>General Options</legend>
-     									
-     					<table class="optiontable editform" cellspacing="2" cellpadding="5" width="100%">
-						<tr valign="top">
-							<th style="width: 33%" scope="row">Trust root:</th>
-							<td>
-								<p><input type="text" size="50" name="oid_trust_root" id="oid_trust_root"
-     							value="<?php echo htmlentities(get_option('oid_trust_root')); ?>" /></p>
-     							<p>Commenters will be asked whether they trust this url,
-								and its decedents, to know that they are logged in and control their 
-								identity url.  Include the trailing slash.  This should probably be 
-								<strong><?php echo $siteurl; ?></strong></p>
-							</td>
-						</tr>
-						</table>
-					</fieldset>
-     					
      				<fieldset class="options">
 						<legend>Behavior</legend>
      									

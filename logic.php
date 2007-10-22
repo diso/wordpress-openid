@@ -123,13 +123,6 @@ if  ( !class_exists('WordpressOpenIDLogic') ) {
 			$this->core->setStatus('database: WordPress\' table prefix', 'info', $wpdb->prefix );
 			$this->identity_url_table_name = ($wpdb->prefix . 'openid_identities');
 
-			if( false === get_option('oid_trust_root') or '' === get_option('oid_trust_root') ) {
-				$this->core->setStatus('Option: Trust Root', 'info', 'You must specify the Trust Root '
-					. 'paramater on the OpenID Options page. Commenters will be asked whether they trust '
-					. 'this url, and its decedents, to know that they are logged in and control their '
-					. 'identity url. Include the trailing slash.');
-			}
-			
 			$this->core->log->debug("Bootstrap -- checking tables");
 			if( $this->enabled ) {
 				$this->enabled = $this->check_tables();
@@ -344,7 +337,7 @@ if  ( !class_exists('WordpressOpenIDLogic') ) {
 
 					$return_to = $self . '&action=add_identity_ok';
 
-					$this->doRedirect($auth_request, get_option('oid_trust_root'), $return_to);
+					$this->doRedirect($auth_request, get_option('home'), $return_to);
 
 					exit(0);
 					break;
@@ -393,6 +386,7 @@ if  ( !class_exists('WordpressOpenIDLogic') ) {
 
 		function doRedirect($auth_request, $trust_root, $return_to) {
 			if ($auth_request->shouldSendRedirect()) {
+				if (substr($trust_root, -1, 1) != '/') $trust_root .= '/';
 				$redirect_url = $auth_request->redirectURL($trust_root, $return_to);
 
 				if (Auth_OpenID::isFailure($redirect_url)) {
@@ -659,7 +653,7 @@ if  ( !class_exists('WordpressOpenIDLogic') ) {
 				}
 			}
 			
-			$this->doRedirect($auth_request, get_option('oid_trust_root'), $return_to);
+			$this->doRedirect($auth_request, get_option('home'), $return_to);
 			exit(0);
 		}
 
