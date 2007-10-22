@@ -127,8 +127,7 @@ class WordpressOpenIDInterface {
 	function comment_form() {
 		global $user_ID;
 		if (!$user_ID) {
-			$unobtrusive = get_option('oid_enable_unobtrusive') ? 'true' : 'false';
-			echo '<script type="text/javascript">add_openid_to_comment_form('.$unobtrusive.')</script>';
+			echo '<script type="text/javascript">add_openid_to_comment_form()</script>';
 		}
 	}
 
@@ -185,13 +184,8 @@ class WordpressOpenIDInterface {
 				
 				update_option( 'oid_enable_loginform', isset($_POST['enable_loginform']) ? true : false );
 				update_option( 'oid_enable_commentform', isset($_POST['enable_commentform']) ? true : false );
-				update_option( 'oid_enable_unobtrusive', true );
 				update_option( 'oid_enable_approval', isset($_POST['enable_approval']) ? true : false );
 
-				update_option( 'oid_enable_localaccounts', 
-					(isset($_POST['enable_localaccounts']) && get_option('users_can_register')) ? true : false );
-
-				
 				if ($error !== '') {
 					echo '<div class="error"><p><strong>At least one of OpenID options was NOT updated</strong>'.$error.'</p></div>';
 				} else {
@@ -233,34 +227,6 @@ class WordpressOpenIDInterface {
 						<legend>Behavior</legend>
      									
      					<table class="optiontable editform" cellspacing="2" cellpadding="5" width="100%">
-						<tr valign="top">
-							<th style="width: 33%" scope="row">Local Accounts:</th>
-							<td>
-								<?php 
-									if (get_option('users_can_register')) {
-										$accounts_attr = get_option('oid_enable_localaccounts') ? 'checked="checked"' : '';
-									}
-									else {
-										$accounts_attr = 'disabled="disabled"';
-										echo '<p class="error">This option requires that "Anyone can register" '
-											. 'be enabled <a href="?">here</a>.</p>';
-									}
-								?>
-
-								<p><input type="checkbox" name="enable_localaccounts" id="enable_localaccounts" <?php 
-									echo $accounts_attr; ?> />
-								<label for="enable_localaccounts">Create Local Accounts</label>
-								</p>
-
-								<p>If enabled, a local WordPress account will automatically be created for 
-								each commenter who uses an OpenID.  Even with this option disabled, you may 
-								allow users to create local WordPress accounts using their OpenID by 
-								enabling "<a href="?">Anyone can register</a>" as well as "Login Form" 
-								below.</p>
-
-							</td>
-						</tr>
-
 						<tr valign="top">
 							<th style="width: 33%" scope="row">Automatic Approval:</th>
 							<td>

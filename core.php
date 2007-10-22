@@ -1,12 +1,12 @@
 <?php
 /*
-Plugin Name: WordPress OpenID (+)
-Plugin URI: http://willnorris.com/projects/wpopenid/
-Description: WordPress OpenID Registration, Authentication, and Commenting.   This is a fork of the <a href="http://verselogic.net/projects/wordpress/wordpress-openid-plugin/">original wpopenid project</a> by <a href="http://verselogic.net">Alan Castonguay</a> and Hans Granqvist, with hopes of merging it upstream in the near future.  (URLs and such have been changed so as not to confuse the two plugins.)
+Plugin Name: WordPress OpenID
+Plugin URI: http://willnorris.com/projects/wp-openid/
+Description: WordPress OpenID Registration, Authentication, and Commenting.
 Author: Will Norris
 Author URI: http://willnorris.com/
 Version: trunk
-License: Modified BSD, http://www.fsf.org/licensing/licenses/index_html#ModifiedBSD
+License: Dual GPL (http://www.fsf.org/licensing/licenses/info/GPLv2.html) and Modified BSD (http://www.fsf.org/licensing/licenses/index_html#ModifiedBSD)
 */
 
 define ( 'WPOPENID_PLUGIN_PATH', '/wp-content/plugins/openid');
@@ -118,8 +118,6 @@ if  ( !class_exists('WordpressOpenID') ) {
 			add_option( 'oid_plugin_enabled', true );
 			add_option( 'oid_plugin_revision', 0 );
 			add_option( 'oid_db_revision', 0 );
-			add_option( 'oid_enable_unobtrusive', true );
-			add_option( 'oid_enable_localaccounts', false );
 			add_option( 'oid_enable_approval', false );
 		}
 

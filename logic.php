@@ -740,9 +740,14 @@ if  ( !class_exists('WordpressOpenIDLogic') ) {
 					global $oid_user;
 					$oid_user_data =& $this->get_user_data($identity_url, $sreg);
 
-					if ( get_option('users_can_register') && 
-						( $_GET['action'] == 'loginopenid' || get_option('oid_enable_localaccounts'))) {
-							$oid_user = $this->create_new_user($identity_url, $oid_user_data);
+					if ($_GET['action'] == 'loginopenid') {
+						if ( get_option('users_can_register') ) {
+								$oid_user = $this->create_new_user($identity_url, $oid_user_data);
+						} else {
+							$this->error = 'OpenID authentication valid, but unable '
+								. 'to find an account association.';
+							$this->action = 'error';
+						}
 					} else {
 						$this->action = 'redirect';
 					}
@@ -974,23 +979,23 @@ if  ( !class_exists('WordpressOpenIDLogic') ) {
 		function bypass_option_require_name_email( $value ) {
 			global $openid_auth_request;
 
-			if (get_option('oid_enable_unobtrusive')) {
-				if (!empty($_POST['url'])) {
+			if (array_key_exists('openid_url', $_REQUEST)) {
+				if( !empty( $_REQUEST['openid_url'] ) ) {
+					return false;
+				}
+			} else {
+				if (!empty($_REQUEST['url'])) {
 					if ($this->late_bind()) { 
 						// check if url is valid OpenID by forming an auth request
 						set_error_handler( array($this, 'customer_error_handler'));
 						$consumer = $this->getConsumer();
-						$openid_auth_request = $consumer->begin( $_POST['url'] );
+						$openid_auth_request = $consumer->begin( $_REQUEST['url'] );
 						restore_error_handler();
 
 						if (null !== $openid_auth_request) {
 							return false;
 						}
 					}
-				}
-			} else {
-				if( !empty( $_POST['openid_url'] ) ) {	// same criteria as the hijack in comment_tagging
-					return false;
 				}
 			}
 
@@ -1013,15 +1018,16 @@ if  ( !class_exists('WordpressOpenIDLogic') ) {
 				$comment['comment_type']='openid';
 			}
 			
-			$url_field = (get_option('oid_enable_unobtrusive') ? 'url' : 'openid_url');
+			$openid_url = (array_key_exists('openid_url', $_REQUEST) ? $_REQUEST['openid_url'] : $_REQUEST['url']);
 
-			if( !empty( $_POST[$url_field] ) ) {  // Comment form's OpenID url is filled in.
-				$comment['comment_author_openid'] = $_POST[$url_field];
+			if( !empty($openid_url) ) {  // Comment form's OpenID url is filled in.
+				$comment['comment_author_openid'] = $openid_url;
 				$this->set_comment($comment);
-				$this->start_login( $_POST[$url_field], get_permalink( $comment['comment_post_ID'] ), 
+				$this->start_login( $openid_url, get_permalink( $comment['comment_post_ID'] ), 
 					'commentopenid', $comment['comment_post_ID'] );
 				
 				// Failure to redirect at all, the URL is malformed or unreachable. 
+
 				// Display the login form with the error.
 				if (!get_option('oid_enable_unobtrusive')) {
 					global $error;
