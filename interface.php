@@ -85,7 +85,6 @@ class WordpressOpenIDInterface {
 	 **/
 	function js_setup() {
 		wp_enqueue_script( 'jquery' );
-		//wp_enqueue_script( 'interface' );
 		wp_enqueue_script('jquery.textnode', $this->core->path . '/files/jquery.textnode.js', 
 			array('jquery'), WPOPENID_PLUGIN_REVISION);
 		wp_enqueue_script('jquery.xpath', $this->core->path . '/files/jquery.xpath.js', 
