@@ -5,6 +5,13 @@ jQuery(document).ready( function() {
 		jQuery('#openid_rollup dl').toggle();
 		return false;
 	});
+
+	/* 
+	var websiteRow = jQuery('body.wp-admin form#adduser input#url ../..');
+	openidRow = websiteRow.clone().insertAfter(websiteRow);
+	jQuery('th', openidRow).text('OpenID');
+	jQuery('td input', openidRow).attr('id', 'openid_url').attr('name', 'openid_url');
+	*/
 });
 
 function stylize_profilelink() {
