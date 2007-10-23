@@ -147,7 +147,7 @@ class WordpressOpenIDInterface {
 	 * @action: admin_menu
 	 **/
 	function add_admin_panels() {
-		add_options_page('Open ID options', 'OpenID', 8, 'global-openid-options', 
+		add_options_page('OpenID options', 'OpenID', 8, 'global-openid-options', 
 			array( $this, 'options_page')  );
 
 		if( $this->logic->enabled ) {
