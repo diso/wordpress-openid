@@ -52,6 +52,14 @@ In some cases the plugin may have problems if not enough memory has been
 allocated to PHP.  Try ensuring that the PHP memory_limit is at least greater
 than 8MB (limits of 64MB are not uncommon).
 
+= Why don't `https` OpenIDs work? =
+
+SSL certificate problems creep up when working with some OpenID providers
+(namely MyOpenID).  This is typically due to an outdated CA cert bundle being
+used by libcurl.  An explanation of the problem and a couple of solutions 
+can be found [here][libcurl].
+
+[libcurl]: http://lists.openidenabled.com/pipermail/dev/2007-August/000784.html
 
 == Screenshots ==
 
