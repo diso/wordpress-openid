@@ -27,7 +27,7 @@
  *   //   the fields in sreg_response were requested ]
  *   $sreg_resp = Auth_OpenID_SRegResponse::extractResponse(
  *                                  $sreg_req, $user_data);
- *   $sreg_resp->addToOpenIDResponse($openid_response);
+ *   $sreg_resp->toMessage($openid_response->fields);
  *
  * 3. The relying party uses {@link
  * Auth_OpenID_SRegResponse::fromSuccessResponse} to extract the data
@@ -175,9 +175,10 @@ class Auth_OpenID_SRegRequest extends Auth_OpenID_SRegBase {
      */
     function build($required=null, $optional=null,
                    $policy_url=null,
-                   $sreg_ns_uri=Auth_OpenID_SREG_NS_URI)
+                   $sreg_ns_uri=Auth_OpenID_SREG_NS_URI,
+                   $cls='Auth_OpenID_SRegRequest')
     {
-        $obj = new Auth_OpenID_SRegRequest();
+        $obj = new $cls();
 
         $obj->required = array();
         $obj->optional = array();
@@ -204,18 +205,23 @@ class Auth_OpenID_SRegRequest extends Auth_OpenID_SRegBase {
      * that were requested in the OpenID request with the given
      * arguments
      *
-     * $message: The arguments that were given for this OpenID
-     * authentication request
+     * $request: The OpenID authentication request from which to
+     * extract an sreg request.
+     *
+     * $cls: name of class to use when creating sreg request object.
+     * Used for testing.
      *
      * Returns the newly created simple registration request
      */
-    function fromOpenIDRequest($message)
+    function fromOpenIDRequest($request, $cls='Auth_OpenID_SRegRequest')
     {
-        $obj = Auth_OpenID_SRegRequest::build();
+
+        $obj = call_user_func_array(array($cls, 'build'),
+                 array(null, null, null, Auth_OpenID_SREG_NS_URI, $cls));
 
         // Since we're going to mess with namespace URI mapping, don't
         // mutate the object that was passed in.
-        $m = $message;
+        $m = $request->message;
 
         $obj->ns_uri = $obj->_getSRegNS($m);
         $args = $m->getArgs($obj->ns_uri);
@@ -465,7 +471,7 @@ class Auth_OpenID_SRegResponse extends Auth_OpenID_SRegBase {
      * Returns a simple registration response containing the data that
      * was supplied with the C{id_res} response.
      */
-    function fromSuccessResponse($success_response, $signed_only=true)
+    function fromSuccessResponse(&$success_response, $signed_only=true)
     {
         global $Auth_OpenID_sreg_data_fields;
 
@@ -491,18 +497,9 @@ class Auth_OpenID_SRegResponse extends Auth_OpenID_SRegBase {
         return $obj;
     }
 
-    /**
-     * Add the data fields contained in this simple registration
-     * response to the supplied message, in the appropriate namespace.
-     *
-     * response_message: The OpenID id_res response message that will
-     * be returned to the relying party
-     *
-     * Returns nothing; updates the response_message
-     */
-    function addToOpenIDResponse(&$response_message)
+    function getExtensionArgs()
     {
-        $response_message->updateArgs($this->ns_uri, $this->data);
+        return $this->data;
     }
 
     // Read-only dictionary interface
@@ -519,32 +516,6 @@ class Auth_OpenID_SRegResponse extends Auth_OpenID_SRegBase {
     {
         return $this->data;
     }
-}
-
-/**
- * Convenience function for copying all the sreg data that was
- * requested from a supplied set of sreg data into the response
- * message. If no data were requested, no data will be sent.
- *
- * openid_request: The OpenID (checkid_*) request that may be
- * requesting sreg data.
- *
- * data: The simple registration data to send. All requested fields
- * that are present in this dictionary will be added to the response
- * message.
- *
- * openid_response: The OpenID C{id_res} response to which the simple
- * registration data should be added
- *
- * Does not return a value; updates the openid_response instead.
- */
-function Auth_OpenID_sendSRegFields(&$openid_request, $data, &$openid_response)
-{
-    $sreg_request = Auth_OpenID_SRegRequest::fromOpenIDRequest(
-                                                   $openid_request->message);
-    $sreg_response = Auth_OpenID_SRegResponse::extractResponse(
-                                                   $sreg_request, $data);
-    $sreg_response->addToOpenIDResponse($openid_response->fields);
 }
 
 ?>

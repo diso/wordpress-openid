@@ -54,8 +54,21 @@ class Auth_Yadis_ParanoidHTTPFetcher extends Auth_Yadis_HTTPFetcher {
         return strlen($data);
     }
 
+    /**
+     * Does this fetcher support SSL URLs?
+     */
+    function supportsSSL()
+    {
+        $v = curl_version();
+        return in_array('https', $v['protocols']);
+    }
+
     function get($url, $extra_headers = null)
     {
+        if ($this->isHTTPS($url) && !$this->supportsSSL()) {
+            return null;
+        }
+
         $stop = time() + $this->timeout;
         $off = $this->timeout;
 
@@ -70,8 +83,6 @@ class Auth_Yadis_ParanoidHTTPFetcher extends Auth_Yadis_HTTPFetcher {
             }
 
             if (!$this->allowedURL($url)) {
-                trigger_error(sprintf("Fetching URL not allowed: %s", $url),
-                              E_USER_WARNING);
                 return null;
             }
 
@@ -120,9 +131,6 @@ class Auth_Yadis_ParanoidHTTPFetcher extends Auth_Yadis_HTTPFetcher {
             $off = $stop - time();
         }
 
-        trigger_error(sprintf("Timed out fetching: %s", $url),
-                      E_USER_WARNING);
-
         return null;
     }
 
@@ -130,9 +138,11 @@ class Auth_Yadis_ParanoidHTTPFetcher extends Auth_Yadis_HTTPFetcher {
     {
         $this->reset();
 
+        if ($this->isHTTPS($url) && !$this->supportsSSL()) {
+            return null;
+        }
+
         if (!$this->allowedURL($url)) {
-            trigger_error(sprintf("Fetching URL not allowed: %s", $url),
-                          E_USER_WARNING);
             return null;
         }
 
@@ -151,7 +161,6 @@ class Auth_Yadis_ParanoidHTTPFetcher extends Auth_Yadis_HTTPFetcher {
         $code = curl_getinfo($c, CURLINFO_HTTP_CODE);
 
         if (!$code) {
-            trigger_error("No HTTP code returned", E_USER_WARNING);
             return null;
         }
 

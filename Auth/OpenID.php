@@ -243,7 +243,7 @@ class Auth_OpenID {
             $pair = explode('=', $parts[$i]);
 
             if (count($pair) != 2) {
-                return null;
+                continue;
             }
 
             list($key, $value) = $pair;
@@ -381,7 +381,7 @@ class Auth_OpenID {
         }
 
         if (!$path) {
-            $path = '/';
+            $path = '';
         }
 
         $result = $scheme . "://" . $host;
@@ -448,8 +448,7 @@ class Auth_OpenID {
         if (($parsed['scheme'] == '') ||
             ($parsed['host'] == '')) {
             if ($parsed['path'] == '' &&
-                $parsed['query'] == '' &&
-                $parsed['fragment'] == '') {
+                $parsed['query'] == '') {
                 return null;
             }
 
@@ -461,15 +460,13 @@ class Auth_OpenID {
 
         $tail = array_map(array('Auth_OpenID', 'quoteMinimal'),
                           array($parsed['path'],
-                                $parsed['query'],
-                                $parsed['fragment']));
+                                $parsed['query']));
         if ($tail[0] == '') {
             $tail[0] = '/';
         }
 
         $url = Auth_OpenID::urlunparse($parsed['scheme'], $parsed['host'],
-                                       $parsed['port'], $tail[0], $tail[1],
-                                       $tail[2]);
+                                       $parsed['port'], $tail[0], $tail[1]);
 
         assert(is_string($url));
 
@@ -523,6 +520,36 @@ class Auth_OpenID {
 
         return $b;
     }
-}
 
+    function urldefrag($url)
+    {
+        $parts = explode("#", $url, 2);
+
+        if (count($parts) == 1) {
+            return array($parts[0], "");
+        } else {
+            return $parts;
+        }
+    }
+
+    function filter($callback, &$sequence)
+    {
+        $result = array();
+
+        foreach ($sequence as $item) {
+            if (call_user_func_array($callback, array($item))) {
+                $result[] = $item;
+            }
+        }
+
+        return $result;
+    }
+
+    function update(&$dest, &$src)
+    {
+        foreach ($src as $k => $v) {
+            $dest[$k] = $v;
+        }
+    }
+}
 ?>

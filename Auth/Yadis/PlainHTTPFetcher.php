@@ -26,11 +26,21 @@ require_once "Auth/Yadis/HTTPFetcher.php";
  * @package OpenID
  */
 class Auth_Yadis_PlainHTTPFetcher extends Auth_Yadis_HTTPFetcher {
+    /**
+     * Does this fetcher support SSL URLs?
+     */
+    function supportsSSL()
+    {
+        return function_exists('openssl_open');
+    }
+
     function get($url, $extra_headers = null)
     {
+        if ($this->isHTTPS($url) && !$this->supportsSSL()) {
+            return null;
+        }
+
         if (!$this->allowedURL($url)) {
-            trigger_error("Bad URL scheme in url: " . $url,
-                          E_USER_WARNING);
             return null;
         }
 
@@ -53,10 +63,6 @@ class Auth_Yadis_PlainHTTPFetcher extends Auth_Yadis_HTTPFetcher {
                 } elseif ($parts['scheme'] == 'https') {
                     $parts['port'] = 443;
                 } else {
-                    trigger_error("fetcher post method doesn't support " .
-                                  " scheme '" . $parts['scheme'] .
-                                  "', no default port available",
-                                  E_USER_WARNING);
                     return null;
                 }
             }
@@ -137,9 +143,11 @@ class Auth_Yadis_PlainHTTPFetcher extends Auth_Yadis_HTTPFetcher {
 
     function post($url, $body, $extra_headers = null)
     {
+        if ($this->isHTTPS($url) && !$this->supportsSSL()) {
+            return null;
+        }
+
         if (!$this->allowedURL($url)) {
-            trigger_error("Bad URL scheme in url: " . $url,
-                          E_USER_WARNING);
             return null;
         }
 
@@ -175,10 +183,6 @@ class Auth_Yadis_PlainHTTPFetcher extends Auth_Yadis_HTTPFetcher {
             } elseif ($parts['scheme'] == 'https') {
                 $parts['port'] = 443;
             } else {
-                trigger_error("fetcher post method doesn't support scheme '" .
-                              $parts['scheme'] .
-                              "', no default port available",
-                              E_USER_WARNING);
                 return null;
             }
         }
@@ -195,9 +199,6 @@ class Auth_Yadis_PlainHTTPFetcher extends Auth_Yadis_HTTPFetcher {
                           $this->timeout);
 
         if ($sock === false) {
-            trigger_error("Could not connect to " . $parts['host'] .
-                          " port " . $parts['port'],
-                          E_USER_WARNING);
             return null;
         }
 

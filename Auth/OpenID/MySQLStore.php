@@ -58,8 +58,11 @@ class Auth_OpenID_MySQLStore extends Auth_OpenID_SQLStore {
         $this->sql['add_nonce'] =
             "INSERT INTO %s (server_url, timestamp, salt) VALUES (?, ?, ?)";
 
-        $this->sql['get_expired'] =
-            "SELECT server_url FROM %s WHERE issued + lifetime < ?";
+        $this->sql['clean_nonce'] =
+            "DELETE FROM %s WHERE timestamp < ?";
+
+        $this->sql['clean_assoc'] =
+            "DELETE FROM %s WHERE issued + lifetime < ?";
     }
 
     /**
