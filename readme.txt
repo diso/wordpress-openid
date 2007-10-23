@@ -35,17 +35,6 @@ This plugin follows the [standard WordPress installation method][]:
 
 == Frequently Asked Questions ==
 
-= How do I get help if I have a problem? =
-
-Please direct support questions to the "Plugins and Hacks" section of the
-[WordPress.org Support Forum][].  Just make sure and include the tag 'openid'
-so that I'll see your post.  Additionally, you can file a bug
-report at <http://dev.wp-plugins.org/report>.  Existing bugs and feature
-requests can also be found at [wp-plugins.org][bugs-reports].
-
-[WordPress.org Support Forum]: http://wordpress.org/support/
-[bugs-reports]: http://dev.wp-plugins.org/report/9?COMPONENT=openid
-
 = Why do I get blank screens when I activate the plugin? =
 
 In some cases the plugin may have problems if not enough memory has been
@@ -60,6 +49,17 @@ used by libcurl.  An explanation of the problem and a couple of solutions
 can be found [here][libcurl].
 
 [libcurl]: http://lists.openidenabled.com/pipermail/dev/2007-August/000784.html
+
+= How do I get help if I have a problem? =
+
+Please direct support questions to the "Plugins and Hacks" section of the
+[WordPress.org Support Forum][].  Just make sure and include the tag 'openid'
+so that I'll see your post.  Additionally, you can file a bug
+report at <http://dev.wp-plugins.org/report>.  Existing bugs and feature
+requests can also be found at [wp-plugins.org][bugs-reports].
+
+[WordPress.org Support Forum]: http://wordpress.org/support/
+[bugs-reports]: http://dev.wp-plugins.org/report/9?COMPONENT=openid
 
 == Screenshots ==
 
