@@ -367,6 +367,8 @@ if  ( !class_exists('WordpressOpenIDLogic') ) {
 				$this->error = 'Identity url delete failed: Specified identity does not exist.';
 				return;
 			}
+
+			check_admin_referer('wp-openid-drop-identity_'.$deleted_identity_url);
 			
 			if( $this->drop_identity($id) ) {
 				$this->error = 'Identity url delete successful. <b>' . $deleted_identity_url 

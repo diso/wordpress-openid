@@ -174,6 +174,8 @@ class WordpressOpenIDInterface {
 			// if we're posted back an update, let's set the values here
 			if ( isset($_POST['info_update']) ) {
 			
+				check_admin_referer('wp-openid-info_update');
+
 				$error = '';
 				
 				update_option( 'oid_enable_commentform', isset($_POST['enable_commentform']) ? true : false );
@@ -242,6 +244,7 @@ class WordpressOpenIDInterface {
      					</table>
      				</fieldset>
 
+					<?php wp_nonce_field('wp-openid-info_update'); ?>
      				<p class="submit"><input type="submit" name="info_update" value="<?php _e('Update options') ?> &raquo;" /></p>
      			</form>
 			</div>
@@ -299,7 +302,8 @@ class WordpressOpenIDInterface {
 					<th scope="row" style="text-align: center"><?php echo $v['uurl_id']; ?></td>
 					<td><a href="<?php echo $v['url']; ?>"><?php echo $v['url']; ?></a></td>
 					<td style="text-align: center"><a class="delete" href="<?php 
-					echo sprintf('?page=%s&action=drop_identity&id=%s', $this->profile_page_name, $v['uurl_id']); 
+					echo wp_nonce_url(sprintf('?page=%s&action=drop_identity&id=%s', $this->profile_page_name, $v['uurl_id']), 
+					'wp-openid-drop-identity_'.$v['url']);
 					?>">Delete</a></td>
 				</tr>
 
