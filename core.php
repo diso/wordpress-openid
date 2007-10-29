@@ -130,14 +130,14 @@ if  ( !class_exists('WordpressOpenID') ) {
 
 // The variable in use here should probably be something other than $log. Too great a chance of collision. Probably causing http://willnorris.com/2007/10/plugin-updates#comment-13625
 if (isset($wp_version)) {
-	#$log = &Log::singleton('error_log', PEAR_LOG_TYPE_SYSTEM, 'WPOpenID');
-	$log = &Log::singleton('file', ABSPATH . get_option('upload_path') . '/php.log', 'WPOpenID');
+	#$wpopenid_log = &Log::singleton('error_log', PEAR_LOG_TYPE_SYSTEM, 'WPOpenID');
+	$wpopenid_log = &Log::singleton('file', ABSPATH . get_option('upload_path') . '/php.log', 'WPOpenID');
 
 	// Set the log level
-	$log_level = constant('PEAR_LOG_' . strtoupper(WPOPENID_LOG_LEVEL));
-	$log->setMask(Log::UPTO($log_level));
+	$wpopenid_log_level = constant('PEAR_LOG_' . strtoupper(WPOPENID_LOG_LEVEL));
+	$wpopenid_log->setMask(Log::UPTO($wpopenid_log_level));
 
-	$openid = new WordpressOpenID($log);
+	$openid = new WordpressOpenID($wpopenid_log);
 	$openid->startup();
 }
 
