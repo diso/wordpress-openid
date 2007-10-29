@@ -68,7 +68,7 @@ if  ( !class_exists('WordpressOpenID') ) {
 
 			// Kickstart
 			//register_activation_hook( $this->path.'/core.php', array( $this->logic, 'late_bind' ) );
-			register_deactivation_hook( $this->path.'/core.php', array( $this->logic, 'destroy_tables' ) );
+			register_deactivation_hook( $this->path.'/core.php', array( $this->logic, 'deactivate_plugin' ) );
 
 			// Add hooks to handle actions in WordPress
 			add_action( 'wp_authenticate', array( $this->logic, 'wp_authenticate' ) ); // openid loop start

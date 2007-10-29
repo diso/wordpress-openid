@@ -16,6 +16,7 @@ if( class_exists( 'Auth_OpenID_MySQLStore' ) && !class_exists('WP_OpenIDStore'))
 
 		$this->associations_table_name = (isset($wpdb->base_prefix) ? $wpdb->base_prefix : $wpdb->prefix ). 'openid_associations';
 		$this->nonces_table_name = (isset($wpdb->base_prefix) ? $wpdb->base_prefix : $wpdb->prefix ) . 'openid_nonces';
+		$this->identity_table_name =  (isset($wpdb->base_prefix) ? $wpdb->base_prefix : $wpdb->prefix ) . 'openid_identities';
 
         $conn = new WP_OpenIDConnection( $wpdb );
         parent::Auth_OpenID_MySQLStore(
@@ -49,11 +50,30 @@ if( class_exists( 'Auth_OpenID_MySQLStore' ) && !class_exists('WP_OpenIDStore'))
         $statements = array(
             $this->sql['nonce_table'],
             $this->sql['assoc_table'],
-                            );
+
+			"CREATE TABLE $this->identity_table_name (
+				uurl_id bigint(20) NOT NULL auto_increment,
+				user_id bigint(20) NOT NULL default '0',
+				url text,
+				hash char(32),
+				PRIMARY KEY  (uurl_id),
+				UNIQUE KEY uurl (hash),
+				KEY url (url(30)),
+				KEY user_id (user_id)
+			)",
+        );
+
         $sql = implode(';', $statements);
         dbDelta($sql);
     }
 
+	function destroy_tables() {
+		global $wpdb;
+		$sql = 'drop table '. $this->associations_table_name;
+		$wpdb->query($sql);
+		$sql = 'drop table '. $this->nonces_table_name;
+		$wpdb->query($sql);
+	}
 
     function dbCleanup() {
     	    

@@ -16,7 +16,6 @@ if  ( !class_exists('WordpressOpenIDLogic') ) {
 
 		var $enabled = true;
 
-		var $identity_url_table_name;
 		var $flag_doing_openid_comment = false;
 
 		var $bind_done = false;
@@ -121,7 +120,6 @@ if  ( !class_exists('WordpressOpenIDLogic') ) {
 
 			global $wpdb;
 			$this->core->setStatus('database: WordPress\' table prefix', 'info', isset($wpdb->base_prefix) ? $wpdb->base_prefix : $wpdb->prefix );
-			$this->identity_url_table_name =  (isset($wpdb->base_prefix) ? $wpdb->base_prefix : $wpdb->prefix ) . 'openid_identities';
 
 			$this->core->log->debug("Bootstrap -- checking tables");
 			if( $this->enabled ) {
@@ -170,41 +168,25 @@ if  ( !class_exists('WordpressOpenIDLogic') ) {
 			}
 
 			$store->dbDelta();
-			
-			// Table for storing UserID <--> URL associations.
-			$identity_url_table_sql = "CREATE TABLE $this->identity_url_table_name (
-				uurl_id bigint(20) NOT NULL auto_increment,
-				user_id bigint(20) NOT NULL default '0',
-				url text,
-				hash char(32),
-				PRIMARY KEY  (uurl_id),
-				UNIQUE KEY uurl (hash),
-				KEY url (url(30)),
-				KEY user_id (user_id)
-				);";
-			
-			dbDelta($identity_url_table_sql);
 		}
 
 
 		/*
 		 * Cleanup by dropping nonce and association tables. Called on plugin deactivate.
 		 */
-		function destroy_tables() {
-			global $wpdb;
+		function deactivate_plugin() {
 			$this->late_bind();
-			if( $this->getStore() == null) {
+			$store =& $this->getStore();
+
+			if( $store == null) {
 				$this->error = 'OpenIDConsumer: Disabled. Cannot locate libraries, therefore cannot clean '
 					. 'up database tables. Fix the libraries, or drop the tables yourself.';
 				$this->core->log->notice($this->error);
 				return;
 			}
+
 			$this->core->log->debug('Dropping all database tables.');
-			$store =& $this->getStore();
-			$sql = 'drop table '. $store->associations_table_name;
-			$wpdb->query($sql);
-			$sql = 'drop table '. $store->nonces_table_name;
-			$wpdb->query($sql);
+			$store->destroy_tables();
 		}
 		
 
@@ -220,7 +202,7 @@ if  ( !class_exists('WordpressOpenIDLogic') ) {
 			$ok = true;
 			$message = '';
 			$tables = array( $store->associations_table_name, $store->nonces_table_name,
-				$this->identity_url_table_name );
+				$store->identity_table_name );
 			foreach( $tables as $t ) {
 				$message .= empty($message) ? '' : '<br/>';
 				if( $wpdb->get_var("SHOW TABLES LIKE '$t'") != $t ) {
@@ -459,18 +441,18 @@ if  ( !class_exists('WordpressOpenIDLogic') ) {
 
 		/* Application-specific database operations */
 		function get_my_identities( $id = 0 ) {
+			global $userdata;
 			$this->late_bind();
 			$store =& $this->getStore();
-			global $userdata;
 			if( !$this->enabled ) return array();
 			if( $id ) {
 				return $store->connection->getOne( 
-					"SELECT url FROM $this->identity_url_table_name WHERE user_id = %s AND uurl_id = %s",
+					"SELECT url FROM $store->identity_table_name WHERE user_id = %s AND uurl_id = %s",
 					array( (int)$userdata->ID, (int)$id ) );
 			} else {
 
 				return $store->connection->getAll( 
-					"SELECT uurl_id,url FROM $this->identity_url_table_name WHERE user_id = %s",
+					"SELECT uurl_id,url FROM $store->identity_table_name WHERE user_id = %s",
 					array( (int)$userdata->ID ) );
 			}
 		}
@@ -484,7 +466,7 @@ if  ( !class_exists('WordpressOpenIDLogic') ) {
 			$old_show_errors = $wpdb->show_errors;
 			if( $old_show_errors ) $wpdb->hide_errors();
 			$ret = @$store->connection->query( 
-				"INSERT INTO $this->identity_url_table_name (user_id,url,hash) VALUES ( %s, %s, MD5(%s) )",
+				"INSERT INTO $store->identity_table_name (user_id,url,hash) VALUES ( %s, %s, MD5(%s) )",
 				array( (int)$userdata->ID, $url, $url ) );
 			if( $old_show_errors ) $wpdb->show_errors();
 
@@ -547,7 +529,7 @@ if  ( !class_exists('WordpressOpenIDLogic') ) {
 
 			if( !$this->enabled ) return false;
 			return $store->connection->query( 
-				"DELETE FROM $this->identity_url_table_name WHERE user_id = %s", 
+				"DELETE FROM $store->identity_table_name WHERE user_id = %s", 
 				array( (int)$userid ) );
 		}
 		
@@ -558,7 +540,7 @@ if  ( !class_exists('WordpressOpenIDLogic') ) {
 
 			if( !$this->enabled ) return false;
 			return $store->connection->query( 
-				"DELETE FROM $this->identity_url_table_name WHERE user_id = %s AND uurl_id = %s",
+				"DELETE FROM $store->identity_table_name WHERE user_id = %s AND uurl_id = %s",
 				array( (int)$userdata->ID, (int)$id ) );
 		}
 		
@@ -568,7 +550,7 @@ if  ( !class_exists('WordpressOpenIDLogic') ) {
 
 			if( !$this->enabled ) return false;
 			return $store->connection->getOne( 
-				"SELECT user_id FROM $this->identity_url_table_name WHERE url = %s",
+				"SELECT user_id FROM $store->identity_table_name WHERE url = %s",
 				array( $url ) );
 		}
 
