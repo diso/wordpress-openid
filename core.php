@@ -131,6 +131,7 @@ if  ( !class_exists('WordpressOpenID') ) {
 	}
 }
 
+// The variable in use here should probably be something other than $log. Too great a chance of collision. Probably causing http://willnorris.com/2007/10/plugin-updates#comment-13625
 if (isset($wp_version)) {
 	#$log = &Log::singleton('error_log', PEAR_LOG_TYPE_SYSTEM, 'WPOpenID');
 	$log = &Log::singleton('file', ABSPATH . get_option('upload_path') . '/php.log', 'WPOpenID');

@@ -120,8 +120,8 @@ if  ( !class_exists('WordpressOpenIDLogic') ) {
 			restore_include_path();
 
 			global $wpdb;
-			$this->core->setStatus('database: WordPress\' table prefix', 'info', $wpdb->prefix );
-			$this->identity_url_table_name = ($wpdb->prefix . 'openid_identities');
+			$this->core->setStatus('database: WordPress\' table prefix', 'info', isset($wpdb->base_prefix) ? $wpdb->base_prefix : $wpdb->prefix );
+			$this->identity_url_table_name =  (isset($wpdb->base_prefix) ? $wpdb->base_prefix : $wpdb->prefix ) . 'openid_identities';
 
 			$this->core->log->debug("Bootstrap -- checking tables");
 			if( $this->enabled ) {
@@ -143,7 +143,7 @@ if  ( !class_exists('WordpressOpenIDLogic') ) {
 		 * Create tables if needed by running dbDelta calls. Upgrade safe. Called on plugin activate.
 		 */
 		function create_tables() {
-			global $wp_version;
+			global $wp_version, $wpdb;
 			$this->late_bind();
 			$store =& $this->getStore();
 
@@ -163,10 +163,10 @@ if  ( !class_exists('WordpressOpenIDLogic') ) {
 			}
 
 			if ($wp_version >= '2.3') {
-				require_once(ABSPATH . '/wp-admin/includes/upgrade.php');
+				require_once(ABSPATH . 'wp-admin/includes/upgrade.php');
 			} else {
 				require_once(ABSPATH . 'wp-admin/admin-db.php');
-				require_once(ABSPATH . '/wp-admin/upgrade-functions.php');
+				require_once(ABSPATH . 'wp-admin/upgrade-functions.php');
 			}
 
 			$store->dbDelta();
@@ -209,7 +209,7 @@ if  ( !class_exists('WordpressOpenIDLogic') ) {
 		
 
 		/*
-		 * Check to see whether the none, association, and settings tables exist.
+		 * Check to see whether the nonce, association, and settings tables exist.
 		 */
 		function check_tables($retry=true) {
 			$this->late_bind();
@@ -330,8 +330,8 @@ if  ( !class_exists('WordpressOpenIDLogic') ) {
 					}
 
 					global $userdata;
-					if($userdata->ID === $this->get_user_by_identity($auth_request->endpoint->identity_url)) {
-						$this->error = 'The specified url is already bound to this account, dummy';
+					if($userdata->ID === $this->get_user_by_identity($auth_request->endpoint->claimed_id)) {
+						$this->error = 'The specified url is already bound to this account, dummy.';
 						break;
 					}
 
@@ -352,7 +352,7 @@ if  ( !class_exists('WordpressOpenIDLogic') ) {
 
 					if( !$this->insert_identity( $identity_url ) ) {
 						$this->error = 'OpenID assertion successful, but this URL is already claimed by '
-							. 'another user on this blog. This is probably a bug';
+							. 'another user on this blog. This is probably a bug.';
 					} else {
 						$this->action = 'success';
 					}
@@ -373,12 +373,12 @@ if  ( !class_exists('WordpressOpenIDLogic') ) {
 					
 					if( $this->drop_identity( $_GET['id'] ) ) {
 						$this->error = 'Identity url delete successful. <b>' . $deleted_identity_url 
-							. '</b> removed';
+							. '</b> removed.';
 						$this->action= 'success';
 						break;
 					}
 					
-					$this->error = 'Identity url delete failed: Unknown reason';
+					$this->error = 'Identity url delete failed: Unknown reason.';
 					break;
 			}
 		}
@@ -707,9 +707,8 @@ if  ( !class_exists('WordpressOpenIDLogic') ) {
 					if( wp_login( $user->user_login, md5($user->user_pass), true ) ) {
 						$this->core->log->debug('OpenIDConsumer: Returning user logged in: '
 							.$user->user_login); 
-						do_action('wp_login', $user_login);
-						wp_clearcookie();
 						wp_setcookie($user->user_login, md5($user->user_pass), true, '', '', true);
+						do_action('wp_login', $user_login);
 						
 						// put user data into an array to be stored with the comment itself
 						$oid_user_data = array( 
@@ -738,6 +737,7 @@ if  ( !class_exists('WordpressOpenIDLogic') ) {
 						if ( get_option('users_can_register') ) {
 								$oid_user = $this->create_new_user($identity_url, $oid_user_data);
 						} else {
+							// TODO - Start a registration loop in WPMU.
 							$this->error = 'OpenID authentication valid, but unable '
 								. 'to find an account association.';
 							$this->action = 'error';
@@ -753,7 +753,7 @@ if  ( !class_exists('WordpressOpenIDLogic') ) {
 			}
 			
 
-			$this->core->log->debug('OpenIDConsumer: Finish Auth for "' . $response->identity_url . 
+			$this->core->log->debug('OpenIDConsumer: Finish Auth for "' . $identity_url . 
 				'". ' . $this->error );
 			
 			if( $this->action == 'redirect' ) {
@@ -762,7 +762,7 @@ if  ( !class_exists('WordpressOpenIDLogic') ) {
 				} else if ( !empty($_REQUEST['comment_post_ID']) ) {
 					$redirect_to = get_permalink($_REQUEST['comment_post_ID']);
 				}
-					
+				
 				if( $_GET['action'] == 'commentopenid' ) {
 					$comment_id = $this->post_comment($oid_user_data);
 					$redirect_to .= '#comment-' . $comment_id;
@@ -773,7 +773,8 @@ if  ( !class_exists('WordpressOpenIDLogic') ) {
 				if( $redirect_to == '/wp-admin' and !$user->has_cap('edit_posts') ) 
 					$redirect_to = '/wp-admin/profile.php';
 
-				wp_redirect( $redirect_to );
+				wp_safe_redirect( $redirect_to );
+				exit();
 			}
 
 			global $action;

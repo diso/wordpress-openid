@@ -344,13 +344,17 @@ class WordpressOpenIDInterface {
 		
 		$curl_message = '';
 		if( function_exists('curl_version') ) {
-			$curl_version = curl_version;
+			$curl_version = curl_version();
 			if(isset($curl_version['version']))  	
-				$curl_message = 'Version ' . $curl_version['version'] . '. ';
+				$curl_message .= 'Version ' . $curl_version['version'] . '. ';
 			if(isset($curl_version['ssl_version']))	
-				$curl_message = 'SSL: ' . $curl_version['ssl_version'] . '. ';
+				$curl_message .= 'SSL: ' . $curl_version['ssl_version'] . '. ';
+			if(isset($curl_message['libz_version']))
+				$curl_message .= 'zlib: ' . $curl_version['libz_version'] . '. ';
+			if(isset($curl_version['protocols']))
+				$curl_message .= 'Supports: ' . implode(', ',$curl_version['protocols']) . '. ';
 		}
-		$this->core->setStatus( 'Curl version', function_exists('curl_version'), function_exists('curl_version') ? $curl_message :
+		$this->core->setStatus( 'Curl ' . $curl_message, function_exists('curl_version'), function_exists('curl_version') ? $curl_message :
 				'This PHP installation does not have support for libcurl. Some functionality, such as fetching https:// URLs, will be missing and performance will slightly impared. See <a href="http://www.php.net/manual/en/ref.curl.php">php.net/manual/en/ref.curl.php</a> about enabling libcurl support for PHP.');
 
 		/* Check for Long Integer math library */
