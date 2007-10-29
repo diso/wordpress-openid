@@ -83,7 +83,7 @@ if  ( !class_exists('WordpressOpenID') ) {
 			add_action( 'sanitize_comment_cookies', array( $this->logic, 'sanitize_comment_cookies'), 15);
 			
 			// If user is dropped from database, remove their identities too.
-			add_action( 'delete_user', array( $this->logic, 'drop_all_identities_for_user' ) );	
+			add_action( 'delete_user', array( $this->logic->store, 'drop_all_identities_for_user' ) );	
 
 			// include internal stylesheet
 			add_action( 'wp_head', array( $this->interface, 'style'));

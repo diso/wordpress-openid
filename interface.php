@@ -282,7 +282,7 @@ class WordpressOpenIDInterface {
 
 		<?php
 		
-		$urls = $this->logic->get_my_identities();
+		$urls = $this->logic->store->get_my_identities();
 
 		if( count($urls) ) : ?>
 			<p>There are <?php echo count($urls); ?> OpenID identities associated with this WordPress user.</p>

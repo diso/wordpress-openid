@@ -1,24 +1,33 @@
 <?php
-
+/**
+ * store.php
+ *
+ * Database Connector for wp-openid
+ * Dual Licence: GPL & Modified BSD
+ */
 require_once 'Auth/OpenID/DatabaseConnection.php';
 require_once 'Auth/OpenID/SQLStore.php';
 require_once 'Auth/OpenID/MySQLStore.php';
 
-if( class_exists( 'Auth_OpenID_MySQLStore' ) && !class_exists('WP_OpenIDStore')) {
-	class WP_OpenIDStore extends Auth_OpenID_MySQLStore {
+if( class_exists( 'Auth_OpenID_MySQLStore' ) && !class_exists('WordpressOpenIDStore')) {
+	class WordpressOpenIDStore extends Auth_OpenID_MySQLStore {
+
+		var $core;				// WordpressOpenID instance
 
 		var $associations_table_name;
 		var $nonces_table_name;
+		var $identity_table_name;
 
-		function WP_OpenIDStore()
+		function WordpressOpenIDStore($core)
 		{
 			global $wpdb;
+			$this->core =& $core;
 
 			$this->associations_table_name = (isset($wpdb->base_prefix) ? $wpdb->base_prefix : $wpdb->prefix ). 'openid_associations';
 			$this->nonces_table_name = (isset($wpdb->base_prefix) ? $wpdb->base_prefix : $wpdb->prefix ) . 'openid_nonces';
 			$this->identity_table_name =  (isset($wpdb->base_prefix) ? $wpdb->base_prefix : $wpdb->prefix ) . 'openid_identities';
 
-			$conn = new WP_OpenIDConnection( $wpdb );
+			$conn = new WordpressOpenIDConnection( $wpdb );
 			parent::Auth_OpenID_MySQLStore(
 				$conn,
 				$this->associations_table_name,
@@ -40,6 +49,41 @@ if( class_exists( 'Auth_OpenID_MySQLStore' ) && !class_exists('WP_OpenIDStore'))
 		{
 			return $blob;
 		}
+
+		/*
+		 * Check to see whether the nonce, association, and identity tables exist.
+		 */
+		function check_tables($retry=true) {
+			global $wpdb;
+
+			$ok = true;
+			$message = '';
+			$tables = array( 
+				$this->associations_table_name, 
+				$this->nonces_table_name,
+				$this->identity_table_name,
+			);
+			foreach( $tables as $t ) {
+				$message .= empty($message) ? '' : '<br/>';
+				if( $wpdb->get_var("SHOW TABLES LIKE '$t'") != $t ) {
+					$ok = false;
+					$message .= "Table $t doesn't exist.";
+				} else {
+					$message .= "Table $t exists.";
+				}
+			}
+			
+			if( $retry and !$ok) {
+				$this->core->setStatus( 'database tables', false, 
+					'Tables not created properly. Trying to create..' );
+				$this->create_tables();
+				$ok = $this->check_tables( false );
+			} else {
+				$this->core->setStatus( 'database tables', $ok?'info':false, $message );
+			}
+			return $ok;
+		}
+
 
 		/**
 		 * WordPress database upgrade functions
@@ -78,9 +122,14 @@ if( class_exists( 'Auth_OpenID_MySQLStore' ) && !class_exists('WP_OpenIDStore'))
 
 		function destroy_tables() {
 			global $wpdb;
-			$sql = 'drop table '. $this->associations_table_name;
+			$sql = 'drop table ' . $this->associations_table_name;
 			$wpdb->query($sql);
-			$sql = 'drop table '. $this->nonces_table_name;
+			$sql = 'drop table ' . $this->nonces_table_name;
+			$wpdb->query($sql);
+
+			// just in case they've upgraded from an old version
+			$settings_table_name = (isset($wpdb->base_prefix) ? $wpdb->base_prefix : $wpdb->prefix ).'openid_settings';
+			$sql = "drop table $settings_table_name";
 			$wpdb->query($sql);
 		}
 
@@ -129,20 +178,74 @@ if( class_exists( 'Auth_OpenID_MySQLStore' ) && !class_exists('WP_OpenIDStore'))
 			$this->sql['get_expired'] =
 				"SELECT server_url FROM %s WHERE issued + lifetime < %%s";
 		}
+
+
+		/* Application-specific database operations */
+		function get_my_identities( $id = 0 ) {
+			global $userdata;
+			if( $id ) {
+				return $this->connection->getOne( 
+					"SELECT url FROM $this->identity_table_name WHERE user_id = %s AND uurl_id = %s",
+					array( (int)$userdata->ID, (int)$id ) 
+				);
+			} else {
+				return $this->connection->getAll( 
+					"SELECT uurl_id,url FROM $this->identity_table_name WHERE user_id = %s",
+					array( (int)$userdata->ID ) 
+				);
+			}
+		}
+
+
+		function insert_identity($url) {
+			global $userdata, $wpdb;
+
+			$old_show_errors = $wpdb->show_errors;
+			if( $old_show_errors ) $wpdb->hide_errors();
+			$ret = @$this->connection->query( 
+				"INSERT INTO $this->identity_table_name (user_id,url,hash) VALUES ( %s, %s, MD5(%s) )",
+				array( (int)$userdata->ID, $url, $url ) );
+			if( $old_show_errors ) $wpdb->show_errors();
+
+			return $ret;
+		}
+
+		
+		function drop_all_identities_for_user($userid) {
+			return $this->connection->query( 
+				"DELETE FROM $this->identity_table_name WHERE user_id = %s", 
+				array( (int)$userid ) 
+			);
+		}
+		
+		function drop_identity($id) {
+			global $userdata;
+			return $this->connection->query( 
+				"DELETE FROM $this->identity_table_name WHERE user_id = %s AND uurl_id = %s",
+				array( (int)$userdata->ID, (int)$id ) 
+			);
+		}
+		
+		function get_user_by_identity($url) {
+			return $this->connection->getOne( 
+				"SELECT user_id FROM $this->identity_table_name WHERE url = %s",
+				array( $url ) 
+			);
+		}
 	}
 }
 
 
 /**
- * WP_OpenIDConnection class implements a PEAR-style database connection using the WordPress WPDB object.
+ * WordpressOpenIDConnection class implements a PEAR-style database connection using the WordPress WPDB object.
  * Written by Josh Hoyt
  * Modified to support setFetchMode() by Alan J Castonguay, 2006-06-16 
  */
-if (  class_exists('Auth_OpenID_DatabaseConnection') && !class_exists('WP_OpenIDConnection') ) {
-	class WP_OpenIDConnection extends Auth_OpenID_DatabaseConnection {
+if (  class_exists('Auth_OpenID_DatabaseConnection') && !class_exists('WordpressOpenIDConnection') ) {
+	class WordpressOpenIDConnection extends Auth_OpenID_DatabaseConnection {
 		var $fetchmode = ARRAY_A;  // to fix PHP Fatal error:  Cannot use object of type stdClass as array in /usr/local/php5/lib/php/Auth/OpenID/SQLStore.php on line 495
 		
-		function WP_OpenIDConnection(&$wpdb) {
+		function WordpressOpenIDConnection(&$wpdb) {
 			$this->wpdb =& $wpdb;
 		}
 		function _fmt($sql, $args) {
