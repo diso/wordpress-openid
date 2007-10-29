@@ -74,9 +74,6 @@ if  ( !class_exists('WordpressOpenID') ) {
 			add_action( 'wp_authenticate', array( $this->logic, 'wp_authenticate' ) ); // openid loop start
 			add_action( 'init', array( $this->logic, 'finish_login' ) ); // openid loop done
 
-			// Start and finish the redirect loop for the admin pages profile.php & users.php
-			add_action( 'init', array( $this->logic, 'admin_page_handler' ) );
-
 			// Comment filtering
 			add_action( 'preprocess_comment', array( $this->logic, 'comment_tagging' ), -99999 );
 			add_filter( 'option_require_name_email', array( $this->logic, 'bypass_option_require_name_email') );

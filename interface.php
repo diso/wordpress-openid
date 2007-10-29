@@ -11,6 +11,8 @@ class WordpressOpenIDInterface {
 	var $logic;  // Hold core logic instance
 	var $core;  // Hold core instance
 
+	var $profile_page_name = 'openid';
+
 	/**
 	 * Constructor.
 	 */
@@ -152,8 +154,9 @@ class WordpressOpenIDInterface {
 
 		if( $this->logic->enabled ) {
 			$hookname =	add_submenu_page('profile.php', 'Your OpenIDs', 'Your OpenIDs', 
-				'read', 'your-openid-identities', array($this, 'profile_panel') );
+				'read', $this->profile_page_name, array($this, 'profile_panel') );
 			add_action("admin_head-$hookname", array( $this, 'style' ));
+			add_action("load-$hookname", array( $this->logic, 'openid_profile_management' ));
 		}
 	}
 
@@ -295,7 +298,9 @@ class WordpressOpenIDInterface {
 				<tr class="alternate">
 					<th scope="row" style="text-align: center"><?php echo $v['uurl_id']; ?></td>
 					<td><a href="<?php echo $v['url']; ?>"><?php echo $v['url']; ?></a></td>
-					<td style="text-align: center"><a class="delete" href="?page=your-openid-identities&action=drop_identity&id=<?php echo $v['uurl_id']; ?>">Delete</a></td>
+					<td style="text-align: center"><a class="delete" href="<?php 
+					echo sprintf('?page=%s&action=drop_identity&id=%s', $this->profile_page_name, $v['uurl_id']); 
+					?>">Delete</a></td>
 				</tr>
 
 			<?php endforeach; ?>

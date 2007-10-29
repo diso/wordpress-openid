@@ -242,13 +242,10 @@ if  ( !class_exists('WordpressOpenIDLogic') ) {
 
 
 		/**
-		 * Start and finish the redirect loop, for the admin pages profile.php & users.php
+		 * Start and finish the redirect loop for the admin pages profile.php & users.php
 		 **/
-		function admin_page_handler() {
+		function openid_profile_management() {
 			global $wp_version;
-
-			if( !isset( $_GET['page'] )) return;
-			if( 'your-openid-identities' != plugin_basename( stripslashes($_GET['page']) ) ) return;
 
 			if( !isset( $_REQUEST['action'] )) return;
 			
@@ -267,89 +264,118 @@ if  ( !class_exists('WordpressOpenIDLogic') ) {
 
 			if( !$this->late_bind() ) return; // something is broken
 			
-			// Construct self-referential url for redirects.
-			if ( current_user_can('edit_users') ) $parent_file = 'users.php';
-			else $parent_file = 'profile.php';
-			$self = get_option('siteurl') . '/wp-admin/' . $parent_file . '?page=your-openid-identities';
-			
 			switch( $this->action ) {
-				case 'add_identity':			// Verify identity, return with add_identity_ok
-					$claimed_url = $_POST['openid_url'];
-					
-					if ( empty( $claimed_url ) ) return;
-					$this->core->log->debug('OpenIDConsumer: Attempting bind for "' . $claimed_url . '"');
-
-					set_error_handler( array($this, 'customer_error_handler'));
-					$consumer = $this->getConsumer();
-					$auth_request = $consumer->begin( $claimed_url );
-					restore_error_handler();
-
-					// TODO: Better error handling.
-					if ( null === $auth_request ) {
-						$this->error = 'Could not discover an OpenID identity server endpoint at the url: '
-							. htmlentities( $claimed_url );
-						if( strpos( $claimed_url, '@' ) ) {
-							// Special case a failed url with an @ sign in it.
-							// Users entering email addresses are probably chewing soggy crayons.
-							$this->error .= '<br/>The address you specified had an @ sign in it, but '
-								. 'OpenID Identities are not email addresses, and should probably not '
-								. 'contain an @ sign.';
-						}
-						break;
-					}
-
-					global $userdata;
-					if($userdata->ID === $this->get_user_by_identity($auth_request->endpoint->claimed_id)) {
-						$this->error = 'The specified url is already bound to this account, dummy.';
-						break;
-					}
-
-					$return_to = $self . '&action=add_identity_ok';
-
-					$this->doRedirect($auth_request, get_option('home'), $return_to);
-
-					exit(0);
+				case 'add_identity': 	// Verify identity, return with add_identity_ok
+					$this->_profile_add_identity();
 					break;
 					
 				case 'add_identity_ok': // Return from verify loop.
-
-					if ( !isset( $_GET['openid_mode'] ) ) break; // no mode? probably a spoof or bad cancel.
-
-					$identity_url = $this->finish_openid_auth();
-
-					if (!$identity_url) break;
-
-					if( !$this->insert_identity( $identity_url ) ) {
-						$this->error = 'OpenID assertion successful, but this URL is already claimed by '
-							. 'another user on this blog. This is probably a bug.';
-					} else {
-						$this->action = 'success';
-					}
-
+					$this->_profile_add_identity_ok();
 					break;
 					
 				case 'drop_identity':  // Remove a binding.
-					if( !isset( $_GET['id'])) {
-						$this->error = 'Identity url delete failed: ID paramater missing.';
-						break;
-					}
-
-					$deleted_identity_url = $this->get_my_identities( $_GET['id'] );
-					if( FALSE === $deleted_identity_url ) {
-						$this->error = 'Identity url delete failed: Specified identity does not exist.';
-						break;
-					}
-					
-					if( $this->drop_identity( $_GET['id'] ) ) {
-						$this->error = 'Identity url delete successful. <b>' . $deleted_identity_url 
-							. '</b> removed.';
-						$this->action= 'success';
-						break;
-					}
-					
-					$this->error = 'Identity url delete failed: Unknown reason.';
+					$this->_profile_drop_identity();
 					break;
 			}
+		}
+
+
+		/**
+		 * Step 1 of adding new identity URL to user account.
+		 *
+		 * @private
+		 **/
+		function _profile_add_identity() {
+			$claimed_url = $_POST['openid_url'];
+			
+			if ( empty($claimed_url) ) return;
+			$this->core->log->debug('OpenIDConsumer: Attempting bind for "' . $claimed_url . '"');
+
+			set_error_handler( array($this, 'customer_error_handler'));
+			$consumer = $this->getConsumer();
+			$auth_request = $consumer->begin( $claimed_url );
+			restore_error_handler();
+
+			// TODO: Better error handling.
+			if ( null === $auth_request ) {
+				$this->error = 'Could not discover an OpenID identity server endpoint at the url: '
+					. htmlentities( $claimed_url );
+				if( strpos( $claimed_url, '@' ) ) {
+					// Special case a failed url with an @ sign in it.
+					// Users entering email addresses are probably chewing soggy crayons.
+					$this->error .= '<br/>The address you specified had an @ sign in it, but '
+						. 'OpenID Identities are not email addresses, and should probably not '
+						. 'contain an @ sign.';
+				}
+				return;
+			}
+
+			global $userdata;
+			if($userdata->ID === $this->get_user_by_identity($auth_request->endpoint->claimed_id)) {
+				$this->error = 'The specified url is already bound to this account, dummy.';
+				return;
+			}
+
+			$return_to = get_option('siteurl') . '/wp-admin/'
+				.  (current_user_can('edit_users') ? 'users.php' : 'profile.php') 
+				. '?page='.$this->core->interface->profile_page_name.'&action=add_identity_ok';
+
+			$this->doRedirect($auth_request, get_option('home'), $return_to);
+
+			exit(0);
+		}
+
+
+		/**
+		 * Step 2 of adding new identity URL to user account.
+		 *
+		 * @private
+		 **/
+		function _profile_add_identity_ok() {
+			if ( !isset( $_GET['openid_mode'] ) ) {
+				return; // no mode? probably a spoof or bad cancel.
+			}
+
+			$identity_url = $this->finish_openid_auth();
+			if (!$identity_url) return;
+
+			if( !$this->insert_identity($identity_url) ) {
+				// TODO should we check for this duplication *before* authenticating the ID?
+				$this->error = 'OpenID assertion successful, but this URL is already claimed by '
+					. 'another user on this blog. This is probably a bug.';
+			} else {
+				$this->action = 'success';
+			}
+		}
+
+
+		/**
+		 * Remove identity URL from user account.
+		 *
+		 * @private
+		 **/
+		function _profile_drop_identity() {
+			$id = $_GET['id'];
+
+			if( !isset( $id)) {
+				$this->error = 'Identity url delete failed: ID paramater missing.';
+				return;
+			}
+
+			$deleted_identity_url = $this->get_my_identities($id);
+			if( FALSE === $deleted_identity_url ) {
+				$this->error = 'Identity url delete failed: Specified identity does not exist.';
+				return;
+			}
+			
+			if( $this->drop_identity($id) ) {
+				$this->error = 'Identity url delete successful. <b>' . $deleted_identity_url 
+					. '</b> removed.';
+				$this->action= 'success';
+				return;
+			}
+			
+			$this->error = 'Identity url delete failed: Unknown reason.';
 		}
 
 
@@ -461,56 +487,7 @@ if  ( !class_exists('WordpressOpenIDLogic') ) {
 				array( (int)$userdata->ID, $url, $url ) );
 			if( $old_show_errors ) $wpdb->show_errors();
 
-			if (get_option('oid_enable_foaf')) {
-				if($foaf = $this->fetch_foaf_profile($url)) 
-					update_usermeta((int)$userdata->ID, 'foaf', $foaf);
-
-				if($sioc = $this->fetch_sioc_profile($url)) 
-					update_usermeta((int)$userdata->ID, 'sioc', $sioc);
-			}
-
 			return $ret;
-		}
-
-		function fetch_foaf_profile($url) {
-			return $this->fetch_auto_discovery($url, 'foaf');
-		}
-
-		function fetch_sioc_profile($url) {
-			return $this->fetch_auto_discovery($url, 'sioc');
-		}
-		 
-		/*
-		 * FOAF and SIOC auto-discovery thanks to Alexandre Passant
-		 * (http://apassant.net/blog/2007/09/23/retrieving-foaf-profile-from-openid/)
-		 */
-		function fetch_auto_discovery($url, $type) {	
-			$profile = null;
-			$html = file_get_contents($url);
-			preg_match_all('/<head.*<link.*rel="meta".*title="'.$type.'".*href="(.*)".*\/>.*<\/head>/Usi', 
-				$html, $links);
-
-			if($links) {
-				if($link = $links[1][0]) {
-					$ex = parse_url($link);
-					if ($ex['scheme']) {
-						$profile = $link;
-					}
-					elseif (substr($ex['path'], 0, 1) == '/') {
-						$ex = parse_url($url);
-						$profile = $ex['scheme'].'://'.$ex['host'].$link;
-					}
-					else {
-						$profile =  $url.$link;
-					}
-				}
-			}
-
-			if ($profile) {
-				$this->core->log->debug("found $type profile: $profile");
-			}
-
-			return $profile;
 		}
 
 		
