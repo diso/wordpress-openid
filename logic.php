@@ -50,7 +50,7 @@ if  ( !class_exists('WordpressOpenIDLogic') ) {
 		 */
 		function getStore() {
 			if (!isset($this->store)) {
-				require_once 'wpdb-pear-wrapper.php';
+				require_once 'store.php';
 
 				$this->store = new WordpressOpenIDStore($this->core);
 				if (null === $this->store) {
