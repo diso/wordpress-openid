@@ -44,8 +44,17 @@ if( class_exists( 'Auth_OpenID_MySQLStore' ) && !class_exists('WP_OpenIDStore'))
 		/**
 		 * WordPress database upgrade functions
 		 */
-		function dbDelta()
+		function create_tables()
 		{
+			global $wp_version, $wpdb;
+
+			if ($wp_version >= '2.3') {
+				require_once(ABSPATH . 'wp-admin/includes/upgrade.php');
+			} else {
+				require_once(ABSPATH . 'wp-admin/admin-db.php');
+				require_once(ABSPATH . 'wp-admin/upgrade-functions.php');
+			}
+
 			// Create the SQL and call the WP schema upgrade function
 			$statements = array(
 				$this->sql['nonce_table'],

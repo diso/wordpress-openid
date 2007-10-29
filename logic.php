@@ -88,12 +88,15 @@ if  ( !class_exists('WordpressOpenIDLogic') ) {
 			return $this->_consumer;
 		}
 		
+
 		/** 
 		 * Initialize required store and consumer and make a few sanity checks.  This method 
 		 * does a lot of the heavy lifting to get everything initialized, so we don't call it 
 		 * until we actually need it.
 		 */
 		function late_bind($reload = false) {
+			global $wpdb;
+
 			$this->core->log->debug('beginning late binding');
 
 			$this->enabled = true; // Be Optimistic
@@ -118,7 +121,6 @@ if  ( !class_exists('WordpressOpenIDLogic') ) {
 			require_once('Auth/OpenID/SReg.php');
 			restore_include_path();
 
-			global $wpdb;
 			$this->core->setStatus('database: WordPress\' table prefix', 'info', isset($wpdb->base_prefix) ? $wpdb->base_prefix : $wpdb->prefix );
 
 			$this->core->log->debug("Bootstrap -- checking tables");
@@ -134,45 +136,25 @@ if  ( !class_exists('WordpressOpenIDLogic') ) {
 				$this->error = 'WPOpenID Core is Disabled!';
 				update_option('oid_plugin_enabled', false);
 			}
+
 			return $this->enabled;
 		}
 		
-		/*
-		 * Create tables if needed by running dbDelta calls. Upgrade safe. Called on plugin activate.
+
+		/**
+		 * Called on plugin activation.
+		 *
+		 * @see register_activation_hook
 		 */
-		function create_tables() {
-			global $wp_version, $wpdb;
+		function activate_plugin() {
 			$this->late_bind();
-			$store =& $this->getStore();
-
-			if( false == $this->enabled ) {  // do nothing if something bad happened
-				$this->error = 'OpenID Consumer could not be activated, something bad happened. Skipping '
-					. 'table create. Check libraries.';
-				$this->core->log->debug($this->error);
-				echo $this->error;
-				return false;
-			}
-			if( null == $store ) {
-				$this->error = 'OpenID Consumer could not be activated, because the store could not be '
-					. 'created properly. Are the database files in place?';
-				$this->core->log->debug($this->error);
-				echo $this->error;
-				return false;				
-			}
-
-			if ($wp_version >= '2.3') {
-				require_once(ABSPATH . 'wp-admin/includes/upgrade.php');
-			} else {
-				require_once(ABSPATH . 'wp-admin/admin-db.php');
-				require_once(ABSPATH . 'wp-admin/upgrade-functions.php');
-			}
-
-			$store->dbDelta();
 		}
 
 
-		/*
-		 * Cleanup by dropping nonce and association tables. Called on plugin deactivate.
+		/**
+		 * Called on plugin deactivation.  Cleanup all transient tables.
+		 *
+		 * @see register_deactivation_hook
 		 */
 		function deactivate_plugin() {
 			$this->late_bind();
@@ -201,8 +183,11 @@ if  ( !class_exists('WordpressOpenIDLogic') ) {
 			global $wpdb;
 			$ok = true;
 			$message = '';
-			$tables = array( $store->associations_table_name, $store->nonces_table_name,
-				$store->identity_table_name );
+			$tables = array( 
+				$store->associations_table_name, 
+				$store->nonces_table_name,
+				$store->identity_table_name,
+			);
 			foreach( $tables as $t ) {
 				$message .= empty($message) ? '' : '<br/>';
 				if( $wpdb->get_var("SHOW TABLES LIKE '$t'") != $t ) {
@@ -214,9 +199,9 @@ if  ( !class_exists('WordpressOpenIDLogic') ) {
 			}
 			
 			if( $retry and !$ok) {
-				$this->core->setStatus( 'database tables', false, 'Tables not created properly. Trying to '
-					. 'create..' );
-				$this->create_tables();
+				$this->core->setStatus( 'database tables', false, 
+					'Tables not created properly. Trying to create..' );
+				$store->create_tables();
 				$ok = $this->check_tables( false );
 			} else {
 				$this->core->setStatus( 'database tables', $ok?'info':false, $message );

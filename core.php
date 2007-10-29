@@ -67,7 +67,7 @@ if  ( !class_exists('WordpressOpenID') ) {
 			add_action( 'admin_menu', array( $this->interface, 'add_admin_panels' ) );
 
 			// Kickstart
-			//register_activation_hook( $this->path.'/core.php', array( $this->logic, 'late_bind' ) );
+			register_activation_hook( $this->path.'/core.php', array( $this->logic, 'activate_plugin' ) );
 			register_deactivation_hook( $this->path.'/core.php', array( $this->logic, 'deactivate_plugin' ) );
 
 			// Add hooks to handle actions in WordPress
