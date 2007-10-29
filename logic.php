@@ -14,6 +14,8 @@ if  ( !class_exists('WordpressOpenIDLogic') ) {
 		var $error;		  // User friendly error message, defaults to ''.
 		var $action;	  // Internal action tag. '', 'error', 'redirect'.
 
+		var $response;
+
 		var $enabled = true;
 
 		var $flag_doing_openid_comment = false;
@@ -313,7 +315,7 @@ if  ( !class_exists('WordpressOpenIDLogic') ) {
 
 					if ( !isset( $_GET['openid_mode'] ) ) break; // no mode? probably a spoof or bad cancel.
 
-					list($identity_url, $sreg) = $this->finish_openid_auth();
+					$identity_url = $this->finish_openid_auth();
 
 					if (!$identity_url) break;
 
@@ -385,36 +387,39 @@ if  ( !class_exists('WordpressOpenIDLogic') ) {
 		}
 
 		
+		/**
+		 * Finish OpenID Authentication.
+		 *
+		 * @param 	object		OpenID Consumer
+		 * @return	String		authenticated Identity URL
+		 */
 		function finish_openid_auth() {
 			set_error_handler( array($this, 'customer_error_handler'));
 			$consumer = $this->getConsumer();
-			$response = $consumer->complete();
+			$this->response = $consumer->complete();
 			restore_error_handler();
 			
-			switch( $response->status ) {
+			switch( $this->response->status ) {
 				case Auth_OpenID_CANCEL:
 					$this->error = 'OpenID assertion cancelled'; 
 					break;
 
 				case Auth_OpenID_FAILURE:
-					$this->error = 'OpenID assertion failed: ' . $response->message; 
+					$this->error = 'OpenID assertion failed: ' . $this->response->message; 
 					break;
 
 				case Auth_OpenID_SUCCESS:
 					$this->error = 'OpenID assertion successful';
 
-					$openid = $response->identity_url;
-					$esc_identity = htmlspecialchars($openid, ENT_QUOTES);
-					$this->core->log->notice('Got back identity URL ' . $esc_identity);
+					$identity_url = $this->response->identity_url;
+					$escaped_url = htmlspecialchars($identity_url, ENT_QUOTES);
+					$this->core->log->notice('Got back identity URL ' . $escaped_url);
 
-					if ($response->endpoint->canonicalID) {
-						$this->core->log->notice('XRI CanonicalID: ' . $response->endpoint->canonicalID);
+					if ($this->response->endpoint->canonicalID) {
+						$this->core->log->notice('XRI CanonicalID: ' . $this->response->endpoint->canonicalID);
 					}
 
-					$sreg_resp = Auth_OpenID_SRegResponse::fromSuccessResponse($response);
-					$sreg = $sreg_resp->contents();
-					
-					return array($esc_identity, $sreg);
+					return $escaped_url;
 
 				default:
 					$this->error = 'Unknown Status. Bind not successful. This is probably a bug';
@@ -441,6 +446,7 @@ if  ( !class_exists('WordpressOpenIDLogic') ) {
 					array( (int)$userdata->ID ) );
 			}
 		}
+
 
 		function insert_identity($url) {
 			global $userdata, $wpdb;
@@ -658,7 +664,7 @@ if  ( !class_exists('WordpressOpenIDLogic') ) {
 			unset( $_POST['user_login'] );
 			unset( $_POST['user_pass'] );
 
-			list($identity_url, $sreg) = $this->finish_openid_auth();
+			$identity_url = $this->finish_openid_auth();
 
 			if ($identity_url) {
 				$this->error = 'OpenID Authentication Success.';
@@ -696,9 +702,7 @@ if  ( !class_exists('WordpressOpenIDLogic') ) {
 					
 				} else {
 
-					global $oid_user_data;
-					global $oid_user;
-					$oid_user_data =& $this->get_user_data($identity_url, $sreg);
+					$oid_user_data =& $this->get_user_data($identity_url);
 
 					if ($_GET['action'] == 'loginopenid') {
 						if ( get_option('users_can_register') ) {
@@ -807,51 +811,120 @@ if  ( !class_exists('WordpressOpenIDLogic') ) {
 		}
 
 
-		function get_user_data($identity_url, $sreg) {
-			$oid_user_data = array( 'ID' => null,
+		/**
+		 * Get user data for the given identity URL.  Data is returned as an associative array with the keys:
+		 *   ID, user_url, user_nicename, display_name
+		 *
+		 * Multiple soures of data may be available and are attempted in the following order:
+		 *   - OpenID Attribute Exchange      !! not yet implemented
+		 * 	 - OpenID Simple Registration
+		 * 	 - hCard discovery                !! not yet implemented
+		 * 	 - WordPress comment form
+		 * 	 - default to identity URL
+		 */
+		function get_user_data($identity_url) {
+
+			$data = array( 
+				'ID' => null,
 				'user_url' => $identity_url,
 				'user_nicename' => $identity_url,
-				'display_name' => $identity_url );
+				'display_name' => $identity_url 
+			);
 		
 			// create proper website URL if OpenID is an i-name
 			if (preg_match('/^[\=\@\+].+$/', $identity_url)) {
-				$oid_user_data['user_url'] = 'http://xri.net/' . $identity_url;
+				$data['user_url'] = 'http://xri.net/' . $identity_url;
 			}
 
-			if ($sreg) {
-				if( isset( $sreg['email'])) $oid_user_data['user_email'] = $sreg['email'];
-				if( isset( $sreg['nickname'])) {
-					$oid_user_data['nickname'] = $sreg['nickname'];
-					$oid_user_data['user_nicename'] = $sreg['nickname'];
-					$oid_user_data['display_name'] = $sreg['nickname'];
-				}
-				if( isset($sreg['fullname']) ) {
-					$namechunks = explode( ' ', $sreg['fullname'], 2 );
-					if( isset($namechunks[0]) ) $oid_user_data['first_name'] = $namechunks[0];
-					if( isset($namechunks[1]) ) $oid_user_data['last_name'] = $namechunks[1];
-					$oid_user_data['display_name'] = $sreg['fullname'];
-				}
-			} else {
-				$comment = $this->get_comment();
-				if( isset( $comment['comment_author_email'])) 
-					$oid_user_data['user_email'] = $comment['comment_author_email'];
-				if( isset( $comment['comment_author'])) {
-					$namechunks = explode( ' ', $comment['comment_author'], 2 );
-					if( isset($namechunks[0]) ) $oid_user_data['first_name'] = $namechunks[0];
-					if( isset($namechunks[1]) ) $oid_user_data['last_name'] = $namechunks[1];
-					$oid_user_data['display_name'] = $comment['comment_author'];
-				}
+
+			$result = $this->get_user_data_sreg($identity_url, $data);
+
+			if (!$result) {
+				$result = $this->get_user_data_form($identity_url, $data);
 			}
 
-			return $oid_user_data;
+			return $data;
 		}
 
 
+		/**
+		 * Retrieve user data from OpenID Attribute Exchange.
+		 *
+		 * @see get_user_data
+		 */
+		function get_user_data_ax($identity_url, &$data) {
+			// TODO
+		}
+
+
+		/**
+		 * Retrieve user data from OpenID Simple Registration.
+		 *
+		 * @see get_user_data
+		 */
+		function get_user_data_sreg($identity_url, &$data) {
+
+			$sreg_resp = Auth_OpenID_SRegResponse::fromSuccessResponse($this->response);
+			$sreg = $sreg_resp->contents();
+
+			$this->core->log->debug(var_export($sreg, true));
+			if (!$sreg) return false;
+
+			if( isset( $sreg['email'])) {
+				$data['user_email'] = $sreg['email'];
+			}
+
+			if( isset( $sreg['nickname'])) {
+				$data['nickname'] = $sreg['nickname'];
+				$data['user_nicename'] = $sreg['nickname'];
+				$data['display_name'] = $sreg['nickname'];
+			}
+
+			if( isset($sreg['fullname']) ) {
+				$namechunks = explode( ' ', $sreg['fullname'], 2 );
+				if( isset($namechunks[0]) ) $data['first_name'] = $namechunks[0];
+				if( isset($namechunks[1]) ) $data['last_name'] = $namechunks[1];
+				$data['display_name'] = $sreg['fullname'];
+			}
+
+			return true;
+		}
+
+
+		/**
+		 * Retrieve user data from hCard discovery.
+		 *
+		 * @see get_user_data
+		 */
+		function get_user_data_hcard($identity_url, &$data) {
+			// TODO
+		}
+
+
+		/**
+		 * Retrieve user data from WordPress comment form.
+		 *
+		 * @see get_user_data
+		 */
+		function get_user_data_form($identity_url, &$data) {
+			$comment = $this->get_comment();
+			if( isset( $comment['comment_author_email'])) 
+				$data['user_email'] = $comment['comment_author_email'];
+			if( isset( $comment['comment_author'])) {
+				$namechunks = explode( ' ', $comment['comment_author'], 2 );
+				if( isset($namechunks[0]) ) $data['first_name'] = $namechunks[0];
+				if( isset($namechunks[1]) ) $data['last_name'] = $namechunks[1];
+				$data['display_name'] = $comment['comment_author'];
+			}
+		}
+
+
+		/** 
+		 * Transparent inline login and commenting.
+		 * The comment text is in the session.
+		 * Post it and redirect to the permalink.
+		 */
 		function post_comment(&$oid_user_data) {
-			/* Transparent inline login and commenting.
-			 * The comment text is in the session.
-			 * Post it and redirect to the permalink.
-			 */
 			
 			$comment = $this->get_comment();
 			$comment_content = $comment['comment_content'];
