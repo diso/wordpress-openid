@@ -1001,7 +1001,7 @@ class Auth_OpenID_GenericConsumer {
         // Endpoint is either bad (failed verification) or None
         $result = $this->_discoverAndVerify($to_match);
 
-        if (is_a($result, 'Auth_OpenID_TypeURIMismatch')) {
+        if (is_a($result, 'Auth_OpenID_TypeURIMismatch') || is_a($result, 'Auth_OpenID_FailureResponse')) {
             return $this->_discoverAndVerify($to_match_1_0);
         } else {
             return $result;
