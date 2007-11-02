@@ -177,7 +177,6 @@ if  ( !class_exists('WordpressOpenIDLogic') ) {
 		
 
 
-
 		/*
 		 * Customer error handler for calls into the JanRain library
 		 */
@@ -198,7 +197,8 @@ if  ( !class_exists('WordpressOpenIDLogic') ) {
 				if( !$this->late_bind() ) return; // something is broken
 				$redirect_to = '';
 				if( !empty( $_REQUEST['redirect_to'] ) ) $redirect_to = $_REQUEST['redirect_to'];
-				$this->start_login( $_POST['openid_url'], $redirect_to );
+				$this->start_login( $_POST['openid_url'], '/wp-login.php', 'loginopenid',
+				   array('redirect_to' => $redirect_to) );
 			}
 			if( !empty( $this->error ) ) {
 				global $error;
@@ -231,12 +231,14 @@ if  ( !class_exists('WordpressOpenIDLogic') ) {
 			if( !$this->late_bind() ) return; // something is broken
 			
 			switch( $this->action ) {
-				case 'add_identity': 	// Verify identity, return with add_identity_ok
-					$this->_profile_add_identity();
+				case 'add_identity':
+					$return_to = '/wp-admin/' . (current_user_can('edit_users') ? 'users.php' : 'profile.php');
+					$this->start_login($_POST['openid_url'], $return_to, 'verify_identity',
+						array('page'=>$this->core->interface->profile_page_name));
 					break;
 					
-				case 'add_identity_ok': // Return from verify loop.
-					$this->_profile_add_identity_ok();
+				case 'verify_identity': // Return from verify loop.
+					$this->_profile_verify_identity();
 					break;
 					
 				case 'drop_identity':  // Remove a binding.
@@ -247,59 +249,12 @@ if  ( !class_exists('WordpressOpenIDLogic') ) {
 
 
 		/**
-		 * Step 1 of adding new identity URL to user account.
-		 *
-		 * @private
-		 **/
-		function _profile_add_identity() {
-			$claimed_url = $_POST['openid_url'];
-			
-			if ( empty($claimed_url) ) return;
-			$this->core->log->debug('OpenIDConsumer: Attempting bind for "' . $claimed_url . '"');
-
-			set_error_handler( array($this, 'customer_error_handler'));
-			$consumer = $this->getConsumer();
-			$auth_request = $consumer->begin( $claimed_url );
-			restore_error_handler();
-
-			// TODO: Better error handling.
-			if ( null === $auth_request ) {
-				$this->error = 'Could not discover an OpenID identity server endpoint at the url: '
-					. htmlentities( $claimed_url );
-				if( strpos( $claimed_url, '@' ) ) {
-					// Special case a failed url with an @ sign in it.
-					// Users entering email addresses are probably chewing soggy crayons.
-					$this->error .= '<br/>The address you specified had an @ sign in it, but '
-						. 'OpenID Identities are not email addresses, and should probably not '
-						. 'contain an @ sign.';
-				}
-				return;
-			}
-
-			global $userdata;
-
-			if($userdata->ID === $this->store->get_user_by_identity($auth_request->endpoint->claimed_id)) {
-				$this->error = 'The specified url is already bound to this account, dummy.';
-				return;
-			}
-
-			$return_to = get_option('siteurl') . '/wp-admin/'
-				.  (current_user_can('edit_users') ? 'users.php' : 'profile.php') 
-				. '?page='.$this->core->interface->profile_page_name.'&action=add_identity_ok';
-
-			$this->doRedirect($auth_request, get_option('home'), $return_to);
-
-			exit(0);
-		}
-
-
-		/**
 		 * Step 2 of adding new identity URL to user account.
 		 *
 		 * @private
 		 **/
-		function _profile_add_identity_ok() {
-			if ( !isset( $_GET['openid_mode'] ) ) {
+		function _profile_verify_identity() {
+			if ( !isset($_GET['openid_mode']) ) {
 				return; // no mode? probably a spoof or bad cancel.
 			}
 
@@ -348,6 +303,9 @@ if  ( !class_exists('WordpressOpenIDLogic') ) {
 		}
 
 
+		/**
+		 * Send the user to their OpenID provider to authenticate.
+		 **/
 		function doRedirect($auth_request, $trust_root, $return_to) {
 			if ($auth_request->shouldSendRedirect()) {
 				if (substr($trust_root, -1, 1) != '/') $trust_root .= '/';
@@ -459,9 +417,9 @@ if  ( !class_exists('WordpressOpenIDLogic') ) {
 		 * Called from wp_authenticate (for login form) and comment_tagging (for comment form)
 		 * If using comment form, specify optional parameters action=commentopenid and wordpressid=PostID.
 		 */
-		function start_login( $claimed_url, $redirect_to, $action='loginopenid', $wordpressid=0 ) {
+		function start_login( $claimed_url, $return_to, $action, $arguments ) {
 
-			if ( empty( $claimed_url ) ) return; // do nothing.
+			if ( empty($claimed_url) ) return; // do nothing.
 			
 			if( !$this->late_bind() ) return; // something is broken
 
@@ -486,24 +444,29 @@ if  ( !class_exists('WordpressOpenIDLogic') ) {
 			}
 			
 			$this->core->log->debug('OpenIDConsumer: Is an OpenID url. Starting redirect.');
-			
-			$return_to = get_option('siteurl') . "/wp-login.php?action=$action";
-			if( $wordpressid ) $return_to .= "&wordpressid=$wordpressid";
-			if( !empty( $redirect_to ) ) $return_to .= '&redirect_to=' . urlencode( $redirect_to );
-			
-			/* If we've never heard of this url before, add the SREG extension.
-				NOTE: Anonymous clients could attempt to authenticate with a series of OpenID urls, and
-				the presence or lack of SREG exposes whether a given OpenID has an account at this site. */
-			if( $this->store->get_user_by_identity( $auth_request->endpoint->identity_url ) == NULL ) {
-				$sreg_request = Auth_OpenID_SRegRequest::build(
-					// required
-					array(), 
-					//optional
-					array('nickname', 'email', 'fullname'));
 
-				if ($sreg_request) {
-					$auth_request->addExtension($sreg_request);	
+
+			// build return_to URL
+			$return_to = get_option('siteurl') . $return_to . "?action=$action";
+			if (is_array($arguments) && !empty($arguments)) {
+				foreach ($arguments as $k => $v) {
+					if ($k && $v) {
+						$return_to .= sprintf('&%s=%s', urlencode($k), urlencode($v));
+					}
 				}
+			}
+			
+
+			/* If we've never heard of this url before, do attribute query */
+			if( $this->store->get_user_by_identity( $auth_request->endpoint->identity_url ) == NULL ) {
+				$attribute_query = true;
+			}
+			if ($attribute_query) {
+				// SREG
+				$sreg_request = Auth_OpenID_SRegRequest::build(array(),array('nickname','email','fullname'));
+				if ($sreg_request) $auth_request->addExtension($sreg_request);
+
+				// AX
 			}
 			
 			$this->doRedirect($auth_request, get_option('home'), $return_to);
@@ -937,8 +900,12 @@ if  ( !class_exists('WordpressOpenIDLogic') ) {
 			if( !empty($openid_url) ) {  // Comment form's OpenID url is filled in.
 				$comment['comment_author_openid'] = $openid_url;
 				$this->set_comment($comment);
-				$this->start_login( $openid_url, get_permalink( $comment['comment_post_ID'] ), 
-					'commentopenid', $comment['comment_post_ID'] );
+				$this->start_login( $openid_url, '/wp-login.php', 'commentopenid', 
+					array(
+						'wordpressid' => $comment['comment_post_ID'],
+						'redirect_to' => get_permalink( $comment['comment_post_ID'] ), 
+					)
+				);
 				
 				// Failure to redirect at all, the URL is malformed or unreachable. 
 
