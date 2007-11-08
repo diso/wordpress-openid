@@ -587,7 +587,11 @@ if  ( !class_exists('WordpressOpenIDLogic') ) {
 				if( $redirect_to == '/wp-admin' and !$user->has_cap('edit_posts') ) 
 					$redirect_to = '/wp-admin/profile.php';
 
-				wp_safe_redirect( $redirect_to );
+				if (function_exists('wp_safe_redirect')) {
+					wp_safe_redirect( $redirect_to );
+				} else {
+					wp_redirect( $redirect_to );
+				}
 				exit();
 			}
 
