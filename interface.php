@@ -67,9 +67,7 @@ class WordpressOpenIDInterface {
 	 * @filter: get_comment_author_link
 	 **/
 	function comment_author_link( $html ) {
-		global $comment_is_openid;
-		get_comment_type();
-		if( $comment_is_openid === true ) {
+		if( is_comment_openid() ) {
 			if (preg_match('/<a[^>]* class=[^>]+>/', $html)) {
 				return preg_replace( '/(<a[^>]* class=[\'"]?)/', '\\1openid_link ' , $html );
 			} else {

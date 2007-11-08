@@ -14,18 +14,23 @@ if( class_exists( 'Auth_OpenID_MySQLStore' ) && !class_exists('WordpressOpenIDSt
 
 		var $core;				// WordpressOpenID instance
 
+		var $table_prefix;
 		var $associations_table_name;
 		var $nonces_table_name;
 		var $identity_table_name;
+		var $comments_table_name;
 
 		function WordpressOpenIDStore($core)
 		{
 			global $wpdb;
 			$this->core =& $core;
 
-			$this->associations_table_name = (isset($wpdb->base_prefix) ? $wpdb->base_prefix : $wpdb->prefix ). 'openid_associations';
-			$this->nonces_table_name = (isset($wpdb->base_prefix) ? $wpdb->base_prefix : $wpdb->prefix ) . 'openid_nonces';
-			$this->identity_table_name =  (isset($wpdb->base_prefix) ? $wpdb->base_prefix : $wpdb->prefix ) . 'openid_identities';
+			$this->table_prefix = isset($wpdb->base_prefix) ? $wpdb->base_prefix : $wpdb->prefix;
+
+			$this->associations_table_name = $this->table_prefix . 'openid_associations';
+			$this->nonces_table_name = $this->table_prefix . 'openid_nonces';
+			$this->identity_table_name =  $this->table_prefix . 'openid_identities';
+			$this->comments_table_name =  $this->table_prefix . 'comments';
 
 			$conn = new WordpressOpenIDConnection( $wpdb );
 			parent::Auth_OpenID_MySQLStore(
@@ -118,6 +123,12 @@ if( class_exists( 'Auth_OpenID_MySQLStore' ) && !class_exists('WordpressOpenIDSt
 
 			$sql = implode(';', $statements);
 			dbDelta($sql);
+
+			// add column to comments table
+			maybe_add_column($this->comments_table_name, 'openid', 
+				"ALTER TABLE $this->comments_table_name ADD `openid` TINYINT(1) NOT NULL DEFAULT '0'");
+
+			$wpdb->query("update $this->comments_table_name set `comment_type`='', `openid`=1 where `comment_type`='openid'");
 		}
 
 		function destroy_tables() {
@@ -129,7 +140,7 @@ if( class_exists( 'Auth_OpenID_MySQLStore' ) && !class_exists('WordpressOpenIDSt
 
 			// just in case they've upgraded from an old version
 			$settings_table_name = (isset($wpdb->base_prefix) ? $wpdb->base_prefix : $wpdb->prefix ).'openid_settings';
-			$sql = "drop table $settings_table_name";
+			$sql = "drop table if exists $settings_table_name";
 			$wpdb->query($sql);
 		}
 

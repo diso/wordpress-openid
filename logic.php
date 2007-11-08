@@ -797,16 +797,9 @@ if  ( !class_exists('WordpressOpenIDLogic') ) {
 				exit;
 			}
 			
-			/*
-			if ( !$user->ID )
-				die( __('Sorry, you must be logged in to post a comment.')
-					.' If OpenID isn\'t working for you, try anonymous commenting.' );
-			 */
-			
 			$comment_author       = $wpdb->escape($oid_user_data['display_name']);
 			$comment_author_email = $wpdb->escape($oid_user_data['user_email']);
 			$comment_author_url   = $wpdb->escape($oid_user_data['user_url']);
-			$comment_type         = 'openid';
 			$user_ID              = $oid_user_data['ID'];
 			$this->flag_doing_openid_comment = true;
 
@@ -832,9 +825,37 @@ if  ( !class_exists('WordpressOpenIDLogic') ) {
 				add_filter('pre_comment_approved', array($this, 'comment_approval'));
 			}
 
-			return wp_new_comment( $commentdata );
+			$comment_ID = wp_new_comment( $commentdata );
+
+			$this->set_comment_openid($comment_ID);
+
+			return $comment_ID;
 		}
 
+
+		/**
+		 * For comments that were handled by WordPress normally (not our code), check if the author 
+		 * registered with OpenID and set comment openid flag if so.
+		 *
+		 * @action post_comment
+		 */
+		function check_author_openid($comment_ID) {
+			$comment = get_comment($comment_ID);
+			if ( $comment->user_id && get_usermeta($comment->user_id, 'registered_with_openid') ) {
+				$this->set_comment_openid($comment_ID);
+			}
+		}
+
+
+		/**
+		 * Mark the provided comment as an OpenID comment
+		 */
+		function set_comment_openid($comment_ID) {
+			global $wpdb;
+
+			$comments_table = $this->store->comments_table_name;
+			$wpdb->query("UPDATE $comments_table SET openid=1 WHERE comment_ID='$comment_ID' LIMIT 1");
+		}
 
 
 		/* These functions are used to store the comment
@@ -881,7 +902,6 @@ if  ( !class_exists('WordpressOpenIDLogic') ) {
 		
 		/*
 		 * Called when comment is submitted via preprocess_comment hook.
-		 * Set the comment_type to 'openid', so it can be drawn differently by theme.
 		 * If comment is submitted along with an openid url, store comment, and do authentication.
 		 *
 		 * regarding comment_type: http://trac.wordpress.org/ticket/2659
@@ -890,10 +910,6 @@ if  ( !class_exists('WordpressOpenIDLogic') ) {
 			global $current_user;
 
 			if (!$this->enabled) return $comment;
-			
-			if( get_usermeta($current_user->ID, 'registered_with_openid') ) {
-				$comment['comment_type']='openid';
-			}
 			
 			$openid_url = (array_key_exists('openid_url', $_POST) ? $_POST['openid_url'] : $_POST['url']);
 
@@ -923,45 +939,6 @@ if  ( !class_exists('WordpressOpenIDLogic') ) {
 		}
 
 
-
-		/* Hooks to clean up wp_notify_postauthor() emails
-		 * Tries to call as few functions as required */
-		/* These are necessary because our comment_type is 'openid', but wordpress is expecting 'comment' */
-		function comment_notification_text( $notify_message_original, $comment_id ) {
-			if( $this->flag_doing_openid_comment ) {
-				$comment = get_comment( $comment_id );
-				
-				if( 'openid' == $comment->comment_type ) {
-					$post = get_post($comment->comment_post_ID);
-					$youcansee = __('You can see all comments on this post here: ');
-					if( !strpos( $notify_message_original, $youcansee ) ) { // notification message missing, prepend it
-						$notify_message  = sprintf( __('New comment on your post #%1$s "%2$s"'), $comment->comment_post_ID, $post->post_title ) . "\r\n";
-						$notify_message .= sprintf( __('Author : %1$s (IP: %2$s , %3$s)'), $comment->comment_author, $comment->comment_author_IP, $comment_author_domain ) . "\r\n";
-						$notify_message .= sprintf( __('E-mail : %s'), $comment->comment_author_email ) . "\r\n";
-						$notify_message .= sprintf( __('URL    : %s'), $comment->comment_author_url ) . "\r\n";
-						$notify_message .= sprintf( __('Whois  : http://ws.arin.net/cgi-bin/whois.pl?queryinput=%s'), $comment->comment_author_IP ) . "\r\n";
-						$notify_message .= __('Comment: ') . "\r\n" . $comment->comment_content . "\r\n\r\n";
-						$notify_message .= $youcansee . "\r\n";
-						return $notify_message . $notify_message_original;
-					}
-				}
-			}
-			return $notify_message_original;
-		}
-		function comment_notification_subject( $subject, $comment_id ) {
-			if( $this->flag_doing_openid_comment ) {
-				$comment = get_comment( $comment_id );
-				
-				if( 'openid' == $comment->comment_type and empty( $subject ) ) {
-					$blogname = get_option('blogname');
-					$post = get_post($comment->comment_post_ID);
-					$subject = sprintf( __('[%1$s] OpenID Comment: "%2$s"'), $blogname, $post->post_title );
-				}
-			}
-			return $subject;
-		}
-
-
 		/**
 		 * This filter callback is only set when a new OpenID comment is made.  
 		 * For now it just approves all OpenID comments, but later it could do 
@@ -970,6 +947,7 @@ if  ( !class_exists('WordpressOpenIDLogic') ) {
 		function comment_approval($approved) {
 			return 1;
 		}
+
 
 		/**
 		 * Get any additional comments awaiting moderation by this user.  WordPress
@@ -987,10 +965,11 @@ if  ( !class_exists('WordpressOpenIDLogic') ) {
 			$url_db  = $wpdb->escape($comment_author_url);
 
 			if ($url_db) {
+				$comments_table = $this->store->comments_table_name;
 				$additional = $wpdb->get_results(
-					"SELECT * FROM $wpdb->comments"
+					"SELECT * FROM $comments_table"
 					. " WHERE comment_post_ID = '$post_id'"
-					. " AND comment_type = 'openid'"             // get OpenID comments
+					. " AND openid = 1"             // get OpenID comments
 					. " AND comment_author_url = '$url_db'"      // where only the URL matches
 					. ($user_ID ? " AND user_id != '$user_ID'" : '')
 					. ($author_db ? " AND comment_author != '$author_db'" : '')
@@ -1004,7 +983,6 @@ if  ( !class_exists('WordpressOpenIDLogic') ) {
 						'return strcmp($a->comment_date_gmt, $b->comment_date_gmt);'));
 				}
 			}
-
 
 			return $comments;
 		}

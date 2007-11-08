@@ -17,7 +17,7 @@ define ( 'WPOPENID_PLUGIN_REVISION', preg_replace( '/\$Rev: (.+) \$/', 'svn-\\1'
 define ( 'WPOPENID_DB_REVISION', 20675);      // last plugin revision that required database schema changes
 
 
-define ( 'WPOPENID_LOG_LEVEL', 'warning');     // valid values are debug, info, notice, warning, err, crit, alert, emerg
+define ( 'WPOPENID_LOG_LEVEL', 'debug');     // valid values are debug, info, notice, warning, err, crit, alert, emerg
 
 set_include_path( dirname(__FILE__) . PATH_SEPARATOR . get_include_path() );   // Add plugin directory to include path temporarily
 
@@ -76,9 +76,8 @@ if  ( !class_exists('WordpressOpenID') ) {
 
 			// Comment filtering
 			add_action( 'preprocess_comment', array( $this->logic, 'comment_tagging' ), -99999 );
+			add_action( 'comment_post', array( $this->logic, 'check_author_openid' ), 5 );
 			add_filter( 'option_require_name_email', array( $this->logic, 'bypass_option_require_name_email') );
-			add_filter( 'comment_notification_subject', array( $this->logic, 'comment_notification_subject'), 10, 2 );
-			add_filter( 'comment_notification_text', array( $this->logic, 'comment_notification_text'), 10, 2 );
 			add_filter( 'comments_array', array( $this->logic, 'comments_awaiting_moderation'), 10, 2);
 			add_action( 'sanitize_comment_cookies', array( $this->logic, 'sanitize_comment_cookies'), 15);
 			
@@ -143,43 +142,35 @@ if (isset($wp_version)) {
 }
 
 
-/* Exposed functions, designed for use in templates.
- * Specifically inside `foreach ($comments as $comment)` in comments.php
+
+// ---------------------------------------------------------------------
+// Exposed functions designed for use in templates, specifically inside 
+//   `foreach ($comments as $comment)` in comments.php
+// ---------------------------------------------------------------------
+
+/**
+ * Get a simple OpenID input field, used for disabling unobtrusive mode.
  */
-
-
-/* is_comment_openid()
- * If the current comment was submitted with OpenID, return true
- * useful for  <?php echo ( is_comment_openid() ? 'Submitted with OpenID' : '' ); ?>
- */
-
 if( !function_exists( 'openid_input' ) ) {
 	function openid_input() {
 		return '<input type="text" id="openid_url" name="openid_url" />';
 	}
 }
 
+/**
+ * If the current comment was submitted with OpenID, return true
+ * useful for  <?php echo ( is_comment_openid() ? 'Submitted with OpenID' : '' ); ?>
+ */
 if( !function_exists( 'is_comment_openid' ) ) {
 	function is_comment_openid() {
-		global $comment_is_openid;
-		get_comment_type();
-		return ( $comment_is_openid === true );
+		global $comment;
+		return ( $comment->openid == 1 );
 	}
 }
 
-if( !function_exists( 'mask_comment_type' ) ) {
-	function mask_comment_type( $comment_type ) {
-		global $comment_is_openid;
-		if( $comment_type === 'openid' ) {
-			$comment_is_openid = true;
-			return 'comment';
-		}
-		$comment_is_openid = false;
-		return $comment_type;
-	}
-	add_filter('get_comment_type', 'mask_comment_type' );
-}
-
+/**
+ * If the current user registered with OpenID, return true
+ */
 if( !function_exists('is_user_openid') ) {
 	function is_user_openid() {
 		global $current_user;
