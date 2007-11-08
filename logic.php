@@ -841,7 +841,7 @@ if  ( !class_exists('WordpressOpenIDLogic') ) {
 		 */
 		function check_author_openid($comment_ID) {
 			$comment = get_comment($comment_ID);
-			if ( $comment->user_id && get_usermeta($comment->user_id, 'registered_with_openid') ) {
+			if ( $comment->user_id && !$comment->openid && is_user_openid($comment->user_id) ) {
 				$this->set_comment_openid($comment_ID);
 			}
 		}

@@ -172,9 +172,14 @@ if( !function_exists( 'is_comment_openid' ) ) {
  * If the current user registered with OpenID, return true
  */
 if( !function_exists('is_user_openid') ) {
-	function is_user_openid() {
+	function is_user_openid($id = null) {
 		global $current_user;
-		return ( null !== $current_user && get_usermeta($current_user->ID, 'registered_with_openid') );
+
+		if ($id === null && $current_user !== null) {
+			$id = $current_user->ID;
+		}
+
+		return $id === null ? false : get_usermeta($id, 'registered_with_openid');
 	}
 }
 
