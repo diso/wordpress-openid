@@ -14,7 +14,7 @@ define ( 'WPOPENID_PLUGIN_PATH', '/wp-content/plugins/openid');
 define ( 'WPOPENID_PLUGIN_REVISION', preg_replace( '/\$Rev: (.+) \$/', 'svn-\\1', 
 	'$Rev$') ); // this needs to be on a separate line so that svn:keywords can work its magic
 
-define ( 'WPOPENID_DB_REVISION', 20675);      // last plugin revision that required database schema changes
+define ( 'WPOPENID_DB_REVISION', 24324);      // last plugin revision that required database schema changes
 
 
 define ( 'WPOPENID_LOG_LEVEL', 'warning');     // valid values are debug, info, notice, warning, err, crit, alert, emerg
