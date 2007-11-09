@@ -166,7 +166,7 @@ if( class_exists( 'Auth_OpenID_MySQLStore' ) && !class_exists('WordpressOpenIDSt
 					issued int(11),
 					lifetime int(11),
 					assoc_type varchar(64),
-					PRIMARY KEY  (server_url(255),handle)
+					PRIMARY KEY  (server_url(235),handle)
 				)";
 
 			$this->sql['set_assoc'] =
