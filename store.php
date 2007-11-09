@@ -125,8 +125,12 @@ if( class_exists( 'Auth_OpenID_MySQLStore' ) && !class_exists('WordpressOpenIDSt
 			dbDelta($sql);
 
 			// add column to comments table
-			maybe_add_column($this->comments_table_name, 'openid', 
+			$result = maybe_add_column($this->comments_table_name, 'openid', 
 				"ALTER TABLE $this->comments_table_name ADD `openid` TINYINT(1) NOT NULL DEFAULT '0'");
+
+			if (!$result) {
+				$this->core->log->error('unable to add column `openid` to comments table.');
+			}
 
 			$wpdb->query("update $this->comments_table_name set `comment_type`='', `openid`=1 where `comment_type`='openid'");
 		}
