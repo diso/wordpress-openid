@@ -9,8 +9,6 @@ Version: trunk
 License: Dual GPL (http://www.fsf.org/licensing/licenses/info/GPLv2.html) and Modified BSD (http://www.fsf.org/licensing/licenses/index_html#ModifiedBSD)
 */
 
-define ( 'WPOPENID_PLUGIN_PATH', '/wp-content/plugins/openid');
-
 define ( 'WPOPENID_PLUGIN_REVISION', preg_replace( '/\$Rev: (.+) \$/', 'svn-\\1', 
 	'$Rev$') ); // this needs to be on a separate line so that svn:keywords can work its magic
 
@@ -46,8 +44,10 @@ if  ( !class_exists('WordpressOpenID') ) {
 		var $status = array();
 
 		function WordpressOpenID($log) {
-			$this->path = WPOPENID_PLUGIN_PATH;
+			$this->set_path();
 			$this->fullpath = get_option('siteurl').$this->path;
+
+			error_log($this->fullpath);
 
 			$this->log =& $log;
 
@@ -111,6 +111,26 @@ if  ( !class_exists('WordpressOpenID') ) {
 			add_option( 'oid_enable_approval', false );
 		}
 
+		/** 
+		 * Set the path for the plugin. This should allow users to rename the plugin directory 
+		 * if they choose to.  If unable to determine the directory (often due to symlinks), 
+		 * default to 'openid'
+		 **/
+		function set_path() {
+			$plugin = 'openid';
+
+			$base = plugin_basename(__FILE__);
+			if ($base != __FILE__) {
+				$plugin = dirname($base);
+			}
+
+			$this->path = '/wp-content/plugins/'.$plugin;
+		}
+
+
+		/**
+		 * Set Status.
+		 **/
 		function setStatus($slug, $state, $message) {
 			$this->status[$slug] = array('state'=>$state,'message'=>$message);
 			if( $state === true ) { 
