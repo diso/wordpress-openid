@@ -147,11 +147,11 @@ class WordpressOpenIDInterface {
 	 * @action: admin_menu
 	 **/
 	function add_admin_panels() {
-		add_options_page('OpenID options', 'OpenID', 8, 'global-openid-options', 
+		add_options_page('OpenID options', 'WP-OpenID', 8, 'global-openid-options', 
 			array( $this, 'options_page')  );
 
 		if( $this->logic->enabled ) {
-			$hookname =	add_submenu_page('profile.php', 'Your OpenIDs', 'Your OpenIDs', 
+			$hookname =	add_submenu_page('profile.php', 'Your Identity URLs', 'Your Identity URLs', 
 				'read', $this->profile_page_name, array($this, 'profile_panel') );
 			add_action("admin_head-$hookname", array( $this, 'style' ));
 			add_action("load-$hookname", array( $this->logic, 'openid_profile_management' ));
@@ -194,7 +194,7 @@ class WordpressOpenIDInterface {
 			if( substr( $siteurl, -1, 1 ) !== '/' ) $siteurl .= '/';
 			?>
 			<div class="wrap">
-				<h2>OpenID Registration Options</h2>
+				<h2>WP-OpenID Registration Options</h2>
 				<form method="post">
      				<p class="submit"><input type="submit" name="info_update" value="<?php _e('Update options') ?> &raquo;" /></p>
 
@@ -272,18 +272,18 @@ class WordpressOpenIDInterface {
 		?>
 
 		<div class="wrap">
-			<h2>Your OpenID Identities</h2>
+			<h2>Your Identity URLs</h2>
 
-			<p>The following OpenIDs <a title="What is OpenID?" href="http://openid.net/">?</a> 
+			<p>The following Identity URLs <a title="What is OpenID?" href="http://openid.net/">?</a> 
 			are tied to this user account. You can login with equivalent permissions using any of the 
-			following identity URLs.</p>
+			following identities.</p>
 
 		<?php
 		
 		$urls = $this->logic->store->get_my_identities();
 
 		if( count($urls) ) : ?>
-			<p>There are <?php echo count($urls); ?> OpenID identities associated with this WordPress user.</p>
+			<p>There are <?php echo count($urls); ?> identities associated with this WordPress user.</p>
 
 			<table class="widefat">
 			<thead>

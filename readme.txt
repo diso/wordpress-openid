@@ -1,9 +1,9 @@
 === WP-OpenID ===
-Contributors: wnorris
+Contributors: wnorris, alanjcastonguay, factoryjoe
 Tags: openid, authentication
 Requires at least: 2.2
-Tested up to: 2.3
-Stable tag: 1.0.1
+Tested up to: 2.3.1
+Stable tag: 2.0
 
 Allow the use of OpenID for authentication of users and commenters.
 
@@ -71,7 +71,7 @@ requests can also be found at [wp-plugins.org][bugs-reports].
 == Changelog ==
 
 = version 2.0 =
- - simplified admin interface by using more defaults.  Default behaviors include:
+ - simplified admin interface by using reasonable defaults.  Default behaviors include:
   - "unobtrusive mode"
   - always add openid to wp-login.php
   - always use WP option 'home' for the trust root

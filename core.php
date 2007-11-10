@@ -1,11 +1,11 @@
 <?php
 /*
-Plugin Name: WordPress OpenID
-Plugin URI: http://willnorris.com/projects/wp-openid/
-Description: WordPress OpenID Registration, Authentication, and Commenting.
+Plugin Name: WP-OpenID
+Plugin URI: http://wordpress.org/extend/plugins/openid
+Description: Allows the use of OpenID for account registration, authentication, and commenting.  <em>By <a href="http://verselogic.net">Alan Castonguay</a>.</em>
 Author: Will Norris
 Author URI: http://willnorris.com/
-Version: trunk
+Version: 2.0
 License: Dual GPL (http://www.fsf.org/licensing/licenses/info/GPLv2.html) and Modified BSD (http://www.fsf.org/licensing/licenses/index_html#ModifiedBSD)
 */
 
