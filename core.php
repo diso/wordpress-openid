@@ -47,8 +47,6 @@ if  ( !class_exists('WordpressOpenID') ) {
 			$this->set_path();
 			$this->fullpath = get_option('siteurl').$this->path;
 
-			error_log($this->fullpath);
-
 			$this->log =& $log;
 
 			$this->logic = new WordpressOpenIDLogic($this);
