@@ -858,7 +858,7 @@ if  ( !class_exists('WordpressOpenIDLogic') ) {
 			global $wpdb;
 
 			$comments_table = $this->store->comments_table_name;
-			$wpdb->query("UPDATE $comments_table SET openid=1 WHERE comment_ID='$comment_ID' LIMIT 1");
+			$wpdb->query("UPDATE $comments_table SET openid='1' WHERE comment_ID='$comment_ID' LIMIT 1");
 		}
 
 
@@ -973,7 +973,7 @@ if  ( !class_exists('WordpressOpenIDLogic') ) {
 				$additional = $wpdb->get_results(
 					"SELECT * FROM $comments_table"
 					. " WHERE comment_post_ID = '$post_id'"
-					. " AND openid = 1"             // get OpenID comments
+					. " AND openid = '1'"             // get OpenID comments
 					. " AND comment_author_url = '$url_db'"      // where only the URL matches
 					. ($user_ID ? " AND user_id != '$user_ID'" : '')
 					. ($author_db ? " AND comment_author != '$author_db'" : '')
