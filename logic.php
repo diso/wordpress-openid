@@ -404,6 +404,9 @@ if  ( !class_exists('WordpressOpenIDLogic') ) {
 		}
 		
 		function normalize_username($username) {
+			$username = preg_replace('|^https?://(xri.net/([^@]!?)?)?|', '', $username);
+			$username = preg_replace('|^xri://([^@]!?)?|', '', $username);
+			$username = preg_replace('|/$|', '', $username);
 			$username = sanitize_user( $username );
 			$username = preg_replace('|[^a-z0-9 _.\-@]+|i', '-', $username);
 			return $username;
