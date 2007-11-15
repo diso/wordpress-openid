@@ -61,6 +61,16 @@ requests can also be found at [wp-plugins.org][bugs-reports].
 [WordPress.org Support Forum]: http://wordpress.org/support/
 [bugs-reports]: http://dev.wp-plugins.org/report/9?COMPONENT=openid
 
+= WordPress's plugin updater sends me to *simple-openid-plugin*.  What gives? =
+
+The logic behind WordPress's plugin updater is a bit of a black box, and
+somehow older versions of wp-openid were mistakenly mapped to the wrong plugin.
+This should be corrected in version 2.0, but you'll need to clean out the
+update cache for it to take effect.  This can be done by deleting the option
+named *update_plugins* from the wp_options table.  Don't worry, it will be
+automatically rebuilt with the correct values
+
+
 == Screenshots ==
 
 1. Commentors can use their OpenID when leaving a comment.
