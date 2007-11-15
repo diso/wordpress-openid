@@ -12,7 +12,7 @@ License: Dual GPL (http://www.fsf.org/licensing/licenses/info/GPLv2.html) and Mo
 define ( 'WPOPENID_PLUGIN_REVISION', preg_replace( '/\$Rev: (.+) \$/', 'svn-\\1', 
 	'$Rev$') ); // this needs to be on a separate line so that svn:keywords can work its magic
 
-define ( 'WPOPENID_DB_REVISION', 24372);      // last plugin revision that required database schema changes
+define ( 'WPOPENID_DB_REVISION', 24426);      // last plugin revision that required database schema changes
 
 
 define ( 'WPOPENID_LOG_LEVEL', 'warning');     // valid values are debug, info, notice, warning, err, crit, alert, emerg
@@ -197,7 +197,7 @@ if( !function_exists('is_user_openid') ) {
 			$id = $current_user->ID;
 		}
 
-		return $id === null ? false : get_usermeta($id, 'registered_with_openid');
+		return $id === null ? false : get_usermeta($id, 'has_openid');
 	}
 }
 

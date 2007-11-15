@@ -620,7 +620,6 @@ if  ( !class_exists('WordpressOpenIDLogic') ) {
 			if( $user_id ) { // created ok
 
 				$oid_user_data['ID'] = $user_id;
-				update_usermeta( $user_id, 'registered_with_openid', true );
 
 				$this->core->log->debug("OpenIDConsumer: Created new user $user_id : $username and metadata: "
 					. var_export( $oid_user_data, true ) );

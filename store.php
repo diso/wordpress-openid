@@ -19,6 +19,7 @@ if( class_exists( 'Auth_OpenID_MySQLStore' ) && !class_exists('WordpressOpenIDSt
 		var $nonces_table_name;
 		var $identity_table_name;
 		var $comments_table_name;
+		var $usermeta_table_name;
 
 		function WordpressOpenIDStore($core)
 		{
@@ -31,6 +32,7 @@ if( class_exists( 'Auth_OpenID_MySQLStore' ) && !class_exists('WordpressOpenIDSt
 			$this->nonces_table_name = $this->table_prefix . 'openid_nonces';
 			$this->identity_table_name =  $this->table_prefix . 'openid_identities';
 			$this->comments_table_name =  $this->table_prefix . 'comments';
+			$this->usermeta_table_name =  $wpdb->prefix . 'usermeta';
 
 			$conn = new WordpressOpenIDConnection( $wpdb );
 			parent::Auth_OpenID_MySQLStore(
@@ -133,6 +135,7 @@ if( class_exists( 'Auth_OpenID_MySQLStore' ) && !class_exists('WordpressOpenIDSt
 			}
 
 			$wpdb->query("update $this->comments_table_name set `comment_type`='', `openid`=1 where `comment_type`='openid'");
+			$wpdb->query("update $this->usermeta_table_name set `meta_key`='has_openid' where `meta_key`='registered_with_openid'");
 		}
 
 		function destroy_tables() {
@@ -222,6 +225,8 @@ if( class_exists( 'Auth_OpenID_MySQLStore' ) && !class_exists('WordpressOpenIDSt
 				array( (int)$userdata->ID, $url, $url ) );
 			if( $old_show_errors ) $wpdb->show_errors();
 
+			$this->update_user_openid_status();
+
 			return $ret;
 		}
 
@@ -235,10 +240,21 @@ if( class_exists( 'Auth_OpenID_MySQLStore' ) && !class_exists('WordpressOpenIDSt
 		
 		function drop_identity($id) {
 			global $userdata;
-			return $this->connection->query( 
+			$ret = $this->connection->query( 
 				"DELETE FROM $this->identity_table_name WHERE user_id = %s AND uurl_id = %s",
 				array( (int)$userdata->ID, (int)$id ) 
 			);
+
+			$this->update_user_openid_status();
+
+			return $ret;
+		}
+
+		function update_user_openid_status() {
+			global $userdata;
+
+			$identities = $this->get_my_identities();
+			update_usermeta( $userdata->ID, 'has_openid', (empty($identities) ? false : true) );
 		}
 		
 		function get_user_by_identity($url) {
