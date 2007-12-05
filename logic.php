@@ -930,6 +930,16 @@ if  ( !class_exists('WordpressOpenIDLogic') ) {
 				);
 				
 				// Failure to redirect at all, the URL is malformed or unreachable. 
+
+				// Display an error message only if an explicit OpenID field  was used.  Otherwise, 
+				// just ignore the error... it just means the user entered a normal URL.
+				if (array_key_exists('openid_url', $_POST)) {
+					global $error;
+					$error = $this->error;
+					$_POST['openid_url'] = '';
+					include( ABSPATH . 'wp-login.php' );
+					exit();
+				}
 			}
 			
 			return $comment;
