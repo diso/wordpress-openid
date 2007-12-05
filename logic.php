@@ -930,15 +930,6 @@ if  ( !class_exists('WordpressOpenIDLogic') ) {
 				);
 				
 				// Failure to redirect at all, the URL is malformed or unreachable. 
-
-				// Display the login form with the error.
-				if (!get_option('oid_enable_unobtrusive')) {
-					global $error;
-					$error = $this->error;
-					$_POST['openid_url'] = '';
-					include( ABSPATH . 'wp-login.php' );
-					exit();
-				}
 			}
 			
 			return $comment;
