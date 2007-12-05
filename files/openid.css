@@ -1,4 +1,4 @@
-#openid_enabled_link, .openid_link,  #openid_url {
+#openid_enabled_link, .openid_link,  #openid_url, #commentform #openid_url {
 	background: url('openid.gif') center left no-repeat; 
 	padding-left: 18px; 
 }
