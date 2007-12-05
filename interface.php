@@ -169,6 +169,17 @@ class WordpressOpenIDInterface {
 			$this->core->log->debug("WPOpenID Plugin: " . ($this->logic->enabled? 'Enabled':'Disabled' ) 
 				. ' (start of WordPress options page)' );
 		
+			if ( isset($_REQUEST['action']) ) {
+				switch($_REQUEST['action']) {
+					case 'rebuild_tables' :
+						check_admin_referer('wp-openid-info_rebuild_tables');
+						$this->logic->store->destroy_tables();
+						$this->logic->store->create_tables();
+						echo '<div class="updated"><p><strong>Open ID tables rebuilt.</strong></p></div>';
+						break;
+				}
+			}
+
 			// if we're posted back an update, let's set the values here
 			if ( isset($_POST['info_update']) ) {
 			
@@ -242,9 +253,15 @@ class WordpressOpenIDInterface {
      					</table>
      				</fieldset>
 
+					Occasionally, the WP-OpenID tables don't get setup properly, and it may help to <a href="<?php echo 
+					wp_nonce_url(sprintf('?page=%s&action=rebuild_tables', $_REQUEST['page']), 
+					'wp-openid-info_rebuild_tables'); ?>">rebuild the tables</a>.  Don't worry, this won't cause you 
+					to lose any data... it just rebuilds a couple of tables that hold only temprory data.
+
 					<?php wp_nonce_field('wp-openid-info_update'); ?>
      				<p class="submit"><input type="submit" name="info_update" value="<?php _e('Update options') ?> &raquo;" /></p>
      			</form>
+
 			</div>
     			<?php
 	} // end function options_page
