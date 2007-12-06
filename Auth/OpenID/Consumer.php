@@ -399,8 +399,16 @@ class Auth_OpenID_Consumer {
      * indicated by the status attribute, which will be one of
      * SUCCESS, CANCEL, FAILURE, or SETUP_NEEDED.
      */
-    function complete($query=null, $return_to=null)
+    function complete($return_to, $query=null)
     {
+        if ($return_to && !is_string($return_to)) {
+            // This is ugly, but we need to complain loudly when
+            // someone uses the API incorrectly.
+            trigger_error("return_to must be a string; see NEWS file " .
+                          "for upgrading notes.",
+                          E_USER_ERROR);
+        }
+
         if ($query === null) {
             $query = Auth_OpenID::getQuery();
         }
@@ -633,17 +641,10 @@ class Auth_OpenID_GenericConsumer {
      *
      * @access private
      */
-    function complete($message, $endpoint, $return_to = null)
+    function complete($message, $endpoint, $return_to)
     {
         $mode = $message->getArg(Auth_OpenID_OPENID_NS, 'mode',
                                  '<no mode set>');
-
-        if ($return_to !== null) {
-            if (!$this->_checkReturnTo($message, $return_to)) {
-                return new Auth_OpenID_FailureResponse($endpoint,
-                             "openid.return_to does not match return URL");
-            }
-        }
 
         $mode_methods = array(
                               'cancel' => '_complete_cancel',
@@ -656,10 +657,13 @@ class Auth_OpenID_GenericConsumer {
                                         '_completeInvalid');
 
         return call_user_func_array(array(&$this, $method),
-                                    array($message, $endpoint));
+                                    array($message, $endpoint, $return_to));
     }
 
-    function _completeInvalid($message, &$endpoint)
+    /**
+     * @access private
+     */
+    function _completeInvalid($message, &$endpoint, $unused)
     {
         $mode = $message->getArg(Auth_OpenID_OPENID_NS, 'mode',
                                  '<No mode set>');
@@ -668,12 +672,18 @@ class Auth_OpenID_GenericConsumer {
                     sprintf("Invalid openid.mode '%s'", $mode));
     }
 
-    function _complete_cancel($message, &$endpoint)
+    /**
+     * @access private
+     */
+    function _complete_cancel($message, &$endpoint, $unused)
     {
         return new Auth_OpenID_CancelResponse($endpoint);
     }
 
-    function _complete_error($message, &$endpoint)
+    /**
+     * @access private
+     */
+    function _complete_error($message, &$endpoint, $unused)
     {
         $error = $message->getArg(Auth_OpenID_OPENID_NS, 'error');
         $contact = $message->getArg(Auth_OpenID_OPENID_NS, 'contact');
@@ -683,7 +693,10 @@ class Auth_OpenID_GenericConsumer {
                                                $contact, $reference);
     }
 
-    function _complete_setup_needed($message, &$endpoint)
+    /**
+     * @access private
+     */
+    function _complete_setup_needed($message, &$endpoint, $unused)
     {
         if (!$message->isOpenID2()) {
             return $this->_completeInvalid($message, $endpoint);
@@ -692,7 +705,10 @@ class Auth_OpenID_GenericConsumer {
         return new Auth_OpenID_SetupNeededResponse($endpoint);
     }
 
-    function _complete_id_res($message, &$endpoint)
+    /**
+     * @access private
+     */
+    function _complete_id_res($message, &$endpoint, $return_to)
     {
         $user_setup_url = $message->getArg(Auth_OpenID_OPENID1_NS,
                                            'user_setup_url');
@@ -700,7 +716,7 @@ class Auth_OpenID_GenericConsumer {
         if ($this->_checkSetupNeeded($message)) {
             return SetupNeededResponse($endpoint, $user_setup_url);
         } else {
-            return $this->_doIdRes($message, $endpoint);
+            return $this->_doIdRes($message, $endpoint, $return_to);
         }
     }
 
@@ -726,24 +742,21 @@ class Auth_OpenID_GenericConsumer {
     /**
      * @access private
      */
-    function _doIdRes($message, $endpoint)
+    function _doIdRes($message, $endpoint, $return_to)
     {
-        $signed_list_str = $message->getArg(Auth_OpenID_OPENID_NS,
-                                            'signed');
-
-        if ($signed_list_str === null) {
-            return new Auth_OpenID_FailureResponse($endpoint,
-                                   "Response missing signed list");
-        }
-
-        $signed_list = explode(',', $signed_list_str);
-
         // Checks for presence of appropriate fields (and checks
         // signed list fields)
-        $result = $this->_idResCheckForFields($message, $signed_list);
+        $result = $this->_idResCheckForFields($message);
 
         if (Auth_OpenID::isFailure($result)) {
             return $result;
+        }
+
+        if (!$this->_checkReturnTo($message, $return_to)) {
+            return new Auth_OpenID_FailureResponse(null,
+            sprintf("return_to does not match return URL. Expected %s, got %s",
+                    $return_to,
+                    $message->getArg(Auth_OpenID_OPENID_NS, 'return_to')));
         }
 
         // Verify discovery information:
@@ -762,14 +775,15 @@ class Auth_OpenID_GenericConsumer {
             return $result;
         }
 
-        $response_identity = $message->getArg(Auth_OpenID_OPENID_NS,
-                                              'identity');
-
         $result = $this->_idResCheckNonce($message, $endpoint);
 
         if (Auth_OpenID::isFailure($result)) {
             return $result;
         }
+
+        $signed_list_str = $message->getArg(Auth_OpenID_OPENID_NS, 'signed',
+                                            Auth_OpenID_NO_DEFAULT);
+        $signed_list = explode(',', $signed_list_str);
 
         $signed_fields = Auth_OpenID::addPrefix($signed_list, "openid.");
 
@@ -855,7 +869,7 @@ class Auth_OpenID_GenericConsumer {
         // XXX: this should be checked by _idResCheckForFields
         if (!$return_to) {
             return new Auth_OpenID_FailureResponse(null,
-                         "no openid.return_to in query");
+                           "Response has no return_to");
         }
 
         $parsed_url = parse_url($return_to);
@@ -987,8 +1001,11 @@ class Auth_OpenID_GenericConsumer {
             $result = $this->_verifyDiscoverySingle($endpoint, $to_match);
 
             if (is_a($result, 'Auth_OpenID_TypeURIMismatch')) {
-                $this->_verifyDiscoverySingle($endpoint, $to_match_1_0);
-            } else if (Auth_OpenID::isFailure($result)) {
+                $result = $this->_verifyDiscoverySingle($endpoint,
+                                                        $to_match_1_0);
+            }
+
+            if (Auth_OpenID::isFailure($result)) {
                 // oidutil.log("Error attempting to use stored
                 //             discovery information: " + str(e))
                 //             oidutil.log("Attempting discovery to
@@ -1154,6 +1171,9 @@ class Auth_OpenID_GenericConsumer {
         return $this->_verifyDiscoveryServices($services, $to_match);
     }
 
+    /**
+     * @access private
+     */
     function _verifyDiscoveryServices(&$services, &$to_match)
     {
         // Search the services resulting from discovery to find one
@@ -1174,7 +1194,7 @@ class Auth_OpenID_GenericConsumer {
                   $to_match->claimed_id));
     }
 
-    /*
+    /**
      * Extract the nonce from an OpenID 1 response.  Return the nonce
      * from the BARE_NS since we independently check the return_to
      * arguments are the same as those in the response message.
@@ -1182,6 +1202,8 @@ class Auth_OpenID_GenericConsumer {
      * See the openid1_nonce_query_arg_name class variable
      *
      * @returns $nonce The nonce as a string or null
+     *
+     * @access private
      */
     function _idResGetNonceOpenID1($message, $endpoint)
     {
@@ -1230,9 +1252,9 @@ class Auth_OpenID_GenericConsumer {
     /**
      * @access private
      */
-    function _idResCheckForFields($message, $signed_list)
+    function _idResCheckForFields($message)
     {
-        $basic_fields = array('return_to', 'assoc_handle', 'sig');
+        $basic_fields = array('return_to', 'assoc_handle', 'sig', 'signed');
         $basic_sig_fields = array('return_to', 'identity');
 
         $require_fields = array(
@@ -1258,6 +1280,11 @@ class Auth_OpenID_GenericConsumer {
                              "Missing required field '".$field."'");
             }
         }
+
+        $signed_list_str = $message->getArg(Auth_OpenID_OPENID_NS,
+                                            'signed',
+                                            Auth_OpenID_NO_DEFAULT);
+        $signed_list = explode(',', $signed_list_str);
 
         foreach ($require_sigs[$message->getOpenIDNamespace()] as $field) {
             // Field is present and not in signed list
@@ -1358,10 +1385,12 @@ class Auth_OpenID_GenericConsumer {
         return false;
     }
 
-    /*
+    /**
      * Adapt a POST response to a Message.
      *
      * @param $response Result of a POST to an OpenID endpoint.
+     *
+     * @access private
      */
     function _httpResponseToMessage($response, $server_url)
     {
@@ -1418,12 +1447,14 @@ class Auth_OpenID_GenericConsumer {
         return $assoc;
     }
 
-    /*
+    /**
      * Handle ServerErrors resulting from association requests.
      *
      * @return $result If server replied with an C{unsupported-type}
      * error, return a tuple of supported C{association_type},
      * C{session_type}.  Otherwise logs the error and returns null.
+     *
+     * @access private
      */
     function _extractSupportedAssociationType(&$server_error, &$endpoint,
                                               $assoc_type)
@@ -1926,6 +1957,14 @@ class Auth_OpenID_ConsumerResponse {
         } else {
             $this->identity_url = $endpoint->claimed_id;
         }
+    }
+
+    function getDisplayIdentifier()
+    {
+        if ($this->endpoint !== null) {
+            return $this->endpoint->getDisplayIdentifier();
+        }
+        return null;
     }
 }
 

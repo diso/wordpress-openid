@@ -349,7 +349,7 @@ if  ( !class_exists('WordpressOpenIDLogic') ) {
 		function finish_openid_auth() {
 			set_error_handler( array($this, 'customer_error_handler'));
 			$consumer = $this->getConsumer();
-			$this->response = $consumer->complete();
+			$this->response = $consumer->complete($_SESSION['oid_return_to']);
 			restore_error_handler();
 			
 			switch( $this->response->status ) {
@@ -472,6 +472,7 @@ if  ( !class_exists('WordpressOpenIDLogic') ) {
 				// AX
 			}
 			
+			$_SESSION['oid_return_to'] = $return_to;
 			$this->doRedirect($auth_request, get_option('home'), $return_to);
 			exit(0);
 		}

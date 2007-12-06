@@ -423,7 +423,7 @@ function Auth_OpenID_getDefaultAssociationOrder()
 {
     $order = array();
 
-    if (!defined('Auth_OpenID_NO_MATH_SUPPORT')) {
+    if (!Auth_OpenID_noMathSupport()) {
         $order[] = array('HMAC-SHA1', 'DH-SHA1');
 
         if (Auth_OpenID_HMACSHA256_SUPPORTED) {
@@ -518,7 +518,8 @@ function &Auth_OpenID_getEncryptedNegotiator()
 class Auth_OpenID_SessionNegotiator {
     function Auth_OpenID_SessionNegotiator($allowed_types)
     {
-        $this->allowed_types = $allowed_types;
+        $this->allowed_types = array();
+        $this->setAllowedTypes($allowed_types);
     }
 
     /**
