@@ -973,7 +973,8 @@ if  ( !class_exists('WordpressOpenIDLogic') ) {
 			$url_db  = $wpdb->escape($comment_author_url);
 
 			if ($url_db) {
-				$comments_table = $this->store->comments_table_name;
+				$store =& $this->getStore();
+				$comments_table = $store->comments_table_name;
 				$additional = $wpdb->get_results(
 					"SELECT * FROM $comments_table"
 					. " WHERE comment_post_ID = '$post_id'"
