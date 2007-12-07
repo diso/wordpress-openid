@@ -758,10 +758,15 @@ if  ( !class_exists('WordpressOpenIDLogic') ) {
 		 */
 		function get_user_data_form($identity_url, &$data) {
 			$comment = $this->get_comment();
+
+			if (!$comment || !is_array($comment)) {
+				return false;
+			}
+
 			if (array_key_exists('comment_author_email', $comment) && $comment['comment_author_email']) {
 				$data['user_email'] = $comment['comment_author_email'];
 			}
-			if (array_key_exists('comment_author', $commnet) && $comment['comment_author']) {
+			if (array_key_exists('comment_author', $comment) && $comment['comment_author']) {
 				$namechunks = explode( ' ', $comment['comment_author'], 2 );
 				if( isset($namechunks[0]) ) $data['first_name'] = $namechunks[0];
 				if( isset($namechunks[1]) ) $data['last_name'] = $namechunks[1];
