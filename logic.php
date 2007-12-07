@@ -720,17 +720,17 @@ if  ( !class_exists('WordpressOpenIDLogic') ) {
 			$this->core->log->debug(var_export($sreg, true));
 			if (!$sreg) return false;
 
-			if( isset( $sreg['email'])) {
+			if (array_key_exists('email', $sreg) && $sreg['email']) {
 				$data['user_email'] = $sreg['email'];
 			}
 
-			if( isset( $sreg['nickname'])) {
+			if (array_key_exists('nickname', $sreg) && $sreg['nickname']) {
 				$data['nickname'] = $sreg['nickname'];
 				$data['user_nicename'] = $sreg['nickname'];
 				$data['display_name'] = $sreg['nickname'];
 			}
 
-			if( isset($sreg['fullname']) ) {
+			if (array_key_exists('fullname', $sreg) && $sreg['fullname']) {
 				$namechunks = explode( ' ', $sreg['fullname'], 2 );
 				if( isset($namechunks[0]) ) $data['first_name'] = $namechunks[0];
 				if( isset($namechunks[1]) ) $data['last_name'] = $namechunks[1];
@@ -758,9 +758,10 @@ if  ( !class_exists('WordpressOpenIDLogic') ) {
 		 */
 		function get_user_data_form($identity_url, &$data) {
 			$comment = $this->get_comment();
-			if( isset( $comment['comment_author_email'])) 
+			if (array_key_exists('comment_author_email', $comment) && $comment['comment_author_email']) {
 				$data['user_email'] = $comment['comment_author_email'];
-			if( isset( $comment['comment_author'])) {
+			}
+			if (array_key_exists('comment_author', $commnet) && $comment['comment_author']) {
 				$namechunks = explode( ' ', $comment['comment_author'], 2 );
 				if( isset($namechunks[0]) ) $data['first_name'] = $namechunks[0];
 				if( isset($namechunks[1]) ) $data['last_name'] = $namechunks[1];
