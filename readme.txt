@@ -3,7 +3,7 @@ Contributors: wnorris, alanjcastonguay, factoryjoe
 Tags: openid, authentication
 Requires at least: 2.2
 Tested up to: 2.3.1
-Stable tag: 2.0
+Stable tag: 2.1
 
 Allow the use of OpenID for authentication of users and commenters.
 
@@ -96,6 +96,14 @@ automatically rebuilt with the correct values
 
 == Changelog ==
 
+= version 2.1 =
+ - added FAQ items for plugin updater and adding an OpenID field to a comment form
+ - better tracking of which users have OpenIDs linked to their local WP account
+ - better automatic username generation
+ - fixed bug where non-OpenID websites had problems (bug [729])
+ - upgrade to version 2.0 of JanRain OpenID library
+ - admin option to rebuild tables
+
 = version 2.0 =
  - simplified admin interface by using reasonable defaults.  Default behaviors include:
   - "unobtrusive mode"
@@ -112,3 +120,5 @@ automatically rebuilt with the correct values
 = version 1.0 (also known as r13) =
 
 Full SVN logs are available at <http://dev.wp-plugins.org/log/openid/>.
+
+[729]: http://dev.wp-plugins.org/ticket/729
