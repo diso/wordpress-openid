@@ -334,6 +334,7 @@ class WordpressOpenIDInterface {
 
 		<p>
 			<form method="post">Add identity: 
+				<?php wp_nonce_field('wp-openid-add_identity'); ?>
 				<input id="openid_url" name="openid_url" /> 
 				<input type="submit" value="Add" />
 				<input type="hidden" name="action" value="add_identity" >
