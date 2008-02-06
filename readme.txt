@@ -3,7 +3,7 @@ Contributors: wnorris, alanjcastonguay, factoryjoe
 Tags: openid, authentication
 Requires at least: 2.2
 Tested up to: 2.3.1
-Stable tag: 2.1.2
+Stable tag: 2.1.3
 
 Allow the use of OpenID for authentication of users and commenters.
 
@@ -95,6 +95,9 @@ automatically rebuilt with the correct values
 
 
 == Changelog ==
+
+= version 2.1.3 =
+ - address security bug mentioned [here](http://www.gnucitizen.org/blog/hijacking-openid-enabled-accounts).  Props: Sam Alexander
 
 = version 2.1.2 =
  - minor typo in profile data code
