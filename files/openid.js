@@ -1,4 +1,4 @@
-jQuery(document).ready( function() {
+jQuery(function() {
 	jQuery('body.wp-admin #openid_rollup dl').hide();
 
 	jQuery('body.wp-admin #openid_rollup_link').click( function() {
