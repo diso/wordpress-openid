@@ -29,8 +29,8 @@ class WordpressOpenIDInterface {
 	 **/
 	function login_form_hide_username_password_errors($r) {
 		if( $_POST['openid_url']
-			or $_GET['action'] == 'loginopenid'
-			or $_GET['action'] == 'commentopenid' ) return $this->logic->error;
+			or $_REQUEST['action'] == 'loginopenid'
+			or $_REQUEST['action'] == 'commentopenid' ) return $this->logic->error;
 		return $r;
 	}
 
