@@ -190,7 +190,6 @@ if  ( !class_exists('WordpressOpenIDLogic') ) {
 		 * Hook - called as wp_authenticate
 		 * If we're doing openid authentication ($_POST['openid_url'] is set), start the consumer & redirect
 		 * Otherwise, return and let WordPress handle the login and/or draw the form.
-		 * Uses output buffering to modify the form. 
 		 */
 		function wp_authenticate( &$username ) {
 			if( !empty( $_POST['openid_url'] ) ) {
@@ -492,6 +491,11 @@ if  ( !class_exists('WordpressOpenIDLogic') ) {
 					if( $action == 'register' ) {
 						return;
 					}
+					if ($action == 'login' || $action == '') {
+						if (function_exists('wp_signon') && isset($_REQUEST['openid_url'])) {
+							wp_signon(array('user_login'=>'openid', 'user_password'=>'openid'));
+						}
+					}
 					if ( !isset( $_REQUEST['openid_mode'] ) ) return;
 					if( $_REQUEST['action'] == 'loginopenid' ) break;
 					if( $_REQUEST['action'] == 'commentopenid' ) break;
@@ -524,11 +528,25 @@ if  ( !class_exists('WordpressOpenIDLogic') ) {
 				
 				if( NULL !== $matching_user_id ) {
 					$user = new WP_User( $matching_user_id );
-					
-					if( wp_login( $user->user_login, md5($user->user_pass), true ) ) {
+					$success = false;
+
+					if (function_exists('wp_authenticate')) {
+						$success = wp_authenticate($user->user_login, md5($user->user_pass));
+					} else {
+						$success = wp_login( $user->user_login, md5($user->user_pass), true );
+					}
+
+					if( $success) {
 						$this->core->log->debug('OpenIDConsumer: Returning user logged in: '
 							.$user->user_login); 
-						wp_setcookie($user->user_login, md5($user->user_pass), true, '', '', true);
+
+						if (function_exists('wp_set_auth_cookie')) {
+							// TODO: honor rememberme checkbox
+							wp_set_auth_cookie($user->ID, true);
+						} else {
+							wp_setcookie($user->user_login, md5($user->user_pass), true, '', '', true);
+						}
+
 						do_action('wp_login', $user_login);
 						
 						// put user data into an array to be stored with the comment itself
