@@ -11,7 +11,7 @@ body.login #openid_url {
 }
 
 /* fix link color on wp-login.php */
-body.login form#loginform a, 
-body.login form#registerform a {
+body.login form#loginform a.legacy, 
+body.login form#registerform a.legacy {
 	color: #FFF;
 }

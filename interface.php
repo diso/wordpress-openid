@@ -41,10 +41,17 @@ class WordpressOpenIDInterface {
 	 * @action: login_form
 	 **/
 	function login_form() {
+		global $wp_version;
+
+		$link_class = 'openid_link';
+		if ($wp_version < '2.5') {
+			$link_class .= ' legacy';
+		}
+
 		?>
 		<hr />
 		<p>
-			<label>Or login using your <a class="openid_link" href="http://openid.net/">OpenID</a> url:<br/>
+			<label>Or login using your <a class="<?php echo $link_class; ?>" href="http://openid.net/">OpenID</a> url:<br/>
 			<input type="text" name="openid_url" id="openid_url" class="input openid_url" value="" size="20" tabindex="25" /></label>
 		</p>
 		<?php
