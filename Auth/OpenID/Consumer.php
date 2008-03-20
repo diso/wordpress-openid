@@ -518,7 +518,7 @@ class Auth_OpenID_DiffieHellmanSHA256ConsumerSession extends
  */
 class Auth_OpenID_PlainTextConsumerSession {
     var $session_type = 'no-encryption';
-    var $allowed_assoc_types =  array('HMAC-SHA1');
+    var $allowed_assoc_types =  array('HMAC-SHA1', 'HMAC-SHA256');
 
     function getRequest()
     {
@@ -1018,7 +1018,7 @@ class Auth_OpenID_GenericConsumer {
         // Endpoint is either bad (failed verification) or None
         $result = $this->_discoverAndVerify($to_match);
 
-        if (is_a($result, 'Auth_OpenID_TypeURIMismatch') || is_a($result, 'Auth_OpenID_FailureResponse')) {
+        if (is_a($result, 'Auth_OpenID_TypeURIMismatch')) {
             return $this->_discoverAndVerify($to_match_1_0);
         } else {
             return $result;

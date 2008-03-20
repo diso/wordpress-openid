@@ -275,7 +275,7 @@ class Auth_Yadis_Yadis {
      * Auth_Yadis_Yadis, depending on whether the discovery
      * succeeded.
      */
-    function discover($uri, &$fetcher,
+    function discover($uri, &$fetcher = null,
                       $extra_ns_map = null, $timeout = 20)
     {
         $result = new Auth_Yadis_DiscoveryResult($uri);
@@ -318,7 +318,7 @@ class Auth_Yadis_Yadis {
 
                 $response = $fetcher->get($yadis_location);
 
-                if ($response->status != 200) {
+                if ((!$response) || ($response->status != 200)) {
                     $result->fail();
                     return $result;
                 }
