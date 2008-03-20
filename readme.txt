@@ -2,8 +2,8 @@
 Contributors: wnorris, alanjcastonguay, factoryjoe
 Tags: openid, authentication
 Requires at least: 2.2
-Tested up to: 2.3.1
-Stable tag: 2.1.4
+Tested up to: 2.5.0rc1
+Stable tag: 2.1.5
 
 Allow the use of OpenID for authentication of users and commenters.
 
@@ -95,6 +95,13 @@ automatically rebuilt with the correct values
 
 
 == Changelog ==
+
+= version 2.1.5 =
+ - add support for wordpress v2.5
+
+= version 2.1.4 =
+ - fix php5 dependency bug
+ - improve jQuery code to reduce problems with other js libraries
 
 = version 2.1.3 =
  - address security bug mentioned [here](http://www.gnucitizen.org/blog/hijacking-openid-enabled-accounts).  Props: Sam Alexander
