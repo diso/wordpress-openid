@@ -3,7 +3,7 @@ Contributors: wnorris, alanjcastonguay, factoryjoe
 Tags: openid, authentication
 Requires at least: 2.2
 Tested up to: 2.5.0rc1
-Stable tag: 2.1.6
+Stable tag: 2.1.7
 
 Allow the use of OpenID for authentication of users and commenters.
 
@@ -86,6 +86,11 @@ requests can also be found at [wp-plugins.org][bugs-reports].
 
 
 == Changelog ==
+
+= version 2.1.7 =
+ - remove php5 dependency bug... AGAIN!
+ - also remove some other custom changes to php-openid I forgot were in there.  This may actually re-introduce some edge-case
+   bugs, but I'd rather expose them so that we can get the appropriate patches pushed upstream if they really are necessary.
 
 = version 2.1.6 =
  - update php-openid library to latest.  Now properly supports Yahoo's OpenID provider.
