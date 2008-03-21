@@ -275,7 +275,7 @@ class Auth_Yadis_Yadis {
      * Auth_Yadis_Yadis, depending on whether the discovery
      * succeeded.
      */
-    function discover($uri, &$fetcher = null,
+    function discover($uri, &$fetcher,
                       $extra_ns_map = null, $timeout = 20)
     {
         $result = new Auth_Yadis_DiscoveryResult($uri);
@@ -330,7 +330,6 @@ class Auth_Yadis_Yadis {
         }
 
         $result->response_text = $response->body;
-		$result->xrds = Auth_Yadis_XRDS::parseXRDS($result->response_text);
         return $result;
     }
 }

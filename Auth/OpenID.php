@@ -96,7 +96,7 @@ define('Auth_OpenID_digits',
 define('Auth_OpenID_punct',
        "!\"#$%&'()*+,-./:;<=>?@[\\]^_`{|}~");
 
-if (Auth_OpenID_getMathLib() === null && !defined('Auth_OpenID_NO_MATH_SUPPORT')) {
+if (Auth_OpenID_getMathLib() === null) {
     Auth_OpenID_setNoMathSupport();
 }
 
