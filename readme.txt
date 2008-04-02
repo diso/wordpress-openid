@@ -3,7 +3,7 @@ Contributors: wnorris, alanjcastonguay, factoryjoe
 Tags: openid, authentication
 Requires at least: 2.2
 Tested up to: 2.5.0
-Stable tag: 2.1.7
+Stable tag: 2.1.8
 
 Allow the use of OpenID for authentication of users and commenters.
 
@@ -86,6 +86,11 @@ requests can also be found at [wp-plugins.org][bugs-reports].
 
 
 == Changelog ==
+
+= version 2.1.8 =
+ - fix UI issue with wp-login.php page in WP2.5
+ - fix bug printing supported curl protocols (http://wordpress.org/support/topic/159062)
+ - fix jquery bug while adding category in  WP2.5  (http://wordpress.org/support/topic/164305)
 
 = version 2.1.7 =
  - remove php5 dependency bug... AGAIN!
