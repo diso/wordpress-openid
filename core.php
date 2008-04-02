@@ -87,7 +87,7 @@ if  ( !class_exists('WordpressOpenID') ) {
 			add_action( 'wp_head', array( $this->interface, 'style'));
 			add_action( 'login_head', array( $this->interface, 'style'));
 
-			add_action( 'init', array( $this->interface, 'js_setup'));
+			add_action( 'wp_head', array( $this->interface, 'js_setup'), 9);
 
 			add_filter( 'get_comment_author_link', array( $this->interface, 'comment_author_link'));
 			add_action( 'comment_form', array( $this->interface, 'comment_profilelink'));
