@@ -646,12 +646,12 @@ if  ( !class_exists('WordpressOpenIDLogic') ) {
 				
 				$user = new WP_User( $user_id );
 
-				if( ! wp_login( $user->user_login, md5($user->user_pass), true ) ) {
+				if( ! wp_login( $user->user_login, $oid_user_data['user_pass'] ) ) {
 					$this->error = 'User was created fine, but wp_login() for the new user failed. '
 						. 'This is probably a bug.';
 					$this->action= 'error';
-					$this->core->log->error( $this->error );
-					break;
+					$this->core->log->err( $this->error );
+					return;
 				}
 				
 				// notify of user creation
