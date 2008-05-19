@@ -584,7 +584,8 @@ if  ( !class_exists('WordpressOpenIDLogic') ) {
 						} else {
 							// TODO - Start a registration loop in WPMU.
 							$this->error = 'OpenID authentication valid, but unable '
-								. 'to find an account association.';
+								. 'to find a WordPress account associated with this OpenID.<br /><br />'
+								. 'Enable "Anyone can register" to allow creation of new accounts via OpenID.';
 							$this->action = 'error';
 						}
 					} else {
