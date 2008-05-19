@@ -154,8 +154,9 @@ class WordpressOpenIDInterface {
 	 * @action: admin_menu
 	 **/
 	function add_admin_panels() {
-		add_options_page('OpenID options', 'WP-OpenID', 8, 'global-openid-options', 
+		$hookname = add_options_page('OpenID options', 'WP-OpenID', 8, 'global-openid-options', 
 			array( $this, 'options_page')  );
+		add_action("load-$hookname", array( $this, 'js_setup' ));
 
 		if( $this->logic->enabled ) {
 			$hookname =	add_submenu_page('profile.php', 'Your Identity URLs', 'Your Identity URLs', 
