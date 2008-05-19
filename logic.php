@@ -242,7 +242,7 @@ if  ( !class_exists('WordpressOpenIDLogic') ) {
 					break;
 					
 				case 'drop_identity':  // Remove a binding.
-					$this->_profile_drop_identity();
+					$this->_profile_drop_identity($_REQUEST['id']);
 					break;
 			}
 		}
@@ -276,8 +276,7 @@ if  ( !class_exists('WordpressOpenIDLogic') ) {
 		 *
 		 * @private
 		 **/
-		function _profile_drop_identity() {
-			$id = $_REQUEST['id'];
+		function _profile_drop_identity($id) {
 
 			if( !isset( $id)) {
 				$this->error = 'Identity url delete failed: ID paramater missing.';
@@ -290,12 +289,21 @@ if  ( !class_exists('WordpressOpenIDLogic') ) {
 				return;
 			}
 
+			$identity_urls = $this->store->get_my_identities();
+			if (sizeof($identity_urls) == 1 && !$_REQUEST['confirm']) {
+				$this->error = 'This is your last identity URL.  Are you sure you want to delete it? Doing so may interfere with your ability to login.<br /><br /> '
+					. '<a href="?confirm=true&'.$_SERVER['QUERY_STRING'].'">Yes I\'m sure.  Delete it</a>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;'
+					. '<a href="?page='.$this->core->interface->profile_page_name.'">No, don\'t delete it.</a>';
+				$this->action = 'warning';
+				return;
+			}
+
 			check_admin_referer('wp-openid-drop-identity_'.$deleted_identity_url);
 			
 			if( $this->store->drop_identity($id) ) {
 				$this->error = 'Identity url delete successful. <b>' . $deleted_identity_url 
 					. '</b> removed.';
-				$this->action= 'success';
+				$this->action = 'success';
 				return;
 			}
 			

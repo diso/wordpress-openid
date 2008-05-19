@@ -290,6 +290,9 @@ class WordpressOpenIDInterface {
 		if( 'success' == $this->logic->action ) {
 			echo '<div class="updated"><p><strong>Success: '.$this->logic->error.'</strong></p></div>';
 		}
+		elseif( 'warning' == $this->logic->action ) {
+			echo '<div class="error"><p><strong>Warning:</strong> '.$this->logic->error.'</p></div>';
+		}
 		elseif( $this->logic->error ) {
 			echo '<div class="error"><p><strong>Error: '.$this->logic->error.'</strong></p></div>';
 		}
