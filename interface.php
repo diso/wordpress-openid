@@ -51,7 +51,7 @@ class WordpressOpenIDInterface {
 		?>
 		<hr />
 		<p>
-			<label>Or login using your <a class="<?php echo $link_class; ?>" href="http://openid.net/">OpenID</a> url:<br/>
+			<label><?php printf(__('Or login using your %s url:', 'openid'), '<a class="'.$link_class.'" href="http://openid.net/">'.__('OpenID', 'openid').'</a>') ?><br/>
 			<input type="text" name="openid_url" id="openid_url" class="input openid_url" value="" size="20" tabindex="25" /></label>
 		</p>
 		<?php
@@ -64,7 +64,9 @@ class WordpressOpenIDInterface {
 	 * @action: register_form
 	 **/
 	function register_form() {
-		?><p>For faster registration, just <a href="<?php echo get_option('siteurl'); ?>/wp-login.php">login with <span class="openid_link">OpenID</span>!</a></p><?php
+		echo '<p>';
+		printf(__('For faster registration, just %s login with %s.', 'openid'), '<a href="'.get_option('siteurl').'/wp-login.php">', '<span class="openid_link">'.__('OpenID', 'openid').'</span></a>');
+		echo '</p>';
 	}
 
 	
@@ -142,9 +144,9 @@ class WordpressOpenIDInterface {
 	 * Spam up the admin interface with warnings.
 	 **/
 	function admin_notices_plugin_problem_warning() {
-		?><div class="error"><p><strong>The WordPress OpenID plugin is not active.</strong>
-		Check <a href="options-general.php?page=global-openid-options">OpenID Options</a> for
-		a full diagnositic report.</p></div><?php
+		echo'<div class="error"><p><strong>'.__('The WordPress OpenID plugin is not active.', 'openid').'</strong>';
+		printf(_('Check %sOpenID Options%s for a full diagnositic report.', 'openid'), '<a href="options-general.php?page=global-openid-options">', '</a>');
+		echo '</p></div>';
 	}
 	
 
@@ -154,12 +156,12 @@ class WordpressOpenIDInterface {
 	 * @action: admin_menu
 	 **/
 	function add_admin_panels() {
-		$hookname = add_options_page('OpenID options', 'WP-OpenID', 8, 'global-openid-options', 
+		$hookname = add_options_page(__('OpenID options', 'openid'), __('WP-OpenID', 'openid'), 8, 'global-openid-options', 
 			array( $this, 'options_page')  );
 		add_action("load-$hookname", array( $this, 'js_setup' ));
 
 		if( $this->logic->enabled ) {
-			$hookname =	add_submenu_page('profile.php', 'Your Identity URLs', 'Your Identity URLs', 
+			$hookname =	add_submenu_page('profile.php', __('Your Identity URLs', 'openid'), __('Your Identity URLs', 'openid'), 
 				'read', $this->profile_page_name, array($this, 'profile_panel') );
 			add_action("admin_head-$hookname", array( $this, 'style' ));
 			add_action("load-$hookname", array( $this->logic, 'openid_profile_management' ));
@@ -174,7 +176,7 @@ class WordpressOpenIDInterface {
 	 */
 	function options_page() {
 			$this->logic->late_bind();
-			$this->core->log->debug("WPOpenID Plugin: " . ($this->logic->enabled? 'Enabled':'Disabled' ) 
+			$this->core->log->debug("WP-OpenID Plugin: " . ($this->logic->enabled? 'Enabled':'Disabled' ) 
 				. ' (start of WordPress options page)' );
 		
 			if ( isset($_REQUEST['action']) ) {
@@ -183,7 +185,7 @@ class WordpressOpenIDInterface {
 						check_admin_referer('wp-openid-info_rebuild_tables');
 						$this->logic->store->destroy_tables();
 						$this->logic->store->create_tables();
-						echo '<div class="updated"><p><strong>Open ID tables rebuilt.</strong></p></div>';
+						echo '<div class="updated"><p><strong>'.__('OpenID tables rebuilt.', 'openid').'</strong></p></div>';
 						break;
 				}
 			}
@@ -199,9 +201,9 @@ class WordpressOpenIDInterface {
 				update_option( 'oid_enable_approval', isset($_POST['enable_approval']) ? true : false );
 
 				if ($error !== '') {
-					echo '<div class="error"><p><strong>At least one of OpenID options was NOT updated</strong>'.$error.'</p></div>';
+					echo '<div class="error"><p><strong>'.__('At least one of OpenID options was NOT updated', 'openid').'</strong>'.$error.'</p></div>';
 				} else {
-					echo '<div class="updated"><p><strong>Open ID options updated</strong></p></div>';
+					echo '<div class="updated"><p><strong>'.__('Open ID options updated', 'openid').'</strong></p></div>';
 				}
 				
 			}
@@ -213,25 +215,26 @@ class WordpressOpenIDInterface {
 			if( substr( $siteurl, -1, 1 ) !== '/' ) $siteurl .= '/';
 			?>
 			<div class="wrap">
-				<h2>WP-OpenID Registration Options</h2>
+				<h2><?php _e('WP-OpenID Registration Options', 'openid') ?></h2>
 				<form method="post">
-     				<p class="submit"><input type="submit" name="info_update" value="<?php _e('Update options') ?> &raquo;" /></p>
+     				<p class="submit"><input type="submit" name="info_update" value="<?php _e('Update Options') ?> &raquo;" /></p>
 
      				<fieldset class="options">
-						<legend>Behavior</legend>
+						<legend><?php _e('Behavior', 'openid') ?></legend>
      									
      					<table class="optiontable editform" cellspacing="2" cellpadding="5" width="100%">
 						<tr valign="top">
-							<th style="width: 33%" scope="row">Automatic Approval:</th>
+							<th style="width: 33%" scope="row"><?php _e('Automatic Approval:', 'openid') ?></th>
 							<td>
 								<p><input type="checkbox" name="enable_approval" id="enable_approval" <?php 
 									echo get_option('oid_enable_approval') ? 'checked="checked"' : ''; ?> />
-								<label for="enable_approval">Enable OpenID comment auto-approval</label>
+									<label for="enable_approval"><?php _e('Enable OpenID comment auto-approval', 'openid') ?></label>
 
-								<p>For now this option will cause comments made with OpenIDs to be automatically 
-								approved.  Since most spammers haven't started using OpenID yet, this is probably 
-								pretty safe.  More importantly however, this could be a foundation on which to build 
-								more advanced automatic approval such as whitelists or a third-party trust service.
+								<p><?php _e('For now this option will cause comments made with OpenIDs '
+								. 'to be automatically approved.  Since most spammers haven\'t started '
+								. 'using OpenID yet, this is probably pretty safe.  More importantly '
+								. 'however, this could be a foundation on which to build more advanced '
+								. 'automatic approval such as whitelists or a third-party trust service.', 'openid') ?>
 								</p>
 							</td>
 						</tr>
@@ -239,21 +242,20 @@ class WordpressOpenIDInterface {
 					</fieldset>
 
      				<fieldset class="options">
-						<legend>Look &amp; Feel</legend>
+						<legend><?php _e('Look and Feel', 'openid') ?></legend>
      									
      					<table class="optiontable editform" cellspacing="2" cellpadding="5" width="100%">
 						<tr valign="top">
-							<th style="width: 33%" scope="row">Comment Form:</th>
+							<th style="width: 33%" scope="row"><?php _e('Comment Form:', 'openid') ?></th>
 							<td>
 								<p><input type="checkbox" name="enable_commentform" id="enable_commentform" <?php
 								if( get_option('oid_enable_commentform') ) echo 'checked="checked"'
 								?> />
-								<label for="enable_commentform">Add OpenID text to the WordPress post 
-								comment form.</label></p>
+									<label for="enable_commentform"><?php _e('Add OpenID text to the WordPress post comment form.', 'openid') ?></label></p>
 
-								<p> This will work for most themes derived from Kubrick or Sandbox.
-								Template authors can tweak the comment form as described in the
-								<a href="<?php echo $this->core->fullpath?>/readme.txt">readme</a>.</p>
+								<p><?php printf(__('This will work for most themes derived from Kubrick or Sandbox.  '
+								. 'Template authors can tweak the comment form as described in the %sreadme%s.', 'openid'), 
+								'<a href="'.$this->core->fullpath.'/readme.txt">', '</a>') ?></p>
 								<br />
 							</td>
 						</tr>
@@ -261,13 +263,13 @@ class WordpressOpenIDInterface {
      					</table>
      				</fieldset>
 
-					Occasionally, the WP-OpenID tables don't get setup properly, and it may help to <a href="<?php echo 
-					wp_nonce_url(sprintf('?page=%s&action=rebuild_tables', $_REQUEST['page']), 
-					'wp-openid-info_rebuild_tables'); ?>">rebuild the tables</a>.  Don't worry, this won't cause you 
-					to lose any data... it just rebuilds a couple of tables that hold only temprory data.
+					<p><?php printf(__('Occasionally, the WP-OpenID tables don\'t get setup properly, and it may help '
+						. 'to %srebuild the tables%s.  Don\'t worry, this won\'t cause you to lose any data... it just '
+						. 'rebuilds a couple of tables that hold only temprory data.', 'openid'), 
+					'<a href="'.wp_nonce_url(sprintf('?page=%s&action=rebuild_tables', $_REQUEST['page']), 'wp-openid-info_rebuild_tables').'">', '</a>') ?></p>
 
 					<?php wp_nonce_field('wp-openid-info_update'); ?>
-     				<p class="submit"><input type="submit" name="info_update" value="<?php _e('Update options') ?> &raquo;" /></p>
+     				<p class="submit"><input type="submit" name="info_update" value="<?php _e('Update Options') ?> &raquo;" /></p>
      			</form>
 
 			</div>
@@ -288,24 +290,24 @@ class WordpressOpenIDInterface {
 		$this->logic->late_bind();
 
 		if( 'success' == $this->logic->action ) {
-			echo '<div class="updated"><p><strong>Success: '.$this->logic->error.'</strong></p></div>';
+			echo '<div class="updated"><p><strong>'.__('Success:', 'openid').'</strong> '.$this->logic->error.'</p></div>';
 		}
 		elseif( 'warning' == $this->logic->action ) {
-			echo '<div class="error"><p><strong>Warning:</strong> '.$this->logic->error.'</p></div>';
+			echo '<div class="error"><p><strong>'.__('Warning:', 'openid').'</strong> '.$this->logic->error.'</p></div>';
 		}
 		elseif( $this->logic->error ) {
-			echo '<div class="error"><p><strong>Error: '.$this->logic->error.'</strong></p></div>';
+			echo '<div class="error"><p><strong>'.__('Error:', 'openid').'</strong> '.$this->logic->error.'</p></div>';
 		}
 
 		?>
 
 		<div class="wrap">
-			<h2>Your Identity URLs</h2>
+			<h2><?php _e('Your Identity URLs', 'openid') ?></h2>
 
-			<p>The following Identity URLs <a title="What is OpenID?" href="http://openid.net/">?</a> 
-			are tied to this user account. You can login with equivalent permissions using any of the 
-			following identities.</p>
-
+			<p><?php printf(__('The following Identity URLs %s are tied to this user account. You can login '
+			. 'with equivalent permissions using any of the following identities.', 'openid'), 
+			'<a title="'.__('What is OpenID?', 'openid').'" href="http://openid.net/">'.__('?', 'openid').'</a>') ?>
+			</p>
 		<?php
 		
 		$urls = $this->logic->store->get_my_identities();
@@ -316,9 +318,9 @@ class WordpressOpenIDInterface {
 			<table class="widefat">
 			<thead>
 				<tr>
-					<th scope="col" style="text-align: center">ID</th>
-					<th scope="col">Identity Url</th>
-					<th scope="col" style="text-align: center">Action</th>
+					<th scope="col" style="text-align: center"><?php _e('ID', 'openid') ?></th>
+					<th scope="col"><?php _e('Identity Url', 'openid') ?></th>
+					<th scope="col" style="text-align: center"><?php _e('Action', 'openid') ?></th>
 				</tr>
 			</thead>
 
@@ -330,7 +332,7 @@ class WordpressOpenIDInterface {
 					<td style="text-align: center"><a class="delete" href="<?php 
 					echo wp_nonce_url(sprintf('?page=%s&action=drop_identity&id=%s', $this->profile_page_name, $v['uurl_id']), 
 					'wp-openid-drop-identity_'.$v['url']);
-					?>">Delete</a></td>
+					?>"><?php _e('Delete', 'openid') ?></a></td>
 				</tr>
 
 			<?php endforeach; ?>
@@ -340,14 +342,14 @@ class WordpressOpenIDInterface {
 			<?php
 		else:
 			echo '
-			<p class="error">There are no OpenIDs associated with this WordPress user.</p>';
+			<p class="error">'.__('There are no OpenIDs associated with this WordPress user.', 'openid').'</p>';
 		endif; ?>
 
 		<p>
-			<form method="post">Add identity: 
+			<form method="post"><?php _e('Add identity:', 'openid') ?>
 				<?php wp_nonce_field('wp-openid-add_identity'); ?>
 				<input id="openid_url" name="openid_url" /> 
-				<input type="submit" value="Add" />
+				<input type="submit" value="<?php _e('Add', 'openid') ?>" />
 				<input type="hidden" name="action" value="add_identity" >
 			</form>
 		</p>
@@ -422,18 +424,19 @@ class WordpressOpenIDInterface {
 
 
 		if( $this->logic->enabled ) {	// Display status information
-			?><div id="openid_rollup" class="updated"><p><strong>Status information:</strong> All Systems Nominal <small>(<a href="#" id="openid_rollup_link">Toggle More/Less</a>)</small> </p><?php
+			?><div id="openid_rollup" class="updated"><p><strong><?php _e('Status information:', 'openid') ?></strong> <?php _e('All Systems Nominal', 'openid') ?> 
+				<small>(<a href="#" id="openid_rollup_link"><?php _e('Toggle More/Less', 'openid') ?></a>)</small> </p><?php
 		} else {
-			?><div class="error"><p><strong>Plugin is currently disabled. Fix the problem, then Deactivate/Reactivate the plugin.</strong></p><?php
+			?><div class="error"><p><strong><?php _e('Plugin is currently disabled. Fix the problem, then Deactivate/Reactivate the plugin.', 'openid') ?></strong></p><?php
 		}
 		
 		?>
 		<dl>
 		<?php
 			foreach( $this->core->status as $k=>$v ) {
-				if( $v['state'] === false ) { echo "<dt><span style='color:red;'>[FAIL]</span> $k </dt>"; }
-				elseif( $v['state'] === true ) { echo "<dt><span style='color:green;'>[OK]</span> $k </dt>"; }
-				else { echo "<dt><span style='color:grey;'>[INFO]</span> $k </dt>"; }
+				if( $v['state'] === false ) { echo "<dt><span style='color:red;'>[".__('FAIL', 'openid')."]</span> $k </dt>"; }
+				elseif( $v['state'] === true ) { echo "<dt><span style='color:green;'>[".__('OK', 'openid')."]</span> $k </dt>"; }
+				else { echo "<dt><span style='color:grey;'>[".__('INFO', 'openid')."]</span> $k </dt>"; }
 				if( $v['state']!==true and $v['message'] ) echo '<dd>' . $v['message'] . '</dd>';
 			}
 		?>

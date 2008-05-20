@@ -72,6 +72,8 @@ if  ( !class_exists('WordpressOpenID') ) {
 			add_action( 'wp_authenticate', array( $this->logic, 'wp_authenticate' ) ); // openid loop start
 			add_action( 'init', array( $this->logic, 'finish_login' ) ); // openid loop done
 
+			add_action( 'init', array( $this, 'textdomain' ) ); // load textdomain
+
 			// Comment filtering
 			add_action( 'preprocess_comment', array( $this->logic, 'comment_tagging' ), -99999 );
 			add_action( 'comment_post', array( $this->logic, 'check_author_openid' ), 5 );
@@ -141,6 +143,11 @@ if  ( !class_exists('WordpressOpenID') ) {
 			}
 
 			$this->log->debug('Status: ' . strip_tags($slug) . " [$_state]" . ( ($_state==='ok') ? '': strip_tags(str_replace('<br/>'," ", ': ' . $message))  ) );
+		}
+
+		function textdomain() {
+			$lang_folder = preg_replace('/^\//', '', $this->path) . '/lang';
+			load_plugin_textdomain('openid', $lang_folder);
 		}
 	}
 }
