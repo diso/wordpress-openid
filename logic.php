@@ -561,6 +561,7 @@ if  ( !class_exists('WordpressOpenIDLogic') ) {
 						$oid_user_data = array( 
 							'ID' => $user->ID,
 							'user_url' => $user->user_url,
+							'user_email' => $user->user_email,
 							'user_nicename' => $user->user_nicename,
 							'display_name' => $user->display_name, 
 						);
