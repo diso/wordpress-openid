@@ -175,6 +175,8 @@ class WordpressOpenIDInterface {
 	 * @options_page
 	 */
 	function options_page() {
+		global $wp_version;
+
 			$this->logic->late_bind();
 			$this->core->log->debug("WP-OpenID Plugin: " . ($this->logic->enabled? 'Enabled':'Disabled' ) 
 				. ' (start of WordPress options page)' );
@@ -208,7 +210,9 @@ class WordpressOpenIDInterface {
 				
 			}
 
-			$this->printSystemStatus();
+			if ($wp_version >= '2.3') {
+				$this->printSystemStatus();
+			}
 			
 			// Display the options page form
 			$siteurl = get_option('home');
@@ -217,12 +221,12 @@ class WordpressOpenIDInterface {
 			<div class="wrap">
 				<h2><?php _e('WP-OpenID Registration Options', 'openid') ?></h2>
 				<form method="post">
-     				<p class="submit"><input type="submit" name="info_update" value="<?php _e('Update Options') ?> &raquo;" /></p>
 
-     				<fieldset class="options">
-						<legend><?php _e('Behavior', 'openid') ?></legend>
-     									
-     					<table class="optiontable editform" cellspacing="2" cellpadding="5" width="100%">
+					<?php if ($wp_version < '2.3') { ?>
+     				<p class="submit"><input type="submit" name="info_update" value="<?php _e('Update Options') ?> &raquo;" /></p>
+					<?php } ?>
+
+     				<table class="form-table optiontable editform" cellspacing="2" cellpadding="5" width="100%">
 						<tr valign="top">
 							<th style="width: 33%" scope="row"><?php _e('Automatic Approval:', 'openid') ?></th>
 							<td>
@@ -243,13 +247,7 @@ class WordpressOpenIDInterface {
 								
 							</td>
 						</tr>
-						</table>
-					</fieldset>
 
-     				<fieldset class="options">
-						<legend><?php _e('Look and Feel', 'openid') ?></legend>
-     									
-     					<table class="optiontable editform" cellspacing="2" cellpadding="5" width="100%">
 						<tr valign="top">
 							<th style="width: 33%" scope="row"><?php _e('Comment Form:', 'openid') ?></th>
 							<td>
@@ -279,6 +277,10 @@ class WordpressOpenIDInterface {
 
 			</div>
     			<?php
+			if ($wp_version < '2.3') {
+				echo '<br />';
+				$this->printSystemStatus();
+			}
 	} // end function options_page
 
 
