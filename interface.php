@@ -236,6 +236,11 @@ class WordpressOpenIDInterface {
 								. 'however, this could be a foundation on which to build more advanced '
 								. 'automatic approval such as whitelists or a third-party trust service.', 'openid') ?>
 								</p>
+
+								<p><?php _e('Note that this option will cause OpenID authenticated comments '
+								. 'to appear, even if you have enabled the option, "An administrator must '
+								. 'always approve the comment".', 'openid') ?></p>
+								
 							</td>
 						</tr>
 						</table>
