@@ -17,3 +17,7 @@ body.login form#loginform a.legacy,
 body.login form#registerform a.legacy {
 	color: #FFF;
 }
+
+#openid_rollup {
+	margin-top: 1em;
+}

@@ -159,6 +159,7 @@ class WordpressOpenIDInterface {
 		$hookname = add_options_page(__('OpenID options', 'openid'), __('WP-OpenID', 'openid'), 8, 'global-openid-options', 
 			array( $this, 'options_page')  );
 		add_action("load-$hookname", array( $this, 'js_setup' ));
+		add_action("admin_head-$hookname", array( $this, 'style' ));
 
 		if( $this->logic->enabled ) {
 			$hookname =	add_submenu_page('profile.php', __('Your Identity URLs', 'openid'), __('Your Identity URLs', 'openid'), 
@@ -210,9 +211,6 @@ class WordpressOpenIDInterface {
 				
 			}
 
-			if ($wp_version >= '2.3') {
-				$this->printSystemStatus();
-			}
 			
 			// Display the options page form
 			$siteurl = get_option('home');
@@ -220,6 +218,9 @@ class WordpressOpenIDInterface {
 			?>
 			<div class="wrap">
 				<h2><?php _e('WP-OpenID Registration Options', 'openid') ?></h2>
+
+				<?php if ($wp_version >= '2.3') { $this->printSystemStatus(); } ?>
+
 				<form method="post">
 
 					<?php if ($wp_version < '2.3') { ?>
