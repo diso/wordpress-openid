@@ -50,7 +50,7 @@ class WordpressOpenIDInterface {
 
 		?>
 		<hr />
-		<p>
+		<p style="margin-top: 1em;">
 			<label><?php printf(__('Or login using your %s url:', 'openid'), '<a class="'.$link_class.'" href="http://openid.net/">'.__('OpenID', 'openid').'</a>') ?><br/>
 			<input type="text" name="openid_url" id="openid_url" class="input openid_url" value="" size="20" tabindex="25" /></label>
 		</p>
