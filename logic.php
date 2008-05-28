@@ -18,8 +18,6 @@ if  ( !class_exists('WordpressOpenIDLogic') ) {
 
 		var $enabled = true;
 
-		var $flag_doing_openid_comment = false;
-
 		var $bind_done = false;
 
 		/**
@@ -458,11 +456,12 @@ if  ( !class_exists('WordpressOpenIDLogic') ) {
 
 
 			// build return_to URL
-			$return_to = get_option('siteurl') . $return_to . "?action=$action";
+			$return_to = get_option('siteurl') . $return_to;
+			$auth_request->return_to_args['action'] = $action;			
 			if (is_array($arguments) && !empty($arguments)) {
 				foreach ($arguments as $k => $v) {
 					if ($k && $v) {
-						$return_to .= sprintf('&%s=%s', urlencode($k), urlencode($v));
+						$auth_request->return_to_args[urlencode($k)] = urlencode($v);
 					}
 				}
 			}
@@ -843,7 +842,6 @@ if  ( !class_exists('WordpressOpenIDLogic') ) {
 			$comment_author_email = $wpdb->escape($oid_user_data['user_email']);
 			$comment_author_url   = $wpdb->escape($oid_user_data['user_url']);
 			$user_ID              = $oid_user_data['ID'];
-			$this->flag_doing_openid_comment = true;
 
 			$commentdata = compact('comment_post_ID', 'comment_author', 'comment_author_email',
 										'comment_author_url', 'comment_content', 'comment_type', 'user_ID');

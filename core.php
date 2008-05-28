@@ -75,7 +75,7 @@ if  ( !class_exists('WordpressOpenID') ) {
 			add_action( 'init', array( $this, 'textdomain' ) ); // load textdomain
 
 			// Comment filtering
-			add_action( 'preprocess_comment', array( $this->logic, 'comment_tagging' ), -99999 );
+			add_action( 'preprocess_comment', array( $this->logic, 'comment_tagging' ), -99 );
 			add_action( 'comment_post', array( $this->logic, 'check_author_openid' ), 5 );
 			add_filter( 'option_require_name_email', array( $this->logic, 'bypass_option_require_name_email') );
 			add_filter( 'comments_array', array( $this->logic, 'comments_awaiting_moderation'), 10, 2);
@@ -152,7 +152,6 @@ if  ( !class_exists('WordpressOpenID') ) {
 	}
 }
 
-// The variable in use here should probably be something other than $log. Too great a chance of collision. Probably causing http://willnorris.com/2007/10/plugin-updates#comment-13625
 if (isset($wp_version)) {
 	#$wpopenid_log = &Log::singleton('error_log', PEAR_LOG_TYPE_SYSTEM, 'WPOpenID');
 	$wpopenid_log = &Log::singleton('file', ABSPATH . get_option('upload_path') . '/php.log', 'WPOpenID');
