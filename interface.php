@@ -264,8 +264,7 @@ class WordpressOpenIDInterface {
 							</td>
 						</tr>
 
-     					</table>
-     				</fieldset>
+     				</table>
 
 					<p><?php printf(__('Occasionally, the WP-OpenID tables don\'t get setup properly, and it may help '
 						. 'to %srebuild the tables%s.  Don\'t worry, this won\'t cause you to lose any data... it just '
@@ -335,7 +334,7 @@ class WordpressOpenIDInterface {
 			<?php foreach( $urls as $k=>$v ): ?>
 
 				<tr class="alternate">
-					<th scope="row" style="text-align: center"><?php echo $v['uurl_id']; ?></td>
+					<th scope="row" style="text-align: center"><?php echo $v['uurl_id']; ?></th>
 					<td><a href="<?php echo $v['url']; ?>"><?php echo $v['url']; ?></a></td>
 					<td style="text-align: center"><a class="delete" href="<?php 
 					echo wp_nonce_url(sprintf('?page=%s&action=drop_identity&id=%s', $this->profile_page_name, $v['uurl_id']), 
