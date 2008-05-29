@@ -32,8 +32,8 @@ restore_include_path();
 
 @session_start();
 
-if  ( !class_exists('WordpressOpenID') ) {
-	class WordpressOpenID {
+if  ( !class_exists('WordPressOpenID') ) {
+	class WordPressOpenID {
 		var $path;
 		var $fullpath;
 
@@ -43,14 +43,14 @@ if  ( !class_exists('WordpressOpenID') ) {
 		var $log;
 		var $status = array();
 
-		function WordpressOpenID($log) {
+		function WordPressOpenID($log) {
 			$this->set_path();
 			$this->fullpath = get_option('siteurl').$this->path;
 
 			$this->log =& $log;
 
-			$this->logic = new WordpressOpenIDLogic($this);
-			$this->interface = new WordpressOpenIDInterface($this);
+			$this->logic = new WordPressOpenID_Logic($this);
+			$this->interface = new WordPressOpenID_Interface($this);
 		}
 
 		/**
@@ -70,7 +70,7 @@ if  ( !class_exists('WordpressOpenID') ) {
 
 			// Add hooks to handle actions in WordPress
 			add_action( 'wp_authenticate', array( $this->logic, 'wp_authenticate' ) ); // openid loop start
-			add_action( 'init', array( $this->logic, 'finish_login' ) ); // openid loop done
+			add_action( 'init', array( $this->logic, 'wp_login_openid' ) ); // openid loop done
 
 			add_action( 'init', array( $this, 'textdomain' ) ); // load textdomain
 
@@ -80,6 +80,7 @@ if  ( !class_exists('WordpressOpenID') ) {
 			add_filter( 'option_require_name_email', array( $this->logic, 'bypass_option_require_name_email') );
 			add_filter( 'comments_array', array( $this->logic, 'comments_awaiting_moderation'), 10, 2);
 			add_action( 'sanitize_comment_cookies', array( $this->logic, 'sanitize_comment_cookies'), 15);
+			add_filter( 'comment_post_redirect', array( $this->logic, 'comment_post_redirect'), 0, 2);
 			
 			// If user is dropped from database, remove their identities too.
 			$this->logic->late_bind();
@@ -102,6 +103,11 @@ if  ( !class_exists('WordpressOpenID') ) {
 			add_action( 'register_form', array( $this->interface, 'register_form'));
 			add_filter( 'login_errors', array( $this->interface, 'login_form_hide_username_password_errors'));
 
+			// rewrite rules
+			add_action('parse_query', array($this->logic, 'parse_query'));
+			add_filter('generate_rewrite_rules', array($this->logic, 'rewrite_rules'));
+			add_filter('query_vars', array($this->logic, 'query_vars'));
+				
 			// Add custom OpenID options
 			add_option( 'oid_enable_commentform', true );
 			add_option( 'oid_plugin_enabled', true );
@@ -149,8 +155,17 @@ if  ( !class_exists('WordpressOpenID') ) {
 			$lang_folder = preg_replace('/^\//', '', $this->path) . '/lang';
 			load_plugin_textdomain('openid', $lang_folder);
 		}
+		
+		function init() {
+			global $wp_rewrite;
+			add_filter('generate_rewrite_rules', array('WordPressOpenID_Logic', 'rewrite_rules'));
+			$wp_rewrite->flush_rules();
+		}
+
 	}
 }
+
+register_activation_hook('openid/core.php', array('WordPressOpenID', 'init'));
 
 if (isset($wp_version)) {
 	#$wpopenid_log = &Log::singleton('error_log', PEAR_LOG_TYPE_SYSTEM, 'WPOpenID');
@@ -160,7 +175,7 @@ if (isset($wp_version)) {
 	$wpopenid_log_level = constant('PEAR_LOG_' . strtoupper(WPOPENID_LOG_LEVEL));
 	$wpopenid_log->setMask(Log::UPTO($wpopenid_log_level));
 
-	$openid = new WordpressOpenID($wpopenid_log);
+	$openid = new WordPressOpenID($wpopenid_log);
 	$openid->startup();
 }
 

@@ -9,10 +9,10 @@ require_once 'Auth/OpenID/DatabaseConnection.php';
 require_once 'Auth/OpenID/SQLStore.php';
 require_once 'Auth/OpenID/MySQLStore.php';
 
-if( class_exists( 'Auth_OpenID_MySQLStore' ) && !class_exists('WordpressOpenIDStore')) {
-	class WordpressOpenIDStore extends Auth_OpenID_MySQLStore {
+if( class_exists( 'Auth_OpenID_MySQLStore' ) && !class_exists('WordPressOpenID_Store')) {
+	class WordPressOpenID_Store extends Auth_OpenID_MySQLStore {
 
-		var $core;				// WordpressOpenID instance
+		var $core;				// WordPressOpenID instance
 
 		var $table_prefix;
 		var $associations_table_name;
@@ -21,7 +21,7 @@ if( class_exists( 'Auth_OpenID_MySQLStore' ) && !class_exists('WordpressOpenIDSt
 		var $comments_table_name;
 		var $usermeta_table_name;
 
-		function WordpressOpenIDStore($core)
+		function WordPressOpenID_Store($core)
 		{
 			global $wpdb;
 			$this->core =& $core;
@@ -34,7 +34,7 @@ if( class_exists( 'Auth_OpenID_MySQLStore' ) && !class_exists('WordpressOpenIDSt
 			$this->comments_table_name =  $this->table_prefix . 'comments';
 			$this->usermeta_table_name =  $wpdb->prefix . 'usermeta';
 
-			$conn = new WordpressOpenIDConnection( $wpdb );
+			$conn = new WordPressOpenID_Connection( $wpdb );
 			parent::Auth_OpenID_MySQLStore(
 				$conn,
 				$this->associations_table_name,
@@ -258,6 +258,8 @@ if( class_exists( 'Auth_OpenID_MySQLStore' ) && !class_exists('WordpressOpenIDSt
 		}
 		
 		function get_user_by_identity($url) {
+			if (empty($url)) { return null; }
+			
 			return $this->connection->getOne( 
 				"SELECT user_id FROM $this->identity_table_name WHERE url = %s",
 				array( $url ) 
@@ -268,15 +270,15 @@ if( class_exists( 'Auth_OpenID_MySQLStore' ) && !class_exists('WordpressOpenIDSt
 
 
 /**
- * WordpressOpenIDConnection class implements a PEAR-style database connection using the WordPress WPDB object.
+ * WordPressOpenID_Connection class implements a PEAR-style database connection using the WordPress WPDB object.
  * Written by Josh Hoyt
  * Modified to support setFetchMode() by Alan J Castonguay, 2006-06-16 
  */
-if (  class_exists('Auth_OpenID_DatabaseConnection') && !class_exists('WordpressOpenIDConnection') ) {
-	class WordpressOpenIDConnection extends Auth_OpenID_DatabaseConnection {
+if (  class_exists('Auth_OpenID_DatabaseConnection') && !class_exists('WordPressOpenID_Connection') ) {
+	class WordPressOpenID_Connection extends Auth_OpenID_DatabaseConnection {
 		var $fetchmode = ARRAY_A;  // to fix PHP Fatal error:  Cannot use object of type stdClass as array in /usr/local/php5/lib/php/Auth/OpenID/SQLStore.php on line 495
 		
-		function WordpressOpenIDConnection(&$wpdb) {
+		function WordPressOpenID_Connection(&$wpdb) {
 			$this->wpdb =& $wpdb;
 		}
 		function _fmt($sql, $args) {

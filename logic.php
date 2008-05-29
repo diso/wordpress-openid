@@ -4,11 +4,11 @@
  *
  * Dual License: GPL & Modified BSD
  */
-if  ( !class_exists('WordpressOpenIDLogic') ) {
-	class WordpressOpenIDLogic {
+if  ( !class_exists('WordPressOpenID_Logic') ) {
+	class WordPressOpenID_Logic {
 
-		var $core;        // WordpressOpenID instance
-		var $store;	      // WordpressOpenIDStore instance
+		var $core;        // WordPressOpenID instance
+		var $store;	      // WordPressOpenID_Store instance
 		var $_consumer;   // Auth_OpenID_Consumer
 		
 		var $error;		  // User friendly error message, defaults to ''.
@@ -23,7 +23,7 @@ if  ( !class_exists('WordpressOpenIDLogic') ) {
 		/**
 		 * Constructor.
 		 */
-		function WordpressOpenIDLogic($core) {
+		function WordPressOpenID_Logic($core) {
 			$this->core =& $core;
 		}
 
@@ -50,7 +50,7 @@ if  ( !class_exists('WordpressOpenIDLogic') ) {
 			if (!isset($this->store)) {
 				require_once 'store.php';
 
-				$this->store = new WordpressOpenIDStore($this->core);
+				$this->store = new WordPressOpenID_Store($this->core);
 				if (null === $this->store) {
 
 					$this->core->setStatus('object: OpenID Store', false, 
@@ -194,8 +194,7 @@ if  ( !class_exists('WordpressOpenIDLogic') ) {
 				if( !$this->late_bind() ) return; // something is broken
 				$redirect_to = '';
 				if( !empty( $_REQUEST['redirect_to'] ) ) $redirect_to = $_REQUEST['redirect_to'];
-				$this->start_login( $_POST['openid_url'], '/wp-login.php', 'loginopenid',
-				   array('redirect_to' => $redirect_to) );
+				$this->start_login( $_POST['openid_url'], 'login', array('redirect_to' => $redirect_to) );
 			}
 			if( !empty( $this->error ) ) {
 				global $error;
@@ -205,7 +204,7 @@ if  ( !class_exists('WordpressOpenIDLogic') ) {
 
 
 		/**
-		 * Start and finish the redirect loop for the admin pages profile.php & users.php
+		 * Start the redirect loop for the admin pages profile.php & users.php
 		 **/
 		function openid_profile_management() {
 			global $wp_version;
@@ -230,41 +229,12 @@ if  ( !class_exists('WordpressOpenIDLogic') ) {
 			switch( $this->action ) {
 				case 'add_identity':
 					check_admin_referer('wp-openid-add_identity');
-					$return_to = '/wp-admin/' . (current_user_can('edit_users') ? 'users.php' : 'profile.php');
-					$this->start_login($_POST['openid_url'], $return_to, 'verify_identity',
-						array('page'=>$this->core->interface->profile_page_name));
+					$this->start_login($_POST['openid_url'], 'verify');
 					break;
-					
-				case 'verify_identity': // Return from verify loop.
-					$this->_profile_verify_identity();
-					break;
-					
+										
 				case 'drop_identity':  // Remove a binding.
 					$this->_profile_drop_identity($_REQUEST['id']);
 					break;
-			}
-		}
-
-
-		/**
-		 * Step 2 of adding new identity URL to user account.
-		 *
-		 * @private
-		 **/
-		function _profile_verify_identity() {
-			if ( !isset($_REQUEST['openid_mode']) ) {
-				return; // no mode? probably a spoof or bad cancel.
-			}
-
-			$identity_url = $this->finish_openid_auth();
-			if (!$identity_url) return;
-
-			if( !$this->store->insert_identity($identity_url) ) {
-				// TODO should we check for this duplication *before* authenticating the ID?
-				$this->error = 'OpenID assertion successful, but this URL is already claimed by '
-					. 'another user on this blog. This is probably a bug.';
-			} else {
-				$this->action = 'success';
 			}
 		}
 
@@ -426,7 +396,7 @@ if  ( !class_exists('WordpressOpenIDLogic') ) {
 		 * Called from wp_authenticate (for login form) and comment_tagging (for comment form)
 		 * If using comment form, specify optional parameters action=commentopenid and wordpressid=PostID.
 		 */
-		function start_login( $claimed_url, $return_to, $action, $arguments ) {
+		function start_login( $claimed_url, $action, $arguments = null) {
 
 			if ( empty($claimed_url) ) return; // do nothing.
 			
@@ -456,8 +426,8 @@ if  ( !class_exists('WordpressOpenIDLogic') ) {
 
 
 			// build return_to URL
-			$return_to = get_option('siteurl') . $return_to;
-			$auth_request->return_to_args['action'] = $action;			
+			$return_to = get_option('home') . '/openid_consumer';
+			$auth_request->return_to_args['action'] = $action;
 			if (is_array($arguments) && !empty($arguments)) {
 				foreach ($arguments as $k => $v) {
 					if ($k && $v) {
@@ -485,177 +455,203 @@ if  ( !class_exists('WordpressOpenIDLogic') ) {
 		}
 
 
-		/* 
-		 * Finish the redirect loop.
-		 * If returning from openid server with action set to loginopenid or commentopenid, complete the loop
-		 * If we fail to login, pass on the error message.
-		 */	
-		function finish_login( ) {
+		function wp_login_openid() {
 			$self = basename( $GLOBALS['pagenow'] );
 			
-			switch ( $self ) {
-				case 'wp-login.php':
-					if( $action == 'register' ) {
-						return;
-					}
-					if ($action == 'login' || $action == '') {
-						if (function_exists('wp_signon') && isset($_REQUEST['openid_url'])) {
-							wp_signon(array('user_login'=>'openid', 'user_password'=>'openid'));
-						}
-					}
-					if ( !isset( $_REQUEST['openid_mode'] ) ) return;
-					if( $_REQUEST['action'] == 'loginopenid' ) break;
-					if( $_REQUEST['action'] == 'commentopenid' ) break;
-					return;
-					break;
-					
+			if ($self == 'wp-login.php' && !empty($_POST['openid_url'])) {
+				// TODO wp_signon only exists in wp2.5+
+				wp_signon(array('user_login'=>'openid', 'user_password'=>'openid'));
+			}
+		}
 
-				case 'wp-register.php':
-					return;
+		/*
+		 * Login user with specified identity URL.  This will find the WordPress user 
+		 * account connected to this OpenID and set it as the current user.  Only call 
+		 * this function AFTER you've verified the identity URL.
+		 */
+		function set_current_user($identity_url, $remember = true) {
+			$user_id = $this->store->get_user_by_identity( $identity_url );
 
-				default:
-					return;				
-			}						
+			if (NULL == $user_id) return false;
+				
+			$user = set_current_user($user_id);
 			
+			if (function_exists('wp_set_auth_cookie')) {
+				wp_set_auth_cookie($user->ID, $remember);
+			} else {
+				wp_setcookie($user->user_login, $user->user_pass, false, '', '', $remember);
+			}
+
+			do_action('wp_login', $user->user_login);
+		}
+		
+		
+		/* 
+		 * Finish OpenID login.
+		 *
+		 * If we fail to login, pass on the error message.
+		 */	
+		function finish_openid($action) {
+
 			if( !$this->late_bind() ) return; // something is broken
 			
-			// We're doing OpenID login, so zero out these variables
-			unset( $_POST['user_login'] );
-			unset( $_POST['user_pass'] );
-
 			$identity_url = $this->finish_openid_auth();
-
-			if ($identity_url) {
-				$this->error = 'OpenID Authentication Success.';
-
-				$this->action = '';
-				$redirect_to = 'wp-admin/';
-
-				$matching_user_id = $this->store->get_user_by_identity( $identity_url );
-				
-				if( NULL !== $matching_user_id ) {
-					$user = new WP_User( $matching_user_id );
-					$success = false;
-
-					if (function_exists('wp_authenticate')) {
-						$success = wp_authenticate($user->user_login, md5($user->user_pass));
-					} else {
-						$success = wp_login( $user->user_login, md5($user->user_pass), true );
-					}
-
-					if( $success) {
-						$this->core->log->debug('OpenIDConsumer: Returning user logged in: '
-							.$user->user_login); 
-
-						if (function_exists('wp_set_auth_cookie')) {
-							// TODO: honor rememberme checkbox
-							wp_set_auth_cookie($user->ID, true);
-						} else {
-							wp_setcookie($user->user_login, md5($user->user_pass), true, '', '', true);
-						}
-
-						do_action('wp_login', $user_login);
-						
-						// put user data into an array to be stored with the comment itself
-						$oid_user_data = array( 
-							'ID' => $user->ID,
-							'user_url' => $user->user_url,
-							'user_email' => $user->user_email,
-							'user_nicename' => $user->user_nicename,
-							'display_name' => $user->display_name, 
-						);
-
-						$this->action = 'redirect';
-						if ( !$user->has_cap('edit_posts') ) $redirect_to = '/wp-admin/profile.php';
-
-					} else {
-						$this->error = 'OpenID authentication valid, but WordPress login failed. '
-							. 'OpenID login disabled for this account.';
-						$this->action = 'error';
-					}
-					
-				} else {
-
-					$oid_user_data =& $this->get_user_data($identity_url);
-
-					if ($_REQUEST['action'] == 'loginopenid') {
-						if ( get_option('users_can_register') ) {
-								$oid_user = $this->create_new_user($identity_url, $oid_user_data);
-						} else {
-							// TODO - Start a registration loop in WPMU.
-							$this->error = 'OpenID authentication valid, but unable '
-								. 'to find a WordPress account associated with this OpenID.<br /><br />'
-								. 'Enable "Anyone can register" to allow creation of new accounts via OpenID.';
-							$this->action = 'error';
-						}
-					} else {
-						$this->action = 'redirect';
-					}
-
-				}
-			} else {
-				//XXX: option to comment anonymously
-				$this->error = "We were unable to authenticate your OpenID";
+			
+			if (!empty($action) && method_exists($this, '_finish_openid_' . $action)) {
+				call_user_method('_finish_openid_' . $action, $this, $identity_url);
 			}
 			
-
-			$this->core->log->debug('OpenIDConsumer: Finish Auth for "' . $identity_url . 
-				'". ' . $this->error );
-			
-			if( $this->action == 'redirect' ) {
-				if ( !empty( $_REQUEST['redirect_to'] )) {
-					$redirect_to = $_REQUEST['redirect_to'];
-				} else if ( !empty($_REQUEST['comment_post_ID']) ) {
-					$redirect_to = get_permalink($_REQUEST['comment_post_ID']);
-				}
-				
-				if( $_REQUEST['action'] == 'commentopenid' ) {
-					$comment_id = $this->post_comment($oid_user_data);
-					$redirect_to .= '#comment-' . $comment_id;
-					$comment = get_comment($comment_id);
-					$redirect_to = apply_filters('comment_post_redirect', $redirect_to, $comment);
-				}
-
-				if( $redirect_to == '/wp-admin' and !$user->has_cap('edit_posts') ) 
-					$redirect_to = '/wp-admin/profile.php';
-
-				if (function_exists('wp_safe_redirect')) {
-					wp_safe_redirect( $redirect_to );
-				} else {
-					wp_redirect( $redirect_to );
-				}
-				exit();
-			}
-
 			global $action;
-			$action=$this->action; 
-
+			$action = $this->action;
 		}
 
 
-		function create_new_user($identity_url, &$oid_user_data) {
+		function _finish_openid_login($identity_url) {
+			$redirect_to = urldecode($_REQUEST['redirect_to']);
+			
+			if (empty($identity_url)) {
+				// FIXME unable to authenticate OpenID
+				$this->core->interface->display_error('unable to authenticate OpenID');
+			}
+			
+			$this->set_current_user($identity_url);
+			
+			if (!is_user_logged_in()) {
+				if ( get_option('users_can_register') ) {
+					$user_data =& $this->get_user_data($identity_url);
+					$user = $this->create_new_user($identity_url, $user_data);
+					$this->set_current_user($identity_url);  // TODO this does an extra db hit to get user_id
+				} else {
+					// TODO - Start a registration loop in WPMU.
+					$this->core->interface->display_error('OpenID authentication valid, but unable '
+					. 'to find a WordPress account associated with this OpenID.<br /><br />'
+					. 'Enable "Anyone can register" to allow creation of new accounts via OpenID.');
+				}
+
+			}
+			
+			if (empty($redirect_to)) {
+				$redirect_to = 'wp-admin/';
+			}
+			if ($redirect_to == 'wp-admin/') {				
+				if (!current_user_can('edit_posts')) {
+					$redirect_to .= 'profile.php';
+				}
+			}
+			if (!preg_match('#^(http|\/)#', $redirect_to)) {
+				$wpp = parse_url(get_option('siteurl'));
+				$redirect_to = $wpp['path'] . '/' . $redirect_to;
+			}
+						
+			if (function_exists('wp_safe_redirect')) {
+				wp_safe_redirect( $redirect_to );
+			} else {
+				wp_redirect( $redirect_to );
+			}
+			
+			exit;
+		}
+
+		
+		function _finish_openid_comment($identity_url) {
+			if (empty($identity_url)) {
+				// FIXME unable to authenticate OpenID - give option to post anonymously
+				$this->core->interface->display_error('unable to authenticate OpenID');
+			}
+			
+			$this->set_current_user($identity_url);
+			
+			if (is_user_logged_in()) {
+				// simulate an authenticated comment submission
+				$_SESSION['oid_comment_post']['author'] = null;
+				$_SESSION['oid_comment_post']['email'] = null;
+				$_SESSION['oid_comment_post']['url'] = null;
+			} else {
+				// try to get user data from the verified OpenID
+				$user_data =& $this->get_user_data($identity_url);
+
+				if (!empty($user_data['display_name'])) {
+					$_SESSION['oid_comment_post']['author'] = $user_data['display_name'];
+				}
+				if ($oid_user_data['user_email']) {
+					$_SESSION['oid_comment_post']['email'] = $user_data['user_email'];
+				}
+			}
+			
+			// record that we're about to post an OpenID authenticated comment.  
+			// We can't actually record it in the database until after the repost below.
+			$_SESSION['oid_posted_comment'] = true;
+
+			$wpp = parse_url(get_option('siteurl'));
+			$this->core->interface->repost($wpp['path'] . '/wp-comments-post.php', 
+				array_filter($_SESSION['oid_comment_post']));
+		}
+		
+		function _finish_openid_verify($identity_url) {
+			if (empty($identity_url)) {
+				// FIXME unable to authenticate OpenID - give option to post anonymously
+				$this->core->interface->display_error('unable to authenticate OpenID');
+			}
+			
+			if( !$this->store->insert_identity($identity_url) ) {
+				// TODO should we check for this duplication *before* authenticating the ID?
+				$this->core->interface->display_error('OpenID assertion successful, but this URL is already claimed by '
+					. 'another user on this blog. This is probably a bug.');
+			} else {
+				$this->action = 'success';
+			}
+			
+			$wpp = parse_url(get_option('siteurl'));
+			$redirect_to = $wpp['path'] . '/wp-admin/' . (current_user_can('edit_users') ? 'users.php' : 'profile.php') . '?page=' . $this->core->interface->profile_page_name;
+			if (function_exists('wp_safe_redirect')) {
+				wp_safe_redirect( $redirect_to );
+			} else {
+				wp_redirect( $redirect_to );
+			}
+			// TODO display success message
+			exit;
+		}
+		
+		/**
+		 * If last comment was authenticated by an OpenID, record that in the database.
+		 *
+		 * @param string $location redirect location
+		 * @param object $comment comment that was just left
+		 * @return string redirect location
+		 */
+		function comment_post_redirect($location, $comment) {
+			if ($_SESSION['oid_posted_comment']) {
+				$this->set_comment_openid($comment->comment_ID);
+				$_SESSION['oid_posted_comment'] = null;
+			}
+			
+			return $location;
+		}
+		
+		function create_new_user($identity_url, &$user_data) {
 			global $wpdb;
 
-			// Identity URL is new, so create a user with md5()'d password
+			// Identity URL is new, so create a user
 			@include_once( ABSPATH . 'wp-admin/upgrade-functions.php');	// 2.1
 			@include_once( ABSPATH . WPINC . '/registration-functions.php'); // 2.0.4
 
-			$oid_user_data['user_login'] = $wpdb->escape( $this->generate_new_username($identity_url) );
-			$oid_user_data['user_pass'] = substr( md5( uniqid( microtime() ) ), 0, 7);
-			$user_id = wp_insert_user( $oid_user_data );
+			$user_data['user_login'] = $wpdb->escape( $this->generate_new_username($identity_url) );
+			$user_data['user_pass'] = substr( md5( uniqid( microtime() ) ), 0, 7);
+			$user_id = wp_insert_user( $user_data );
 			
-			$this->core->log->debug("wp_create_user( $oid_user_data )  returned $user_id ");
+			$this->core->log->debug("wp_create_user( $user_data )  returned $user_id ");
 
 			if( $user_id ) { // created ok
 
-				$oid_user_data['ID'] = $user_id;
-
+				$user_data['ID'] = $user_id;
+				// XXX this all looks redundant, see $this->set_current_user
+				
 				$this->core->log->debug("OpenIDConsumer: Created new user $user_id : $username and metadata: "
-					. var_export( $oid_user_data, true ) );
+					. var_export( $user_data, true ) );
 				
 				$user = new WP_User( $user_id );
 
-				if( ! wp_login( $user->user_login, $oid_user_data['user_pass'] ) ) {
+				if( ! wp_login( $user->user_login, $user_data['user_pass'] ) ) {
 					$this->error = 'User was created fine, but wp_login() for the new user failed. '
 						. 'This is probably a bug.';
 					$this->action= 'error';
@@ -785,6 +781,8 @@ if  ( !class_exists('WordpressOpenIDLogic') ) {
 		 * @see get_user_data
 		 */
 		function get_user_data_form($identity_url, &$data) {
+			return false;
+			// TODO do we still need this function?
 			$comment = $this->get_comment();
 
 			if (!$comment || !is_array($comment)) {
@@ -800,76 +798,6 @@ if  ( !class_exists('WordpressOpenIDLogic') ) {
 				if( isset($namechunks[1]) ) $data['last_name'] = $namechunks[1];
 				$data['display_name'] = $comment['comment_author'];
 			}
-		}
-
-
-		/** 
-		 * Transparent inline login and commenting.
-		 * The comment text is in the session.
-		 * Post it and redirect to the permalink.
-		 */
-		function post_comment(&$oid_user_data) {
-			
-			$comment = $this->get_comment();
-			$comment_content = $comment['comment_content'];
-			$this->clear_comment();
-			
-			if ( '' == trim($comment_content) )
-				die( __('Error: please type a comment.') );
-			
-			$this->core->log->debug('OpenIDConsumer: action=commentopenid  redirect_to=' . $redirect_to);
-			$this->core->log->debug('OpenIDConsumer: comment_content = ' . $comment_content);
-			
-			nocache_headers();
-			
-			// Do essentially the same thing as wp-comments-post.php
-			global $wpdb;
-			$comment_post_ID = (int) $_REQUEST['wordpressid'];
-			$status = $wpdb->get_row("SELECT post_status, comment_status FROM $wpdb->posts "
-				. "WHERE ID = '$comment_post_ID'");
-			if ( empty($status->comment_status) ) {
-				do_action('comment_id_not_found', $comment_post_ID);
-				exit();
-			} elseif ( 'closed' ==  $status->comment_status ) {
-				do_action('comment_closed', $comment_post_ID);
-				die( __('Sorry, comments are closed for this item.') );
-			} elseif ( 'draft' == $status->post_status ) {
-				do_action('comment_on_draft', $comment_post_ID);
-				exit;
-			}
-			
-			$comment_author       = $wpdb->escape($oid_user_data['display_name']);
-			$comment_author_email = $wpdb->escape($oid_user_data['user_email']);
-			$comment_author_url   = $wpdb->escape($oid_user_data['user_url']);
-			$user_ID              = $oid_user_data['ID'];
-
-			$commentdata = compact('comment_post_ID', 'comment_author', 'comment_author_email',
-										'comment_author_url', 'comment_content', 'comment_type', 'user_ID');
-
-			if ( !$user_id ) {
-				setcookie('comment_author_' . COOKIEHASH, $comment['comment_author'], 
-					time() + 30000000, COOKIEPATH, COOKIE_DOMAIN);
-				setcookie('comment_author_email_' . COOKIEHASH, $comment['comment_author_email'], 
-					time() + 30000000, COOKIEPATH, COOKIE_DOMAIN);
-				setcookie('comment_author_url_' . COOKIEHASH, clean_url($comment['comment_author_url']), 
-					time() + 30000000, COOKIEPATH, COOKIE_DOMAIN);
-
-				// save openid url in a separate cookie so wordpress doesn't muck with it when we 
-				// read it back in later
-				setcookie('comment_author_openid_' . COOKIEHASH, $comment['comment_author_openid'], 
-					time() + 30000000, COOKIEPATH, COOKIE_DOMAIN);
-			}	
-
-			// comment approval
-			if ( get_option('oid_enable_approval') ) {
-				add_filter('pre_comment_approved', array($this, 'comment_approval'));
-			}
-
-			$comment_ID = wp_new_comment( $commentdata );
-
-			$this->set_comment_openid($comment_ID);
-
-			return $comment_ID;
 		}
 
 
@@ -898,24 +826,13 @@ if  ( !class_exists('WordpressOpenIDLogic') ) {
 		}
 
 
-		/* These functions are used to store the comment
-		 * temporarily while doing an OpenID redirect loop.
-		 */
-		function set_comment( $content ) {
-			$_SESSION['oid_comment'] = $content;
-		}
-
-		function clear_comment( ) {
-			unset($_SESSION['oid_comment']);
-		}
-
-		function get_comment( ) {
-			return $_SESSION['oid_comment'];
-		}
-
 		/* Called when comment is submitted by get_option('require_name_email') */
 		function bypass_option_require_name_email( $value ) {
 			global $openid_auth_request;
+			
+			if ($_REQUEST['oid_skip']) {
+				return $value;
+			}
 
 			if (array_key_exists('openid_url', $_POST)) {
 				if( !empty( $_POST['openid_url'] ) ) {
@@ -943,7 +860,8 @@ if  ( !class_exists('WordpressOpenIDLogic') ) {
 		/*
 		 * Called when comment is submitted via preprocess_comment hook.
 		 * If comment is submitted along with an openid url, store comment, and do authentication.
-		 *
+		 * TODO: rename this function to something more accurate
+		 * 
 		 * regarding comment_type: http://trac.wordpress.org/ticket/2659
 		 */
 		function comment_tagging( $comment ) {
@@ -951,23 +869,23 @@ if  ( !class_exists('WordpressOpenIDLogic') ) {
 
 			if (!$this->enabled) return $comment;
 			
+			if ($_REQUEST['oid_skip']) return $comment;
+			
 			$openid_url = (array_key_exists('openid_url', $_POST) ? $_POST['openid_url'] : $_POST['url']);
 
 			if( !empty($openid_url) ) {  // Comment form's OpenID url is filled in.
-				$comment['comment_author_openid'] = $openid_url;
-				$this->set_comment($comment);
-				$this->start_login( $openid_url, '/wp-login.php', 'commentopenid', 
-					array(
-						'wordpressid' => $comment['comment_post_ID'],
-						'redirect_to' => get_permalink( $comment['comment_post_ID'] ), 
-					)
-				);
+				$_SESSION['oid_comment_post'] = $_POST;
+				$_SESSION['oid_comment_post']['comment_author_openid'] = $openid_url;
+				$_SESSION['oid_comment_post']['oid_skip'] = 1;
+
+				$this->start_login( $openid_url, 'comment');
 				
 				// Failure to redirect at all, the URL is malformed or unreachable. 
-
+				
 				// Display an error message only if an explicit OpenID field  was used.  Otherwise, 
 				// just ignore the error... it just means the user entered a normal URL.
 				if (array_key_exists('openid_url', $_POST)) {
+					// TODO give option to post without OpenID
 					global $error;
 					$error = $this->error;
 					$_POST['openid_url'] = '';
@@ -985,6 +903,7 @@ if  ( !class_exists('WordpressOpenIDLogic') ) {
 		 * For now it just approves all OpenID comments, but later it could do 
 		 * more complicated logic like whitelists.
 		 **/
+		// XXX these needs to be hooked back in
 		function comment_approval($approved) {
 			return 1;
 		}
@@ -1045,6 +964,39 @@ if  ( !class_exists('WordpressOpenIDLogic') ) {
 				$_COOKIE['comment_author_url_'.COOKIEHASH] = $comment_author_url;
 			}
 		}
+		
+		/**
+		 * Add OpenID consumer endpoing to wp_rewrite rules.
+		 */
+		function rewrite_rules() {
+			global $wp_rewrite;
+
+        	$xrds_rules = array(
+            	'openid_consumer$' => 'index.php?openid_consumer=1',
+            	'index.php/openid_consumer$' => 'index.php?openid_consumer=1',
+        	);  
+
+        	$wp_rewrite->rules = $xrds_rules + $wp_rewrite->rules;
+		}
+		
+		/**
+		 * Add 'openid_consumer' as a valid query variables.
+		 **/
+		function query_vars($vars) {
+			$vars[] = 'openid_consumer';
+			return $vars;
+		}
+		
+		/**
+		 * Parse Query
+		 **/
+		function parse_query($query) {
+			if ($query) $openid = $query->query_vars['openid_consumer'];
+			if (!empty($openid)) {
+				$this->finish_openid($_REQUEST['action']);
+			}
+		}
+
 
 
 	} // end class definition

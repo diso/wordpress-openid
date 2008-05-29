@@ -5,8 +5,8 @@
  * User Interface Elements for wp-openid
  * Dual Licence: GPL & Modified BSD
  */
-if ( !class_exists('WordpressOpenIDInterface') ) {
-class WordpressOpenIDInterface {
+if ( !class_exists('WordPressOpenID_Interface') ) {
+class WordPressOpenID_Interface {
 
 	var $logic;  // Hold core logic instance
 	var $core;  // Hold core instance
@@ -16,7 +16,7 @@ class WordpressOpenIDInterface {
 	/**
 	 * Constructor.
 	 */
-	function WordpressOpenIDInterface($core) {
+	function WordPressOpenID_Interface($core) {
 		$this->core =& $core;
 		$this->logic =& $core->logic;
 	}
@@ -29,8 +29,8 @@ class WordpressOpenIDInterface {
 	 **/
 	function login_form_hide_username_password_errors($r) {
 		if( $_POST['openid_url']
-			or $_REQUEST['action'] == 'loginopenid'
-			or $_REQUEST['action'] == 'commentopenid' ) return $this->logic->error;
+			or $_REQUEST['action'] == 'login'
+			or $_REQUEST['action'] == 'comment' ) return $this->logic->error;
 		return $r;
 	}
 
@@ -451,6 +451,29 @@ class WordpressOpenIDInterface {
 		<?php
 	}
 
+	function repost($action, $parameters) {
+		echo '<html><head></head><body>
+		<noscript><p>Since your browser does not support JavaScript, you must press the Continue button once to proceed.</p></noscript>
+		<form action="'.$action.'" method="post">';
+
+		foreach ($parameters as $k => $v) {
+			if ($k == 'submit') continue;
+			echo "\n" . '<input type="hidden" name="'.$k.'" value="'.$v.'" />';
+		}
+		echo '
+			<noscript><div><input type="submit" value="Continue" /></div></noscript>
+		</form>
+		
+		<script type="text/javascript">document.forms[0].submit()</script>
+		
+		</body></html>';
+		exit;
+	}
+	
+	function display_error($error) {
+		echo '<html><head></head><body>' . $error . '</body></html>';
+		exit;
+	}
 }
 }
 
