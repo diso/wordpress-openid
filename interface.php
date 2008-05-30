@@ -5,7 +5,7 @@
  * User Interface Elements for wp-openid
  * Dual Licence: GPL & Modified BSD
  */
-if ( !class_exists('WordPressOpenID_Interface') ) {
+if (!class_exists('WordPressOpenID_Interface')):
 class WordPressOpenID_Interface {
 
 	var $logic;  // Hold core logic instance
@@ -475,6 +475,6 @@ class WordPressOpenID_Interface {
 		exit;
 	}
 }
-}
+endif;
 
 ?>
