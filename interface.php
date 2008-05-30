@@ -133,8 +133,7 @@ class WordPressOpenID_Interface {
 	 * @action: comment_form
 	 **/
 	function comment_form() {
-		global $user_ID;
-		if (!$user_ID) {
+		if (!is_user_logged_in()) {
 			echo '<script type="text/javascript">add_openid_to_comment_form()</script>';
 		}
 	}
@@ -293,6 +292,7 @@ class WordPressOpenID_Interface {
 		if( !current_user_can('read') ) {
 			return;
 		}
+		$user = wp_get_current_user();
 
 		$this->logic->late_bind();
 
@@ -317,7 +317,7 @@ class WordPressOpenID_Interface {
 			</p>
 		<?php
 		
-		$urls = $this->logic->store->get_my_identities();
+		$urls = $this->logic->store->get_identities($user->ID);
 
 		if( count($urls) ) : ?>
 			<p>There are <?php echo count($urls); ?> identities associated with this WordPress user.</p>

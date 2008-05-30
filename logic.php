@@ -264,19 +264,20 @@ class WordPressOpenID_Logic {
 	 * @param int $id id of identity URL to remove
 	 */
 	function _profile_drop_identity($id) {
+		$user = wp_get_current_user();
 
-		if( !isset( $id)) {
+		if( !isset($id)) {
 			$this->error = 'Identity url delete failed: ID paramater missing.';
 			return;
 		}
 
-		$deleted_identity_url = $this->store->get_my_identities($id);
+		$deleted_identity_url = $this->store->get_identities($user->ID, $id);
 		if( FALSE === $deleted_identity_url ) {
 			$this->error = 'Identity url delete failed: Specified identity does not exist.';
 			return;
 		}
 
-		$identity_urls = $this->store->get_my_identities();
+		$identity_urls = $this->store->get_identities($user->ID);
 		if (sizeof($identity_urls) == 1 && !$_REQUEST['confirm']) {
 			$this->error = 'This is your last identity URL.  Are you sure you want to delete it? Doing so may interfere with your ability to login.<br /><br /> '
 			. '<a href="?confirm=true&'.$_SERVER['QUERY_STRING'].'">Yes I\'m sure.  Delete it</a>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;'
@@ -287,7 +288,8 @@ class WordPressOpenID_Logic {
 
 		check_admin_referer('wp-openid-drop-identity_'.$deleted_identity_url);
 			
-		if( $this->store->drop_identity($id) ) {
+
+		if( $this->store->drop_identity($user->ID, $id) ) {
 			$this->error = 'Identity url delete successful. <b>' . $deleted_identity_url
 			. '</b> removed.';
 			$this->action = 'success';
@@ -638,7 +640,7 @@ class WordPressOpenID_Logic {
 	 */
 	function _finish_openid_verify($identity_url) {
 		if (empty($identity_url)) {
-			// FIXME unable to authenticate OpenID - give option to post anonymously
+			// FIXME unable to authenticate OpenID
 			$this->core->interface->display_error('unable to authenticate OpenID');
 		}
 			
@@ -785,7 +787,7 @@ class WordPressOpenID_Logic {
 	 * @see get_user_data
 	 */
 	function get_user_data_ax($identity_url, &$data) {
-		// TODO
+		// TODO implement attribute exchange
 	}
 
 
@@ -833,7 +835,7 @@ class WordPressOpenID_Logic {
 	 * @see get_user_data
 	 */
 	function get_user_data_hcard($identity_url, &$data) {
-		// TODO
+		// TODO implement hcard discovery
 	}
 
 
@@ -915,10 +917,7 @@ class WordPressOpenID_Logic {
 	 * @return object comment object
 	 */
 	function comment_tagging( $comment ) {
-		global $current_user;
-
 		if (!$this->enabled) return $comment;
-			
 		if ($_REQUEST['oid_skip']) return $comment;
 			
 		$openid_url = (array_key_exists('openid_url', $_POST) ? $_POST['openid_url'] : $_POST['url']);
@@ -974,7 +973,8 @@ class WordPressOpenID_Logic {
 	 * @return array new array of comments to display
 	 */
 	function comments_awaiting_moderation(&$comments, $post_id) {
-		global $wpdb, $user_ID;
+		global $wpdb;
+		$user = wp_get_current_user();
 
 		$commenter = wp_get_current_commenter();
 		extract($commenter);
@@ -991,7 +991,7 @@ class WordPressOpenID_Logic {
 			. " WHERE comment_post_ID = '$post_id'"
 			. " AND openid = '1'"             // get OpenID comments
 			. " AND comment_author_url = '$url_db'"      // where only the URL matches
-			. ($user_ID ? " AND user_id != '$user_ID'" : '')
+			. ($user ? " AND user_id != '$user->ID'" : '')
 			. ($author_db ? " AND comment_author != '$author_db'" : '')
 			. ($email_db ? " AND comment_author_email != '$email_db'" : '')
 			. " AND comment_approved = '0'"

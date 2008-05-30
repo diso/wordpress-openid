@@ -199,33 +199,34 @@ class WordPressOpenID_Store extends Auth_OpenID_MySQLStore {
 
 
 	/* Application-specific database operations */
-	function get_my_identities( $id = 0 ) {
-		global $userdata;
-		if( $id ) {
+
+	function get_identities($user_id, $identity_id = 0 ) {
+		if( $identity_id ) {
 			return $this->connection->getOne(
 					"SELECT url FROM $this->identity_table_name WHERE user_id = %s AND uurl_id = %s",
-			array( (int)$userdata->ID, (int)$id )
+			array( (int)$user_id, (int)$identity_id )
 			);
 		} else {
 			return $this->connection->getAll(
 					"SELECT uurl_id,url FROM $this->identity_table_name WHERE user_id = %s",
-			array( (int)$userdata->ID )
+			array( (int)$user_id )
 			);
 		}
 	}
 
 
 	function insert_identity($url) {
-		global $userdata, $wpdb;
+		global $wpdb;
+		$user = wp_get_current_user();
 
 		$old_show_errors = $wpdb->show_errors;
 		if( $old_show_errors ) $wpdb->hide_errors();
 		$ret = @$this->connection->query(
 				"INSERT INTO $this->identity_table_name (user_id,url,hash) VALUES ( %s, %s, MD5(%s) )",
-		array( (int)$userdata->ID, $url, $url ) );
+		array( (int)$user->ID, $url, $url ) );
 		if( $old_show_errors ) $wpdb->show_errors();
 
-		$this->update_user_openid_status();
+		$this->update_user_openid_status($user->ID);
 
 		return $ret;
 	}
@@ -238,23 +239,27 @@ class WordPressOpenID_Store extends Auth_OpenID_MySQLStore {
 		);
 	}
 
-	function drop_identity($id) {
-		global $userdata;
+	/**
+	 * Drop identity from user.
+	 *
+	 * @param int $user_id id of WordPress user
+	 * @param int $identity_id id of identity
+	 * @return unknown result of database operation
+	 */
+	function drop_identity($user_id, $identity_id) {
 		$ret = $this->connection->query(
 				"DELETE FROM $this->identity_table_name WHERE user_id = %s AND uurl_id = %s",
-		array( (int)$userdata->ID, (int)$id )
+		array( (int)$user_id, (int)$identity_id )
 		);
 
-		$this->update_user_openid_status();
+		$this->update_user_openid_status($user_id);
 
 		return $ret;
 	}
 
-	function update_user_openid_status() {
-		global $userdata;
-
-		$identities = $this->get_my_identities();
-		update_usermeta( $userdata->ID, 'has_openid', (empty($identities) ? false : true) );
+	function update_user_openid_status($user_id) {
+		$identities = $this->get_identities($user_id);
+		update_usermeta( $user_id, 'has_openid', (empty($identities) ? false : true) );
 	}
 
 	function get_user_by_identity($url) {
