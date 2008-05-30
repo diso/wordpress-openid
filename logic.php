@@ -318,23 +318,12 @@ class WordPressOpenID_Logic {
 		} else {
 			// Generate form markup and render it
 			$form_id = 'openid_message';
-			$form_html = $auth_request->formMarkup($trust_root, $return_to, false, array('id'=>$form_id));
+			$form_html = $auth_request->formMarkup($trust_root, $return_to, false);
 
 			if (Auth_OpenID::isFailure($form_html)) {
 				$this->core->log->error('Could not redirect to server: '.$form_html->message);
 			} else {
-				?>
-<html>
-<head>
-<title>Redirecting to OpenID Provider</title>
-</head>
-<body
-	onload="document.getElementById('<?php echo $form_id ?>').submit();">
-<h3>Redirecting to OpenID Provider</h3>
-				<?php echo $form_html ?>
-</body>
-</html>
-				<?php
+				$this->core->interface->display_openid_redirect_form($form_html);
 			}
 		}
 	}

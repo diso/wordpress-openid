@@ -474,6 +474,14 @@ class WordPressOpenID_Interface {
 		echo '<html><head></head><body>' . $error . '</body></html>';
 		exit;
 	}
+	
+	function display_openid_redirect_form($form) {
+		echo '<html><head><title>Redirecting to OpenID Provider</title></head>
+		<body onload="document.forms[0].submit();">
+			<h3>Redirecting to OpenID Provider</h3>
+			' . $form . '
+		</body></html>';
+	}
 }
 endif;
 
