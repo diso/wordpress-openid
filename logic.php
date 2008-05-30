@@ -2,9 +2,13 @@
 /**
  * logic.php
  *
- * Dual License: GPL & Modified BSD
+ * Dual License: GPLv2 & Modified BSD
  */
-if  ( !class_exists('WordPressOpenID_Logic') ) {
+if (!class_exists('WordPressOpenID_Logic')):
+	
+	/**
+	 * Basic logic for wp-openid plugin.
+	 */
 	class WordPressOpenID_Logic {
 
 		var $core;        // WordPressOpenID instance
@@ -20,15 +24,23 @@ if  ( !class_exists('WordPressOpenID_Logic') ) {
 
 		var $bind_done = false;
 
+		
 		/**
 		 * Constructor.
+		 *
+		 * @param WordPressOpenID $core wp-openid core instance
+		 * @return WordPressOpenID_Logic
 		 */
 		function WordPressOpenID_Logic($core) {
 			$this->core =& $core;
 		}
 
 
-		/* Soft verification of plugin activation OK */
+		/**
+		 * Soft verification of plugin activation
+		 *
+		 * @return boolean if the plugin is okay
+		 */
 		function uptodate() {
 			$this->core->log->debug('checking if database is up to date');
 			if( get_option('oid_db_revision') != WPOPENID_DB_REVISION ) {  
@@ -43,8 +55,11 @@ if  ( !class_exists('WordPressOpenID_Logic') ) {
 			return $this->enabled;
 		}
 		
+
 		/**
 		 * Get the internal SQL Store.  If it is not already initialized, do so.
+		 *
+		 * @return WordPressOpenID_Store internal SQL store
 		 */
 		function getStore() {
 			if (!isset($this->store)) {
@@ -65,8 +80,11 @@ if  ( !class_exists('WordPressOpenID_Logic') ) {
 			return $this->store;
 		}
 
+
 		/**
 		 * Get the internal OpenID Consumer object.  If it is not already initialized, do so.
+		 *
+		 * @return Auth_OpenID_Consumer OpenID consumer object
 		 */
 		function getConsumer() {
 			if (!isset($this->_consumer)) {
@@ -184,10 +202,11 @@ if  ( !class_exists('WordPressOpenID_Logic') ) {
 		}
 
  
-		/*
-		 * Hook - called as wp_authenticate
+		/**
 		 * If we're doing openid authentication ($_POST['openid_url'] is set), start the consumer & redirect
 		 * Otherwise, return and let WordPress handle the login and/or draw the form.
+		 *
+		 * @param string $username username provided in login form
 		 */
 		function wp_authenticate( &$username ) {
 			if( !empty( $_POST['openid_url'] ) ) {
@@ -204,8 +223,8 @@ if  ( !class_exists('WordPressOpenID_Logic') ) {
 
 
 		/**
-		 * Start the redirect loop for the admin pages profile.php & users.php
-		 **/
+		 * Handle OpenID profile management.
+		 */
 		function openid_profile_management() {
 			global $wp_version;
 
@@ -240,10 +259,10 @@ if  ( !class_exists('WordPressOpenID_Logic') ) {
 
 
 		/**
-		 * Remove identity URL from user account.
+		 * Remove identity URL from current user account.
 		 *
-		 * @private
-		 **/
+		 * @param int $id id of identity URL to remove
+		 */
 		function _profile_drop_identity($id) {
 
 			if( !isset( $id)) {
@@ -281,7 +300,11 @@ if  ( !class_exists('WordPressOpenID_Logic') ) {
 
 		/**
 		 * Send the user to their OpenID provider to authenticate.
-		 **/
+		 *
+		 * @param Auth_OpenID_AuthRequest $auth_request OpenID authentication request object
+		 * @param string $trust_root OpenID trust root
+		 * @param string $return_to URL where the OpenID provider should return the user
+		 */
 		function doRedirect($auth_request, $trust_root, $return_to) {
 			if ($auth_request->shouldSendRedirect()) {
 				if (substr($trust_root, -1, 1) != '/') $trust_root .= '/';
@@ -319,8 +342,7 @@ if  ( !class_exists('WordPressOpenID_Logic') ) {
 		/**
 		 * Finish OpenID Authentication.
 		 *
-		 * @param 	object		OpenID Consumer
-		 * @return	String		authenticated Identity URL
+		 * @return String authenticated identity URL, or null if authentication failed.
 		 */
 		function finish_openid_auth() {
 			set_error_handler( array($this, 'customer_error_handler'));
@@ -358,12 +380,11 @@ if  ( !class_exists('WordPressOpenID_Logic') ) {
 		}
 		
 
-
-		/* Simple loop to reduce collisions for usernames for urls like:
-		 * Eg: http://foo.com/80/to/magic.com
-		 * and http://foo.com.80.to.magic.com
-		 * and http://foo.com:80/to/magic.com
-		 * and http://foo.com/80?to=magic.com
+		/**
+		 * Generate a unique WordPress username for the given OpenID URL.
+		 *
+		 * @param string $url OpenID URL to generate username for
+		 * @return string generated username
 		 */
 		function generate_new_username($url) {
 			$base = $this->normalize_username($url);
@@ -379,6 +400,15 @@ if  ( !class_exists('WordPressOpenID_Logic') ) {
 			}
 		}
 		
+		/**
+		 * Normalize the OpenID URL into a username.  This includes rules like:
+		 *  - remove protocol prefixes like 'http://' and 'xri://'
+		 *  - remove the 'xri.net' domain for i-names
+		 *  - substitute certain characters which are not allowed by WordPress 
+		 *
+		 * @param string $username username to be normalized
+		 * @return string normalized username
+		 */
 		function normalize_username($username) {
 			$username = preg_replace('|^https?://(xri.net/([^@]!?)?)?|', '', $username);
 			$username = preg_replace('|^xri://([^@]!?)?|', '', $username);
@@ -389,12 +419,12 @@ if  ( !class_exists('WordPressOpenID_Logic') ) {
 		}
 
 
-
-		/*  
-		 * Prepare to start the redirect loop
-		 * This function is mainly for assembling urls
-		 * Called from wp_authenticate (for login form) and comment_tagging (for comment form)
-		 * If using comment form, specify optional parameters action=commentopenid and wordpressid=PostID.
+		/**
+		 * Start the OpenID authentication process.
+		 *
+		 * @param string $claimed_url claimed OpenID URL
+		 * @param action $action OpenID action being performed
+		 * @param array $arguments array of additional arguments to be included in the 'return_to' URL
 		 */
 		function start_login( $claimed_url, $action, $arguments = null) {
 
@@ -455,6 +485,10 @@ if  ( !class_exists('WordPressOpenID_Logic') ) {
 		}
 
 
+		/**
+		 * Intercept login requests on wp-login.php if they include an 'openid_url' value and start OpenID 
+		 * authentication.
+		 */
 		function wp_login_openid() {
 			$self = basename( $GLOBALS['pagenow'] );
 			
@@ -463,16 +497,20 @@ if  ( !class_exists('WordPressOpenID_Logic') ) {
 				wp_signon(array('user_login'=>'openid', 'user_password'=>'openid'));
 			}
 		}
+		
 
-		/*
-		 * Login user with specified identity URL.  This will find the WordPress user 
-		 * account connected to this OpenID and set it as the current user.  Only call 
-		 * this function AFTER you've verified the identity URL.
+		/**
+		 * Login user with specified identity URL.  This will find the WordPress user account connected to this 
+		 * OpenID and set it as the current user.  Only call this function AFTER you've verified the identity URL.
+		 *
+		 * @param string $identity_url OpenID to set as current user
+		 * @param boolean $remember should we set the "remember me" cookie
+		 * @return void 
 		 */
 		function set_current_user($identity_url, $remember = true) {
 			$user_id = $this->store->get_user_by_identity( $identity_url );
 
-			if (NULL == $user_id) return false;
+			if (NULL == $user_id) return;
 				
 			$user = set_current_user($user_id);
 			
@@ -485,12 +523,15 @@ if  ( !class_exists('WordPressOpenID_Logic') ) {
 			do_action('wp_login', $user->user_login);
 		}
 		
-		
-		/* 
-		 * Finish OpenID login.
+
+		/**
+		 * Finish OpenID authentication.  After doing the basic stuff, the action method is called to complete the 
+		 * process.  Action methods are based on the action name passed in and are of the form
+		 * '_finish_openid_$action'.  Action methods are passed the verified identity URL, or null if OpenID 
+		 * authentication failed. 
 		 *
-		 * If we fail to login, pass on the error message.
-		 */	
+		 * @param string $action login action that is being performed
+		 */
 		function finish_openid($action) {
 
 			if( !$this->late_bind() ) return; // something is broken
@@ -505,7 +546,13 @@ if  ( !class_exists('WordPressOpenID_Logic') ) {
 			$action = $this->action;
 		}
 
-
+		
+		/**
+		 * Action method for completing the 'login' action.  This action is used when a user is logging in from 
+		 * wp-login.php.
+		 *
+		 * @param string $identity_url verified OpenID URL
+		 */
 		function _finish_openid_login($identity_url) {
 			$redirect_to = urldecode($_REQUEST['redirect_to']);
 			
@@ -553,6 +600,11 @@ if  ( !class_exists('WordPressOpenID_Logic') ) {
 		}
 
 		
+		/**
+		 * Action method for completing the 'comment' action.  This action is used when leaving a comment.
+		 *
+		 * @param string $identity_url verified OpenID URL
+		 */
 		function _finish_openid_comment($identity_url) {
 			if (empty($identity_url)) {
 				// FIXME unable to authenticate OpenID - give option to post anonymously
@@ -587,6 +639,13 @@ if  ( !class_exists('WordPressOpenID_Logic') ) {
 				array_filter($_SESSION['oid_comment_post']));
 		}
 		
+		
+		/**
+		 * Action method for completing the 'verify' action.  This action is used adding an identity URL to a 
+		 * WordPress user through the admin interface.
+		 *
+		 * @param string $identity_url verified OpenID URL
+		 */
 		function _finish_openid_verify($identity_url) {
 			if (empty($identity_url)) {
 				// FIXME unable to authenticate OpenID - give option to post anonymously
@@ -612,6 +671,7 @@ if  ( !class_exists('WordPressOpenID_Logic') ) {
 			exit;
 		}
 		
+		
 		/**
 		 * If last comment was authenticated by an OpenID, record that in the database.
 		 *
@@ -628,6 +688,14 @@ if  ( !class_exists('WordPressOpenID_Logic') ) {
 			return $location;
 		}
 		
+		
+		/**
+		 * Create a new WordPress user with the specified identity URL and user data.
+		 *
+		 * @param string $identity_url OpenID to associate with the newly 
+		 * created account
+		 * @param array $user_data array of user data
+		 */
 		function create_new_user($identity_url, &$user_data) {
 			global $wpdb;
 
@@ -684,7 +752,7 @@ if  ( !class_exists('WordPressOpenID_Logic') ) {
 
 		}
 
-
+		
 		/**
 		 * Get user data for the given identity URL.  Data is returned as an associative array with the keys:
 		 *   ID, user_url, user_nicename, display_name
@@ -693,8 +761,10 @@ if  ( !class_exists('WordPressOpenID_Logic') ) {
 		 *   - OpenID Attribute Exchange      !! not yet implemented
 		 * 	 - OpenID Simple Registration
 		 * 	 - hCard discovery                !! not yet implemented
-		 * 	 - WordPress comment form
 		 * 	 - default to identity URL
+		 *
+		 * @param string $identity_url OpenID to get user data about
+		 * @return array user data
 		 */
 		function get_user_data($identity_url) {
 
@@ -713,10 +783,6 @@ if  ( !class_exists('WordPressOpenID_Logic') ) {
 
 			$result = $this->get_user_data_sreg($identity_url, $data);
 
-			if (!$result) {
-				$result = $this->get_user_data_form($identity_url, $data);
-			}
-
 			return $data;
 		}
 
@@ -724,6 +790,8 @@ if  ( !class_exists('WordPressOpenID_Logic') ) {
 		/**
 		 * Retrieve user data from OpenID Attribute Exchange.
 		 *
+		 * @param string $identity_url OpenID to get user data about
+		 * @param reference $data reference to user data array
 		 * @see get_user_data
 		 */
 		function get_user_data_ax($identity_url, &$data) {
@@ -734,6 +802,8 @@ if  ( !class_exists('WordPressOpenID_Logic') ) {
 		/**
 		 * Retrieve user data from OpenID Simple Registration.
 		 *
+		 * @param string $identity_url OpenID to get user data about
+		 * @param reference $data reference to user data array
 		 * @see get_user_data
 		 */
 		function get_user_data_sreg($identity_url, &$data) {
@@ -768,36 +838,12 @@ if  ( !class_exists('WordPressOpenID_Logic') ) {
 		/**
 		 * Retrieve user data from hCard discovery.
 		 *
+		 * @param string $identity_url OpenID to get user data about
+		 * @param reference $data reference to user data array
 		 * @see get_user_data
 		 */
 		function get_user_data_hcard($identity_url, &$data) {
 			// TODO
-		}
-
-
-		/**
-		 * Retrieve user data from WordPress comment form.
-		 *
-		 * @see get_user_data
-		 */
-		function get_user_data_form($identity_url, &$data) {
-			return false;
-			// TODO do we still need this function?
-			$comment = $this->get_comment();
-
-			if (!$comment || !is_array($comment)) {
-				return false;
-			}
-
-			if (array_key_exists('comment_author_email', $comment) && $comment['comment_author_email']) {
-				$data['user_email'] = $comment['comment_author_email'];
-			}
-			if (array_key_exists('comment_author', $comment) && $comment['comment_author']) {
-				$namechunks = explode( ' ', $comment['comment_author'], 2 );
-				if( isset($namechunks[0]) ) $data['first_name'] = $namechunks[0];
-				if( isset($namechunks[1]) ) $data['last_name'] = $namechunks[1];
-				$data['display_name'] = $comment['comment_author'];
-			}
 		}
 
 
@@ -817,6 +863,8 @@ if  ( !class_exists('WordPressOpenID_Logic') ) {
 
 		/**
 		 * Mark the provided comment as an OpenID comment
+		 * 
+		 * @param int $comment_ID id of comment to set as OpenID
 		 */
 		function set_comment_openid($comment_ID) {
 			global $wpdb;
@@ -826,7 +874,16 @@ if  ( !class_exists('WordPressOpenID_Logic') ) {
 		}
 
 
-		/* Called when comment is submitted by get_option('require_name_email') */
+		/**
+		 * If the comment contains a valid OpenID, skip the check for requiring a name and email address.  Even if 
+		 * this data is provided in the form, we may get it through other methods, so we don't want to bail out 
+		 * prematurely.  After OpenID authentication has completed (and $_SESSION['oid_skip'] is set), we don't 
+		 * interfere so that this data can be required if desired. 
+		 *
+		 * @param boolean $value existing value of flag, whether to require name and email
+		 * @return boolean new value of flag, whether to require name and email
+		 * @see get_user_data
+		 */
 		function bypass_option_require_name_email( $value ) {
 			global $openid_auth_request;
 			
@@ -857,12 +914,15 @@ if  ( !class_exists('WordPressOpenID_Logic') ) {
 			return $value;
 		}
 		
-		/*
-		 * Called when comment is submitted via preprocess_comment hook.
-		 * If comment is submitted along with an openid url, store comment, and do authentication.
-		 * TODO: rename this function to something more accurate
-		 * 
+		
+		/**
+		 * Intercept comment submission and check if it includes a valid OpenID.  If it does, save the entire POST 
+		 * array and begin the OpenID authentication process.
+		 *
 		 * regarding comment_type: http://trac.wordpress.org/ticket/2659
+		 * 
+		 * @param object $comment comment object
+		 * @return object comment object
 		 */
 		function comment_tagging( $comment ) {
 			global $current_user;
@@ -899,13 +959,18 @@ if  ( !class_exists('WordPressOpenID_Logic') ) {
 
 
 		/**
-		 * This filter callback is only set when a new OpenID comment is made.  
-		 * For now it just approves all OpenID comments, but later it could do 
-		 * more complicated logic like whitelists.
-		 **/
-		// XXX these needs to be hooked back in
+		 * This filter callback simply approves all OpenID comments, but later it could do more complicated logic 
+		 * like whitelists.
+		 *
+		 * @param string $approved comment approval status 
+		 * @return string new comment approval status
+		 */
 		function comment_approval($approved) {
-			return 1;
+			if ($_SESSION['oid_posted_comment']) {
+				return 1;	
+			}
+			
+			return $approved;
 		}
 
 
@@ -913,6 +978,10 @@ if  ( !class_exists('WordPressOpenID_Logic') ) {
 		 * Get any additional comments awaiting moderation by this user.  WordPress
 		 * core has been udpated to grab most, but we still do one last check for
 		 * OpenID comments that have a URL match with the current user.
+		 *
+		 * @param array $comments array of comments to display
+		 * @param int $post_id id of the post to display comments for
+		 * @return array new array of comments to display
 		 */
 		function comments_awaiting_moderation(&$comments, $post_id) {
 			global $wpdb, $user_ID;
@@ -950,7 +1019,10 @@ if  ( !class_exists('WordPressOpenID_Logic') ) {
 
 
 		/**
-		 *
+		 * Make sure that a user's OpenID is stored and retrieved properly.  This is important because the OpenID 
+		 * may be an i-name, but WordPress is expecting the comment URL cookie to be a valid URL.
+		 * 
+		 * @wordpress-action sanitize_comment_cookies
 		 */
 		function sanitize_comment_cookies() {
 			if ( isset($_COOKIE['comment_author_openid_'.COOKIEHASH]) ) { 
@@ -971,25 +1043,33 @@ if  ( !class_exists('WordPressOpenID_Logic') ) {
 		function rewrite_rules() {
 			global $wp_rewrite;
 
-        	$xrds_rules = array(
+        	$openid_rules = array(
             	'openid_consumer$' => 'index.php?openid_consumer=1',
             	'index.php/openid_consumer$' => 'index.php?openid_consumer=1',
         	);  
 
-        	$wp_rewrite->rules = $xrds_rules + $wp_rewrite->rules;
+        	$wp_rewrite->rules = $openid_rules + $wp_rewrite->rules;
 		}
 		
+
 		/**
 		 * Add 'openid_consumer' as a valid query variables.
-		 **/
+		 *
+		 * @param array $vars valid query variables
+		 * @return array new valid query variables
+		 */
 		function query_vars($vars) {
 			$vars[] = 'openid_consumer';
 			return $vars;
 		}
 		
+
 		/**
-		 * Parse Query
-		 **/
+		 * Parse the WordPress query string.  If it contains the query variable 'openid_consumer', then the request 
+		 * is an OpenID response and should be handled accordingly.
+		 *
+		 * @param WP_Query $query WP_Query instance for the current request
+		 */
 		function parse_query($query) {
 			if ($query) $openid = $query->query_vars['openid_consumer'];
 			if (!empty($openid)) {
@@ -997,9 +1077,7 @@ if  ( !class_exists('WordPressOpenID_Logic') ) {
 			}
 		}
 
-
-
 	} // end class definition
-} // end if-class-exists test
+endif; // end if-class-exists test
 
 ?>
