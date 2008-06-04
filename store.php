@@ -215,18 +215,22 @@ class WordPressOpenID_Store extends Auth_OpenID_MySQLStore {
 	}
 
 
-	function insert_identity($url) {
+	function insert_identity($userid, $url) {
 		global $wpdb;
-		$user = wp_get_current_user();
+
+		if (!$userid) {
+			echo "no userID";
+			exit;
+		}
 
 		$old_show_errors = $wpdb->show_errors;
 		if( $old_show_errors ) $wpdb->hide_errors();
 		$ret = @$this->connection->query(
 				"INSERT INTO $this->identity_table_name (user_id,url,hash) VALUES ( %s, %s, MD5(%s) )",
-		array( (int)$user->ID, $url, $url ) );
+		array( (int)$userid, $url, $url ) );
 		if( $old_show_errors ) $wpdb->show_errors();
 
-		$this->update_user_openid_status($user->ID);
+		$this->update_user_openid_status($userid);
 
 		return $ret;
 	}

@@ -248,6 +248,28 @@ class WordPressOpenID_Logic {
 		switch( $this->action ) {
 			case 'add_identity':
 				check_admin_referer('wp-openid-add_identity');
+
+				$user = wp_get_current_user();
+
+				$store = $this->getStore();
+				global $openid_auth_request;
+				if ($openid_auth_request == NULL) {
+					$consumer = $this->getConsumer();
+					$openid_auth_request = $consumer->begin($_POST['openid_url']);
+				}
+
+				$userid = $store->get_user_by_identity($openid_auth_request->endpoint->claimed_id);
+
+				if ($userid) {
+					global $error;
+					if ($user->ID == $userid) {
+						$error = 'You already have this openid!';
+					} else {
+						$error = 'This OpenID is already connected to another user.';
+					}
+					return;
+				}
+
 				$this->start_login($_POST['openid_url'], 'verify');
 				break;
 
@@ -502,7 +524,7 @@ class WordPressOpenID_Logic {
 	function set_current_user($identity_url, $remember = true) {
 		$user_id = $this->store->get_user_by_identity( $identity_url );
 
-		if (NULL == $user_id) return;
+		if (!$user_id) return;
 
 		$user = set_current_user($user_id);
 			
@@ -550,7 +572,9 @@ class WordPressOpenID_Logic {
 			
 		if (empty($identity_url)) {
 			// FIXME unable to authenticate OpenID
-			$this->core->interface->display_error('unable to authenticate OpenID');
+			$this->set_error('Unable to authenticate OpenID.');
+			wp_safe_redirect(get_option('siteurl') . '/wp-login.php');
+			exit;
 		}
 			
 		$this->set_current_user($identity_url);
@@ -562,9 +586,11 @@ class WordPressOpenID_Logic {
 				$this->set_current_user($identity_url);  // TODO this does an extra db hit to get user_id
 			} else {
 				// TODO - Start a registration loop in WPMU.
-				$this->core->interface->display_error('OpenID authentication valid, but unable '
+				$this->set_error('OpenID authentication valid, but unable '
 				. 'to find a WordPress account associated with this OpenID.<br /><br />'
 				. 'Enable "Anyone can register" to allow creation of new accounts via OpenID.');
+				wp_safe_redirect(get_option('siteurl') . '/wp-login.php');
+				exit;
 			}
 
 		}
@@ -639,17 +665,18 @@ class WordPressOpenID_Logic {
 	 * @param string $identity_url verified OpenID URL
 	 */
 	function _finish_openid_verify($identity_url) {
+		$user = wp_get_current_user();
 		if (empty($identity_url)) {
 			// FIXME unable to authenticate OpenID
-			$this->core->interface->display_error('unable to authenticate OpenID');
-		}
-			
-		if( !$this->store->insert_identity($identity_url) ) {
-			// TODO should we check for this duplication *before* authenticating the ID?
-			$this->core->interface->display_error('OpenID assertion successful, but this URL is already claimed by '
-			. 'another user on this blog. This is probably a bug.');
+			$this->set_error('Unable to authenticate OpenID.');
 		} else {
-			$this->action = 'success';
+			if( !$this->store->insert_identity($user->ID, $identity_url) ) {
+				// TODO should we check for this duplication *before* authenticating the ID?
+				$this->set_error('OpenID assertion successful, but this URL is already claimed by '
+				. 'another user on this blog. This is probably a bug. ' . $identity_url);
+			} else {
+				$this->action = 'success';
+			}
 		}
 			
 		$wpp = parse_url(get_option('siteurl'));
@@ -728,7 +755,7 @@ class WordPressOpenID_Logic {
 			// Bind the provided identity to the just-created user
 			global $userdata;
 			$userdata = get_userdata( $user_id );
-			$this->store->insert_identity( $identity_url );
+			$this->store->insert_identity($user_id, $identity_url);
 
 			$this->action = 'redirect';
 
@@ -1065,6 +1092,11 @@ class WordPressOpenID_Logic {
 		if (!empty($openid)) {
 			$this->finish_openid($_REQUEST['action']);
 		}
+	}
+
+	function set_error($error) {
+		$_SESSION['oid_error'] = $error;
+		return;
 	}
 
 } // end class definition

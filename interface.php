@@ -289,6 +289,8 @@ class WordPressOpenID_Interface {
 	 * @submenu_page: profile.php
 	 **/
 	function profile_panel() {
+		global $error;
+
 		if( !current_user_can('read') ) {
 			return;
 		}
@@ -296,6 +298,7 @@ class WordPressOpenID_Interface {
 
 		$this->logic->late_bind();
 
+		// TODO: how to display these messages?
 		if( 'success' == $this->logic->action ) {
 			echo '<div class="updated"><p><strong>'.__('Success:', 'openid').'</strong> '.$this->logic->error.'</p></div>';
 		}
@@ -305,6 +308,12 @@ class WordPressOpenID_Interface {
 		elseif( $this->logic->error ) {
 			echo '<div class="error"><p><strong>'.__('Error:', 'openid').'</strong> '.$this->logic->error.'</p></div>';
 		}
+
+		if (!empty($error)) {
+			echo '<div class="error"><p><strong>'.__('Error:', 'openid').'</strong> '.$error.'</p></div>';
+			unset($error);
+		}
+
 
 		?>
 
@@ -470,8 +479,17 @@ class WordPressOpenID_Interface {
 		exit;
 	}
 	
+	function init_errors() {
+		global $error;
+		$error = $_SESSION['oid_error'];
+		unset($_SESSION['oid_error']);
+	}
+
 	function display_error($error) {
-		echo '<html><head></head><body>' . $error . '</body></html>';
+		$require_name_email = get_option('require_name_email');
+
+		echo '<html><head></head><body><p id="error">' . $error . '</p></body></html>';
+		// TODO: offer to repost without openid
 		exit;
 	}
 	

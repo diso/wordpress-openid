@@ -102,6 +102,7 @@ class WordPressOpenID {
 		add_action( 'login_form', array( $this->interface, 'login_form'));
 		add_action( 'register_form', array( $this->interface, 'register_form'));
 		add_filter( 'login_errors', array( $this->interface, 'login_form_hide_username_password_errors'));
+		add_filter( 'init', array( $this->interface, 'init_errors'));
 
 		// rewrite rules
 		add_action('parse_query', array($this->logic, 'parse_query'));
