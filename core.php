@@ -81,6 +81,9 @@ class WordPressOpenID {
 		add_filter( 'comments_array', array( $this->logic, 'comments_awaiting_moderation'), 10, 2);
 		add_action( 'sanitize_comment_cookies', array( $this->logic, 'sanitize_comment_cookies'), 15);
 		add_filter( 'comment_post_redirect', array( $this->logic, 'comment_post_redirect'), 0, 2);
+		if( get_option('oid_enable_approval') ) {
+			add_filter( 'pre_comment_approved', array($this->logic, 'comment_approval'));
+		}
 			
 		// If user is dropped from database, remove their identities too.
 		$this->logic->late_bind();

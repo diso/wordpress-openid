@@ -131,7 +131,7 @@ class WordPressOpenID_Store extends Auth_OpenID_MySQLStore {
 				"ALTER TABLE $this->comments_table_name ADD `openid` TINYINT(1) NOT NULL DEFAULT '0'");
 
 		if (!$result) {
-			$this->core->log->error('unable to add column `openid` to comments table.');
+			$this->core->log->err('unable to add column `openid` to comments table.');
 		}
 
 		$wpdb->query("update $this->comments_table_name set `comment_type`='', `openid`=1 where `comment_type`='openid'");
