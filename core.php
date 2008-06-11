@@ -95,7 +95,7 @@ class WordPressOpenID {
 
 		add_filter( 'get_comment_author_link', array( $this->interface, 'comment_author_link'));
 
-		if( get_option('oid_enable_commentform') ) {
+		if( get_option('oid_enable_commentform') && is_single() ) {
 			add_action( 'wp_head', array( $this->interface, 'js_setup'), 9);
 			add_action( 'comment_form', array( $this->interface, 'comment_profilelink'));
 			add_action( 'comment_form', array( $this->interface, 'comment_form'));
