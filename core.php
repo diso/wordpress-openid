@@ -15,7 +15,7 @@ define ( 'WPOPENID_PLUGIN_REVISION', preg_replace( '/\$Rev: (.+) \$/', 'svn-\\1'
 define ( 'WPOPENID_DB_REVISION', 24426);      // last plugin revision that required database schema changes
 
 
-define ( 'WPOPENID_LOG_LEVEL', 'debug');     // valid values are debug, info, notice, warning, err, crit, alert, emerg
+define ( 'WPOPENID_LOG_LEVEL', 'warning');     // valid values are debug, info, notice, warning, err, crit, alert, emerg
 
 set_include_path( dirname(__FILE__) . PATH_SEPARATOR . get_include_path() );   // Add plugin directory to include path temporarily
 
@@ -104,9 +104,7 @@ function openid_init() {
 	global $openid;
 
 	if (!$openid) {
-		$start_mem = memory_get_usage();
 		$openid = new WordPressOpenID($wpopenid_log);
-		error_log("memory usage: " . (int) ((memory_get_usage() - $start_mem)/1024));
 	}
 }
 endif;
