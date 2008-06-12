@@ -920,8 +920,7 @@ class WordPressOpenID_Logic {
 	function set_comment_openid($comment_ID) {
 		global $wpdb, $openid;
 
-		$store = WordPressOpenID_Logic::getStore();
-		$comments_table = $store->comments_table_name;
+		$comments_table = WordPressOpenID::comments_table_name();
 		$wpdb->query("UPDATE $comments_table SET openid='1' WHERE comment_ID='$comment_ID' LIMIT 1");
 	}
 
