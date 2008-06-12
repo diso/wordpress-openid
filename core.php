@@ -39,9 +39,23 @@ class WordPressOpenID {
 
 	var $logic;
 	var $interface;
+	var $store;
+	var $consumer;
+
+	var $profile_page_name = 'openid';
 
 	var $log;
 	var $status = array();
+
+	var $error;		  // User friendly error message, defaults to ''.
+	var $action;	  // Internal action tag. '', 'error', 'redirect'.
+
+	var $response;
+
+	var $enabled = true;
+
+	var $bind_done = false;
+	
 
 	function WordPressOpenID($log) {
 		$this->set_path();
@@ -49,8 +63,8 @@ class WordPressOpenID {
 
 		$this->log =& $log;
 
-		$this->logic = new WordPressOpenID_Logic($this);
-		$this->interface = new WordPressOpenID_Interface($this);
+		$this->logic = new WordPressOpenID_Logic();
+		$this->interface = new WordPressOpenID_Interface();
 	}
 
 	/**
@@ -87,7 +101,7 @@ class WordPressOpenID {
 			
 		// If user is dropped from database, remove their identities too.
 		$this->logic->late_bind();
-		add_action( 'delete_user', array( $this->logic->store, 'drop_all_identities_for_user' ) );
+		add_action( 'delete_user', array( $this->store, 'drop_all_identities_for_user' ) );
 
 		// include internal stylesheet
 		add_action( 'wp_head', array( $this->interface, 'style'));
@@ -108,7 +122,7 @@ class WordPressOpenID {
 		add_filter( 'init', array( $this->interface, 'init_errors'));
 
 		// rewrite rules
-		add_action('parse_query', array($this->logic, 'parse_query'));
+		add_action('parse_request', array($this->logic, 'parse_query'));
 		add_filter('generate_rewrite_rules', array($this->logic, 'rewrite_rules'));
 		add_filter('query_vars', array($this->logic, 'query_vars'));
 
