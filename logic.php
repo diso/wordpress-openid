@@ -11,18 +11,6 @@ if (!class_exists('WordPressOpenID_Logic')):
  */
 class WordPressOpenID_Logic {
 
-	var $_consumer;   // Auth_OpenID_Consumer
-
-	var $error;		  // User friendly error message, defaults to ''.
-	var $action;	  // Internal action tag. '', 'error', 'redirect'.
-
-	var $response;
-
-	var $enabled = true;
-
-	var $bind_done = false;
-
-
 	/**
 	 * Constructor.
 	 *
@@ -44,14 +32,14 @@ class WordPressOpenID_Logic {
 		$openid->log->debug('checking if database is up to date');
 		if( get_option('oid_db_revision') != WPOPENID_DB_REVISION ) {
 			// Database version mismatch, force dbDelta() in admin interface.
-			$openid->logic->enabled = false;
+			$openid->enabled = false;
 			$openid->setStatus('Plugin Database Version', false, 'Plugin database is out of date. '
 			. get_option('oid_db_revision') . ' != ' . WPOPENID_DB_REVISION );
 			update_option('oid_plugin_enabled', false);
 			return false;
 		}
-		$openid->logic->enabled = (get_option('oid_plugin_enabled') == true );
-		return $openid->logic->enabled;
+		$openid->enabled = (get_option('oid_plugin_enabled') == true );
+		return $openid->enabled;
 	}
 
 
@@ -64,6 +52,7 @@ class WordPressOpenID_Logic {
 		global $openid;
 
 		if (!isset($openid->store)) {
+			set_include_path( dirname(__FILE__) . PATH_SEPARATOR . get_include_path() );
 			require_once 'store.php';
 
 			$openid->store = new WordPressOpenID_Store($openid);
@@ -72,7 +61,7 @@ class WordPressOpenID_Logic {
 				$openid->setStatus('object: OpenID Store', false,
 						'OpenID store could not be created properly.');
 
-				$openid->logic->enabled = false;
+				$openid->enabled = false;
 			} else {
 				$openid->setStatus('object: OpenID Store', true, 'OpenID store created properly.');
 			}
@@ -90,23 +79,23 @@ class WordPressOpenID_Logic {
 	function getConsumer() {
 		global $openid;
 
-		if (!isset($openid->logic->_consumer)) {
+		if (!isset($openid->consumer)) {
 			require_once 'Auth/OpenID/Consumer.php';
 
-			$store = $openid->logic->getStore();
-			$openid->logic->_consumer = new Auth_OpenID_Consumer($store);
-			if( null === $openid->logic->_consumer ) {
+			$store = WordPressOpenID_Logic::getStore();
+			$openid->consumer = new Auth_OpenID_Consumer($store);
+			if( null === $openid->consumer ) {
 				$openid->setStatus('object: OpenID Consumer', false,
 						'OpenID consumer could not be created properly.');
 
-				$openid->logic->enabled = false;
+				$openid->enabled = false;
 			} else {
 				$openid->setStatus('object: OpenID Consumer', true,
 						'OpenID consumer created properly.');
 			}
 		}
 
-		return $openid->logic->_consumer;
+		return $openid->consumer;
 	}
 
 
@@ -117,15 +106,16 @@ class WordPressOpenID_Logic {
 	 */
 	function late_bind($reload = false) {
 		global $wpdb, $openid;
+		openid_init();
 
 		$openid->log->debug('beginning late binding');
 
-		$openid->logic->enabled = true; // Be Optimistic
-		if( $openid->logic->bind_done && !$reload ) {
+		$openid->enabled = true; // Be Optimistic
+		if( $openid->bind_done && !$reload ) {
 			$openid->log->debug('we\'ve already done the late bind... moving on');
-			return $openid->logic->uptodate();
+			return WordPressOpenID_Logic::uptodate();
 		}
-		$openid->logic->bind_done = true;
+		$openid->bind_done = true;
 
 		$f = @fopen( '/dev/urandom', 'r');
 		if ($f === false) {
@@ -145,24 +135,24 @@ class WordPressOpenID_Logic {
 		$openid->setStatus('database: WordPress\' table prefix', 'info', isset($wpdb->base_prefix) ? $wpdb->base_prefix : $wpdb->prefix );
 
 		$openid->log->debug("Bootstrap -- checking tables");
-		if( $openid->logic->enabled ) {
+		if( $openid->enabled ) {
 
-			$store =& $openid->logic->getStore();
+			$store =& WordPressOpenID_Logic::getStore();
 			if (!$store) return; 	// something broke
-			$openid->logic->enabled = $store->check_tables();
+			$openid->enabled = $store->check_tables();
 
-			if( !$openid->logic->uptodate() ) {
+			if( !WordPressOpenID_Logic::uptodate() ) {
 				update_option('oid_plugin_enabled', true);
 				update_option('oid_plugin_revision', WPOPENID_PLUGIN_REVISION );
 				update_option('oid_db_revision', WPOPENID_DB_REVISION );
-				$openid->logic->uptodate();
+				WordPressOpenID_Logic::uptodate();
 			}
 		} else {
-			$openid->logic->error = 'WPOpenID Core is Disabled!';
+			$openid->error = 'WPOpenID Core is Disabled!';
 			update_option('oid_plugin_enabled', false);
 		}
 
-		return $openid->logic->enabled;
+		return $openid->enabled;
 	}
 
 
@@ -172,9 +162,9 @@ class WordPressOpenID_Logic {
 	 * @see register_activation_hook
 	 */
 	function activate_plugin() {
-		global $openid;
-
-		$openid->logic->late_bind();
+		global $wp_rewrite;
+		add_filter('generate_rewrite_rules', array('WordPressOpenID_Logic', 'rewrite_rules'));
+		$wp_rewrite->flush_rules();
 	}
 
 
@@ -186,17 +176,18 @@ class WordPressOpenID_Logic {
 	function deactivate_plugin() {
 		global $openid;
 
-		$openid->logic->late_bind();
+		WordPressOpenID_Logic::late_bind();
 
-		if( $openid->store == null) {
-			$openid->logic->error = 'OpenIDConsumer: Disabled. Cannot locate libraries, therefore cannot clean '
+		$store = WordPressOpenID_Logic::getStore();
+		if( $store == null) {
+			$openid->error = 'OpenIDConsumer: Disabled. Cannot locate libraries, therefore cannot clean '
 			. 'up database tables. Fix the libraries, or drop the tables yourself.';
-			$openid->log->notice($openid->logic->error);
+			$openid->log->notice($openid->error);
 			return;
 		}
 
 		$openid->log->debug('Dropping all database tables.');
-		$openid->store->destroy_tables();
+		$store->destroy_tables();
 	}
 
 
@@ -222,14 +213,14 @@ class WordPressOpenID_Logic {
 		global $openid;
 
 		if( !empty( $_POST['openid_url'] ) ) {
-			if( !$openid->logic->late_bind() ) return; // something is broken
+			if( !WordPressOpenID_Logic::late_bind() ) return; // something is broken
 			$redirect_to = '';
 			if( !empty( $_REQUEST['redirect_to'] ) ) $redirect_to = $_REQUEST['redirect_to'];
-			$openid->logic->start_login( $_POST['openid_url'], 'login', array('redirect_to' => $redirect_to) );
+			WordPressOpenID_Logic::start_login( $_POST['openid_url'], 'login', array('redirect_to' => $redirect_to) );
 		}
-		if( !empty( $openid->logic->error ) ) {
+		if( !empty( $openid->error ) ) {
 			global $error;
-			$error = $openid->logic->error;
+			$error = $openid->error;
 		}
 	}
 
@@ -242,7 +233,7 @@ class WordPressOpenID_Logic {
 
 		if( !isset( $_REQUEST['action'] )) return;
 			
-		$openid->logic->action = $_REQUEST['action'];
+		$openid->action = $_REQUEST['action'];
 			
 		require_once(ABSPATH . 'wp-admin/admin-functions.php');
 
@@ -255,18 +246,18 @@ class WordPressOpenID_Logic {
 		nocache_headers();
 		get_currentuserinfo();
 
-		if( !$openid->logic->late_bind() ) return; // something is broken
+		if( !WordPressOpenID_Logic::late_bind() ) return; // something is broken
 			
-		switch( $openid->logic->action ) {
+		switch( $openid->action ) {
 			case 'add_identity':
 				check_admin_referer('wp-openid-add_identity');
 
 				$user = wp_get_current_user();
 
-				$store = $openid->logic->getStore();
+				$store = WordPressOpenID_Logic::getStore();
 				global $openid_auth_request;
 				if ($openid_auth_request == NULL) {
-					$consumer = $openid->logic->getConsumer();
+					$consumer = WordPressOpenID_Logic::getConsumer();
 					$openid_auth_request = $consumer->begin($_POST['openid_url']);
 				}
 
@@ -282,11 +273,11 @@ class WordPressOpenID_Logic {
 					return;
 				}
 
-				$openid->logic->start_login($_POST['openid_url'], 'verify');
+				WordPressOpenID_Logic::start_login($_POST['openid_url'], 'verify');
 				break;
 
 			case 'drop_identity':  // Remove a binding.
-				$openid->logic->_profile_drop_identity($_REQUEST['id']);
+				WordPressOpenID_Logic::_profile_drop_identity($_REQUEST['id']);
 				break;
 		}
 	}
@@ -303,36 +294,37 @@ class WordPressOpenID_Logic {
 		$user = wp_get_current_user();
 
 		if( !isset($id)) {
-			$openid->logic->error = 'Identity url delete failed: ID paramater missing.';
+			$openid->error = 'Identity url delete failed: ID paramater missing.';
 			return;
 		}
 
-		$deleted_identity_url = $openid->store->get_identities($user->ID, $id);
+		$store = WordPressOpenID_Logic::getStore();
+		$deleted_identity_url = $store->get_identities($user->ID, $id);
 		if( FALSE === $deleted_identity_url ) {
-			$openid->logic->error = 'Identity url delete failed: Specified identity does not exist.';
+			$openid->error = 'Identity url delete failed: Specified identity does not exist.';
 			return;
 		}
 
-		$identity_urls = $openid->store->get_identities($user->ID);
+		$identity_urls = $store->get_identities($user->ID);
 		if (sizeof($identity_urls) == 1 && !$_REQUEST['confirm']) {
-			$openid->logic->error = 'This is your last identity URL.  Are you sure you want to delete it? Doing so may interfere with your ability to login.<br /><br /> '
+			$openid->error = 'This is your last identity URL.  Are you sure you want to delete it? Doing so may interfere with your ability to login.<br /><br /> '
 			. '<a href="?confirm=true&'.$_SERVER['QUERY_STRING'].'">Yes I\'m sure.  Delete it</a>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;'
 			. '<a href="?page='.$openid->profile_page_name.'">No, don\'t delete it.</a>';
-			$openid->logic->action = 'warning';
+			$openid->action = 'warning';
 			return;
 		}
 
 		check_admin_referer('wp-openid-drop-identity_'.$deleted_identity_url);
 			
 
-		if( $openid->store->drop_identity($user->ID, $id) ) {
-			$openid->logic->error = 'Identity url delete successful. <b>' . $deleted_identity_url
+		if( $store->drop_identity($user->ID, $id) ) {
+			$openid->error = 'Identity url delete successful. <b>' . $deleted_identity_url
 			. '</b> removed.';
-			$openid->logic->action = 'success';
+			$openid->action = 'success';
 			return;
 		}
 			
-		$openid->logic->error = 'Identity url delete failed: Unknown reason.';
+		$openid->error = 'Identity url delete failed: Unknown reason.';
 	}
 
 
@@ -363,7 +355,7 @@ class WordPressOpenID_Logic {
 			if (Auth_OpenID::isFailure($form_html)) {
 				$openid->log->error('Could not redirect to server: '.$form_html->message);
 			} else {
-				$openid->interface->display_openid_redirect_form($form_html);
+				WordPressOpenID_Interface::display_openid_redirect_form($form_html);
 			}
 		}
 	}
@@ -377,35 +369,35 @@ class WordPressOpenID_Logic {
 	function finish_openid_auth() {
 		global $openid;
 
-		set_error_handler( array($openid->logic, 'customer_error_handler'));
-		$consumer = $openid->logic->getConsumer();
-		$openid->logic->response = $consumer->complete($_SESSION['oid_return_to']);
-		restore_error_handler();
+		//set_error_handler( array('WordPressOpenID_Logic', 'customer_error_handler'));
+		$consumer = WordPressOpenID_Logic::getConsumer();
+		$openid->response = $consumer->complete($_SESSION['oid_return_to']);
+		//restore_error_handler();
 			
-		switch( $openid->logic->response->status ) {
+		switch( $openid->response->status ) {
 			case Auth_OpenID_CANCEL:
-				$openid->logic->error = 'OpenID assertion cancelled';
+				$openid->error = 'OpenID assertion cancelled';
 				break;
 
 			case Auth_OpenID_FAILURE:
-				$openid->logic->error = 'OpenID assertion failed: ' . $openid->logic->response->message;
+				$openid->error = 'OpenID assertion failed: ' . $openid->response->message;
 				break;
 
 			case Auth_OpenID_SUCCESS:
-				$openid->logic->error = 'OpenID assertion successful';
+				$openid->error = 'OpenID assertion successful';
 
-				$identity_url = $openid->logic->response->identity_url;
+				$identity_url = $openid->response->identity_url;
 				$escaped_url = htmlspecialchars($identity_url, ENT_QUOTES);
 				$openid->log->notice('Got back identity URL ' . $escaped_url);
 
-				if ($openid->logic->response->endpoint->canonicalID) {
-					$openid->log->notice('XRI CanonicalID: ' . $openid->logic->response->endpoint->canonicalID);
+				if ($openid->response->endpoint->canonicalID) {
+					$openid->log->notice('XRI CanonicalID: ' . $openid->response->endpoint->canonicalID);
 				}
 
 				return $escaped_url;
 
 			default:
-				$openid->logic->error = 'Unknown Status. Bind not successful. This is probably a bug';
+				$openid->error = 'Unknown Status. Bind not successful. This is probably a bug';
 		}
 
 		return null;
@@ -421,10 +413,10 @@ class WordPressOpenID_Logic {
 	function generate_new_username($url) {
 		global $openid;
 
-		$base = $openid->logic->normalize_username($url);
+		$base = WordPressOpenID_Logic::normalize_username($url);
 		$i='';
 		while(true) {
-			$username = $openid->logic->normalize_username( $base . $i );
+			$username = WordPressOpenID_Logic::normalize_username( $base . $i );
 			$user = get_userdatabylogin($username);
 			if ( $user ) {
 				$i++;
@@ -465,25 +457,25 @@ class WordPressOpenID_Logic {
 
 		if ( empty($claimed_url) ) return; // do nothing.
 			
-		if( !$openid->logic->late_bind() ) return; // something is broken
+		if( !WordPressOpenID_Logic::late_bind() ) return; // something is broken
 
 		if ( null !== $openid_auth_request) {
 			$auth_request = $openid_auth_request;
 		} else {
-			set_error_handler( array($openid->logic, 'customer_error_handler'));
-			$consumer = $openid->logic->getConsumer();
+			set_error_handler( array('WordPressOpenID_Logic', 'customer_error_handler'));
+			$consumer = WordPressOpenID_Logic::getConsumer();
 			$auth_request = $consumer->begin( $claimed_url );
 			restore_error_handler();
 		}
 
 		if ( null === $auth_request ) {
-			$openid->logic->error = 'Could not discover an OpenID identity server endpoint at the url: '
+			$openid->error = 'Could not discover an OpenID identity server endpoint at the url: '
 			. htmlentities( $claimed_url );
 			if( strpos( $claimed_url, '@' ) ) {
-				$openid->logic->error .= '<br/>The address you specified had an @ sign in it, but OpenID '
+				$openid->error .= '<br/>The address you specified had an @ sign in it, but OpenID '
 				. 'Identities are not email addresses, and should probably not contain an @ sign.';
 			}
-			$openid->log->debug('OpenIDConsumer: ' . $openid->logic->error );
+			$openid->log->debug('OpenIDConsumer: ' . $openid->error );
 			return;
 		}
 			
@@ -503,7 +495,8 @@ class WordPressOpenID_Logic {
 			
 
 		/* If we've never heard of this url before, do attribute query */
-		if( $openid->store->get_user_by_identity( $auth_request->endpoint->identity_url ) == NULL ) {
+		$store = WordPressOpenID_Logic::getStore();
+		if( $store->get_user_by_identity( $auth_request->endpoint->identity_url ) == NULL ) {
 			$attribute_query = true;
 		}
 		if ($attribute_query) {
@@ -515,7 +508,7 @@ class WordPressOpenID_Logic {
 		}
 			
 		$_SESSION['oid_return_to'] = $return_to;
-		$openid->logic->doRedirect($auth_request, get_option('home'), $return_to);
+		WordPressOpenID_Logic::doRedirect($auth_request, get_option('home'), $return_to);
 		exit(0);
 	}
 
@@ -545,7 +538,8 @@ class WordPressOpenID_Logic {
 	function set_current_user($identity_url, $remember = true) {
 		global $openid;
 
-		$user_id = $openid->store->get_user_by_identity( $identity_url );
+		$store = WordPressOpenID_Logic::getStore();
+		$user_id = $store->get_user_by_identity( $identity_url );
 
 		if (!$user_id) return;
 
@@ -572,16 +566,16 @@ class WordPressOpenID_Logic {
 	function finish_openid($action) {
 		global $openid;
 
-		if( !$openid->logic->late_bind() ) return; // something is broken
+		if( !WordPressOpenID_Logic::late_bind() ) return; // something is broken
 			
-		$identity_url = $openid->logic->finish_openid_auth();
+		$identity_url = WordPressOpenID_Logic::finish_openid_auth();
 			
-		if (!empty($action) && method_exists($openid->logic, '_finish_openid_' . $action)) {
-			call_user_method('_finish_openid_' . $action, $openid->logic, $identity_url);
+		if (!empty($action) && method_exists('WordPressOpenID_Logic', '_finish_openid_' . $action)) {
+			call_user_func(array('WordPressOpenID_Logic', '_finish_openid_' . $action), $identity_url);
 		}
 			
 		global $action;
-		$action = $openid->logic->action;
+		$action = $openid->action;
 	}
 
 
@@ -598,21 +592,21 @@ class WordPressOpenID_Logic {
 			
 		if (empty($identity_url)) {
 			// FIXME unable to authenticate OpenID
-			$openid->logic->set_error('Unable to authenticate OpenID.');
+			WordPressOpenID_Logic::set_error('Unable to authenticate OpenID.');
 			wp_safe_redirect(get_option('siteurl') . '/wp-login.php');
 			exit;
 		}
 			
-		$openid->logic->set_current_user($identity_url);
+		WordPressOpenID_Logic::set_current_user($identity_url);
 			
 		if (!is_user_logged_in()) {
 			if ( get_option('users_can_register') ) {
-				$user_data =& $openid->logic->get_user_data($identity_url);
-				$user = $openid->logic->create_new_user($identity_url, $user_data);
-				$openid->logic->set_current_user($identity_url);  // TODO this does an extra db hit to get user_id
+				$user_data =& WordPressOpenID_Logic::get_user_data($identity_url);
+				$user = WordPressOpenID_Logic::create_new_user($identity_url, $user_data);
+				WordPressOpenID_Logic::set_current_user($identity_url);  // TODO this does an extra db hit to get user_id
 			} else {
 				// TODO - Start a registration loop in WPMU.
-				$openid->logic->set_error('OpenID authentication valid, but unable '
+				WordPressOpenID_Logic::set_error('OpenID authentication valid, but unable '
 				. 'to find a WordPress account associated with this OpenID.<br /><br />'
 				. 'Enable "Anyone can register" to allow creation of new accounts via OpenID.');
 				wp_safe_redirect(get_option('siteurl') . '/wp-login.php');
@@ -654,10 +648,10 @@ class WordPressOpenID_Logic {
 
 		if (empty($identity_url)) {
 			// FIXME unable to authenticate OpenID - give option to post anonymously
-			$openid->interface->display_error('unable to authenticate OpenID');
+			WordPressOpenID_Interface::display_error('unable to authenticate OpenID');
 		}
 			
-		$openid->logic->set_current_user($identity_url);
+		WordPressOpenID_Logic::set_current_user($identity_url);
 			
 		if (is_user_logged_in()) {
 			// simulate an authenticated comment submission
@@ -666,7 +660,7 @@ class WordPressOpenID_Logic {
 			$_SESSION['oid_comment_post']['url'] = null;
 		} else {
 			// try to get user data from the verified OpenID
-			$user_data =& $openid->logic->get_user_data($identity_url);
+			$user_data =& WordPressOpenID_Logic::get_user_data($identity_url);
 
 			if (!empty($user_data['display_name'])) {
 				$_SESSION['oid_comment_post']['author'] = $user_data['display_name'];
@@ -681,7 +675,7 @@ class WordPressOpenID_Logic {
 		$_SESSION['oid_posted_comment'] = true;
 
 		$wpp = parse_url(get_option('siteurl'));
-		$openid->interface->repost($wpp['path'] . '/wp-comments-post.php',
+		WordPressOpenID_Interface::repost($wpp['path'] . '/wp-comments-post.php',
 		array_filter($_SESSION['oid_comment_post']));
 	}
 
@@ -698,14 +692,15 @@ class WordPressOpenID_Logic {
 		$user = wp_get_current_user();
 		if (empty($identity_url)) {
 			// FIXME unable to authenticate OpenID
-			$openid->logic->set_error('Unable to authenticate OpenID.');
+			WordPressOpenID_Logic::set_error('Unable to authenticate OpenID.');
 		} else {
-			if( !$openid->store->insert_identity($user->ID, $identity_url) ) {
+			$store = WordPressOpenID_Logic::getStore();
+			if( !$store->insert_identity($user->ID, $identity_url) ) {
 				// TODO should we check for this duplication *before* authenticating the ID?
-				$openid->logic->set_error('OpenID assertion successful, but this URL is already claimed by '
+				WordPressOpenID_Logic::set_error('OpenID assertion successful, but this URL is already claimed by '
 				. 'another user on this blog. This is probably a bug. ' . $identity_url);
 			} else {
-				$openid->logic->action = 'success';
+				$openid->action = 'success';
 			}
 		}
 			
@@ -732,7 +727,7 @@ class WordPressOpenID_Logic {
 		global $openid;
 
 		if ($_SESSION['oid_posted_comment']) {
-			$openid->logic->set_comment_openid($comment->comment_ID);
+			WordPressOpenID_Logic::set_comment_openid($comment->comment_ID);
 			$_SESSION['oid_posted_comment'] = null;
 		}
 			
@@ -754,7 +749,7 @@ class WordPressOpenID_Logic {
 		@include_once( ABSPATH . 'wp-admin/upgrade-functions.php');	// 2.1
 		@include_once( ABSPATH . WPINC . '/registration-functions.php'); // 2.0.4
 
-		$user_data['user_login'] = $wpdb->escape( $openid->logic->generate_new_username($identity_url) );
+		$user_data['user_login'] = $wpdb->escape( WordPressOpenID_Logic::generate_new_username($identity_url) );
 		$user_data['user_pass'] = substr( md5( uniqid( microtime() ) ), 0, 7);
 		$user_id = wp_insert_user( $user_data );
 			
@@ -763,7 +758,7 @@ class WordPressOpenID_Logic {
 		if( $user_id ) { // created ok
 
 			$user_data['ID'] = $user_id;
-			// XXX this all looks redundant, see $openid->logic->set_current_user
+			// XXX this all looks redundant, see WordPressOpenID_Logic::set_current_user
 
 			$openid->log->debug("OpenIDConsumer: Created new user $user_id : $username and metadata: "
 			. var_export( $user_data, true ) );
@@ -771,10 +766,10 @@ class WordPressOpenID_Logic {
 			$user = new WP_User( $user_id );
 
 			if( ! wp_login( $user->user_login, $user_data['user_pass'] ) ) {
-				$openid->logic->error = 'User was created fine, but wp_login() for the new user failed. '
+				$openid->error = 'User was created fine, but wp_login() for the new user failed. '
 				. 'This is probably a bug.';
-				$openid->logic->action= 'error';
-				$openid->log->err( $openid->logic->error );
+				$openid->action= 'error';
+				$openid->log->err( $openid->error );
 				return;
 			}
 
@@ -787,18 +782,19 @@ class WordPressOpenID_Logic {
 			// Bind the provided identity to the just-created user
 			global $userdata;
 			$userdata = get_userdata( $user_id );
-			$openid->store->insert_identity($user_id, $identity_url);
+			$store = WordPressOpenID_Logic::getStore();
+			$store->insert_identity($user_id, $identity_url);
 
-			$openid->logic->action = 'redirect';
+			$openid->action = 'redirect';
 
 			if ( !$user->has_cap('edit_posts') ) $redirect_to = '/wp-admin/profile.php';
 
 		} else {
 			// failed to create user for some reason.
-			$openid->logic->error = 'OpenID authentication successful, but failed to create WordPress user. '
+			$openid->error = 'OpenID authentication successful, but failed to create WordPress user. '
 			. 'This is probably a bug.';
-			$openid->logic->action= 'error';
-			$openid->log->error( $openid->logic->error );
+			$openid->action= 'error';
+			$openid->log->error( $openid->error );
 		}
 
 	}
@@ -833,7 +829,7 @@ class WordPressOpenID_Logic {
 		}
 
 
-		$result = $openid->logic->get_user_data_sreg($identity_url, $data);
+		$result = WordPressOpenID_Logic::get_user_data_sreg($identity_url, $data);
 
 		return $data;
 	}
@@ -861,7 +857,7 @@ class WordPressOpenID_Logic {
 	function get_user_data_sreg($identity_url, &$data) {
 		global $openid;
 
-		$sreg_resp = Auth_OpenID_SRegResponse::fromSuccessResponse($openid->logic->response);
+		$sreg_resp = Auth_OpenID_SRegResponse::fromSuccessResponse($openid->response);
 		$sreg = $sreg_resp->contents();
 
 		$openid->log->debug(var_export($sreg, true));
@@ -911,7 +907,7 @@ class WordPressOpenID_Logic {
 
 		$comment = get_comment($comment_ID);
 		if ( $comment->user_id && !$comment->openid && is_user_openid($comment->user_id) ) {
-			$openid->logic->set_comment_openid($comment_ID);
+			WordPressOpenID_Logic::set_comment_openid($comment_ID);
 		}
 	}
 
@@ -924,7 +920,8 @@ class WordPressOpenID_Logic {
 	function set_comment_openid($comment_ID) {
 		global $wpdb, $openid;
 
-		$comments_table = $openid->store->comments_table_name;
+		$store = WordPressOpenID_Logic::getStore();
+		$comments_table = $store->comments_table_name;
 		$wpdb->query("UPDATE $comments_table SET openid='1' WHERE comment_ID='$comment_ID' LIMIT 1");
 	}
 
@@ -952,10 +949,10 @@ class WordPressOpenID_Logic {
 			}
 		} else {
 			if (!empty($_POST['url'])) {
-				if ($openid->logic->late_bind()) {
+				if (WordPressOpenID_Logic::late_bind()) {
 					// check if url is valid OpenID by forming an auth request
-					set_error_handler( array($openid->logic, 'customer_error_handler'));
-					$consumer = $openid->logic->getConsumer();
+					set_error_handler( array('WordPressOpenID_Logic', 'customer_error_handler'));
+					$consumer = WordPressOpenID_Logic::getConsumer();
 					$openid_auth_request = $consumer->begin( $_POST['url'] );
 					restore_error_handler();
 
@@ -982,7 +979,7 @@ class WordPressOpenID_Logic {
 	function comment_tagging( $comment ) {
 		global $openid;
 
-		if (!$openid->logic->enabled) return $comment;
+		if (!$openid->enabled) return $comment;
 		if ($_REQUEST['oid_skip']) return $comment;
 			
 		$openid_url = (array_key_exists('openid_url', $_POST) ? $_POST['openid_url'] : $_POST['url']);
@@ -992,7 +989,7 @@ class WordPressOpenID_Logic {
 			$_SESSION['oid_comment_post']['comment_author_openid'] = $openid_url;
 			$_SESSION['oid_comment_post']['oid_skip'] = 1;
 
-			$openid->logic->start_login( $openid_url, 'comment');
+			WordPressOpenID_Logic::start_login( $openid_url, 'comment');
 
 			// Failure to redirect at all, the URL is malformed or unreachable.
 
@@ -1001,7 +998,7 @@ class WordPressOpenID_Logic {
 			if (array_key_exists('openid_url', $_POST)) {
 				// TODO give option to post without OpenID
 				global $error;
-				$error = $openid->logic->error;
+				$error = $openid->error;
 				$_POST['openid_url'] = '';
 				include( ABSPATH . 'wp-login.php' );
 				exit();
@@ -1049,8 +1046,7 @@ class WordPressOpenID_Logic {
 		$url_db  = $wpdb->escape($comment_author_url);
 
 		if ($url_db) {
-			$store =& $openid->logic->getStore();
-			$comments_table = $store->comments_table_name;
+			$comments_table = WordPressOpenID::comments_table_name();
 			$additional = $wpdb->get_results(
 					"SELECT * FROM $comments_table"
 			. " WHERE comment_post_ID = '$post_id'"
@@ -1127,10 +1123,10 @@ class WordPressOpenID_Logic {
 	 */
 	function parse_query($wp) {
 		global $openid;
+		openid_init();
 
-		if ($query) $openid = $wp->query_vars['openid_consumer'];
-		if (!empty($openid)) {
-			$openid->logic->finish_openid($_REQUEST['action']);
+		if ($wp->query_vars['pagename'] == 'openid_consumer') {
+			WordPressOpenID_Logic::finish_openid($_REQUEST['action']);
 		}
 	}
 

@@ -18,7 +18,7 @@ class WordPressOpenID_Interface {
 
 		if( $_POST['openid_url']
 			or $_REQUEST['action'] == 'login'
-			or $_REQUEST['action'] == 'comment' ) return $openid->logic->error;
+			or $_REQUEST['action'] == 'comment' ) return $openid->error;
 		return $r;
 	}
 
@@ -84,11 +84,11 @@ class WordPressOpenID_Interface {
 		global $openid;
 
 		wp_enqueue_script( 'jquery' );
-		wp_enqueue_script('jquery.textnode', $openid->path . '/files/jquery.textnode.js', 
+		wp_enqueue_script('jquery.textnode', '/' . PLUGINDIR . '/openid/files/jquery.textnode.js', 
 			array('jquery'), WPOPENID_PLUGIN_REVISION);
-		wp_enqueue_script('jquery.xpath', $openid->path . '/files/jquery.xpath.js', 
+		wp_enqueue_script('jquery.xpath', '/' . PLUGINDIR . '/openid/files/jquery.xpath.js', 
 			array('jquery'), WPOPENID_PLUGIN_REVISION);
-		wp_enqueue_script('openid', $openid->path . '/files/openid.js', 
+		wp_enqueue_script('openid', '/' . PLUGINDIR . '/openid/files/openid.js', 
 			array('jquery','jquery.textnode'), WPOPENID_PLUGIN_REVISION);
 	}
 
@@ -101,7 +101,7 @@ class WordPressOpenID_Interface {
 	function style() {
 		global $openid;
 
-		$css_path = $openid->fullpath . '/files/openid.css?ver='.WPOPENID_PLUGIN_REVISION;
+		$css_path = get_option('siteurl') . '/' . PLUGINDIR . '/openid/files/openid.css?ver='.WPOPENID_PLUGIN_REVISION;
 		echo '
 			<link rel="stylesheet" type="text/css" href="'.$css_path.'" />';
 	}
@@ -150,14 +150,14 @@ class WordPressOpenID_Interface {
 		global $openid;
 
 		$hookname = add_options_page(__('OpenID options', 'openid'), __('WP-OpenID', 'openid'), 8, 'global-openid-options', 
-			array( $openid->interface, 'options_page')  );
+			array( 'WordPressOpenID_Interface', 'options_page')  );
 		add_action("load-$hookname", array( 'WordPressOpenID_Interface', 'js_setup' ));
 		add_action("admin_head-$hookname", array( 'WordPressOpenID_Interface', 'style' ));
 
 		$hookname =	add_submenu_page('profile.php', __('Your Identity URLs', 'openid'), __('Your Identity URLs', 'openid'), 
-			'read', $openid->profile_page_name, array($openid->interface, 'profile_panel') );
+			'read', $openid->profile_page_name, array('WordPressOpenID_Interface', 'profile_panel') );
 		add_action("admin_head-$hookname", array( 'WordPressOpenID_Interface', 'style' ));
-		add_action("load-$hookname", array( $openid->logic, 'openid_profile_management' ));
+		add_action("load-$hookname", array( 'WordPressOpenID_Logic', 'openid_profile_management' ));
 	}
 
 
@@ -169,8 +169,8 @@ class WordPressOpenID_Interface {
 	function options_page() {
 		global $wp_version, $openid;
 
-			$openid->logic->late_bind();
-			$openid->log->debug("WP-OpenID Plugin: " . ($openid->logic->enabled? 'Enabled':'Disabled' ) 
+			WordPressOpenID_Logic::late_bind();
+			$openid->log->debug("WP-OpenID Plugin: " . ($openid->enabled? 'Enabled':'Disabled' ) 
 				. ' (start of WordPress options page)' );
 		
 			if ( isset($_REQUEST['action']) ) {
@@ -210,7 +210,7 @@ class WordPressOpenID_Interface {
 			<div class="wrap">
 				<h2><?php _e('WP-OpenID Registration Options', 'openid') ?></h2>
 
-				<?php if ($wp_version >= '2.3') { $openid->interface->printSystemStatus(); } ?>
+				<?php if ($wp_version >= '2.3') { WordPressOpenID_Interface::printSystemStatus(); } ?>
 
 				<form method="post">
 
@@ -250,7 +250,7 @@ class WordPressOpenID_Interface {
 
 								<p><?php printf(__('This will work for most themes derived from Kubrick or Sandbox.  '
 								. 'Template authors can tweak the comment form as described in the %sreadme%s.', 'openid'), 
-								'<a href="'.$openid->fullpath.'/readme.txt">', '</a>') ?></p>
+								'<a href="'. get_option('siteurl') . '/' . PLUGINDIR . '/openid/readme.txt">', '</a>') ?></p>
 								<br />
 							</td>
 						</tr>
@@ -270,7 +270,7 @@ class WordPressOpenID_Interface {
     			<?php
 			if ($wp_version < '2.3') {
 				echo '<br />';
-				$openid->interface->printSystemStatus();
+				WordPressOpenID_Interface::printSystemStatus();
 			}
 	} // end function options_page
 
@@ -288,17 +288,17 @@ class WordPressOpenID_Interface {
 		}
 		$user = wp_get_current_user();
 
-		$openid->logic->late_bind();
+		WordPressOpenID_Logic::late_bind();
 
 		// TODO: how to display these messages?
-		if( 'success' == $openid->logic->action ) {
-			echo '<div class="updated"><p><strong>'.__('Success:', 'openid').'</strong> '.$openid->logic->error.'</p></div>';
+		if( 'success' == $openid->action ) {
+			echo '<div class="updated"><p><strong>'.__('Success:', 'openid').'</strong> '.$openid->error.'</p></div>';
 		}
-		elseif( 'warning' == $openid->logic->action ) {
-			echo '<div class="error"><p><strong>'.__('Warning:', 'openid').'</strong> '.$openid->logic->error.'</p></div>';
+		elseif( 'warning' == $openid->action ) {
+			echo '<div class="error"><p><strong>'.__('Warning:', 'openid').'</strong> '.$openid->error.'</p></div>';
 		}
-		elseif( $openid->logic->error ) {
-			echo '<div class="error"><p><strong>'.__('Error:', 'openid').'</strong> '.$openid->logic->error.'</p></div>';
+		elseif( $openid->error ) {
+			echo '<div class="error"><p><strong>'.__('Error:', 'openid').'</strong> '.$openid->error.'</p></div>';
 		}
 
 		if (!empty($error)) {
@@ -429,11 +429,11 @@ class WordPressOpenID_Interface {
 		$openid->setStatus( 'Plugin Database Revision', 'info', 'Plugin database is currently at revision '
 			. get_option('oid_db_revision') . '.' );
 		
-		$openid->setStatus( '<strong>Overall Plugin Status</strong>', ($openid->logic->enabled), 
+		$openid->setStatus( '<strong>Overall Plugin Status</strong>', ($openid->enabled), 
 			'There are problems above that must be dealt with before the plugin can be used.' );
 
 
-		if( $openid->logic->enabled ) {	// Display status information
+		if( $openid->enabled ) {	// Display status information
 			?><div id="openid_rollup" class="updated"><p><strong><?php _e('Status information:', 'openid') ?></strong> <?php _e('All Systems Nominal', 'openid') ?> 
 				<small>(<a href="#" id="openid_rollup_link"><?php _e('Toggle More/Less', 'openid') ?></a>)</small> </p><?php
 		} else {
