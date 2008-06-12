@@ -37,8 +37,6 @@ class WordPressOpenID {
 	var $store;
 	var $consumer;
 
-	var $profile_page_name = 'openid';
-
 	var $log;
 	var $status = array();
 

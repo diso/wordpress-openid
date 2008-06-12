@@ -81,15 +81,15 @@ class WordPressOpenID_Interface {
 	 * @action: init
 	 **/
 	function js_setup() {
-		global $openid;
-
-		wp_enqueue_script( 'jquery' );
-		wp_enqueue_script('jquery.textnode', '/' . PLUGINDIR . '/openid/files/jquery.textnode.js', 
-			array('jquery'), WPOPENID_PLUGIN_REVISION);
-		wp_enqueue_script('jquery.xpath', '/' . PLUGINDIR . '/openid/files/jquery.xpath.js', 
-			array('jquery'), WPOPENID_PLUGIN_REVISION);
-		wp_enqueue_script('openid', '/' . PLUGINDIR . '/openid/files/openid.js', 
-			array('jquery','jquery.textnode'), WPOPENID_PLUGIN_REVISION);
+		if (is_single() || is_comments_popup() || is_admin()) {
+			wp_enqueue_script( 'jquery' );
+			wp_enqueue_script('jquery.textnode', '/' . PLUGINDIR . '/openid/files/jquery.textnode.js', 
+				array('jquery'), WPOPENID_PLUGIN_REVISION);
+			wp_enqueue_script('jquery.xpath', '/' . PLUGINDIR . '/openid/files/jquery.xpath.js', 
+				array('jquery'), WPOPENID_PLUGIN_REVISION);
+			wp_enqueue_script('openid', '/' . PLUGINDIR . '/openid/files/openid.js', 
+				array('jquery','jquery.textnode'), WPOPENID_PLUGIN_REVISION);
+		}
 	}
 
 
@@ -99,8 +99,6 @@ class WordPressOpenID_Interface {
 	 * @action: wp_head, login_head
 	 **/
 	function style() {
-		global $openid;
-
 		$css_path = get_option('siteurl') . '/' . PLUGINDIR . '/openid/files/openid.css?ver='.WPOPENID_PLUGIN_REVISION;
 		echo '
 			<link rel="stylesheet" type="text/css" href="'.$css_path.'" />';
@@ -147,15 +145,13 @@ class WordPressOpenID_Interface {
 	 * @action: admin_menu
 	 **/
 	function add_admin_panels() {
-		global $openid;
-
 		$hookname = add_options_page(__('OpenID options', 'openid'), __('WP-OpenID', 'openid'), 8, 'global-openid-options', 
 			array( 'WordPressOpenID_Interface', 'options_page')  );
 		add_action("load-$hookname", array( 'WordPressOpenID_Interface', 'js_setup' ));
 		add_action("admin_head-$hookname", array( 'WordPressOpenID_Interface', 'style' ));
 
 		$hookname =	add_submenu_page('profile.php', __('Your Identity URLs', 'openid'), __('Your Identity URLs', 'openid'), 
-			'read', $openid->profile_page_name, array('WordPressOpenID_Interface', 'profile_panel') );
+			'read', 'openid', array('WordPressOpenID_Interface', 'profile_panel') );
 		add_action("admin_head-$hookname", array( 'WordPressOpenID_Interface', 'style' ));
 		add_action("load-$hookname", array( 'WordPressOpenID_Logic', 'openid_profile_management' ));
 	}
@@ -338,7 +334,7 @@ class WordPressOpenID_Interface {
 					<th scope="row" style="text-align: center"><?php echo $v['uurl_id']; ?></th>
 					<td><a href="<?php echo $v['url']; ?>"><?php echo $v['url']; ?></a></td>
 					<td style="text-align: center"><a class="delete" href="<?php 
-					echo wp_nonce_url(sprintf('?page=%s&action=drop_identity&id=%s', $openid->profile_page_name, $v['uurl_id']), 
+					echo wp_nonce_url(sprintf('?page=%s&action=drop_identity&id=%s', 'openid', $v['uurl_id']), 
 					'wp-openid-drop-identity_'.$v['url']);
 					?>"><?php _e('Delete', 'openid') ?></a></td>
 				</tr>

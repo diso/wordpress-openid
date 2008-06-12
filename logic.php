@@ -309,7 +309,7 @@ class WordPressOpenID_Logic {
 		if (sizeof($identity_urls) == 1 && !$_REQUEST['confirm']) {
 			$openid->error = 'This is your last identity URL.  Are you sure you want to delete it? Doing so may interfere with your ability to login.<br /><br /> '
 			. '<a href="?confirm=true&'.$_SERVER['QUERY_STRING'].'">Yes I\'m sure.  Delete it</a>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;'
-			. '<a href="?page='.$openid->profile_page_name.'">No, don\'t delete it.</a>';
+			. '<a href="?page=openid">No, don\'t delete it.</a>';
 			$openid->action = 'warning';
 			return;
 		}
@@ -705,7 +705,7 @@ class WordPressOpenID_Logic {
 		}
 			
 		$wpp = parse_url(get_option('siteurl'));
-		$redirect_to = $wpp['path'] . '/wp-admin/' . (current_user_can('edit_users') ? 'users.php' : 'profile.php') . '?page=' . $openid->profile_page_name;
+		$redirect_to = $wpp['path'] . '/wp-admin/' . (current_user_can('edit_users') ? 'users.php' : 'profile.php') . '?page=openid';
 		if (function_exists('wp_safe_redirect')) {
 			wp_safe_redirect( $redirect_to );
 		} else {
