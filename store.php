@@ -11,27 +11,22 @@ require_once 'Auth/OpenID/MySQLStore.php';
 
 if (class_exists( 'Auth_OpenID_MySQLStore' ) && !class_exists('WordPressOpenID_Store')):
 class WordPressOpenID_Store extends Auth_OpenID_MySQLStore {
-
-	var $core;				// WordPressOpenID instance
-
-	var $table_prefix;
 	var $associations_table_name;
 	var $nonces_table_name;
 	var $identity_table_name;
 	var $comments_table_name;
 	var $usermeta_table_name;
 
-	function WordPressOpenID_Store($core)
+	function WordPressOpenID_Store()
 	{
 		global $wpdb;
-		$this->core =& $core;
 
-		$this->table_prefix = isset($wpdb->base_prefix) ? $wpdb->base_prefix : $wpdb->prefix;
+		$table_prefix = isset($wpdb->base_prefix) ? $wpdb->base_prefix : $wpdb->prefix;
 
-		$this->associations_table_name = $this->table_prefix . 'openid_associations';
-		$this->nonces_table_name = $this->table_prefix . 'openid_nonces';
-		$this->identity_table_name =  $this->table_prefix . 'openid_identities';
-		$this->comments_table_name =  $this->table_prefix . 'comments';
+		$this->associations_table_name = $table_prefix . 'openid_associations';
+		$this->nonces_table_name = $table_prefix . 'openid_nonces';
+		$this->identity_table_name =  $table_prefix . 'openid_identities';
+		$this->comments_table_name =  $table_prefix . 'comments';
 		$this->usermeta_table_name =  $wpdb->prefix . 'usermeta';
 
 		$conn = new WordPressOpenID_Connection( $wpdb );
@@ -57,47 +52,50 @@ class WordPressOpenID_Store extends Auth_OpenID_MySQLStore {
 		return $blob;
 	}
 
-	/*
+
+	/**
 	 * Check to see whether the nonce, association, and identity tables exist.
+	 *
+	 * @param bool $retry if true, tables will try to be recreated if they are not okay
+	 * @return bool if tables are okay
 	 */
 	function check_tables($retry=true) {
-		global $wpdb;
+		global $wpdb, $openid;
 
 		$ok = true;
-		$message = '';
+		$message = array();
 		$tables = array(
 		$this->associations_table_name,
 		$this->nonces_table_name,
 		$this->identity_table_name,
 		);
 		foreach( $tables as $t ) {
-			$message .= empty($message) ? '' : '<br/>';
 			if( $wpdb->get_var("SHOW TABLES LIKE '$t'") != $t ) {
 				$ok = false;
-				$message .= "Table $t doesn't exist.";
+				$message[] = "Table $t doesn't exist.";
 			} else {
-				$message .= "Table $t exists.";
+				$message[] = "Table $t exists.";
 			}
 		}
 			
 		if( $retry and !$ok) {
-			$this->core->setStatus( 'database tables', false,
+			$openid->setStatus( 'Database Tables', false,
 					'Tables not created properly. Trying to create..' );
 			$this->create_tables();
 			$ok = $this->check_tables( false );
 		} else {
-			$this->core->setStatus( 'database tables', $ok?'info':false, $message );
+			$openid->setStatus( 'Database Tables', $ok?'info':false, $message );
 		}
 		return $ok;
 	}
 
 
 	/**
-	 * WordPress database upgrade functions
+	 * Create OpenID related tables in the WordPress database.
 	 */
 	function create_tables()
 	{
-		global $wp_version, $wpdb;
+		global $wp_version, $wpdb, $openid;
 
 		if ($wp_version >= '2.3') {
 			require_once(ABSPATH . 'wp-admin/includes/upgrade.php');
@@ -131,18 +129,25 @@ class WordPressOpenID_Store extends Auth_OpenID_MySQLStore {
 				"ALTER TABLE $this->comments_table_name ADD `openid` TINYINT(1) NOT NULL DEFAULT '0'");
 
 		if (!$result) {
-			$this->core->log->err('unable to add column `openid` to comments table.');
+			$openid->log->err('unable to add column `openid` to comments table.');
 		}
 
+		// update old style of marking openid comments and users
 		$wpdb->query("update $this->comments_table_name set `comment_type`='', `openid`=1 where `comment_type`='openid'");
 		$wpdb->query("update $this->usermeta_table_name set `meta_key`='has_openid' where `meta_key`='registered_with_openid'");
 	}
 
+	
+	/**
+	 * Remove database tables which hold only transient data - associations and nonces.  Any non-transient data, such
+	 * as linkages between OpenIDs and WordPress user accounts are maintained.
+	 */
 	function destroy_tables() {
 		global $wpdb;
-		$sql = 'drop table ' . $this->associations_table_name;
+
+		$sql = 'drop table ' . WordPressOpenID::associations_table_name();
 		$wpdb->query($sql);
-		$sql = 'drop table ' . $this->nonces_table_name;
+		$sql = 'drop table ' . WordPressOpenID::nonces_table_name();
 		$wpdb->query($sql);
 
 		// just in case they've upgraded from an old version
@@ -151,10 +156,12 @@ class WordPressOpenID_Store extends Auth_OpenID_MySQLStore {
 		$wpdb->query($sql);
 	}
 
-	function dbCleanup() {
 
-	}
-
+	/**
+	 * Set SQL for database calls.
+	 * 
+	 * @see Auth_OpenID_SQLStore::setSQL
+	 */
 	function setSQL()
 	{
 		$this->sql['nonce_table'] =

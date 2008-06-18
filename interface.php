@@ -83,12 +83,33 @@ class WordPressOpenID_Interface {
 	function js_setup() {
 		if (is_single() || is_comments_popup() || is_admin()) {
 			wp_enqueue_script( 'jquery' );
-			wp_enqueue_script('jquery.textnode', '/' . PLUGINDIR . '/openid/files/jquery.textnode.js', 
+			/*
+			wp_enqueue_script('jquery.textnode', '/' . PLUGINDIR . '/openid/files/jquery.textnode.min.js', 
 				array('jquery'), WPOPENID_PLUGIN_REVISION);
-			wp_enqueue_script('jquery.xpath', '/' . PLUGINDIR . '/openid/files/jquery.xpath.js', 
+			wp_enqueue_script('jquery.xpath', '/' . PLUGINDIR . '/openid/files/jquery.xpath.min.js', 
 				array('jquery'), WPOPENID_PLUGIN_REVISION);
-			wp_enqueue_script('openid', '/' . PLUGINDIR . '/openid/files/openid.js', 
+			wp_enqueue_script('openid', '/' . PLUGINDIR . '/openid/files/openid.min.js', 
 				array('jquery','jquery.textnode'), WPOPENID_PLUGIN_REVISION);
+			 */
+		}
+	}
+
+	function js_setup_foot() {
+		if (is_single() || is_comments_popup() || is_admin()) {
+			$js_path = get_option('siteurl') . '/' . PLUGINDIR . '/openid/files';
+			echo '
+			<script type="text/javascript" src="'.$js_path.'/jquery.textnode.min.js"></script>
+			<script type="text/javascript" src="'.$js_path.'/jquery.xpath.min.js"></script>
+			<script type="text/javascript" src="'.$js_path.'/openid.min.js"></script>
+			';
+		/*
+			wp_enqueue_script('jquery.textnode', '/' . PLUGINDIR . '/openid/files/jquery.textnode.min.js', 
+				array('jquery'), WPOPENID_PLUGIN_REVISION);
+			wp_enqueue_script('jquery.xpath', '/' . PLUGINDIR . '/openid/files/jquery.xpath.min.js', 
+				array('jquery'), WPOPENID_PLUGIN_REVISION);
+			wp_enqueue_script('openid', '/' . PLUGINDIR . '/openid/files/openid.min.js', 
+				array('jquery','jquery.textnode'), WPOPENID_PLUGIN_REVISION);
+		 */
 		}
 	}
 
@@ -166,8 +187,6 @@ class WordPressOpenID_Interface {
 		global $wp_version, $openid;
 
 			WordPressOpenID_Logic::late_bind();
-			$openid->log->debug("WP-OpenID Plugin: " . ($openid->enabled? 'Enabled':'Disabled' ) 
-				. ' (start of WordPress options page)' );
 		
 			if ( isset($_REQUEST['action']) ) {
 				switch($_REQUEST['action']) {
@@ -366,25 +385,22 @@ class WordPressOpenID_Interface {
 	 * Print the status of various system libraries.  This is displayed on the main OpenID options page.
 	 **/
 	function printSystemStatus() {
-		global $openid;
+		global $wp_version, $wpdb, $openid;
 
-		$relativeto = dirname( __FILE__ ) . DIRECTORY_SEPARATOR;
 		$paths = explode(PATH_SEPARATOR, get_include_path());
-		foreach( $paths as $path ) {
-			$fullpath = $path . DIRECTORY_SEPARATOR;
-			if( $path == '.' ) $fullpath = '';
-			if( substr( $path, 0, 1 ) !== '/' ) $fullpath = $relativeto . $fullpath;
-			$list_of_paths[] = $fullpath;
+		for($i=0; $i<sizeof($paths); $i++ ) { 
+			$paths[$i] = realpath($paths[$i]); 
 		}
 		
-		$openid->setStatus( 'Include Path', 'info', implode('<br/>', $list_of_paths ) );
+		$openid->setStatus( 'PHP version', 'info', phpversion() );
+		$openid->setStatus( 'PHP memory limit', 'info', ini_get('memory_limit') );
+		$openid->setStatus( 'Include Path', 'info', $paths );
 		
-		global $wp_version;
 		$openid->setStatus( 'WordPress version', 'info', $wp_version );
 		$openid->setStatus( 'MySQL version', 'info', function_exists('mysql_get_client_info') ? mysql_get_client_info() : 'Mysql client information not available. Very strange, as WordPress requires MySQL.' );
 
-		$openid->setStatus( 'PHP version', 'info', phpversion() );
-		$openid->setStatus( 'PHP memory limit', 'info', ini_get('memory_limit') );
+		$openid->setStatus('WordPress\' table prefix', 'info', isset($wpdb->base_prefix) ? $wpdb->base_prefix : $wpdb->prefix );
+		
 		
 		$curl_message = '';
 		if( function_exists('curl_version') ) {
@@ -403,51 +419,49 @@ class WordPressOpenID_Interface {
 				}
 			}
 		}
-		$openid->setStatus( 'Curl ' . $curl_message, function_exists('curl_version'), function_exists('curl_version') ? $curl_message :
+		$openid->setStatus( 'Curl Support', function_exists('curl_version'), function_exists('curl_version') ? $curl_message :
 				'This PHP installation does not have support for libcurl. Some functionality, such as fetching https:// URLs, will be missing and performance will slightly impared. See <a href="http://www.php.net/manual/en/ref.curl.php">php.net/manual/en/ref.curl.php</a> about enabling libcurl support for PHP.');
 
-		/* Check for Long Integer math library */
-		$openid->setStatus( 'library: GMP compiled into in PHP', ( extension_loaded('gmp') and @gmp_init(1) ), '<a href="http://www.php.net/gmp">GMP</a> does not appear to be built into PHP. This is highly recommended for performance reasons.' );
-		$openid->setStatus( 'library: BCMath compiled into in PHP', ( extension_loaded('bcmath') and @bcadd(1,1)==2 ), '<a href="http://www.php.net/bc">BCMath</a> does not appear to be built into PHP. GMP is preferred.' );
-
-		if( defined( 'Auth_OpenID_NO_MATH_SUPPORT' ) ) {
-			$openid->setStatus( 'Loaded long integer library', false, 'The OpenID Library is operating Dumb Mode, since it doesn\'t have a big integer library. Recommend installing GMP support.' );
-		}
-		if( defined( 'Auth_OpenID_RAND_SOURCE' ) ) {
-			$openid->setStatus( 'Cryptographic Randomness Source', (Auth_OpenID_RAND_SOURCE===null) ? false: 'info' ,
-				(Auth_OpenID_RAND_SOURCE===null)
-				? '/dev/urandom unavailable, using an <a href="http://php.net/mt_rand">insecure random number generator</a>. <a href="http://www.php.net/manual/en/features.safe-mode.php#ini.open-basedir">open_basedir</a> is "' . ini_get('open_basedir') . '"'
-				: Auth_OpenID_RAND_SOURCE );
+		if (extension_loaded('gmp') and @gmp_init(1)) {
+			$openid->setStatus( 'Big Integer support', true, 'GMP is installed.' );
+		} elseif (extension_loaded('bcmath') and @bcadd(1,1)==2) {
+			$openid->setStatus( 'Big Integer support', true, 'BCMath is installed (though <a href="http://www.php.net/gmp">GMP</a> is preferred).' );
+		} elseif (defined('Auth_OpenID_NO_MATH_SUPPORT')) {
+			$openid->setStatus( 'Big Integer support', false, 'The OpenID Library is operating in Dumb Mode. Recommend installing <a href="http://www.php.net/gmp">GMP</a> support.' );
 		}
 
 		
 		$openid->setStatus( 'Plugin Revision', 'info', WPOPENID_PLUGIN_REVISION);
-		$openid->setStatus( 'Plugin Database Revision', 'info', 'Plugin database is currently at revision '
-			. get_option('oid_db_revision') . '.' );
+		$openid->setStatus( 'Plugin Database Revision', 'info', get_option('oid_db_revision'));
 		
 		$openid->setStatus( '<strong>Overall Plugin Status</strong>', ($openid->enabled), 
-			'There are problems above that must be dealt with before the plugin can be used.' );
+			($openid->enabled ? '' : 'There are problems above that must be dealt with before the plugin can be used.') );
 
 
+			
 		if( $openid->enabled ) {	// Display status information
-			?><div id="openid_rollup" class="updated"><p><strong><?php _e('Status information:', 'openid') ?></strong> <?php _e('All Systems Nominal', 'openid') ?> 
-				<small>(<a href="#" id="openid_rollup_link"><?php _e('Toggle More/Less', 'openid') ?></a>)</small> </p><?php
+			echo'<div id="openid_rollup" class="updated">
+			<p><strong>' . __('Status information:', 'openid') . '</strong> ' . __('All Systems Nominal', 'openid') 
+			. '<small> (<a href="#" id="openid_rollup_link">' . __('Toggle More/Less', 'openid') . '</a>)</small> </p>';
 		} else {
-			?><div class="error"><p><strong><?php _e('Plugin is currently disabled. Fix the problem, then Deactivate/Reactivate the plugin.', 'openid') ?></strong></p><?php
+			echo '<div class="error"><p><strong>' . __('Plugin is currently disabled. Fix the problem, then Deactivate/Reactivate the plugin.', 'openid') 
+			. '</strong></p>';
 		}
-		
-		?>
-		<dl>
-		<?php
-			foreach( $openid->status as $k=>$v ) {
-				if( $v['state'] === false ) { echo "<dt><span style='color:red;'>[".__('FAIL', 'openid')."]</span> $k </dt>"; }
-				elseif( $v['state'] === true ) { echo "<dt><span style='color:green;'>[".__('OK', 'openid')."]</span> $k </dt>"; }
-				else { echo "<dt><span style='color:grey;'>[".__('INFO', 'openid')."]</span> $k </dt>"; }
-				if( $v['state']!==true and $v['message'] ) echo '<dd>' . $v['message'] . '</dd>';
+		echo '<div>';
+		foreach( $openid->status as $k=>$v ) {
+			echo '<div><strong>';
+			if( $v['state'] === false ) {
+				echo "<span style='color:red;'>[".__('FAIL', 'openid')."]</span> $k";
+			} elseif( $v['state'] === true ) {
+				echo "<span style='color:green;'>[".__('OK', 'openid')."]</span> $k";
+			} else {
+				echo "<span style='color:grey;'>[".__('INFO', 'openid')."]</span> $k";
 			}
-		?>
-		</dl></div>
-		<?php
+			echo ($v['message'] ? ': ' : '') . '</strong>';
+			echo (is_array($v['message']) ? '<ul><li>' . implode('</li><li>', $v['message']) . '</li></ul>' : $v['message']);
+			echo '</div>';
+		}
+		echo '</div></div>';
 	}
 
 	function repost($action, $parameters) {

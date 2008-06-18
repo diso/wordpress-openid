@@ -12,16 +12,6 @@ if (!class_exists('WordPressOpenID_Logic')):
 class WordPressOpenID_Logic {
 
 	/**
-	 * Constructor.
-	 *
-	 * @param WordPressOpenID $core wp-openid core instance
-	 * @return WordPressOpenID_Logic
-	 */
-	function WordPressOpenID_Logic() {
-	}
-
-
-	/**
 	 * Soft verification of plugin activation
 	 *
 	 * @return boolean if the plugin is okay
@@ -31,10 +21,8 @@ class WordPressOpenID_Logic {
 
 		$openid->log->debug('checking if database is up to date');
 		if( get_option('oid_db_revision') != WPOPENID_DB_REVISION ) {
-			// Database version mismatch, force dbDelta() in admin interface.
 			$openid->enabled = false;
-			$openid->setStatus('Plugin Database Version', false, 'Plugin database is out of date. '
-			. get_option('oid_db_revision') . ' != ' . WPOPENID_DB_REVISION );
+			$openid->log->warning('Plugin database is out of date: ' . get_option('oid_db_revision') . ' != ' . WPOPENID_DB_REVISION);
 			update_option('oid_plugin_enabled', false);
 			return false;
 		}
@@ -57,13 +45,8 @@ class WordPressOpenID_Logic {
 
 			$openid->store = new WordPressOpenID_Store($openid);
 			if (null === $openid->store) {
-
-				$openid->setStatus('object: OpenID Store', false,
-						'OpenID store could not be created properly.');
-
+				$openid->log->err('OpenID store could not be created properly.');
 				$openid->enabled = false;
-			} else {
-				$openid->setStatus('object: OpenID Store', true, 'OpenID store created properly.');
 			}
 		}
 
@@ -80,18 +63,14 @@ class WordPressOpenID_Logic {
 		global $openid;
 
 		if (!isset($openid->consumer)) {
+			set_include_path( dirname(__FILE__) . PATH_SEPARATOR . get_include_path() );
 			require_once 'Auth/OpenID/Consumer.php';
 
 			$store = WordPressOpenID_Logic::getStore();
 			$openid->consumer = new Auth_OpenID_Consumer($store);
 			if( null === $openid->consumer ) {
-				$openid->setStatus('object: OpenID Consumer', false,
-						'OpenID consumer could not be created properly.');
-
+				$openid->log->err('OpenID consumer could not be created properly.');
 				$openid->enabled = false;
-			} else {
-				$openid->setStatus('object: OpenID Consumer', true,
-						'OpenID consumer created properly.');
 			}
 		}
 
@@ -132,8 +111,6 @@ class WordPressOpenID_Logic {
 		require_once('Auth/OpenID/SReg.php');
 		restore_include_path();
 
-		$openid->setStatus('database: WordPress\' table prefix', 'info', isset($wpdb->base_prefix) ? $wpdb->base_prefix : $wpdb->prefix );
-
 		$openid->log->debug("Bootstrap -- checking tables");
 		if( $openid->enabled ) {
 
@@ -162,9 +139,25 @@ class WordPressOpenID_Logic {
 	 * @see register_activation_hook
 	 */
 	function activate_plugin() {
-		global $wp_rewrite;
-		add_filter('generate_rewrite_rules', array('WordPressOpenID_Logic', 'rewrite_rules'));
-		$wp_rewrite->flush_rules();
+		$start_mem = memory_get_usage();
+		global $wp_rewrite, $openid;
+		openid_init();
+
+		$store =& WordPressOpenID_Logic::getStore();
+		$store->create_tables();
+
+		//add_filter('generate_rewrite_rules', array('WordPressOpenID_Logic', 'rewrite_rules'));
+		//$wp_rewrite->flush_rules();
+		
+		wp_schedule_event(time(), 'hourly', 'cleanup_openid');
+		$openid->log->warning("activation memory usage: " . (int)((memory_get_usage() - $start_mem) / 1000));
+	}
+
+	function cleanup_nonces() {
+		global $openid;
+		openid_init();
+		$store =& WordPressOpenID_Logic::getStore();
+		$store->cleanupNonces();
 	}
 
 
@@ -174,22 +167,10 @@ class WordPressOpenID_Logic {
 	 * @see register_deactivation_hook
 	 */
 	function deactivate_plugin() {
-		global $openid;
-
-		WordPressOpenID_Logic::late_bind();
-
-		$store = WordPressOpenID_Logic::getStore();
-		if( $store == null) {
-			$openid->error = 'OpenIDConsumer: Disabled. Cannot locate libraries, therefore cannot clean '
-			. 'up database tables. Fix the libraries, or drop the tables yourself.';
-			$openid->log->notice($openid->error);
-			return;
-		}
-
-		$openid->log->debug('Dropping all database tables.');
-		$store->destroy_tables();
+		set_include_path( dirname(__FILE__) . PATH_SEPARATOR . get_include_path() );
+		require_once 'store.php';
+		WordPressOpenID_Store::destroy_tables();
 	}
-
 
 
 	/*
@@ -230,7 +211,8 @@ class WordPressOpenID_Logic {
 	 */
 	function openid_profile_management() {
 		global $wp_version, $openid;
-
+		openid_init();
+		
 		if( !isset( $_REQUEST['action'] )) return;
 			
 		$openid->action = $_REQUEST['action'];
@@ -254,7 +236,7 @@ class WordPressOpenID_Logic {
 
 				$user = wp_get_current_user();
 
-				$store = WordPressOpenID_Logic::getStore();
+				$store =& WordPressOpenID_Logic::getStore();
 				global $openid_auth_request;
 				if ($openid_auth_request == NULL) {
 					$consumer = WordPressOpenID_Logic::getConsumer();
@@ -298,7 +280,7 @@ class WordPressOpenID_Logic {
 			return;
 		}
 
-		$store = WordPressOpenID_Logic::getStore();
+		$store =& WordPressOpenID_Logic::getStore();
 		$deleted_identity_url = $store->get_identities($user->ID, $id);
 		if( FALSE === $deleted_identity_url ) {
 			$openid->error = 'Identity url delete failed: Specified identity does not exist.';
@@ -495,7 +477,7 @@ class WordPressOpenID_Logic {
 			
 
 		/* If we've never heard of this url before, do attribute query */
-		$store = WordPressOpenID_Logic::getStore();
+		$store =& WordPressOpenID_Logic::getStore();
 		if( $store->get_user_by_identity( $auth_request->endpoint->identity_url ) == NULL ) {
 			$attribute_query = true;
 		}
@@ -538,7 +520,7 @@ class WordPressOpenID_Logic {
 	function set_current_user($identity_url, $remember = true) {
 		global $openid;
 
-		$store = WordPressOpenID_Logic::getStore();
+		$store =& WordPressOpenID_Logic::getStore();
 		$user_id = $store->get_user_by_identity( $identity_url );
 
 		if (!$user_id) return;
@@ -694,7 +676,7 @@ class WordPressOpenID_Logic {
 			// FIXME unable to authenticate OpenID
 			WordPressOpenID_Logic::set_error('Unable to authenticate OpenID.');
 		} else {
-			$store = WordPressOpenID_Logic::getStore();
+			$store =& WordPressOpenID_Logic::getStore();
 			if( !$store->insert_identity($user->ID, $identity_url) ) {
 				// TODO should we check for this duplication *before* authenticating the ID?
 				WordPressOpenID_Logic::set_error('OpenID assertion successful, but this URL is already claimed by '
@@ -1087,43 +1069,16 @@ class WordPressOpenID_Logic {
 		}
 	}
 
-	/**
-	 * Add OpenID consumer endpoing to wp_rewrite rules.
-	 */
-	function rewrite_rules() {
-		global $wp_rewrite;
-
-		$openid_rules = array(
-            	'openid_consumer$' => 'index.php?openid_consumer=1',
-            	'index.php/openid_consumer$' => 'index.php?openid_consumer=1',
-		);
-
-		$wp_rewrite->rules = $openid_rules + $wp_rewrite->rules;
-	}
-
 
 	/**
-	 * Add 'openid_consumer' as a valid query variables.
-	 *
-	 * @param array $vars valid query variables
-	 * @return array new valid query variables
-	 */
-	function query_vars($vars) {
-		$vars[] = 'openid_consumer';
-		return $vars;
-	}
-
-
-	/**
-	 * Parse the WordPress query string.  If it contains the query variable 'openid_consumer', then the request
+	 * Parse the WordPress request.  If the pagename is 'openid_consumer', then the request
 	 * is an OpenID response and should be handled accordingly.
 	 *
 	 * @param WP $wp WP instance for the current request
 	 */
-	function parse_query($wp) {
-		global $openid;
+	function parse_request($wp) {
 		openid_init();
-
+		
 		if ($wp->query_vars['pagename'] == 'openid_consumer') {
 			WordPressOpenID_Logic::finish_openid($_REQUEST['action']);
 		}
