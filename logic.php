@@ -331,13 +331,12 @@ class WordPressOpenID_Logic {
 			}
 		} else {
 			// Generate form markup and render it
-			$form_id = 'openid_message';
-			$form_html = $auth_request->formMarkup($trust_root, $return_to, false);
+			$form_html = $auth_request->htmlMarkup($trust_root, $return_to, false);
 
 			if (Auth_OpenID::isFailure($form_html)) {
 				$openid->log->error('Could not redirect to server: '.$form_html->message);
 			} else {
-				WordPressOpenID_Interface::display_openid_redirect_form($form_html);
+				echo $form_html;
 			}
 		}
 	}
@@ -960,7 +959,6 @@ class WordPressOpenID_Logic {
 	function comment_tagging( $comment ) {
 		global $openid;
 
-		if (!$openid->enabled) return $comment;
 		if ($_REQUEST['oid_skip']) return $comment;
 			
 		$openid_url = (array_key_exists('openid_url', $_POST) ? $_POST['openid_url'] : $_POST['url']);
@@ -985,8 +983,73 @@ class WordPressOpenID_Logic {
 				exit();
 			}
 		}
+
+		if (get_option('oid_enable_email_mapping') && !empty($_POST['email'])) {
+			$_SESSION['oid_comment_post'] = $_POST;
+			$_SESSION['oid_comment_post']['comment_author_openid'] = $openid_url;
+			$_SESSION['oid_comment_post']['oid_skip'] = 1;
+
+			$email_mapping = WordPressOpenID_Logic::get_email_mapping($_POST['email']);
+			WordPressOpenID_Logic::start_login( $email_mapping, 'comment');
+		}
 			
 		return $comment;
+	}
+
+
+	function get_email_mapping($email) {
+		list($user, $domain) = split('@', $email, 2);
+
+		set_include_path( dirname(__FILE__) . PATH_SEPARATOR . get_include_path() );
+		require_once 'Auth/Yadis/Yadis.php';
+		require_once 'Auth/OpenID.php';
+		$fetcher = Auth_Yadis_Yadis::getHTTPFetcher();
+
+		$uris = WordPressOpenID_Logic::get_email_mapper_service($domain, $fetcher);
+		if (empty($uris)) {
+			$uris = WordPressOpenID_Logic::get_email_mapper_service(WPOPENID_DEFAULT_EMAIL_MAPPER, $fetcher);
+		}
+
+		if (!empty($uris)) {
+			$url_parts = parse_url($uris[0]);
+			if (empty($url_parts['query'])) {
+				return $uris[0] . '?email=' . $email;
+			} else {
+				return $uris[0] . '&email=' . $email;
+			}
+		}
+	}
+
+	function get_email_mapper_service($uri, $fetcher) {
+		$uri = Auth_OpenID::normalizeUrl($uri);
+
+		$response = Auth_Yadis_Yadis::discover($uri, $fetcher);
+		if ($response->isXRDS()) {
+			$xrds =& Auth_Yadis_XRDS::parseXRDS($response->response_text);
+			if ($xrds) {
+				$services = $xrds->services(array(array('WordPressOpenID_logic', 'filter_EmailMapperType')));
+				$uris = array();
+				foreach ($services as $s) {
+					$uris = array_merge($uris, $s->getURIs());
+				}
+			}
+		}
+
+		return $uris;
+	}
+	
+
+	function filter_EmailMapperType(&$service)
+	{
+		$uris = $service->getTypes();
+
+		foreach ($uris as $uri) {
+			if ($uri == WPOPENID_EMAIL_TO_URL_TYPE) {
+				return true;
+			}   
+		}   
+
+		return false;
 	}
 
 

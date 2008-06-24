@@ -208,6 +208,7 @@ class WordPressOpenID_Interface {
 				
 				update_option( 'oid_enable_commentform', isset($_POST['enable_commentform']) ? true : false );
 				update_option( 'oid_enable_approval', isset($_POST['enable_approval']) ? true : false );
+				update_option( 'oid_enable_email_mapping', isset($_POST['enable_email_mapping']) ? true : false );
 
 				if ($error !== '') {
 					echo '<div class="error"><p><strong>'.__('At least one of OpenID options was NOT updated', 'openid').'</strong>'.$error.'</p></div>';
@@ -266,6 +267,22 @@ class WordPressOpenID_Interface {
 								<p><?php printf(__('This will work for most themes derived from Kubrick or Sandbox.  '
 								. 'Template authors can tweak the comment form as described in the %sreadme%s.', 'openid'), 
 								'<a href="'. get_option('siteurl') . '/' . PLUGINDIR . '/openid/readme.txt">', '</a>') ?></p>
+								<br />
+							</td>
+						</tr>
+
+						<tr valign="top">
+							<th style="width: 33%" scope="row"><?php _e('Email Mapping:', 'openid') ?></th>
+							<td>
+								<p><input type="checkbox" name="enable_email_mapping" id="enable_email_mapping" <?php
+								if( get_option('oid_enable_email_mapping') ) echo 'checked="checked"'
+								?> />
+									<label for="enable_email_mapping"><?php _e('Enable email addresses to be mapped to OpenID URLs.', 'openid') ?></label></p>
+
+								<p><?php printf(__('This feature uses the Email-To-URL mapping specification to allow OpenID authentication'
+								. ' based on an email address.  If enabled, commentors who do not supply a valid OpenID URL will have their'
+								. ' supplied email address mapped to an OpenID.  If their email provider does not currently support email to'
+								. ' url mapping, the default provider %s will be used.', 'openid'), '<a href="http://emailtoid.net/">Emailtoid</a>') ?></p>
 								<br />
 							</td>
 						</tr>
@@ -497,13 +514,6 @@ class WordPressOpenID_Interface {
 		exit;
 	}
 	
-	function display_openid_redirect_form($form) {
-		echo '<html><head><title>Redirecting to OpenID Provider</title></head>
-		<body onload="document.forms[0].submit();">
-			<h3>Redirecting to OpenID Provider</h3>
-			' . $form . '
-		</body></html>';
-	}
 }
 endif;
 
