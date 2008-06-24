@@ -282,7 +282,7 @@ class WordPressOpenID_Interface {
 								<p><?php printf(__('This feature uses the Email-To-URL mapping specification to allow OpenID authentication'
 								. ' based on an email address.  If enabled, commentors who do not supply a valid OpenID URL will have their'
 								. ' supplied email address mapped to an OpenID.  If their email provider does not currently support email to'
-								. ' url mapping, the default provider %s will be used.', 'openid'), '<a href="http://emailtoid.net/">Emailtoid</a>') ?></p>
+								. ' url mapping, the default provider %s will be used.', 'openid'), '<a href="http://emailtoid.net/">Emailtoid.net</a>') ?></p>
 								<br />
 							</td>
 						</tr>
