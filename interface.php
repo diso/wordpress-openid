@@ -83,33 +83,12 @@ class WordPressOpenID_Interface {
 	function js_setup() {
 		if (is_single() || is_comments_popup() || is_admin()) {
 			wp_enqueue_script( 'jquery' );
-			/*
 			wp_enqueue_script('jquery.textnode', '/' . PLUGINDIR . '/openid/files/jquery.textnode.min.js', 
 				array('jquery'), WPOPENID_PLUGIN_REVISION);
 			wp_enqueue_script('jquery.xpath', '/' . PLUGINDIR . '/openid/files/jquery.xpath.min.js', 
 				array('jquery'), WPOPENID_PLUGIN_REVISION);
 			wp_enqueue_script('openid', '/' . PLUGINDIR . '/openid/files/openid.min.js', 
 				array('jquery','jquery.textnode'), WPOPENID_PLUGIN_REVISION);
-			 */
-		}
-	}
-
-	function js_setup_foot() {
-		if (is_single() || is_comments_popup() || is_admin()) {
-			$js_path = get_option('siteurl') . '/' . PLUGINDIR . '/openid/files';
-			echo '
-			<script type="text/javascript" src="'.$js_path.'/jquery.textnode.min.js"></script>
-			<script type="text/javascript" src="'.$js_path.'/jquery.xpath.min.js"></script>
-			<script type="text/javascript" src="'.$js_path.'/openid.min.js"></script>
-			';
-		/*
-			wp_enqueue_script('jquery.textnode', '/' . PLUGINDIR . '/openid/files/jquery.textnode.min.js', 
-				array('jquery'), WPOPENID_PLUGIN_REVISION);
-			wp_enqueue_script('jquery.xpath', '/' . PLUGINDIR . '/openid/files/jquery.xpath.min.js', 
-				array('jquery'), WPOPENID_PLUGIN_REVISION);
-			wp_enqueue_script('openid', '/' . PLUGINDIR . '/openid/files/openid.min.js', 
-				array('jquery','jquery.textnode'), WPOPENID_PLUGIN_REVISION);
-		 */
 		}
 	}
 
@@ -282,7 +261,7 @@ class WordPressOpenID_Interface {
 								<p><?php printf(__('This feature uses the Email-To-URL mapping specification to allow OpenID authentication'
 								. ' based on an email address.  If enabled, commentors who do not supply a valid OpenID URL will have their'
 								. ' supplied email address mapped to an OpenID.  If their email provider does not currently support email to'
-								. ' url mapping, the default provider %s will be used.', 'openid'), '<a href="http://emailtoid.net/">Emailtoid.net</a>') ?></p>
+								. ' url mapping, the default provider %s will be used.', 'openid'), '<a href="http://emailtoid.net/" target="_blank">Emailtoid.net</a>') ?></p>
 								<br />
 							</td>
 						</tr>

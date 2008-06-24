@@ -137,7 +137,6 @@ add_filter( 'get_comment_author_link', array( 'WordPressOpenID_Interface', 'comm
 
 if( get_option('oid_enable_commentform') ) {
 	add_action( 'wp_head', array( 'WordPressOpenID_Interface', 'js_setup'), 9);
-	add_action( 'wp_footer', array( 'WordPressOpenID_Interface', 'js_setup_foot'));
 	add_action( 'wp_footer', array( 'WordPressOpenID_Interface', 'comment_profilelink'), 10);
 	add_action( 'wp_footer', array( 'WordPressOpenID_Interface', 'comment_form'), 10);
 }
