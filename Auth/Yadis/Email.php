@@ -83,15 +83,26 @@ function Auth_Yadis_Email_getID($email, $site_name = '') {
 		}
 
 		foreach ($types as $t) {
-			switch ("$t") {
+			switch ($t) {
 				case Auth_Yadis_ETT_Type:
-					$id = Auth_Yadis_Email_translateETT($uris[0], $user);
+					// TODO verify valid ETT
+					$id =  preg_replace('/'.preg_quote(Auth_Yadis_ETT_Wildcard_Username).'/', $user, $uris[0]);
 					break;
+
 				case Auth_Yadis_EATOID_Type:
-					$id = Auth_Yadis_Email_translateEATOID($uris[0], $email);
-					break;
 				case Auth_Yadis_EmailToUrl_Type:
-					$id = Auth_Yadis_Email_translateEmailToUrl($uris[0], $email, $site_name);
+					$url_parts = parse_url($uris[0]);
+
+					if (empty($url_parts['query'])) {
+						$id = $uris[0] . '?email=' . $email;
+					} else {
+						$id =  $uris[0] . '&email=' . $email;
+					}
+					
+					if ($t == Auth_Yadis_EmailToUrl_Type && $site_name) {
+						$id .= "&site_name=$site_name";
+					}
+
 					break;
 			}
 
@@ -115,26 +126,5 @@ function Auth_Yadis_Email_getServices($uri, $fetcher) {
 		}
 	}
 }
-
-function Auth_Yadis_Email_translateETT($ett, $user) {
-	//TODO verify valid ETT
-	return preg_replace('/'.preg_quote(Auth_Yadis_ETT_Wildcard_Username).'/', $user, $ett);
-}
-
-function Auth_Yadis_Email_translateEATOID($uri, $email) {
-	$url_parts = parse_url($uri);
-
-	if (empty($url_parts['query'])) {
-		return $uri . '?email=' . $email;
-	} else {
-		return $uri . '&email=' . $email;
-	}
-}
-
-function Auth_Yadis_Email_translateEmailToUrl($uri, $email, $site_name) {
-	return Auth_Yadis_Email_translateEATOID($uri, $email) 
-		. ($site_name ? "&site_name=$site_name" : '');
-}
-
 
 ?>
