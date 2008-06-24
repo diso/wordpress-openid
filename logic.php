@@ -646,9 +646,10 @@ class WordPressOpenID_Logic {
 			if (!empty($user_data['display_name'])) {
 				$_SESSION['oid_comment_post']['author'] = $user_data['display_name'];
 			}
-			if ($oid_user_data['user_email']) {
+			if (!empty($user_data['user_email'])) {
 				$_SESSION['oid_comment_post']['email'] = $user_data['user_email'];
 			}
+			$_SESSION['oid_comment_post']['url'] = $identity_url;
 		}
 			
 		// record that we're about to post an OpenID authenticated comment.
@@ -809,7 +810,7 @@ class WordPressOpenID_Logic {
 			$data['user_url'] = 'http://xri.net/' . $identity_url;
 		}
 
-
+		$result = WordPressOpenID_Logic::get_user_data_form($identity_url, $data);
 		$result = WordPressOpenID_Logic::get_user_data_sreg($identity_url, $data);
 
 		return $data;
@@ -874,6 +875,32 @@ class WordPressOpenID_Logic {
 	 */
 	function get_user_data_hcard($identity_url, &$data) {
 		// TODO implement hcard discovery
+	}
+
+	/**
+	 * Retrieve user data from comment form.
+	 *
+	 * @param string $identity_url OpenID to get user data about
+	 * @param reference $data reference to user data array
+	 * @see get_user_data
+	 */
+	function get_user_data_form($identity_url, &$data) {
+		$comment = $_SESSION['oid_comment_post'];
+
+		if (!$comment) {
+			return false;
+		}
+
+		if ($comment['email']) {
+			$data['user_email'] = $comment['email'];
+		}
+
+		if ($comment['author']) {
+			$data['nickname'] = $comment['author'];
+			$data['user_nicename'] = $comment['author'];
+			$data['display_name'] = $comment['author'];
+		}
+
 	}
 
 
@@ -1011,12 +1038,16 @@ class WordPressOpenID_Logic {
 		}
 
 		if (!empty($uris)) {
-			$url_parts = parse_url($uris[0]);
+			$mapping = $uris[0];
+			$url_parts = parse_url($mapping);
+
 			if (empty($url_parts['query'])) {
-				return $uris[0] . '?email=' . $email;
+				$mapping .= '?';
 			} else {
-				return $uris[0] . '&email=' . $email;
+				$mapping .= '&';
 			}
+
+			return $mapping . 'email=' . $email . '&site_name=' . trailingslashit(get_option('home'));
 		}
 	}
 
