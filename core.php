@@ -17,9 +17,6 @@ define ( 'WPOPENID_DB_REVISION', 24426);      // last plugin revision that requi
 
 define ( 'WPOPENID_LOG_LEVEL', 'debug');     // valid values are debug, info, notice, warning, err, crit, alert, emerg
 
-define ( 'WPOPENID_DEFAULT_EMAIL_MAPPER', 'http://emailtoid.net/');
-define ( 'WPOPENID_EMAIL_TO_URL_TYPE', 'http://schemas.net/2008/email-to-url/');
-
 set_include_path( dirname(__FILE__) . PATH_SEPARATOR . get_include_path() );   // Add plugin directory to include path temporarily
 
 require_once('logic.php');

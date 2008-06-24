@@ -919,6 +919,13 @@ class WordPressOpenID_Logic {
 		}
 	}
 
+	/**
+	 * hook in and call when user is updating their profile URL... make sure it is an OpenID they control.
+	 * TODO
+	 */
+	function pre_user_url($url) {
+	}
+
 
 	/**
 	 * Mark the provided comment as an OpenID comment
@@ -1016,71 +1023,13 @@ class WordPressOpenID_Logic {
 			$_SESSION['oid_comment_post']['comment_author_openid'] = $openid_url;
 			$_SESSION['oid_comment_post']['oid_skip'] = 1;
 
-			$email_mapping = WordPressOpenID_Logic::get_email_mapping($_POST['email']);
-			WordPressOpenID_Logic::start_login( $email_mapping, 'comment');
+			set_include_path( dirname(__FILE__) . PATH_SEPARATOR . get_include_path() );
+			require_once 'Auth/Yadis/Email.php';
+			$id = Auth_Yadis_Email_getID($_POST['email'], trailingslashit(get_option('home')));
+			WordPressOpenID_Logic::start_login( $id, 'comment');
 		}
 			
 		return $comment;
-	}
-
-
-	function get_email_mapping($email) {
-		list($user, $domain) = split('@', $email, 2);
-
-		set_include_path( dirname(__FILE__) . PATH_SEPARATOR . get_include_path() );
-		require_once 'Auth/Yadis/Yadis.php';
-		require_once 'Auth/OpenID.php';
-		$fetcher = Auth_Yadis_Yadis::getHTTPFetcher();
-
-		$uris = WordPressOpenID_Logic::get_email_mapper_service($domain, $fetcher);
-		if (empty($uris)) {
-			$uris = WordPressOpenID_Logic::get_email_mapper_service(WPOPENID_DEFAULT_EMAIL_MAPPER, $fetcher);
-		}
-
-		if (!empty($uris)) {
-			$mapping = $uris[0];
-			$url_parts = parse_url($mapping);
-
-			if (empty($url_parts['query'])) {
-				$mapping .= '?';
-			} else {
-				$mapping .= '&';
-			}
-
-			return $mapping . 'email=' . $email . '&site_name=' . trailingslashit(get_option('home'));
-		}
-	}
-
-	function get_email_mapper_service($uri, $fetcher) {
-		$uri = Auth_OpenID::normalizeUrl($uri);
-
-		$response = Auth_Yadis_Yadis::discover($uri, $fetcher);
-		if ($response->isXRDS()) {
-			$xrds =& Auth_Yadis_XRDS::parseXRDS($response->response_text);
-			if ($xrds) {
-				$services = $xrds->services(array(array('WordPressOpenID_logic', 'filter_EmailMapperType')));
-				$uris = array();
-				foreach ($services as $s) {
-					$uris = array_merge($uris, $s->getURIs());
-				}
-			}
-		}
-
-		return $uris;
-	}
-	
-
-	function filter_EmailMapperType(&$service)
-	{
-		$uris = $service->getTypes();
-
-		foreach ($uris as $uri) {
-			if ($uri == WPOPENID_EMAIL_TO_URL_TYPE) {
-				return true;
-			}   
-		}   
-
-		return false;
 	}
 
 
