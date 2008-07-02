@@ -321,7 +321,7 @@ class WordPressOpenID_Logic {
 		global $openid;
 
 		if ($auth_request->shouldSendRedirect()) {
-			if (substr($trust_root, -1, 1) != '/') $trust_root .= '/';
+			$trust_root = trailingslashit($trust_root);
 			$redirect_url = $auth_request->redirectURL($trust_root, $return_to);
 
 			if (Auth_OpenID::isFailure($redirect_url)) {
@@ -464,7 +464,8 @@ class WordPressOpenID_Logic {
 
 
 		// build return_to URL
-		$return_to = get_option('home') . '/openid_consumer';
+		$return_to = get_option('home');
+		$auth_request->return_to_args['openid_consumer'] = '1';
 		$auth_request->return_to_args['action'] = $action;
 		if (is_array($arguments) && !empty($arguments)) {
 			foreach ($arguments as $k => $v) {
@@ -1120,9 +1121,8 @@ class WordPressOpenID_Logic {
 	 * @param WP $wp WP instance for the current request
 	 */
 	function parse_request($wp) {
-		openid_init();
-		
-		if ($wp->query_vars['pagename'] == 'openid_consumer') {
+		if (array_key_exists('openid_consumer', $_REQUEST) && $_REQUEST['action']) {
+			openid_init();
 			WordPressOpenID_Logic::finish_openid($_REQUEST['action']);
 		}
 	}
