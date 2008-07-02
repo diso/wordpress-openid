@@ -140,17 +140,15 @@ class WordPressOpenID_Logic {
 	 */
 	function activate_plugin() {
 		$start_mem = memory_get_usage();
-		global $wp_rewrite, $openid;
+		global $openid;
 		openid_init();
 
 		$store =& WordPressOpenID_Logic::getStore();
 		$store->create_tables();
 
-		//add_filter('generate_rewrite_rules', array('WordPressOpenID_Logic', 'rewrite_rules'));
-		//$wp_rewrite->flush_rules();
-		
 		wp_schedule_event(time(), 'hourly', 'cleanup_openid');
 		$openid->log->warning("activation memory usage: " . (int)((memory_get_usage() - $start_mem) / 1000));
+		// TODO remove memory usage before release
 	}
 
 	function cleanup_nonces() {
