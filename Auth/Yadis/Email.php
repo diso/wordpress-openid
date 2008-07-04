@@ -1,7 +1,7 @@
 <?php
 
 /**
- * Implementation of OpenID Email Address Transform Extension
+ * Implementation of Email Address to URL Transform protocol
  *
  * PHP versions 4 and 5
  *
@@ -14,24 +14,19 @@ require_once 'Auth/Yadis/Yadis.php';
 require_once 'Auth/OpenID.php';
 
 /**
- * XRDS type for Email Address Transformation Template.
+ * XRDS type for EAUT Template.
  */
-define('Auth_Yadis_ETT_Type', 'http://specs.openid.net/oeat/1.0/ett');
+define('Auth_Yadis_EAUT_Template_Type', 'http://specs.eaut.org/1.0/template');
 
 /**
- * XRDS type for Email Address to ID mapper.
+ * XRDS type for EAUT Mapping Service.
  */
-define('Auth_Yadis_EATOID_Type', 'http://specs.openid.net/oeat/1.0/eatoid');
+define('Auth_Yadis_EAUT_Mapper_Type', 'http://specs.eaut.org/1.0/mapping');
 
 /**
- * Alternate XRDS type for Email Address to ID mapper.
+ * EAUT Wildcard for username
  */
-define('Auth_Yadis_EmailToUrl_Type', 'http://schemas.net/2008/email-to-url/');
-
-/**
- * ETT Wildcard for username
- */
-define('Auth_Yadis_ETT_Wildcard_Username', '[username]');
+define('Auth_Yadis_EAUT_Wildcard_Username', '%7Busername%7D');
 
 /**
  * Default service for email mapping.
@@ -42,9 +37,7 @@ if (!defined('Auth_Yadis_Default_Email_Mapper')) {
 
 function Auth_Yadis_Email_getEmailTypeURIs() 
 {
-    return array(Auth_Yadis_ETT_Type,
-                 Auth_Yadis_EATOID_Type,
-                 Auth_Yadis_EmailToUrl_Type);
+    return array(Auth_Yadis_EAUT_Template_Type, Auth_Yadis_EAUT_Mapper_Type,);
 }
 
 function filter_MatchesAnyEmailType(&$service) 
@@ -84,13 +77,12 @@ function Auth_Yadis_Email_getID($email, $site_name = '') {
 
         foreach ($types as $t) {
             switch ($t) {
-                case Auth_Yadis_ETT_Type:
-                    // TODO verify valid ETT
-                    $id =  preg_replace('/'.preg_quote(Auth_Yadis_ETT_Wildcard_Username).'/', $user, $uris[0]);
+                case Auth_Yadis_EAUT_Template_Type:
+                    // TODO verify valid EAUT Template
+                    $id =  preg_replace('/'.preg_quote(Auth_Yadis_EAUT_Wildcard_Username).'/', $user, $uris[0]);
                     break;
 
-                case Auth_Yadis_EATOID_Type:
-                case Auth_Yadis_EmailToUrl_Type:
+                case Auth_Yadis_EAUT_Mapper_Type:
                     $url_parts = parse_url($uris[0]);
 
                     if (empty($url_parts['query'])) {
@@ -99,7 +91,7 @@ function Auth_Yadis_Email_getID($email, $site_name = '') {
                         $id =  $uris[0] . '&email=' . $email;
                     }
                     
-                    if ($t == Auth_Yadis_EmailToUrl_Type && $site_name) {
+                    if ($site_name) {
                         $id .= "&site_name=$site_name";
                     }
 
