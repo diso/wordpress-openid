@@ -398,25 +398,29 @@ class WordPressOpenID_Interface {
 		$openid->setStatus('WordPress\' table prefix', 'info', isset($wpdb->base_prefix) ? $wpdb->base_prefix : $wpdb->prefix );
 		
 		
-		$curl_message = '';
-		if( function_exists('curl_version') ) {
-			$curl_version = curl_version();
-			if(isset($curl_version['version']))  	
-				$curl_message .= 'Version ' . $curl_version['version'] . '. ';
-			if(isset($curl_version['ssl_version']))	
-				$curl_message .= 'SSL: ' . $curl_version['ssl_version'] . '. ';
-			if(isset($curl_message['libz_version']))
-				$curl_message .= 'zlib: ' . $curl_version['libz_version'] . '. ';
-			if(isset($curl_version['protocols'])) {
-				if (is_array($curl_version['protocols'])) {
-					$curl_message .= 'Supports: ' . implode(', ',$curl_version['protocols']) . '. ';
-				} else {
-					$curl_message .= 'Supports: ' . $curl_version['protocols'] . '. ';
+		if ( extension_loaded('suhosin') ) {
+			$openid->setStatus( 'Curl', false, 'Hardened php (suhosin) extension active -- curl version checking skipped.' );
+		} else {
+			$curl_message = '';
+			if( function_exists('curl_version') ) {
+				$curl_version = curl_version();
+				if(isset($curl_version['version']))  	
+					$curl_message .= 'Version ' . $curl_version['version'] . '. ';
+				if(isset($curl_version['ssl_version']))	
+					$curl_message .= 'SSL: ' . $curl_version['ssl_version'] . '. ';
+				if(isset($curl_message['libz_version']))
+					$curl_message .= 'zlib: ' . $curl_version['libz_version'] . '. ';
+				if(isset($curl_version['protocols'])) {
+					if (is_array($curl_version['protocols'])) {
+						$curl_message .= 'Supports: ' . implode(', ',$curl_version['protocols']) . '. ';
+					} else {
+						$curl_message .= 'Supports: ' . $curl_version['protocols'] . '. ';
+					}
 				}
 			}
+			$openid->setStatus( 'Curl Support', function_exists('curl_version'), function_exists('curl_version') ? $curl_message :
+					'This PHP installation does not have support for libcurl. Some functionality, such as fetching https:// URLs, will be missing and performance will slightly impared. See <a href="http://www.php.net/manual/en/ref.curl.php">php.net/manual/en/ref.curl.php</a> about enabling libcurl support for PHP.');
 		}
-		$openid->setStatus( 'Curl Support', function_exists('curl_version'), function_exists('curl_version') ? $curl_message :
-				'This PHP installation does not have support for libcurl. Some functionality, such as fetching https:// URLs, will be missing and performance will slightly impared. See <a href="http://www.php.net/manual/en/ref.curl.php">php.net/manual/en/ref.curl.php</a> about enabling libcurl support for PHP.');
 
 		if (extension_loaded('gmp') and @gmp_init(1)) {
 			$openid->setStatus( 'Big Integer support', true, 'GMP is installed.' );
