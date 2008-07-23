@@ -494,14 +494,22 @@ class WordPressOpenID_Logic {
 
 
 	/**
-	 * Intercept login requests on wp-login.php if they include an 'openid_url' value and start OpenID
-	 * authentication.
+	 * Intercept login requests on wp-login.php if they include an 'openid_url' 
+	 * value and start OpenID authentication.  This hook is only necessary in 
+	 * WordPress 2.5.x because it has the 'wp_authenticate' action call in the 
+	 * wrong place.
 	 */
 	function wp_login_openid() {
+		global $wp_version;
+
+		// this is only needed in WordPress 2.5.x
+		if (strpos($wp_version, '2.5') != 0) {
+			return;
+		}
+
 		$self = basename( $GLOBALS['pagenow'] );
 			
 		if ($self == 'wp-login.php' && !empty($_POST['openid_url'])) {
-			// TODO wp_signon only exists in wp2.5+
 			wp_signon(array('user_login'=>'openid', 'user_password'=>'openid'));
 		}
 	}
@@ -528,7 +536,7 @@ class WordPressOpenID_Logic {
 		if (function_exists('wp_set_auth_cookie')) {
 			wp_set_auth_cookie($user->ID, $remember);
 		} else {
-			wp_setcookie($user->user_login, $user->user_pass, false, '', '', $remember);
+			wp_setcookie($user->user_login, $user->user_pass, true, '', '', $remember);
 		}
 
 		do_action('wp_login', $user->user_login);

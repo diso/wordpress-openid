@@ -51,8 +51,8 @@ class WordPressOpenID {
 
 	
 	function WordPressOpenID() {
-		#$wpopenid_log = &Log::singleton('error_log', PEAR_LOG_TYPE_SYSTEM, 'WPOpenID');
-		$this->log = &Log::singleton('file', ABSPATH . get_option('upload_path') . '/php.log', 'WPOpenID');
+		$this->log = &Log::singleton('error_log', PEAR_LOG_TYPE_SYSTEM, 'OpenID');
+		//$this->log = &Log::singleton('file', ABSPATH . get_option('upload_path') . '/php.log', 'WPOpenID');
 
 		// Set the log level
 		$wpopenid_log_level = constant('PEAR_LOG_' . strtoupper(WPOPENID_LOG_LEVEL));
