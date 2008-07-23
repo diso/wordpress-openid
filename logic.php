@@ -680,7 +680,6 @@ class WordPressOpenID_Logic {
 
 		$user = wp_get_current_user();
 		if (empty($identity_url)) {
-			// FIXME unable to authenticate OpenID
 			WordPressOpenID_Logic::set_error('Unable to authenticate OpenID.');
 		} else {
 			$store =& WordPressOpenID_Logic::getStore();
@@ -817,8 +816,7 @@ class WordPressOpenID_Logic {
 			$data['user_url'] = 'http://xri.net/' . $identity_url;
 		}
 
-		$result = WordPressOpenID_Logic::get_user_data_form($identity_url, $data);
-		$result = WordPressOpenID_Logic::get_user_data_sreg($identity_url, $data);
+		$data = apply_filters('openid_user_data', $identity_url, $data);
 
 		return $data;
 	}
@@ -831,8 +829,9 @@ class WordPressOpenID_Logic {
 	 * @param reference $data reference to user data array
 	 * @see get_user_data
 	 */
-	function get_user_data_ax($identity_url, &$data) {
+	function get_user_data_ax($identity_url, $data) {
 		// TODO implement attribute exchange
+		return $data;
 	}
 
 
@@ -843,14 +842,14 @@ class WordPressOpenID_Logic {
 	 * @param reference $data reference to user data array
 	 * @see get_user_data
 	 */
-	function get_user_data_sreg($identity_url, &$data) {
+	function get_user_data_sreg($identity_url, $data) {
 		global $openid;
 
 		$sreg_resp = Auth_OpenID_SRegResponse::fromSuccessResponse($openid->response);
 		$sreg = $sreg_resp->contents();
 
 		$openid->log->debug(var_export($sreg, true));
-		if (!$sreg) return false;
+		if (!$sreg) return $data;
 
 		if (array_key_exists('email', $sreg) && $sreg['email']) {
 			$data['user_email'] = $sreg['email'];
@@ -869,7 +868,7 @@ class WordPressOpenID_Logic {
 			$data['display_name'] = $sreg['fullname'];
 		}
 
-		return true;
+		return $data;;
 	}
 
 
@@ -880,8 +879,9 @@ class WordPressOpenID_Logic {
 	 * @param reference $data reference to user data array
 	 * @see get_user_data
 	 */
-	function get_user_data_hcard($identity_url, &$data) {
+	function get_user_data_hcard($identity_url, $data) {
 		// TODO implement hcard discovery
+		return $data;
 	}
 
 	/**
@@ -891,11 +891,11 @@ class WordPressOpenID_Logic {
 	 * @param reference $data reference to user data array
 	 * @see get_user_data
 	 */
-	function get_user_data_form($identity_url, &$data) {
+	function get_user_data_form($identity_url, $data) {
 		$comment = $_SESSION['oid_comment_post'];
 
 		if (!$comment) {
-			return false;
+			return $data;
 		}
 
 		if ($comment['email']) {
@@ -908,6 +908,7 @@ class WordPressOpenID_Logic {
 			$data['display_name'] = $comment['author'];
 		}
 
+		return $data;
 	}
 
 

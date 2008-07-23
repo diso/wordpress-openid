@@ -92,14 +92,7 @@ function openid_init() {
 		return;
 	}
 	
-	$start_mem = memory_get_usage();
 	$GLOBALS['openid'] = new WordPressOpenID();
-	//WordPressOpenID_Logic::late_bind();
-	//WordPressOpenID_Logic::getStore();
-	//WordPressOpenID_Logic::getConsumer();
-	//set_include_path( dirname(__FILE__) . PATH_SEPARATOR . get_include_path() );
-	//require_once 'store.php';
-	$GLOBALS['openid']->log->warning("memory usage: " . (int)((memory_get_usage() - $start_mem) / 1000));
 }
 endif;
 
@@ -158,6 +151,9 @@ add_option( 'oid_enable_email_mapping', false );
 add_action( 'delete_user', array( 'WordPressOpenID_Store', 'drop_all_identities_for_user' ) );
 add_action( 'cleanup_openid', array( 'WordPressOpenID_Logic', 'cleanup_nonces' ) );
 
+// hooks for getting user data
+add_filter( 'openid_user_data', array('WordPressOpenID_Logic', 'get_user_data_form'), 10, 2);
+add_filter( 'openid_user_data', array('WordPressOpenID_Logic', 'get_user_data_sreg'), 10, 2);
 
 
 // ---------------------------------------------------------------------
