@@ -18,7 +18,7 @@ class WordPressOpenID_Interface {
 
 		if( $_POST['openid_url']
 			or $_REQUEST['action'] == 'login'
-			or $_REQUEST['action'] == 'comment' ) return $openid->error;
+			or $_REQUEST['action'] == 'comment' ) return $openid->message;
 		return $r;
 	}
 
@@ -301,15 +301,24 @@ class WordPressOpenID_Interface {
 
 		WordPressOpenID_Logic::late_bind();
 
-		// TODO: how to display these messages?
+		if (!$openid->action && $_SESSION['oid_action']) {
+			$openid->action = $_SESSION['oid_action'];
+			unset($_SESSION['oid_action']);
+		}
+
+		if (!$openid->message && $_SESSION['oid_message']) {
+			$openid->message = $_SESSION['oid_message'];
+			unset($_SESSION['oid_message']);
+		}
+
 		if( 'success' == $openid->action ) {
-			echo '<div class="updated"><p><strong>'.__('Success:', 'openid').'</strong> '.$openid->error.'</p></div>';
+			echo '<div class="updated"><p><strong>'.__('Success:', 'openid').'</strong> '.$openid->message.'</p></div>';
 		}
 		elseif( 'warning' == $openid->action ) {
-			echo '<div class="error"><p><strong>'.__('Warning:', 'openid').'</strong> '.$openid->error.'</p></div>';
+			echo '<div class="error"><p><strong>'.__('Warning:', 'openid').'</strong> '.$openid->message.'</p></div>';
 		}
-		elseif( $openid->error ) {
-			echo '<div class="error"><p><strong>'.__('Error:', 'openid').'</strong> '.$openid->error.'</p></div>';
+		elseif( 'error' == $openid->action ) {
+			echo '<div class="error"><p><strong>'.__('Error:', 'openid').'</strong> '.$openid->message.'</p></div>';
 		}
 
 		if (!empty($error)) {

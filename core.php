@@ -40,8 +40,8 @@ class WordPressOpenID {
 	var $log;
 	var $status = array();
 
-	var $error;		  // User friendly error message, defaults to ''.
-	var $action;	  // Internal action tag. '', 'error', 'redirect'.
+	var $message;	  // Message to be displayed to the user.
+	var $action;	  // Internal action tag. 'success', 'warning', 'error', 'redirect'.
 
 	var $response;
 

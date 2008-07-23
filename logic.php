@@ -125,7 +125,7 @@ class WordPressOpenID_Logic {
 				WordPressOpenID_Logic::uptodate();
 			}
 		} else {
-			$openid->error = 'WPOpenID Core is Disabled!';
+			$openid->message = 'WPOpenID Core is Disabled!';
 			update_option('oid_plugin_enabled', false);
 		}
 
@@ -196,9 +196,9 @@ class WordPressOpenID_Logic {
 			if( !empty( $_REQUEST['redirect_to'] ) ) $redirect_to = $_REQUEST['redirect_to'];
 			WordPressOpenID_Logic::start_login( $_POST['openid_url'], 'login', array('redirect_to' => $redirect_to) );
 		}
-		if( !empty( $openid->error ) ) {
+		if( !empty( $openid->message ) ) {
 			global $error;
-			$error = $openid->error;
+			$error = $openid->message;
 		}
 	}
 
@@ -273,20 +273,22 @@ class WordPressOpenID_Logic {
 		$user = wp_get_current_user();
 
 		if( !isset($id)) {
-			$openid->error = 'Identity url delete failed: ID paramater missing.';
+			$openid->message = 'Identity url delete failed: ID paramater missing.';
+			$openid->action = 'error';
 			return;
 		}
 
 		$store =& WordPressOpenID_Logic::getStore();
 		$deleted_identity_url = $store->get_identities($user->ID, $id);
 		if( FALSE === $deleted_identity_url ) {
-			$openid->error = 'Identity url delete failed: Specified identity does not exist.';
+			$openid->message = 'Identity url delete failed: Specified identity does not exist.';
+			$openid->action = 'error';
 			return;
 		}
 
 		$identity_urls = $store->get_identities($user->ID);
 		if (sizeof($identity_urls) == 1 && !$_REQUEST['confirm']) {
-			$openid->error = 'This is your last identity URL.  Are you sure you want to delete it? Doing so may interfere with your ability to login.<br /><br /> '
+			$openid->message = 'This is your last identity URL.  Are you sure you want to delete it? Doing so may interfere with your ability to login.<br /><br /> '
 			. '<a href="?confirm=true&'.$_SERVER['QUERY_STRING'].'">Yes I\'m sure.  Delete it</a>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;'
 			. '<a href="?page=openid">No, don\'t delete it.</a>';
 			$openid->action = 'warning';
@@ -297,13 +299,14 @@ class WordPressOpenID_Logic {
 			
 
 		if( $store->drop_identity($user->ID, $id) ) {
-			$openid->error = 'Identity url delete successful. <b>' . $deleted_identity_url
+			$openid->message = 'Identity url delete successful. <b>' . $deleted_identity_url
 			. '</b> removed.';
 			$openid->action = 'success';
 			return;
 		}
 			
-		$openid->error = 'Identity url delete failed: Unknown reason.';
+		$openid->message = 'Identity url delete failed: Unknown reason.';
+		$openid->action = 'error';
 	}
 
 
@@ -354,15 +357,18 @@ class WordPressOpenID_Logic {
 			
 		switch( $openid->response->status ) {
 			case Auth_OpenID_CANCEL:
-				$openid->error = 'OpenID assertion cancelled';
+				$openid->message = 'OpenID assertion cancelled';
+				$openid->action = 'error';
 				break;
 
 			case Auth_OpenID_FAILURE:
-				$openid->error = 'OpenID assertion failed: ' . $openid->response->message;
+				$openid->message = 'OpenID assertion failed: ' . $openid->response->message;
+				$openid->action = 'error';
 				break;
 
 			case Auth_OpenID_SUCCESS:
-				$openid->error = 'OpenID assertion successful';
+				$openid->message = 'OpenID assertion successful';
+				$openid->action = 'success';
 
 				$identity_url = $openid->response->identity_url;
 				$escaped_url = htmlspecialchars($identity_url, ENT_QUOTES);
@@ -375,7 +381,8 @@ class WordPressOpenID_Logic {
 				return $escaped_url;
 
 			default:
-				$openid->error = 'Unknown Status. Bind not successful. This is probably a bug';
+				$openid->message = 'Unknown Status. Bind not successful. This is probably a bug';
+				$openid->action = 'error';
 		}
 
 		return null;
@@ -447,13 +454,14 @@ class WordPressOpenID_Logic {
 		}
 
 		if ( null === $auth_request ) {
-			$openid->error = 'Could not discover an OpenID identity server endpoint at the url: '
+			$openid->action = 'error';
+			$openid->message = 'Could not discover an OpenID identity server endpoint at the url: '
 			. htmlentities( $claimed_url );
 			if( strpos( $claimed_url, '@' ) ) {
-				$openid->error .= '<br/>The address you specified had an @ sign in it, but OpenID '
+				$openid->message .= '<br/>The address you specified had an @ sign in it, but OpenID '
 				. 'Identities are not email addresses, and should probably not contain an @ sign.';
 			}
-			$openid->log->debug('OpenIDConsumer: ' . $openid->error );
+			$openid->log->debug('OpenIDConsumer: ' . $openid->message );
 			return;
 		}
 			
@@ -689,7 +697,7 @@ class WordPressOpenID_Logic {
 				. 'another user on this blog. This is probably a bug. ' . $identity_url);
 			} else {
 				$openid->action = 'success';
-				// TODO display success message
+				$openid->message = "Successfully added Identity URL: $identity_url.";
 				
 				// ensure that profile URL is a verified Identity URL
 				set_include_path( dirname(__FILE__) . PATH_SEPARATOR . get_include_path() );
@@ -699,12 +707,13 @@ class WordPressOpenID_Logic {
 				if ($current_url != $identity_url) {
 					$user->user_url = $identity_url;
 					wp_update_user( get_object_vars( $user ));
-					// TODO alert to user that profile has been changed
+					$openid->message .= '<br /><strong>Note:</strong> For security reasons, your profile URL has been updated to match your Identity URL.';
 				}
 			}
 		}
 
-			
+		$_SESSION['oid_message'] = $openid->message;
+		$_SESSION['oid_action'] = $openid->action;	
 		$wpp = parse_url(get_option('siteurl'));
 		$redirect_to = $wpp['path'] . '/wp-admin/' . (current_user_can('edit_users') ? 'users.php' : 'profile.php') . '?page=openid';
 		if (function_exists('wp_safe_redirect')) {
@@ -766,10 +775,10 @@ class WordPressOpenID_Logic {
 			$user = new WP_User( $user_id );
 
 			if( ! wp_login( $user->user_login, $user_data['user_pass'] ) ) {
-				$openid->error = 'User was created fine, but wp_login() for the new user failed. '
+				$openid->message = 'User was created fine, but wp_login() for the new user failed. '
 				. 'This is probably a bug.';
 				$openid->action= 'error';
-				$openid->log->err( $openid->error );
+				$openid->log->err( $openid->message );
 				return;
 			}
 
@@ -791,10 +800,10 @@ class WordPressOpenID_Logic {
 
 		} else {
 			// failed to create user for some reason.
-			$openid->error = 'OpenID authentication successful, but failed to create WordPress user. '
+			$openid->message = 'OpenID authentication successful, but failed to create WordPress user. '
 			. 'This is probably a bug.';
 			$openid->action= 'error';
-			$openid->log->error( $openid->error );
+			$openid->log->error( $openid->message );
 		}
 
 	}
