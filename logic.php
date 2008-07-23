@@ -1076,6 +1076,7 @@ class WordPressOpenID_Logic {
 			}
 		}
 
+		/*
 		if (get_option('oid_enable_email_mapping') && !empty($_POST['email'])) {
 			$_SESSION['oid_comment_post'] = $_POST;
 			$_SESSION['oid_comment_post']['comment_author_openid'] = $openid_url;
@@ -1086,6 +1087,7 @@ class WordPressOpenID_Logic {
 			$id = Auth_Yadis_Email_getID($_POST['email'], trailingslashit(get_option('home')));
 			WordPressOpenID_Logic::start_login( $id, 'comment');
 		}
+		*/
 			
 		return $comment;
 	}
