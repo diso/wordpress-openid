@@ -477,7 +477,11 @@ class WordPressOpenID_Interface {
 			<noscript><div><input type="submit" value="Continue" /></div></noscript>
 		</form>
 		
-		<script type="text/javascript">document.forms[0].submit()</script>';
+		<script type="text/javascript">
+			document.write("<h2>Please Wait...</h2>"); 
+			document.forms[0].submit()
+		</script>';
+
 		wp_die($html);
 	}
 	
