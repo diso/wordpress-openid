@@ -458,8 +458,15 @@ class WordPressOpenID_Logic {
 			$openid->message = 'Could not discover an OpenID identity server endpoint at the url: '
 			. htmlentities( $claimed_url );
 			if( strpos( $claimed_url, '@' ) ) {
-				$openid->message .= '<br/>The address you specified had an @ sign in it, but OpenID '
-				. 'Identities are not email addresses, and should probably not contain an @ sign.';
+				set_include_path( dirname(__FILE__) . PATH_SEPARATOR . get_include_path() );
+				require_once 'Auth/Yadis/Email.php';
+				$mapped_url = Auth_Yadis_Email_getID($claimed_url, trailingslashit(get_option('home')));
+				if ($mapped_url) {
+					WordPressOpenID_Logic::start_login($mapped_url, $action, $arguments);
+				} else {
+					$openid->message .= '<br />It looks like you entered an email address, but it '
+						. 'was not able to be transformed into a valid OpenID.';
+				}
 			}
 			$openid->log->debug('OpenIDConsumer: ' . $openid->message );
 			return;

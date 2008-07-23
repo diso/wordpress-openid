@@ -250,6 +250,7 @@ class WordPressOpenID_Interface {
 							</td>
 						</tr>
 
+						<?php /*
 						<tr valign="top">
 							<th style="width: 33%" scope="row"><?php _e('Email Mapping:', 'openid') ?></th>
 							<td>
@@ -265,6 +266,7 @@ class WordPressOpenID_Interface {
 								<br />
 							</td>
 						</tr>
+						*/ ?>
 
      				</table>
 
