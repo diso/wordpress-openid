@@ -148,7 +148,7 @@ add_option( 'oid_db_revision', 0 );
 add_option( 'oid_enable_approval', false );
 add_option( 'oid_enable_email_mapping', false );
 
-add_action( 'delete_user', array( 'WordPressOpenID_Store', 'drop_all_identities_for_user' ) );
+add_action( 'delete_user', array( 'WordPressOpenID_Logic', 'delete_user' ) );
 add_action( 'cleanup_openid', array( 'WordPressOpenID_Logic', 'cleanup_nonces' ) );
 
 add_action( 'personal_options_update', array( 'WordPressOpenID_Logic', 'personal_options_update' ) );

@@ -244,9 +244,7 @@ class WordPressOpenID_Store extends Auth_OpenID_MySQLStore {
 
 
 	function drop_all_identities_for_user($userid) {
-		global $openid;
-
-		return $openid->store->connection->query(
+		return $this->connection->query(
 				"DELETE FROM $this->identity_table_name WHERE user_id = %s", 
 				array( (int)$userid )
 		);

@@ -147,8 +147,7 @@ class WordPressOpenID_Logic {
 		$store->create_tables();
 
 		wp_schedule_event(time(), 'hourly', 'cleanup_openid');
-		$openid->log->warning("activation memory usage: " . (int)((memory_get_usage() - $start_mem) / 1000));
-		// TODO remove memory usage before release
+		//$openid->log->warning("activation memory usage: " . (int)((memory_get_usage() - $start_mem) / 1000));
 	}
 
 	function cleanup_nonces() {
@@ -1133,6 +1132,15 @@ class WordPressOpenID_Logic {
 		}
 
 		return $comments;
+	}
+
+	/**
+	 * Delete user.
+	 */
+	function delete_user($userid) {
+		openid_init();
+		$store = WordPressOpenID_Logic::getStore();
+		$store->drop_all_identities_for_user($userid);
 	}
 
 
