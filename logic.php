@@ -246,9 +246,9 @@ class WordPressOpenID_Logic {
 				if ($userid) {
 					global $error;
 					if ($user->ID == $userid) {
-						$error = 'You already have this openid!';
+						$error = 'You already have this Identity URL!';
 					} else {
-						$error = 'This OpenID is already connected to another user.';
+						$error = 'This Identity URL is already connected to another user.';
 					}
 					return;
 				}
@@ -329,12 +329,12 @@ class WordPressOpenID_Logic {
 			}
 		} else {
 			// Generate form markup and render it
-			$form_html = $auth_request->htmlMarkup($trust_root, $return_to, false);
+			$request_message = $auth_request->getMessage($trust_root, $return_to, false);
 
-			if (Auth_OpenID::isFailure($form_html)) {
-				$openid->log->error('Could not redirect to server: '.$form_html->message);
+			if (Auth_OpenID::isFailure($request_message)) {
+				$openid->log->error('Could not redirect to server: '.$request_message->message);
 			} else {
-				echo $form_html;
+				WordPressOpenID_Interface::repost($auth_request->endpoint->server_url, $request_message->toPostArgs());
 			}
 		}
 	}
@@ -519,15 +519,19 @@ class WordPressOpenID_Logic {
 	 * Login user with specified identity URL.  This will find the WordPress user account connected to this
 	 * OpenID and set it as the current user.  Only call this function AFTER you've verified the identity URL.
 	 *
-	 * @param string $identity_url OpenID to set as current user
+	 * @param string $identity userID or OpenID to set as current user
 	 * @param boolean $remember should we set the "remember me" cookie
 	 * @return void
 	 */
-	function set_current_user($identity_url, $remember = true) {
+	function set_current_user($identity, $remember = true) {
 		global $openid;
 
-		$store =& WordPressOpenID_Logic::getStore();
-		$user_id = $store->get_user_by_identity( $identity_url );
+		if (is_numeric($identity)) {
+			$user_id = $identity;
+		} else {
+			$store =& WordPressOpenID_Logic::getStore();
+			$user_id = $store->get_user_by_identity( $identity );
+		}
 
 		if (!$user_id) return;
 
@@ -579,7 +583,6 @@ class WordPressOpenID_Logic {
 		$redirect_to = urldecode($_REQUEST['redirect_to']);
 			
 		if (empty($identity_url)) {
-			// FIXME unable to authenticate OpenID
 			WordPressOpenID_Logic::set_error('Unable to authenticate OpenID.');
 			wp_safe_redirect(get_option('siteurl') . '/wp-login.php');
 			exit;
@@ -591,7 +594,7 @@ class WordPressOpenID_Logic {
 			if ( get_option('users_can_register') ) {
 				$user_data =& WordPressOpenID_Logic::get_user_data($identity_url);
 				$user = WordPressOpenID_Logic::create_new_user($identity_url, $user_data);
-				WordPressOpenID_Logic::set_current_user($identity_url);  // TODO this does an extra db hit to get user_id
+				WordPressOpenID_Logic::set_current_user($user->ID);
 			} else {
 				// TODO - Start a registration loop in WPMU.
 				WordPressOpenID_Logic::set_error('OpenID authentication valid, but unable '
@@ -635,8 +638,7 @@ class WordPressOpenID_Logic {
 		global $openid;
 
 		if (empty($identity_url)) {
-			// FIXME unable to authenticate OpenID - give option to post anonymously
-			WordPressOpenID_Interface::display_error('unable to authenticate OpenID');
+			WordPressOpenID_Interface::repost_comment_anonymously($_SESSION['oid_comment_post']);
 		}
 			
 		WordPressOpenID_Logic::set_current_user($identity_url);
@@ -684,7 +686,6 @@ class WordPressOpenID_Logic {
 		} else {
 			$store =& WordPressOpenID_Logic::getStore();
 			if( !$store->insert_identity($user->ID, $identity_url) ) {
-				// TODO should we check for this duplication *before* authenticating the ID?
 				WordPressOpenID_Logic::set_error('OpenID assertion successful, but this URL is already claimed by '
 				. 'another user on this blog. This is probably a bug. ' . $identity_url);
 			} else {
@@ -1053,15 +1054,10 @@ class WordPressOpenID_Logic {
 
 			// Failure to redirect at all, the URL is malformed or unreachable.
 
-			// Display an error message only if an explicit OpenID field  was used.  Otherwise,
+			// Display an error message only if an explicit OpenID field was used.  Otherwise,
 			// just ignore the error... it just means the user entered a normal URL.
 			if (array_key_exists('openid_url', $_POST)) {
-				// TODO give option to post without OpenID
-				global $error;
-				$error = $openid->error;
-				$_POST['openid_url'] = '';
-				include( ABSPATH . 'wp-login.php' );
-				exit();
+				WordPressOpenID_Interface::repost_comment_anonymously($_SESSION['oid_comment_post']);
 			}
 		}
 

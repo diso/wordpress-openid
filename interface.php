@@ -465,22 +465,20 @@ class WordPressOpenID_Interface {
 	}
 
 	function repost($action, $parameters) {
-		echo '<html><head></head><body>
+		$html = '
 		<noscript><p>Since your browser does not support JavaScript, you must press the Continue button once to proceed.</p></noscript>
 		<form action="'.$action.'" method="post">';
 
 		foreach ($parameters as $k => $v) {
 			if ($k == 'submit') continue;
-			echo "\n" . '<input type="hidden" name="'.$k.'" value="'.$v.'" />';
+			$html .= "\n" . '<input type="hidden" name="'.$k.'" value="'.$v.'" />';
 		}
-		echo '
+		$html .= '
 			<noscript><div><input type="submit" value="Continue" /></div></noscript>
 		</form>
 		
-		<script type="text/javascript">document.forms[0].submit()</script>
-		
-		</body></html>';
-		exit;
+		<script type="text/javascript">document.forms[0].submit()</script>';
+		wp_die($html);
 	}
 	
 	function init_errors() {
@@ -489,12 +487,28 @@ class WordPressOpenID_Interface {
 		unset($_SESSION['oid_error']);
 	}
 
-	function display_error($error) {
-		$require_name_email = get_option('require_name_email');
 
-		echo '<html><head></head><body><p id="error">' . $error . '</p></body></html>';
-		// TODO: offer to repost without openid
-		exit;
+	function repost_comment_anonymously($post) {
+		$html = '
+		<p id="error">We were unable to authenticate your claimed OpenID, however you 
+		can continue to post your comment without OpenID:</p>
+
+		<form action="' . get_option('siteurl') . '/wp-comments-post.php" method="post">
+			<p>Name: <input name="author" value="'.$post['author'].'" /></p>
+			<p>Email: <input name="email" value="'.$post['email'].'" /></p>
+			<p>URL: <input name="url" value="'.$post['url'].'" /></p>
+			<textarea name="comment" cols="80%" rows="10">'.$post['comment'].'</textarea>
+			<input type="submit" name="submit" value="Submit Comment" />
+			<input type="hidden" name="oid_skip" value="1" />';
+		foreach ($post as $name => $value) {
+			if (!in_array($name, array('author', 'email', 'url', 'comment', 'submit'))) {
+				$html .= '
+			<input type="hidden" name="'.$name.'" value="'.$value.'" />';
+			}
+		}
+		
+		$html .= '</form>';
+		wp_die($html);
 	}
 	
 }
