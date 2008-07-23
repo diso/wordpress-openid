@@ -302,6 +302,29 @@ class WordPressOpenID_Logic {
 			$openid->message = 'Identity url delete successful. <b>' . $deleted_identity_url
 			. '</b> removed.';
 			$openid->action = 'success';
+
+			// ensure that profile URL is still a verified Identity URL
+			set_include_path( dirname(__FILE__) . PATH_SEPARATOR . get_include_path() );
+			require_once 'Auth/OpenID.php';
+			require_once(ABSPATH . 'wp-admin/includes/admin.php');
+			$identities = $store->get_identities($user->ID);
+			$current_url = Auth_OpenID::normalizeUrl($user->user_url);
+
+			$verified_url = false;
+			if (!empty($identities)) {
+				foreach ($identities as $id) {
+					if ($id['url'] == $current_url) {
+						$verified_url = true;
+						break;
+					}
+				}
+
+				if (!$verified_url) {
+					$user->user_url = $identities[0]['url'];
+					wp_update_user( get_object_vars( $user ));
+					$openid->message .= '<br /><strong>Note:</strong> For security reasons, your profile URL has been updated to match your Identity URL.';
+				}
+			}
 			return;
 		}
 			
@@ -710,11 +733,23 @@ class WordPressOpenID_Logic {
 				set_include_path( dirname(__FILE__) . PATH_SEPARATOR . get_include_path() );
 				require_once 'Auth/OpenID.php';
 				require_once(ABSPATH . 'wp-admin/includes/admin.php');
+				$identities = $store->get_identities($user->ID);
 				$current_url = Auth_OpenID::normalizeUrl($user->user_url);
-				if ($current_url != $identity_url) {
-					$user->user_url = $identity_url;
-					wp_update_user( get_object_vars( $user ));
-					$openid->message .= '<br /><strong>Note:</strong> For security reasons, your profile URL has been updated to match your Identity URL.';
+
+				$verified_url = false;
+				if (!empty($identities)) {
+					foreach ($identities as $id) {
+						if ($id['url'] == $current_url) {
+							$verified_url = true;
+							break;
+						}
+					}
+
+					if (!$verified_url) {
+						$user->user_url = $identity_url;
+						wp_update_user( get_object_vars( $user ));
+						$openid->message .= '<br /><strong>Note:</strong> For security reasons, your profile URL has been updated to match your Identity URL.';
+					}
 				}
 			}
 		}
