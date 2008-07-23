@@ -306,7 +306,11 @@ class WordPressOpenID_Logic {
 			// ensure that profile URL is still a verified Identity URL
 			set_include_path( dirname(__FILE__) . PATH_SEPARATOR . get_include_path() );
 			require_once 'Auth/OpenID.php';
-			require_once(ABSPATH . 'wp-admin/includes/admin.php');
+			if ($GLOBALS['wp_version'] >= '2.3') {
+				require_once(ABSPATH . 'wp-admin/includes/admin.php');
+			} else {
+				require_once(ABSPATH . 'wp-admin/admin-functions.php');
+			}
 			$identities = $store->get_identities($user->ID);
 			$current_url = Auth_OpenID::normalizeUrl($user->user_url);
 
@@ -732,7 +736,11 @@ class WordPressOpenID_Logic {
 				// ensure that profile URL is a verified Identity URL
 				set_include_path( dirname(__FILE__) . PATH_SEPARATOR . get_include_path() );
 				require_once 'Auth/OpenID.php';
-				require_once(ABSPATH . 'wp-admin/includes/admin.php');
+				if ($GLOBALS['wp_version'] >= '2.3') {
+					require_once(ABSPATH . 'wp-admin/includes/admin.php');
+				} else {
+					require_once(ABSPATH . 'wp-admin/admin-functions.php');
+				}
 				$identities = $store->get_identities($user->ID);
 				$current_url = Auth_OpenID::normalizeUrl($user->user_url);
 
