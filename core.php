@@ -151,6 +151,8 @@ add_option( 'oid_enable_email_mapping', false );
 add_action( 'delete_user', array( 'WordPressOpenID_Store', 'drop_all_identities_for_user' ) );
 add_action( 'cleanup_openid', array( 'WordPressOpenID_Logic', 'cleanup_nonces' ) );
 
+add_action( 'personal_options_update', array( 'WordPressOpenID_Logic', 'personal_options_update' ) );
+
 // hooks for getting user data
 add_filter( 'openid_user_data', array('WordPressOpenID_Logic', 'get_user_data_form'), 10, 2);
 add_filter( 'openid_user_data', array('WordPressOpenID_Logic', 'get_user_data_sreg'), 10, 2);

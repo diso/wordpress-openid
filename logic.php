@@ -689,8 +689,21 @@ class WordPressOpenID_Logic {
 				. 'another user on this blog. This is probably a bug. ' . $identity_url);
 			} else {
 				$openid->action = 'success';
+				// TODO display success message
+				
+				// ensure that profile URL is a verified Identity URL
+				set_include_path( dirname(__FILE__) . PATH_SEPARATOR . get_include_path() );
+				require_once 'Auth/OpenID.php';
+				require_once(ABSPATH . 'wp-admin/includes/admin.php');
+				$current_url = Auth_OpenID::normalizeUrl($user->user_url);
+				if ($current_url != $identity_url) {
+					$user->user_url = $identity_url;
+					wp_update_user( get_object_vars( $user ));
+					// TODO alert to user that profile has been changed
+				}
 			}
 		}
+
 			
 		$wpp = parse_url(get_option('siteurl'));
 		$redirect_to = $wpp['path'] . '/wp-admin/' . (current_user_can('edit_users') ? 'users.php' : 'profile.php') . '?page=openid';
@@ -699,7 +712,6 @@ class WordPressOpenID_Logic {
 		} else {
 			wp_redirect( $redirect_to );
 		}
-		// TODO display success message
 		exit;
 	}
 
@@ -929,9 +941,36 @@ class WordPressOpenID_Logic {
 
 	/**
 	 * hook in and call when user is updating their profile URL... make sure it is an OpenID they control.
-	 * TODO
 	 */
-	function pre_user_url($url) {
+	function personal_options_update() {
+		// skip if URL isn't being updated
+		if (empty($_POST['url'])) {
+			return;
+		}
+
+		set_include_path( dirname(__FILE__) . PATH_SEPARATOR . get_include_path() );
+		require_once 'Auth/OpenID.php';
+		$claimed = Auth_OpenID::normalizeUrl($_POST['url']);
+
+		$user = wp_get_current_user();
+
+		openid_init();
+		$store =& WordPressOpenID_Logic::getStore();
+		$identities = $store->get_identities($user->ID);
+
+		if (!empty($identities)) {
+			$urls = array();
+			foreach ($identities as $id) {
+				if ($id['url'] == $claimed) {
+					return; 
+				} else {
+					$urls[] = $id['url'];
+				}
+			}
+
+			wp_die('For security reasons, your profile URL must be one of your claimed '
+			   . 'Identity URLs: <ul><li>' . join('</li><li>', $urls) . '</li></ul>');
+		}
 	}
 
 
