@@ -309,7 +309,7 @@ class WordPressOpenID_Logic {
 			if ($GLOBALS['wp_version'] >= '2.3') {
 				require_once(ABSPATH . 'wp-admin/includes/admin.php');
 			} else {
-				require_once(ABSPATH . 'wp-admin/admin-functions.php');
+				require_once(ABSPATH . WPINC . '/registration.php');
 			}
 			$identities = $store->get_identities($user->ID);
 			$current_url = Auth_OpenID::normalizeUrl($user->user_url);
@@ -551,7 +551,9 @@ class WordPressOpenID_Logic {
 		$self = basename( $GLOBALS['pagenow'] );
 			
 		if ($self == 'wp-login.php' && !empty($_POST['openid_url'])) {
-			wp_signon(array('user_login'=>'openid', 'user_password'=>'openid'));
+			if (function_exists('wp_signon')) {
+				wp_signon(array('user_login'=>'openid', 'user_password'=>'openid'));
+			}
 		}
 	}
 
@@ -581,7 +583,7 @@ class WordPressOpenID_Logic {
 		if (function_exists('wp_set_auth_cookie')) {
 			wp_set_auth_cookie($user->ID, $remember);
 		} else {
-			wp_setcookie($user->user_login, $user->user_pass, true, '', '', $remember);
+			wp_setcookie($user->user_login, md5($user->user_pass), true, '', '', $remember);
 		}
 
 		do_action('wp_login', $user->user_login);
@@ -630,7 +632,7 @@ class WordPressOpenID_Logic {
 		}
 			
 		WordPressOpenID_Logic::set_current_user($identity_url);
-			
+
 		if (!is_user_logged_in()) {
 			if ( get_option('users_can_register') ) {
 				$user_data =& WordPressOpenID_Logic::get_user_data($identity_url);
@@ -739,7 +741,7 @@ class WordPressOpenID_Logic {
 				if ($GLOBALS['wp_version'] >= '2.3') {
 					require_once(ABSPATH . 'wp-admin/includes/admin.php');
 				} else {
-					require_once(ABSPATH . 'wp-admin/admin-functions.php');
+					require_once(ABSPATH . WPINC . '/registration.php');
 				}
 				$identities = $store->get_identities($user->ID);
 				$current_url = Auth_OpenID::normalizeUrl($user->user_url);
@@ -1002,11 +1004,6 @@ class WordPressOpenID_Logic {
 	 * hook in and call when user is updating their profile URL... make sure it is an OpenID they control.
 	 */
 	function personal_options_update() {
-		// skip if URL isn't being updated
-		if (empty($_POST['url'])) {
-			return;
-		}
-
 		set_include_path( dirname(__FILE__) . PATH_SEPARATOR . get_include_path() );
 		require_once 'Auth/OpenID.php';
 		$claimed = Auth_OpenID::normalizeUrl($_POST['url']);
