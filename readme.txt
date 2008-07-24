@@ -2,8 +2,8 @@
 Contributors: wnorris, alanjcastonguay, factoryjoe
 Tags: openid, authentication
 Requires at least: 2.2
-Tested up to: 2.5.0
-Stable tag: 2.1.9
+Tested up to: 2.6.0
+Stable tag: 2.2.0
 
 Allow the use of OpenID for authentication of users and commenters.
 
@@ -86,6 +86,15 @@ requests can also be found at [wp-plugins.org][bugs-reports].
 
 
 == Changelog ==
+
+= version 2.2.0 =
+ - use POST replay for comments (fixes compatibility with other comment plugins)
+ - only build openid object when needed (much better memory usage)
+ - support for Email Address to URL Transformation (see eaut.org)
+ - fixed bug when using suhosin (hardened php)
+ - use hooks for gathering user data (more extensible)
+ - fixed openid spoofing vulnerability (http://plugins.trac.wordpress.org/ticket/702)
+ - lots code refactoring and UI cleanup
 
 = version 2.1.9 =
  - fix javascript loading issues
