@@ -272,7 +272,7 @@ class WordPressOpenID_Interface {
 
 					<p><?php printf(__('Occasionally, the WP-OpenID tables don\'t get setup properly, and it may help '
 						. 'to %srebuild the tables%s.  Don\'t worry, this won\'t cause you to lose any data... it just '
-						. 'rebuilds a couple of tables that hold only temprory data.', 'openid'), 
+						. 'rebuilds a couple of tables that hold only temporary data.', 'openid'), 
 					'<a href="'.wp_nonce_url(sprintf('?page=%s&action=rebuild_tables', $_REQUEST['page']), 'wp-openid-info_rebuild_tables').'">', '</a>') ?></p>
 
 					<?php wp_nonce_field('wp-openid-info_update'); ?>
@@ -512,7 +512,7 @@ class WordPressOpenID_Interface {
 			<p>Name: <input name="author" value="'.$post['author'].'" /></p>
 			<p>Email: <input name="email" value="'.$post['email'].'" /></p>
 			<p>URL: <input name="url" value="'.$post['url'].'" /></p>
-			<textarea name="comment" cols="80%" rows="10">'.$post['comment'].'</textarea>
+			<textarea name="comment" cols="80%" rows="10">'.stripslashes($post['comment']).'</textarea>
 			<input type="submit" name="submit" value="Submit Comment" />
 			<input type="hidden" name="oid_skip" value="1" />';
 		foreach ($post as $name => $value) {
