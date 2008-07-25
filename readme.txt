@@ -3,7 +3,7 @@ Contributors: wnorris, alanjcastonguay, factoryjoe
 Tags: openid, authentication
 Requires at least: 2.2
 Tested up to: 2.6.0
-Stable tag: 2.2.0
+Stable tag: 2.2.1
 
 Allow the use of OpenID for authentication of users and commenters.
 
@@ -84,6 +84,10 @@ report at <http://code.google.com/p/diso/issues/list>.
 
 
 == Changelog ==
+
+= version 2.2.1 =
+ - fixed EAUT handling code
+ - fixed bug that broke comments containing double quotes (")
 
 = version 2.2.0 =
  - use POST replay for comments (fixes compatibility with other comment plugins)
