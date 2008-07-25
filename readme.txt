@@ -28,7 +28,7 @@ This plugin follows the [standard WordPress installation method][]:
 
 1. Upload the `openid` folder to the `/wp-content/plugins/` directory
 1. Activate the plugin through the 'Plugins' menu in WordPress
-1. Configure the plugin through the 'OpenID' section of the 'Options' menu
+1. Configure the plugin through the 'WP-OpenID' section of the 'Options' menu
 
 [standard WordPress installation method]: http://codex.wordpress.org/Managing_Plugins#Installing_Plugins
 
@@ -38,8 +38,8 @@ This plugin follows the [standard WordPress installation method][]:
 = Why do I get blank screens when I activate the plugin? =
 
 In some cases the plugin may have problems if not enough memory has been
-allocated to PHP.  Try ensuring that the PHP memory_limit is at least greater
-than 8MB (limits of 64MB are not uncommon).
+allocated to PHP.  Try ensuring that the PHP memory_limit is at least 8MB
+(limits of 64MB are not uncommon).
 
 = Why don't `https` OpenIDs work? =
 
@@ -71,11 +71,9 @@ remove this, you can override the stylesheet or simply change the element id.
 Please direct support questions to the "Plugins and Hacks" section of the
 [WordPress.org Support Forum][].  Just make sure and include the tag 'openid'
 so that I'll see your post.  Additionally, you can file a bug
-report at <http://dev.wp-plugins.org/report>.  Existing bugs and feature
-requests can also be found at [wp-plugins.org][bugs-reports].
+report at <http://code.google.com/p/diso/issues/list>.  
 
 [WordPress.org Support Forum]: http://wordpress.org/support/
-[bugs-reports]: http://dev.wp-plugins.org/report/9?COMPONENT=openid
 
 
 == Screenshots ==
