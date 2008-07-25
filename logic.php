@@ -458,7 +458,7 @@ class WordPressOpenID_Logic {
 		if ($openid_auth_request == NULL) {
 			set_error_handler( array('WordPressOpenID_Logic', 'customer_error_handler'));
 
-			if (strpos($url, '@')) { // TODO: better email detection
+			if (WordPressOpenID_Logic::isValidEmail($url)) {
 				$_SESSION['openid_login_email'] = $url;
 				set_include_path( dirname(__FILE__) . PATH_SEPARATOR . get_include_path() );
 				require_once 'Auth/Yadis/Email.php';
@@ -476,6 +476,11 @@ class WordPressOpenID_Logic {
 
 		return $openid_auth_request;;
 	}
+
+	function isValidEmail($email) {
+	    return eregi("^[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,}$", $email);
+	}
+
 
 	/**
 	 * Start the OpenID authentication process.

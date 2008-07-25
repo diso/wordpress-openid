@@ -99,13 +99,13 @@ function Auth_Yadis_Email_resolve($services, $email) {
                     $url_parts = parse_url($uris[0]);
 
                     if (empty($url_parts['query'])) {
-                        $id = $uris[0] . '?email=' . $email;
+                        $id = $uris[0] . '?email=' . urlencode($email);
                     } else {
-                        $id =  $uris[0] . '&email=' . $email;
+                        $id =  $uris[0] . '&email=' . urlencode($email);
                     }
                     
                     if ($site_name) {
-                        $id .= "&site_name=$site_name";
+                        $id .= '&site_name=' . urlencode($site_name);
                     }
 
                     break;
