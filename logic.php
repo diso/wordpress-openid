@@ -234,13 +234,9 @@ class WordPressOpenID_Logic {
 				$user = wp_get_current_user();
 
 				$store =& WordPressOpenID_Logic::getStore();
-				global $openid_auth_request;
-				if ($openid_auth_request == NULL) {
-					$consumer = WordPressOpenID_Logic::getConsumer();
-					$openid_auth_request = $consumer->begin($_POST['openid_url']);
-				}
+				$auth_request = WordPressOpenID_Logic::begin_consumer($_POST['openid_url']);
 
-				$userid = $store->get_user_by_identity($openid_auth_request->endpoint->claimed_id);
+				$userid = $store->get_user_by_identity($auth_request->endpoint->claimed_id);
 
 				if ($userid) {
 					global $error;
@@ -456,6 +452,30 @@ class WordPressOpenID_Logic {
 		return $username;
 	}
 
+	function begin_consumer($url) {
+		global $openid_auth_request;
+
+		if ($openid_auth_request == NULL) {
+			set_error_handler( array('WordPressOpenID_Logic', 'customer_error_handler'));
+
+			if (strpos($url, '@')) { // TODO: better email detection
+				$_SESSION['openid_login_email'] = $url;
+				set_include_path( dirname(__FILE__) . PATH_SEPARATOR . get_include_path() );
+				require_once 'Auth/Yadis/Email.php';
+				$mapped_url = Auth_Yadis_Email_getID($url, trailingslashit(get_option('home')));
+				if ($mapped_url) {
+					$url = $mapped_url;
+				}
+			}
+
+			$consumer = WordPressOpenID_Logic::getConsumer();
+			$openid_auth_request = $consumer->begin($url);
+
+			restore_error_handler();
+		}
+
+		return $openid_auth_request;;
+	}
 
 	/**
 	 * Start the OpenID authentication process.
@@ -471,29 +491,15 @@ class WordPressOpenID_Logic {
 			
 		if( !WordPressOpenID_Logic::late_bind() ) return; // something is broken
 
-		if ( null !== $openid_auth_request) {
-			$auth_request = $openid_auth_request;
-		} else {
-			set_error_handler( array('WordPressOpenID_Logic', 'customer_error_handler'));
-			$consumer = WordPressOpenID_Logic::getConsumer();
-			$auth_request = $consumer->begin( $claimed_url );
-			restore_error_handler();
-		}
+		$auth_request = WordPressOpenID_Logic::begin_consumer( $claimed_url );
 
 		if ( null === $auth_request ) {
 			$openid->action = 'error';
 			$openid->message = 'Could not discover an OpenID identity server endpoint at the url: '
 			. htmlentities( $claimed_url );
 			if( strpos( $claimed_url, '@' ) ) {
-				set_include_path( dirname(__FILE__) . PATH_SEPARATOR . get_include_path() );
-				require_once 'Auth/Yadis/Email.php';
-				$mapped_url = Auth_Yadis_Email_getID($claimed_url, trailingslashit(get_option('home')));
-				if ($mapped_url) {
-					WordPressOpenID_Logic::start_login($mapped_url, $action, $arguments);
-				} else {
-					$openid->message .= '<br />It looks like you entered an email address, but it '
-						. 'was not able to be transformed into a valid OpenID.';
-				}
+				$openid->message .= '<br />It looks like you entered an email address, but it '
+					. 'was not able to be transformed into a valid OpenID.';
 			}
 			$openid->log->debug('OpenIDConsumer: ' . $openid->message );
 			return;
@@ -810,7 +816,17 @@ class WordPressOpenID_Logic {
 		@include_once( ABSPATH . 'wp-admin/upgrade-functions.php');	// 2.1
 		@include_once( ABSPATH . WPINC . '/registration-functions.php'); // 2.0.4
 
-		$user_data['user_login'] = $wpdb->escape( WordPressOpenID_Logic::generate_new_username($identity_url) );
+		// use email address for username if URL is from emailtoid.net
+		$username = $identity_url;
+		if (null != $_SESSION['openid_login_email'] and strpos($username, 'http://emailtoid.net/') == 0) {
+			if($user_data['user_email'] == NULL) {
+				$user_data['user_email'] = $_SESSION['openid_login_email'];
+			}
+			$username = $_SESSION['openid_login_email'];
+			unset($_SESSION['openid_login_email']);
+		}
+
+		$user_data['user_login'] = $wpdb->escape( WordPressOpenID_Logic::generate_new_username($username) );
 		$user_data['user_pass'] = substr( md5( uniqid( microtime() ) ), 0, 7);
 		$user_id = wp_insert_user( $user_data );
 			
@@ -821,7 +837,7 @@ class WordPressOpenID_Logic {
 			$user_data['ID'] = $user_id;
 			// XXX this all looks redundant, see WordPressOpenID_Logic::set_current_user
 
-			$openid->log->debug("OpenIDConsumer: Created new user $user_id : $username and metadata: "
+			$openid->log->debug("OpenIDConsumer: Created new user $user_id : " . $user_data['user_login'] . " and metadata: "
 			. var_export( $user_data, true ) );
 
 			$user = new WP_User( $user_id );
@@ -1054,7 +1070,7 @@ class WordPressOpenID_Logic {
 	 * @see get_user_data
 	 */
 	function bypass_option_require_name_email( $value ) {
-		global $openid_auth_request, $openid;
+		global $openid;
 			
 		if ($_REQUEST['oid_skip']) {
 			return $value;
@@ -1068,12 +1084,9 @@ class WordPressOpenID_Logic {
 			if (!empty($_POST['url'])) {
 				if (WordPressOpenID_Logic::late_bind()) {
 					// check if url is valid OpenID by forming an auth request
-					set_error_handler( array('WordPressOpenID_Logic', 'customer_error_handler'));
-					$consumer = WordPressOpenID_Logic::getConsumer();
-					$openid_auth_request = $consumer->begin( $_POST['url'] );
-					restore_error_handler();
+					$auth_request = WordPressOpenID_Logic::begin_consumer($_POST['url']);
 
-					if (null !== $openid_auth_request) {
+					if (null !== $auth_request) {
 						return false;
 					}
 				}
