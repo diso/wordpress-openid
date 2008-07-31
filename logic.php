@@ -1240,6 +1240,36 @@ class WordPressOpenID_Logic {
 	}
 
 
+	function xrds_simple($xrds) {
+		$xrds = xrds_add_service($xrds, 'main', 'OpenID Consumer Service', 
+			array(
+				'Type' => array(array('content' => 'http://specs.openid.net/auth/2.0/return_to') ),
+				'URI' => array(array('content' => trailingslashit(get_option('home'))) ),
+			)
+		);
+
+		$xrds = xrds_add_service($xrds, 'main', 'Identity in the Browser Login Service', 
+			array(
+				'Type' => array(array('content' => 'http://specs.openid.net/login/1.0/') ),
+				'URI' => array(
+					array(
+						'simple:httpMethod' => 'POST',
+						'content' => trailingslashit(get_option('siteurl')) . 'wp-login.php',
+					),
+				),
+			)
+		);
+
+		$xrds = xrds_add_service($xrds, 'main', 'Identity in the Browser Beacon Service', 
+			array(
+				'Type' => array(array('content' => 'http://specs.openid.net/beacon/1.0/') ),
+				'URI' => array(array('content' => trailingslashit(get_option('home')) . '?openid_check_login')),
+			)
+		);
+
+		return $xrds;
+	}
+
 	/**
 	 * Parse the WordPress request.  If the pagename is 'openid_consumer', then the request
 	 * is an OpenID response and should be handled accordingly.
@@ -1247,6 +1277,11 @@ class WordPressOpenID_Logic {
 	 * @param WP $wp WP instance for the current request
 	 */
 	function parse_request($wp) {
+		if (array_key_exists('openid_check_login', $_REQUEST)) {
+			echo is_user_logged_in() ? 'true' : 'false';
+			exit;
+		}
+
 		if (array_key_exists('openid_consumer', $_REQUEST) && $_REQUEST['action']) {
 			openid_init();
 			WordPressOpenID_Logic::finish_openid($_REQUEST['action']);

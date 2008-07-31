@@ -157,6 +157,7 @@ add_action( 'personal_options_update', array( 'WordPressOpenID_Logic', 'personal
 add_filter( 'openid_user_data', array('WordPressOpenID_Logic', 'get_user_data_form'), 10, 2);
 add_filter( 'openid_user_data', array('WordPressOpenID_Logic', 'get_user_data_sreg'), 10, 2);
 
+add_filter('xrds_simple', array('WordPressOpenID_Logic', 'xrds_simple'));
 
 // ---------------------------------------------------------------------
 // Exposed functions designed for use in templates, specifically inside
