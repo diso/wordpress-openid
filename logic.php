@@ -1248,13 +1248,14 @@ class WordPressOpenID_Logic {
 			)
 		);
 
+		$siteurl = function_exists('site_url') ? site_url('/wp-login.php', 'login_post') : get_option('siteurl').'/wp-login.php';
 		$xrds = xrds_add_service($xrds, 'main', 'Identity in the Browser Login Service', 
 			array(
 				'Type' => array(array('content' => 'http://specs.openid.net/login/1.0/') ),
 				'URI' => array(
 					array(
 						'simple:httpMethod' => 'POST',
-						'content' => trailingslashit(get_option('siteurl')) . 'wp-login.php',
+						'content' => $siteurl,
 					),
 				),
 			)
