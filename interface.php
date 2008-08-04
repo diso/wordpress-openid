@@ -493,7 +493,7 @@ class WordPressOpenID_Interface {
 			document.forms[0].submit()
 		</script>';
 
-		wp_die($html);
+		wp_die($html, 'OpenID Authentication Redirect');
 	}
 	
 	function init_errors() {
@@ -523,7 +523,7 @@ class WordPressOpenID_Interface {
 		}
 		
 		$html .= '</form>';
-		wp_die($html);
+		wp_die($html, 'OpenID Authentication Error');
 	}
 	
 }
