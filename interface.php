@@ -482,7 +482,8 @@ class WordPressOpenID_Interface {
 
 		foreach ($parameters as $k => $v) {
 			if ($k == 'submit') continue;
-			$html .= "\n" . '<input type="hidden" name="'.$k.'" value="'.htmlentities($v).'" />';
+			$v = str_replace('"', '&#34;', stripslashes($v));
+			$html .= "\n" . '<input type="hidden" name="'.$k.'" value="'.$v.'" />';
 		}
 		$html .= '
 			<noscript><div><input type="submit" value="Continue" /></div></noscript>
