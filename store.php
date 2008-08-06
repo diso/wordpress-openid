@@ -29,11 +29,17 @@ class WordPressOpenID_Store extends Auth_OpenID_MySQLStore {
 		$this->comments_table_name =  $table_prefix . 'comments';
 		$this->usermeta_table_name =  $wpdb->prefix . 'usermeta';
 
+		if (defined('CUSTOM_OPENID_IDENTITY_TABLE'))
+			$this->identity_table_name =  CUSTOM_OPENID_IDENTITY_TABLE;
+
+		if (defined('CUSTOM_USER_META_TABLE'))
+			$this->usermeta_table_name =  CUSTOM_USER_META_TABLE;
+
 		$conn = new WordPressOpenID_Connection( $wpdb );
 		parent::Auth_OpenID_MySQLStore(
-		$conn,
-		$this->associations_table_name,
-		$this->nonces_table_name
+			$conn,
+			$this->associations_table_name,
+			$this->nonces_table_name
 		);
 	}
 
