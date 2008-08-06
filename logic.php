@@ -514,7 +514,7 @@ class WordPressOpenID_Logic {
 
 
 		// build return_to URL
-		$return_to = get_option('home');
+		$return_to = trailingslashit(get_option('home'));
 		$auth_request->return_to_args['openid_consumer'] = '1';
 		$auth_request->return_to_args['action'] = $action;
 		if (is_array($arguments) && !empty($arguments)) {
