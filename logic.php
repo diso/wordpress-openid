@@ -1251,7 +1251,7 @@ class WordPressOpenID_Logic {
 		$siteurl = function_exists('site_url') ? site_url('/wp-login.php', 'login_post') : get_option('siteurl').'/wp-login.php';
 		$xrds = xrds_add_service($xrds, 'main', 'Identity in the Browser Login Service', 
 			array(
-				'Type' => array(array('content' => 'http://specs.openid.net/login/1.0/') ),
+				'Type' => array(array('content' => 'http://specs.openid.net/idib/1.0/login') ),
 				'URI' => array(
 					array(
 						'simple:httpMethod' => 'POST',
@@ -1261,9 +1261,9 @@ class WordPressOpenID_Logic {
 			)
 		);
 
-		$xrds = xrds_add_service($xrds, 'main', 'Identity in the Browser Beacon Service', 
+		$xrds = xrds_add_service($xrds, 'main', 'Identity in the Browser Indicator Service', 
 			array(
-				'Type' => array(array('content' => 'http://specs.openid.net/beacon/1.0/') ),
+				'Type' => array(array('content' => 'http://specs.openid.net/idib/1.0/indicator') ),
 				'URI' => array(array('content' => trailingslashit(get_option('home')) . '?openid_check_login')),
 			)
 		);
