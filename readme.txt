@@ -3,7 +3,7 @@ Contributors: wnorris, alanjcastonguay, factoryjoe
 Tags: openid, authentication
 Requires at least: 2.2
 Tested up to: 2.6.0
-Stable tag: 2.2.1
+Stable tag: 2.2.2
 
 Allow the use of OpenID for authentication of users and commenters.
 
@@ -85,6 +85,12 @@ report at <http://code.google.com/p/diso/issues/list>.
 
 == Changelog ==
 
+= version 2.2.2 =
+ - fix bug with "unauthorized return_to URL" (only known problem with [openid.pl][])
+ - fix bug with comments containing non-latin characters
+ - respect CUSTOM_USER_META_TABLE constant if present (also added CUSTOM_OPENID_IDENTITY_TABLE constant)
+ - add experimental support for Identity in the Browser
+
 = version 2.2.1 =
  - fixed EAUT handling code
  - fixed bug that broke comments containing double quotes (")
@@ -158,3 +164,4 @@ report at <http://code.google.com/p/diso/issues/list>.
 Full SVN logs are available at <http://dev.wp-plugins.org/log/openid/>.
 
 [729]: http://dev.wp-plugins.org/ticket/729
+[openid.pl]: http://openid.pl/
