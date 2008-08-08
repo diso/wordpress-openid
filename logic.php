@@ -181,26 +181,6 @@ class WordPressOpenID_Logic {
 	}
 
 
-	/**
-	 * If we're doing openid authentication ($_POST['openid_url'] is set), start the consumer & redirect
-	 * Otherwise, return and let WordPress handle the login and/or draw the form.
-	 *
-	 * @param string $username username provided in login form
-	 */
-	function wp_authenticate( &$username ) {
-		global $openid;
-
-		if( !empty( $_POST['openid_url'] ) ) {
-			if( !WordPressOpenID_Logic::late_bind() ) return; // something is broken
-			$redirect_to = '';
-			if( !empty( $_REQUEST['redirect_to'] ) ) $redirect_to = $_REQUEST['redirect_to'];
-			WordPressOpenID_Logic::start_login( $_POST['openid_url'], 'login', array('redirect_to' => $redirect_to) );
-		}
-		if( !empty( $openid->message ) ) {
-			global $error;
-			$error = $openid->message;
-		}
-	}
 
 
 	/**
@@ -788,23 +768,6 @@ class WordPressOpenID_Logic {
 	}
 
 
-	/**
-	 * If last comment was authenticated by an OpenID, record that in the database.
-	 *
-	 * @param string $location redirect location
-	 * @param object $comment comment that was just left
-	 * @return string redirect location
-	 */
-	function comment_post_redirect($location, $comment) {
-		global $openid;
-
-		if ($_SESSION['oid_posted_comment']) {
-			WordPressOpenID_Logic::set_comment_openid($comment->comment_ID);
-			$_SESSION['oid_posted_comment'] = null;
-		}
-			
-		return $location;
-	}
 
 
 	/**
@@ -1006,20 +969,6 @@ class WordPressOpenID_Logic {
 	}
 
 
-	/**
-	 * For comments that were handled by WordPress normally (not our code), check if the author
-	 * registered with OpenID and set comment openid flag if so.
-	 *
-	 * @action post_comment
-	 */
-	function check_author_openid($comment_ID) {
-		global $openid;
-
-		$comment = get_comment($comment_ID);
-		if ( $comment->user_id && !$comment->openid && is_user_openid($comment->user_id) ) {
-			WordPressOpenID_Logic::set_comment_openid($comment_ID);
-		}
-	}
 
 	/**
 	 * hook in and call when user is updating their profile URL... make sure it is an OpenID they control.
@@ -1051,193 +1000,6 @@ class WordPressOpenID_Logic {
 	}
 
 
-	/**
-	 * Mark the provided comment as an OpenID comment
-	 *
-	 * @param int $comment_ID id of comment to set as OpenID
-	 */
-	function set_comment_openid($comment_ID) {
-		global $wpdb, $openid;
-
-		$comments_table = WordPressOpenID::comments_table_name();
-		$wpdb->query("UPDATE $comments_table SET openid='1' WHERE comment_ID='$comment_ID' LIMIT 1");
-	}
-
-
-	/**
-	 * If the comment contains a valid OpenID, skip the check for requiring a name and email address.  Even if
-	 * this data is provided in the form, we may get it through other methods, so we don't want to bail out
-	 * prematurely.  After OpenID authentication has completed (and $_SESSION['oid_skip'] is set), we don't
-	 * interfere so that this data can be required if desired.
-	 *
-	 * @param boolean $value existing value of flag, whether to require name and email
-	 * @return boolean new value of flag, whether to require name and email
-	 * @see get_user_data
-	 */
-	function bypass_option_require_name_email( $value ) {
-		global $openid;
-			
-		if ($_REQUEST['oid_skip']) {
-			return $value;
-		}
-
-		if (array_key_exists('openid_url', $_POST)) {
-			if( !empty( $_POST['openid_url'] ) ) {
-				return false;
-			}
-		} else {
-			if (!empty($_POST['url'])) {
-				if (WordPressOpenID_Logic::late_bind()) {
-					// check if url is valid OpenID by forming an auth request
-					$auth_request = WordPressOpenID_Logic::begin_consumer($_POST['url']);
-
-					if (null !== $auth_request) {
-						return false;
-					}
-				}
-			}
-		}
-
-		return $value;
-	}
-
-
-	/**
-	 * Intercept comment submission and check if it includes a valid OpenID.  If it does, save the entire POST
-	 * array and begin the OpenID authentication process.
-	 *
-	 * regarding comment_type: http://trac.wordpress.org/ticket/2659
-	 *
-	 * @param object $comment comment object
-	 * @return object comment object
-	 */
-	function comment_tagging( $comment ) {
-		global $openid;
-
-		if ($_REQUEST['oid_skip']) return $comment;
-			
-		$openid_url = (array_key_exists('openid_url', $_POST) ? $_POST['openid_url'] : $_POST['url']);
-
-		if( !empty($openid_url) ) {  // Comment form's OpenID url is filled in.
-			$_SESSION['oid_comment_post'] = $_POST;
-			$_SESSION['oid_comment_post']['comment_author_openid'] = $openid_url;
-			$_SESSION['oid_comment_post']['oid_skip'] = 1;
-
-			WordPressOpenID_Logic::start_login( $openid_url, 'comment');
-
-			// Failure to redirect at all, the URL is malformed or unreachable.
-
-			// Display an error message only if an explicit OpenID field was used.  Otherwise,
-			// just ignore the error... it just means the user entered a normal URL.
-			if (array_key_exists('openid_url', $_POST)) {
-				WordPressOpenID_Interface::repost_comment_anonymously($_SESSION['oid_comment_post']);
-			}
-		}
-
-		/*
-		if (get_option('oid_enable_email_mapping') && !empty($_POST['email'])) {
-			$_SESSION['oid_comment_post'] = $_POST;
-			$_SESSION['oid_comment_post']['comment_author_openid'] = $openid_url;
-			$_SESSION['oid_comment_post']['oid_skip'] = 1;
-
-			set_include_path( dirname(__FILE__) . PATH_SEPARATOR . get_include_path() );
-			require_once 'Auth/Yadis/Email.php';
-			$id = Auth_Yadis_Email_getID($_POST['email'], trailingslashit(get_option('home')));
-			WordPressOpenID_Logic::start_login( $id, 'comment');
-		}
-		*/
-			
-		return $comment;
-	}
-
-
-	/**
-	 * This filter callback simply approves all OpenID comments, but later it could do more complicated logic
-	 * like whitelists.
-	 *
-	 * @param string $approved comment approval status
-	 * @return string new comment approval status
-	 */
-	function comment_approval($approved) {
-		if ($_SESSION['oid_posted_comment']) {
-			return 1;
-		}
-			
-		return $approved;
-	}
-
-
-	/**
-	 * Get any additional comments awaiting moderation by this user.  WordPress
-	 * core has been udpated to grab most, but we still do one last check for
-	 * OpenID comments that have a URL match with the current user.
-	 *
-	 * @param array $comments array of comments to display
-	 * @param int $post_id id of the post to display comments for
-	 * @return array new array of comments to display
-	 */
-	function comments_awaiting_moderation(&$comments, $post_id) {
-		global $wpdb, $openid;
-		$user = wp_get_current_user();
-
-		$commenter = wp_get_current_commenter();
-		extract($commenter);
-
-		$author_db = $wpdb->escape($comment_author);
-		$email_db  = $wpdb->escape($comment_author_email);
-		$url_db  = $wpdb->escape($comment_author_url);
-
-		if ($url_db) {
-			$comments_table = WordPressOpenID::comments_table_name();
-			$additional = $wpdb->get_results(
-					"SELECT * FROM $comments_table"
-			. " WHERE comment_post_ID = '$post_id'"
-			. " AND openid = '1'"             // get OpenID comments
-			. " AND comment_author_url = '$url_db'"      // where only the URL matches
-			. ($user ? " AND user_id != '$user->ID'" : '')
-			. ($author_db ? " AND comment_author != '$author_db'" : '')
-			. ($email_db ? " AND comment_author_email != '$email_db'" : '')
-			. " AND comment_approved = '0'"
-			. " ORDER BY comment_date");
-
-			if ($additional) {
-				$comments = array_merge($comments, $additional);
-				usort($comments, create_function('$a,$b',
-						'return strcmp($a->comment_date_gmt, $b->comment_date_gmt);'));
-			}
-		}
-
-		return $comments;
-	}
-
-	/**
-	 * Delete user.
-	 */
-	function delete_user($userid) {
-		openid_init();
-		$store = WordPressOpenID_Logic::getStore();
-		$store->drop_all_identities_for_user($userid);
-	}
-
-
-	/**
-	 * Make sure that a user's OpenID is stored and retrieved properly.  This is important because the OpenID
-	 * may be an i-name, but WordPress is expecting the comment URL cookie to be a valid URL.
-	 *
-	 * @wordpress-action sanitize_comment_cookies
-	 */
-	function sanitize_comment_cookies() {
-		if ( isset($_COOKIE['comment_author_openid_'.COOKIEHASH]) ) {
-
-			// this might be an i-name, so we don't want to run clean_url()
-			remove_filter('pre_comment_author_url', 'clean_url');
-
-			$comment_author_url = apply_filters('pre_comment_author_url',
-			$_COOKIE['comment_author_openid_'.COOKIEHASH]);
-			$comment_author_url = stripslashes($comment_author_url);
-			$_COOKIE['comment_author_url_'.COOKIEHASH] = $comment_author_url;
-		}
-	}
 
 
 	function xrds_simple($xrds) {

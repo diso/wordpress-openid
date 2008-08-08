@@ -21,6 +21,8 @@ set_include_path( dirname(__FILE__) . PATH_SEPARATOR . get_include_path() );   /
 
 require_once('logic.php');
 require_once('interface.php');
+require_once('comments.php');
+require_once('wp-login.php');
 
 
 @include_once('Log.php');                   // Try loading PEAR_Log from normal include_path.
@@ -104,37 +106,15 @@ register_deactivation_hook('openid/core.php', array('WordPressOpenID_Logic', 'de
 add_action( 'admin_menu', array( 'WordPressOpenID_Interface', 'add_admin_panels' ) );
 
 // Add hooks to handle actions in WordPress
-add_action( 'wp_authenticate', array( 'WordPressOpenID_Logic', 'wp_authenticate' ) ); // openid loop start
 add_action( 'init', array( 'WordPressOpenID_Logic', 'wp_login_openid' ) ); // openid loop done
 add_action( 'init', array( 'WordPressOpenID', 'textdomain' ) ); // load textdomain
 
 
-// Comment filtering
-add_action( 'preprocess_comment', array( 'WordPressOpenID_Logic', 'comment_tagging' ), -99 );
-add_action( 'comment_post', array( 'WordPressOpenID_Logic', 'check_author_openid' ), 5 );
-add_filter( 'option_require_name_email', array( 'WordPressOpenID_Logic', 'bypass_option_require_name_email') );
-add_filter( 'comments_array', array( 'WordPressOpenID_Logic', 'comments_awaiting_moderation'), 10, 2);
-add_action( 'sanitize_comment_cookies', array( 'WordPressOpenID_Logic', 'sanitize_comment_cookies'), 15);
-add_filter( 'comment_post_redirect', array( 'WordPressOpenID_Logic', 'comment_post_redirect'), 0, 2);
-if( get_option('oid_enable_approval') ) {
-	add_filter( 'pre_comment_approved', array('WordPressOpenID_Logic', 'comment_approval'));
-}
 	
 // include internal stylesheet
 add_action( 'wp_head', array( 'WordPressOpenID_Interface', 'style'));
-add_action( 'login_head', array( 'WordPressOpenID_Interface', 'style'));
-add_filter( 'get_comment_author_link', array( 'WordPressOpenID_Interface', 'comment_author_link'));
 
-if( get_option('oid_enable_commentform') ) {
-	add_action( 'wp_head', array( 'WordPressOpenID_Interface', 'js_setup'), 9);
-	add_action( 'wp_footer', array( 'WordPressOpenID_Interface', 'comment_profilelink'), 10);
-	add_action( 'wp_footer', array( 'WordPressOpenID_Interface', 'comment_form'), 10);
-}
 
-// add OpenID input field to wp-login.php
-add_action( 'login_form', array( 'WordPressOpenID_Interface', 'login_form'));
-add_action( 'register_form', array( 'WordPressOpenID_Interface', 'register_form'));
-add_filter( 'login_errors', array( 'WordPressOpenID_Interface', 'login_form_hide_username_password_errors'));
 add_filter( 'init', array( 'WordPressOpenID_Interface', 'init_errors'));
 
 // parse request
@@ -173,30 +153,8 @@ function openid_input() {
 }
 endif;
 
-/**
- * If the current comment was submitted with OpenID, return true
- * useful for  <?php echo ( is_comment_openid() ? 'Submitted with OpenID' : '' ); ?>
- */
-if(!function_exists('is_comment_openid')):
-function is_comment_openid() {
-	global $comment;
-	return ( $comment->openid == 1 );
+function openid_style() {
+	WordPressOpenID_Interface::style();
 }
-endif;
-
-/**
- * If the current user registered with OpenID, return true
- */
-if(!function_exists('is_user_openid')):
-function is_user_openid($id = null) {
-	global $current_user;
-
-	if ($id === null && $current_user !== null) {
-		$id = $current_user->ID;
-	}
-
-	return $id === null ? false : get_usermeta($id, 'has_openid');
-}
-endif;
 
 ?>

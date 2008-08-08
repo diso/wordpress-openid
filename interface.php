@@ -8,72 +8,6 @@
 if (!class_exists('WordPressOpenID_Interface')):
 class WordPressOpenID_Interface {
 
-	/**
-	 * Provide more useful OpenID error message to the user.
-	 *
-	 * @filter: login_errors
-	 **/
-	function login_form_hide_username_password_errors($r) {
-		global $openid;
-
-		if( $_POST['openid_url']
-			or $_REQUEST['action'] == 'login'
-			or $_REQUEST['action'] == 'comment' ) return $openid->message;
-		return $r;
-	}
-
-
-	/**
-	 * Add OpenID input field to wp-login.php
-	 *
-	 * @action: login_form
-	 **/
-	function login_form() {
-		global $wp_version;
-
-		$link_class = 'openid_link';
-		if ($wp_version < '2.5') {
-			$link_class .= ' legacy';
-		}
-
-		?>
-		<hr />
-		<p style="margin-top: 1em;">
-			<label><?php printf(__('Or login using your %s url:', 'openid'), '<a class="'.$link_class.'" href="http://openid.net/">'.__('OpenID', 'openid').'</a>') ?><br/>
-			<input type="text" name="openid_url" id="openid_url" class="input openid_url" value="" size="20" tabindex="25" /></label>
-		</p>
-		<?php
-	}
-
-
-	/**
-	 * Add information about registration to wp-login.php?action=register 
-	 *
-	 * @action: register_form
-	 **/
-	function register_form() {
-		echo '<p>';
-		printf(__('For faster registration, just %s login with %s.', 'openid'), '<a href="'.get_option('siteurl').'/wp-login.php">', '<span class="openid_link">'.__('OpenID', 'openid').'</span></a>');
-		echo '</p>';
-	}
-
-	
-	/**
-	 * Add OpenID class to author link.
-	 *
-	 * @filter: get_comment_author_link
-	 **/
-	function comment_author_link( $html ) {
-		if( is_comment_openid() ) {
-			if (preg_match('/<a[^>]* class=[^>]+>/', $html)) {
-				return preg_replace( '/(<a[^>]* class=[\'"]?)/', '\\1openid_link ' , $html );
-			} else {
-				return preg_replace( '/(<a[^>]*)/', '\\1 class="openid_link"' , $html );
-			}
-		}
-		return $html;
-	}
-
 
 	/**
 	 * Enqueue required javascript libraries.
@@ -105,28 +39,6 @@ class WordPressOpenID_Interface {
 	}
 
 
-	/**
-	 * Print jQuery call for slylizing profile link.
-	 *
-	 * @action: comment_form
-	 **/
-	function comment_profilelink() {
-		if (is_user_openid()) {
-			echo '<script type="text/javascript">stylize_profilelink()</script>';
-		}
-	}
-
-
-	/**
-	 * Print jQuery call to modify comment form.
-	 *
-	 * @action: comment_form
-	 **/
-	function comment_form() {
-		if (!is_user_logged_in()) {
-			echo '<script type="text/javascript">add_openid_to_comment_form()</script>';
-		}
-	}
 
 
 	/**
@@ -503,28 +415,6 @@ class WordPressOpenID_Interface {
 	}
 
 
-	function repost_comment_anonymously($post) {
-		$html = '
-		<p id="error">We were unable to authenticate your claimed OpenID, however you 
-		can continue to post your comment without OpenID:</p>
-
-		<form action="' . get_option('siteurl') . '/wp-comments-post.php" method="post">
-			<p>Name: <input name="author" value="'.$post['author'].'" /></p>
-			<p>Email: <input name="email" value="'.$post['email'].'" /></p>
-			<p>URL: <input name="url" value="'.$post['url'].'" /></p>
-			<textarea name="comment" cols="80%" rows="10">'.stripslashes($post['comment']).'</textarea>
-			<input type="submit" name="submit" value="Submit Comment" />
-			<input type="hidden" name="oid_skip" value="1" />';
-		foreach ($post as $name => $value) {
-			if (!in_array($name, array('author', 'email', 'url', 'comment', 'submit'))) {
-				$html .= '
-			<input type="hidden" name="'.$name.'" value="'.$value.'" />';
-			}
-		}
-		
-		$html .= '</form>';
-		wp_die($html, 'OpenID Authentication Error');
-	}
 	
 }
 endif;
