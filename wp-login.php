@@ -23,10 +23,10 @@ function openid_wp_authenticate( &$username ) {
 	global $openid;
 
 	if( !empty( $_POST['openid_url'] ) ) {
-		if( !WordPressOpenID_Logic::late_bind() ) return; // something is broken
+		if( !openid_late_bind() ) return; // something is broken
 		$redirect_to = '';
 		if( !empty( $_REQUEST['redirect_to'] ) ) $redirect_to = $_REQUEST['redirect_to'];
-		WordPressOpenID_Logic::start_login( $_POST['openid_url'], 'login', array('redirect_to' => $redirect_to) );
+		openid_start_login( $_POST['openid_url'], 'login', array('redirect_to' => $redirect_to) );
 	}
 	if( !empty( $openid->message ) ) {
 		global $error;

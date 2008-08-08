@@ -74,7 +74,7 @@ function set_comment_openid($id) {
  */
 function delete_user_openids($userid) {
 	openid_init();
-	$store = WordPressOpenID_Logic::getStore();
+	$store = openid_getStore();
 	$store->drop_all_identities_for_user($userid);
 }
 

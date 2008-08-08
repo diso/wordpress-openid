@@ -67,10 +67,6 @@ function openid_admin_panels() {
 }
 
 
-function openid_profile_management() {
-	WordPressOpenID_Logic::openid_profile_management();
-}
-
 /*
  * Display and handle updates from the Admin screen options page.
  *
@@ -79,7 +75,7 @@ function openid_profile_management() {
 function openid_options_page() {
 	global $wp_version, $openid;
 
-		WordPressOpenID_Logic::late_bind();
+		openid_late_bind();
 	
 		if ( isset($_REQUEST['action']) ) {
 			switch($_REQUEST['action']) {
@@ -215,7 +211,7 @@ function openid_profile_panel() {
 	}
 	$user = wp_get_current_user();
 
-	WordPressOpenID_Logic::late_bind();
+	openid_late_bind();
 
 	if (!$openid->action && $_SESSION['oid_action']) {
 		$openid->action = $_SESSION['oid_action'];

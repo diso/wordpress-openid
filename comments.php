@@ -44,7 +44,7 @@ function openid_process_comment( $comment ) {
 		$_SESSION['openid_comment_post']['comment_author_openid'] = $openid_url;
 		$_SESSION['openid_comment_post']['openid_skip'] = 1;
 
-		WordPressOpenID_Logic::start_login( $openid_url, 'comment');
+		openid_start_login( $openid_url, 'comment');
 
 		// Failure to redirect at all, the URL is malformed or unreachable.
 
@@ -111,9 +111,9 @@ function openid_option_require_name_email( $value ) {
 		}
 	} else {
 		if (!empty($_POST['url'])) {
-			if (WordPressOpenID_Logic::late_bind()) {
+			if (openid_late_bind()) {
 				// check if url is valid OpenID by forming an auth request
-				$auth_request = WordPressOpenID_Logic::begin_consumer($_POST['url']);
+				$auth_request = openid_begin_consumer($_POST['url']);
 
 				if (null !== $auth_request) {
 					return false;
@@ -218,7 +218,7 @@ function check_comment_author_openid($comment_ID) {
 
 	$comment = get_comment($comment_ID);
 	if ( $comment->user_id && !$comment->openid && is_user_openid($comment->user_id) ) {
-		WordPressOpenID_Logic::set_comment_openid($comment_ID);
+		set_comment_openid($comment_ID);
 	}
 }
 

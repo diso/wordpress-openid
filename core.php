@@ -70,10 +70,6 @@ class WordPressOpenID {
 	}
 
 
-	function textdomain() {
-		$lang_folder = PLUGINDIR . '/openid/lang';
-		load_plugin_textdomain('openid', $lang_folder);
-	}
 
 	function table_prefix() {
 		global $wpdb;
@@ -88,6 +84,11 @@ class WordPressOpenID {
 }
 endif;
 
+function openid_textdomain() {
+	$lang_folder = PLUGINDIR . '/openid/lang';
+	load_plugin_textdomain('openid', $lang_folder);
+}
+
 if (!function_exists('openid_init')):
 function openid_init() {
 	if ($GLOBALS['openid'] && is_a($GLOBALS['openid'], 'WordPressOpenID')) {
@@ -100,13 +101,13 @@ endif;
 
 // -- Register actions and filters -- //
 
-register_activation_hook('openid/core.php', array('WordPressOpenID_Logic', 'activate_plugin'));
-register_deactivation_hook('openid/core.php', array('WordPressOpenID_Logic', 'deactivate_plugin'));
+register_activation_hook('openid/core.php', 'openid_activate_plugin');
+register_deactivation_hook('openid/core.php', 'openid_deactivate_plugin');
 
 
 // Add hooks to handle actions in WordPress
-add_action( 'init', array( 'WordPressOpenID_Logic', 'wp_login_openid' ) ); // openid loop done
-add_action( 'init', array( 'WordPressOpenID', 'textdomain' ) ); // load textdomain
+add_action( 'init', 'wp_login_openid' ); // openid loop done
+add_action( 'init', 'openid_textdomain' ); // load textdomain
 
 
 	
@@ -117,7 +118,7 @@ add_action( 'wp_head', 'openid_style');
 add_filter( 'init', 'openid_init_errors');
 
 // parse request
-add_action('parse_request', array('WordPressOpenID_Logic', 'parse_request'));
+add_action('parse_request', 'openid_parse_request');
 
 // Add custom OpenID options
 add_option( 'oid_enable_commentform', true );
@@ -127,16 +128,16 @@ add_option( 'oid_db_revision', 0 );
 add_option( 'oid_enable_approval', false );
 add_option( 'oid_enable_email_mapping', false );
 
-add_action( 'delete_user', array( 'WordPressOpenID_Logic', 'delete_user' ) );
-add_action( 'cleanup_openid', array( 'WordPressOpenID_Logic', 'cleanup_nonces' ) );
+add_action( 'delete_user', 'openid_delete_user' );
+add_action( 'cleanup_openid', 'openid_cleanup_nonces' );
 
-add_action( 'personal_options_update', array( 'WordPressOpenID_Logic', 'personal_options_update' ) );
+add_action( 'personal_options_update', 'openid_personal_options_update' );
 
 // hooks for getting user data
-add_filter( 'openid_user_data', array('WordPressOpenID_Logic', 'get_user_data_form'), 10, 2);
-add_filter( 'openid_user_data', array('WordPressOpenID_Logic', 'get_user_data_sreg'), 10, 2);
+add_filter( 'openid_user_data', 'openid_get_user_data_form', 10, 2);
+add_filter( 'openid_user_data', 'openid_get_user_data_sreg', 10, 2);
 
-add_filter('xrds_simple', array('WordPressOpenID_Logic', 'xrds_simple'));
+add_filter('xrds_simple', 'openid_xrds_simple');
 
 // ---------------------------------------------------------------------
 // Exposed functions designed for use in templates, specifically inside
