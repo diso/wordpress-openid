@@ -19,7 +19,7 @@ define ( 'WPOPENID_LOG_LEVEL', 'warning');     // valid values are debug, info, 
 
 set_include_path( dirname(__FILE__) . PATH_SEPARATOR . get_include_path() );   // Add plugin directory to include path temporarily
 
-require_once('logic.php');
+require_once('common.php');
 require_once('admin_panels.php');
 require_once('comments.php');
 require_once('wp-login.php');
