@@ -1121,5 +1121,27 @@ function openid_init() {
 	$GLOBALS['openid'] = new WordPressOpenID();
 }
 
+/**
+ * Mark the specified comment as an OpenID comment.
+ *
+ * @param int $id id of comment to set as OpenID
+ */
+function set_comment_openid($id) {
+	global $wpdb;
+
+	$comments_table = openid_comments_table();
+	$wpdb->query("UPDATE $comments_table SET openid='1' WHERE comment_ID='$id' LIMIT 1");
+}
+
+
+/**
+ * Delete user.
+ */
+function delete_user_openids($userid) {
+	openid_init();
+	$store = openid_getStore();
+	$store->drop_all_identities_for_user($userid);
+}
+
 
 ?>

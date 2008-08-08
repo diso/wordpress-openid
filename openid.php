@@ -70,4 +70,63 @@ class WordPressOpenID {
 }
 endif;
 
+
+// public functions
+
+
+/**
+ * Check if the user has any OpenIDs.
+ *
+ * @param mixed $user the username or ID  If not provided, the current user will be used.
+ * @return bool true if the user has any OpenIDs
+ */
+function is_user_openid($user = null) {
+	global $current_user;
+
+	if ($user === null && $current_user !== null) {
+		$user = $current_user->ID;
+	}
+
+	return $user === null ? false : get_usermeta($user, 'has_openid');
+}
+
+
+/**
+ * If the current comment was submitted with OpenID, return true
+ * useful for  <?php echo ( is_comment_openid() ? 'Submitted with OpenID' : '' ); ?>
+ */
+// TODO: should we take a parameter here?
+function is_comment_openid() {
+	global $comment;
+	return ( $comment->openid == 1 );
+}
+
+
+/**
+ * Get the OpenID identities for the specified user.
+ *
+ * @param mixed $user the username or ID.  If not provided, the current user will be used.
+ * @return array array of user's OpenID identities
+ */
+function get_user_openids($user = null) {
+}
+
+
+/**
+ * Get the user associated with the specified OpenID.
+ *
+ * @param string $openid identifier to match
+ * @return int|false ID of associated user, or false if no associated user
+ */
+function get_user_by_openid($url) {
+}
+
+/**
+ * Get a simple OpenID input field, used for disabling unobtrusive mode.
+ */
+function openid_input() {
+	return '<input type="text" id="openid_url" name="openid_url" />';
+}
+
+
 ?>
