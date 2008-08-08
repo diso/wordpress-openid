@@ -1,5 +1,56 @@
 <?php
 /**
+ * Common functions.
+ */
+
+// -- WP Hooks
+register_activation_hook('openid/core.php', 'openid_activate_plugin');
+register_deactivation_hook('openid/core.php', 'openid_deactivate_plugin');
+
+
+// Add hooks to handle actions in WordPress
+add_action( 'init', 'wp_login_openid' ); // openid loop done
+add_action( 'init', 'openid_textdomain' ); // load textdomain
+	
+// include internal stylesheet
+add_action( 'wp_head', 'openid_style');
+
+
+add_filter( 'init', 'openid_init_errors');
+
+// parse request
+add_action('parse_request', 'openid_parse_request');
+
+// Add custom OpenID options
+add_option( 'oid_enable_commentform', true );
+add_option( 'oid_plugin_enabled', true );
+add_option( 'oid_plugin_revision', 0 );
+add_option( 'oid_db_revision', 0 );
+add_option( 'oid_enable_approval', false );
+add_option( 'oid_enable_email_mapping', false );
+
+add_action( 'delete_user', 'openid_delete_user' );
+add_action( 'cleanup_openid', 'openid_cleanup_nonces' );
+
+add_action( 'personal_options_update', 'openid_personal_options_update' );
+
+// hooks for getting user data
+add_filter( 'openid_user_data', 'openid_get_user_data_form', 10, 2);
+add_filter( 'openid_user_data', 'openid_get_user_data_sreg', 10, 2);
+
+add_filter('xrds_simple', 'openid_xrds_simple');
+
+
+
+/**
+ * Set the textdomain for this plugin so we can support localizations
+ */
+function openid_textdomain() {
+	$lang_folder = PLUGINDIR . '/openid/lang';
+	load_plugin_textdomain('openid', $lang_folder);
+}
+
+/**
  * Soft verification of plugin activation
  *
  * @return boolean if the plugin is okay
@@ -1043,5 +1094,32 @@ function openid_set_error($error) {
 	$_SESSION['oid_error'] = $error;
 	return;
 }
+
+function openid_table_prefix() {
+	global $wpdb;
+	return isset($wpdb->base_prefix) ? $wpdb->base_prefix : $wpdb->prefix;
+}
+
+function openid_associations_table() { return openid_table_prefix() . 'openid_associations'; }
+function openid_nonces_table() { return openid_table_prefix() . 'openid_nonces'; }
+function openid_comments_table() { return openid_table_prefix() . 'comments'; }
+function openid_usermeta_table() { 
+	return (defined('CUSTOM_USER_META_TABLE') ? CUSTOM_USER_META_TABLE : openid_table_prefix() . 'usermeta'); 
+}
+function openid_identity_table() { 
+	return (defined('CUSTOM_OPENID_IDENTITY_TABLE') ? CUSTOM_OPENID_IDENTITY_TABLE : penid_table_prefix() . 'openid_identities'); 
+}
+
+/**
+ * Initialize global OpenID instance.
+ */
+function openid_init() {
+	if ($GLOBALS['openid'] && is_a($GLOBALS['openid'], 'WordPressOpenID')) {
+		return;
+	}
+	
+	$GLOBALS['openid'] = new WordPressOpenID();
+}
+
 
 ?>

@@ -56,7 +56,7 @@ function openid_admin_notices_plugin_problem_warning() {
  * @action: admin_menu
  **/
 function openid_admin_panels() {
-	$hookname = add_options_page(__('OpenID options', 'openid'), __('WP-OpenID', 'openid'), 8, 'global-openid-options', 'openid_options_page' );
+	$hookname = add_options_page(__('OpenID options', 'openid'), __('OpenID', 'openid'), 8, 'global-openid-options', 'openid_options_page' );
 	add_action("load-$hookname", 'openid_js_setup' );
 	add_action("admin_head-$hookname", 'openid_style' );
 

@@ -147,7 +147,7 @@ function openid_comments_array(&$comments, $post_id) {
 	$url_db  = $wpdb->escape($comment_author_url);
 
 	if ($url_db) {
-		$comments_table = WordPressOpenID::comments_table_name();
+		$comments_table = openid_comments_table();
 		$additional = $wpdb->get_results(
 				"SELECT * FROM $comments_table"
 		. " WHERE comment_post_ID = '$post_id'"

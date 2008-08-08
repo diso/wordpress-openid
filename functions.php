@@ -64,7 +64,7 @@ function get_user_by_openid($url) {
 function set_comment_openid($id) {
 	global $wpdb;
 
-	$comments_table = WordPressOpenID::comments_table_name();
+	$comments_table = openid_comments_table();
 	$wpdb->query("UPDATE $comments_table SET openid='1' WHERE comment_ID='$id' LIMIT 1");
 }
 
@@ -79,6 +79,13 @@ function delete_user_openids($userid) {
 }
 
 
-
+/**
+ * Get a simple OpenID input field, used for disabling unobtrusive mode.
+ */
+if(!function_exists('openid_input')):
+function openid_input() {
+	return '<input type="text" id="openid_url" name="openid_url" />';
+}
+endif;
 
 ?>

@@ -1,6 +1,6 @@
 <?php
 /*
- Plugin Name: WP-OpenID
+ Plugin Name: OpenID
  Plugin URI: http://wordpress.org/extend/plugins/openid
  Description: Allows the use of OpenID for account registration, authentication, and commenting.  <em>By <a href="http://verselogic.net">Alan Castonguay</a>.</em>
  Author: Will Norris
@@ -50,7 +50,6 @@ class WordPressOpenID {
 	var $enabled = true;
 
 	var $bind_done = false;
-
 	
 	function WordPressOpenID() {
 		$this->log = &Log::singleton('error_log', PEAR_LOG_TYPE_SYSTEM, 'OpenID');
@@ -61,7 +60,6 @@ class WordPressOpenID {
 		$this->log->setMask(Log::UPTO($wpopenid_log_level));
 	}
 
-
 	/**
 	 * Set Status.
 	 **/
@@ -69,87 +67,6 @@ class WordPressOpenID {
 		$this->status[$slug] = array('state'=>$state,'message'=>$message);
 	}
 
-
-
-	function table_prefix() {
-		global $wpdb;
-		return isset($wpdb->base_prefix) ? $wpdb->base_prefix : $wpdb->prefix;
-	}
-
-	function associations_table_name() { return WordPressOpenID::table_prefix() . 'openid_associations'; }
-	function nonces_table_name() { return WordPressOpenID::table_prefix() . 'openid_nonces'; }
-	function identity_table_name() { return WordPressOpenID::table_prefix() . 'openid_identities'; }
-	function comments_table_name() { return WordPressOpenID::table_prefix() . 'comments'; }
-	function usermeta_table_name() { return WordPressOpenID::table_prefix() . 'usermeta'; }
-}
-endif;
-
-function openid_textdomain() {
-	$lang_folder = PLUGINDIR . '/openid/lang';
-	load_plugin_textdomain('openid', $lang_folder);
-}
-
-if (!function_exists('openid_init')):
-function openid_init() {
-	if ($GLOBALS['openid'] && is_a($GLOBALS['openid'], 'WordPressOpenID')) {
-		return;
-	}
-	
-	$GLOBALS['openid'] = new WordPressOpenID();
-}
-endif;
-
-// -- Register actions and filters -- //
-
-register_activation_hook('openid/core.php', 'openid_activate_plugin');
-register_deactivation_hook('openid/core.php', 'openid_deactivate_plugin');
-
-
-// Add hooks to handle actions in WordPress
-add_action( 'init', 'wp_login_openid' ); // openid loop done
-add_action( 'init', 'openid_textdomain' ); // load textdomain
-
-
-	
-// include internal stylesheet
-add_action( 'wp_head', 'openid_style');
-
-
-add_filter( 'init', 'openid_init_errors');
-
-// parse request
-add_action('parse_request', 'openid_parse_request');
-
-// Add custom OpenID options
-add_option( 'oid_enable_commentform', true );
-add_option( 'oid_plugin_enabled', true );
-add_option( 'oid_plugin_revision', 0 );
-add_option( 'oid_db_revision', 0 );
-add_option( 'oid_enable_approval', false );
-add_option( 'oid_enable_email_mapping', false );
-
-add_action( 'delete_user', 'openid_delete_user' );
-add_action( 'cleanup_openid', 'openid_cleanup_nonces' );
-
-add_action( 'personal_options_update', 'openid_personal_options_update' );
-
-// hooks for getting user data
-add_filter( 'openid_user_data', 'openid_get_user_data_form', 10, 2);
-add_filter( 'openid_user_data', 'openid_get_user_data_sreg', 10, 2);
-
-add_filter('xrds_simple', 'openid_xrds_simple');
-
-// ---------------------------------------------------------------------
-// Exposed functions designed for use in templates, specifically inside
-//   `foreach ($comments as $comment)` in comments.php
-// ---------------------------------------------------------------------
-
-/**
- * Get a simple OpenID input field, used for disabling unobtrusive mode.
- */
-if(!function_exists('openid_input')):
-function openid_input() {
-	return '<input type="text" id="openid_url" name="openid_url" />';
 }
 endif;
 
