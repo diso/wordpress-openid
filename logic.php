@@ -339,7 +339,7 @@ class WordPressOpenID_Logic {
 			if (Auth_OpenID::isFailure($request_message)) {
 				$openid->log->error('Could not redirect to server: '.$request_message->message);
 			} else {
-				WordPressOpenID_Interface::repost($auth_request->endpoint->server_url, $request_message->toPostArgs());
+				openid_repost($auth_request->endpoint->server_url, $request_message->toPostArgs());
 			}
 		}
 	}
@@ -672,7 +672,7 @@ class WordPressOpenID_Logic {
 		global $openid;
 
 		if (empty($identity_url)) {
-			WordPressOpenID_Interface::repost_comment_anonymously($_SESSION['oid_comment_post']);
+			openid_repost_comment_anonymously($_SESSION['oid_comment_post']);
 		}
 			
 		WordPressOpenID_Logic::set_current_user($identity_url);
@@ -700,7 +700,7 @@ class WordPressOpenID_Logic {
 		$_SESSION['oid_posted_comment'] = true;
 
 		$wpp = parse_url(get_option('siteurl'));
-		WordPressOpenID_Interface::repost($wpp['path'] . '/wp-comments-post.php',
+		openid_repost($wpp['path'] . '/wp-comments-post.php',
 		array_filter($_SESSION['oid_comment_post']));
 	}
 

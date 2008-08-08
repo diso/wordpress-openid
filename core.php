@@ -20,7 +20,7 @@ define ( 'WPOPENID_LOG_LEVEL', 'warning');     // valid values are debug, info, 
 set_include_path( dirname(__FILE__) . PATH_SEPARATOR . get_include_path() );   // Add plugin directory to include path temporarily
 
 require_once('logic.php');
-require_once('interface.php');
+require_once('admin_panels.php');
 require_once('comments.php');
 require_once('wp-login.php');
 
@@ -103,7 +103,6 @@ endif;
 register_activation_hook('openid/core.php', array('WordPressOpenID_Logic', 'activate_plugin'));
 register_deactivation_hook('openid/core.php', array('WordPressOpenID_Logic', 'deactivate_plugin'));
 
-add_action( 'admin_menu', array( 'WordPressOpenID_Interface', 'add_admin_panels' ) );
 
 // Add hooks to handle actions in WordPress
 add_action( 'init', array( 'WordPressOpenID_Logic', 'wp_login_openid' ) ); // openid loop done
@@ -112,10 +111,10 @@ add_action( 'init', array( 'WordPressOpenID', 'textdomain' ) ); // load textdoma
 
 	
 // include internal stylesheet
-add_action( 'wp_head', array( 'WordPressOpenID_Interface', 'style'));
+add_action( 'wp_head', 'openid_style');
 
 
-add_filter( 'init', array( 'WordPressOpenID_Interface', 'init_errors'));
+add_filter( 'init', 'openid_init_errors');
 
 // parse request
 add_action('parse_request', array('WordPressOpenID_Logic', 'parse_request'));
@@ -152,9 +151,5 @@ function openid_input() {
 	return '<input type="text" id="openid_url" name="openid_url" />';
 }
 endif;
-
-function openid_style() {
-	WordPressOpenID_Interface::style();
-}
 
 ?>
