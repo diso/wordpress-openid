@@ -83,4 +83,62 @@ function openid_wp_register_form() {
 	echo '</p>';
 }
 
+
+/**
+ * Action method for completing the 'login' action.  This action is used when a user is logging in from
+ * wp-login.php.
+ *
+ * @param string $identity_url verified OpenID URL
+ */
+function _finish_openid_login($identity_url) {
+	global $openid;
+
+	$redirect_to = urldecode($_REQUEST['redirect_to']);
+		
+	if (empty($identity_url)) {
+		openid_set_error('Unable to authenticate OpenID.');
+		wp_safe_redirect(get_option('siteurl') . '/wp-login.php');
+		exit;
+	}
+		
+	openid_set_current_user($identity_url);
+
+	if (!is_user_logged_in()) {
+		if ( get_option('users_can_register') ) {
+			$user_data =& openid_get_user_data($identity_url);
+			$user = openid_create_new_user($identity_url, $user_data);
+			openid_set_current_user($user->ID);
+		} else {
+			// TODO - Start a registration loop in WPMU.
+			openid_set_error('OpenID authentication valid, but unable '
+			. 'to find a WordPress account associated with this OpenID.<br /><br />'
+			. 'Enable "Anyone can register" to allow creation of new accounts via OpenID.');
+			wp_safe_redirect(get_option('siteurl') . '/wp-login.php');
+			exit;
+		}
+
+	}
+		
+	if (empty($redirect_to)) {
+		$redirect_to = 'wp-admin/';
+	}
+	if ($redirect_to == 'wp-admin/') {
+		if (!current_user_can('edit_posts')) {
+			$redirect_to .= 'profile.php';
+		}
+	}
+	if (!preg_match('#^(http|\/)#', $redirect_to)) {
+		$wpp = parse_url(get_option('siteurl'));
+		$redirect_to = $wpp['path'] . '/' . $redirect_to;
+	}
+
+	if (function_exists('wp_safe_redirect')) {
+		wp_safe_redirect( $redirect_to );
+	} else {
+		wp_redirect( $redirect_to );
+	}
+		
+	exit;
+}
+
 ?>

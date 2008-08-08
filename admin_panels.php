@@ -7,6 +7,7 @@
 
 // -- WordPress Hooks
 add_action( 'admin_menu', 'openid_admin_panels' );
+add_action( 'personal_options_update', 'openid_personal_options_update' );
 
 /**
  * Enqueue required javascript libraries.
@@ -413,6 +414,227 @@ function openid_init_errors() {
 }
 
 
+/**
+ * Handle OpenID profile management.
+ */
+function openid_profile_management() {
+	global $wp_version, $openid;
+	openid_init();
+	
+	if( !isset( $_REQUEST['action'] )) return;
+		
+	$openid->action = $_REQUEST['action'];
+		
+	require_once(ABSPATH . 'wp-admin/admin-functions.php');
+
+	if ($wp_version < '2.3') {
+		require_once(ABSPATH . 'wp-admin/admin-db.php');
+		require_once(ABSPATH . 'wp-admin/upgrade-functions.php');
+	}
+
+	auth_redirect();
+	nocache_headers();
+	get_currentuserinfo();
+
+	if( !openid_late_bind() ) return; // something is broken
+		
+	switch( $openid->action ) {
+		case 'add_identity':
+			check_admin_referer('wp-openid-add_identity');
+
+			$user = wp_get_current_user();
+
+			$store =& openid_getStore();
+			$auth_request = openid_begin_consumer($_POST['openid_url']);
+
+			$userid = $store->get_user_by_identity($auth_request->endpoint->claimed_id);
+
+			if ($userid) {
+				global $error;
+				if ($user->ID == $userid) {
+					$error = 'You already have this Identity URL!';
+				} else {
+					$error = 'This Identity URL is already connected to another user.';
+				}
+				return;
+			}
+
+			openid_start_login($_POST['openid_url'], 'verify');
+			break;
+
+		case 'drop_identity':  // Remove a binding.
+			openid_profile_drop_identity($_REQUEST['id']);
+			break;
+	}
+}
+
+
+/**
+ * Remove identity URL from current user account.
+ *
+ * @param int $id id of identity URL to remove
+ */
+function openid_profile_drop_identity($id) {
+	global $openid;
+
+	$user = wp_get_current_user();
+
+	if( !isset($id)) {
+		$openid->message = 'Identity url delete failed: ID paramater missing.';
+		$openid->action = 'error';
+		return;
+	}
+
+	$store =& openid_getStore();
+	$deleted_identity_url = $store->get_identities($user->ID, $id);
+	if( FALSE === $deleted_identity_url ) {
+		$openid->message = 'Identity url delete failed: Specified identity does not exist.';
+		$openid->action = 'error';
+		return;
+	}
+
+	$identity_urls = $store->get_identities($user->ID);
+	if (sizeof($identity_urls) == 1 && !$_REQUEST['confirm']) {
+		$openid->message = 'This is your last identity URL.  Are you sure you want to delete it? Doing so may interfere with your ability to login.<br /><br /> '
+		. '<a href="?confirm=true&'.$_SERVER['QUERY_STRING'].'">Yes I\'m sure.  Delete it</a>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;'
+		. '<a href="?page=openid">No, don\'t delete it.</a>';
+		$openid->action = 'warning';
+		return;
+	}
+
+	check_admin_referer('wp-openid-drop-identity_'.$deleted_identity_url);
+		
+
+	if( $store->drop_identity($user->ID, $id) ) {
+		$openid->message = 'Identity url delete successful. <b>' . $deleted_identity_url
+		. '</b> removed.';
+		$openid->action = 'success';
+
+		// ensure that profile URL is still a verified Identity URL
+		set_include_path( dirname(__FILE__) . PATH_SEPARATOR . get_include_path() );
+		require_once 'Auth/OpenID.php';
+		if ($GLOBALS['wp_version'] >= '2.3') {
+			require_once(ABSPATH . 'wp-admin/includes/admin.php');
+		} else {
+			require_once(ABSPATH . WPINC . '/registration.php');
+		}
+		$identities = $store->get_identities($user->ID);
+		$current_url = Auth_OpenID::normalizeUrl($user->user_url);
+
+		$verified_url = false;
+		if (!empty($identities)) {
+			foreach ($identities as $id) {
+				if ($id['url'] == $current_url) {
+					$verified_url = true;
+					break;
+				}
+			}
+
+			if (!$verified_url) {
+				$user->user_url = $identities[0]['url'];
+				wp_update_user( get_object_vars( $user ));
+				$openid->message .= '<br /><strong>Note:</strong> For security reasons, your profile URL has been updated to match your Identity URL.';
+			}
+		}
+		return;
+	}
+		
+	$openid->message = 'Identity url delete failed: Unknown reason.';
+	$openid->action = 'error';
+}
+
+
+/**
+ * Action method for completing the 'verify' action.  This action is used adding an identity URL to a
+ * WordPress user through the admin interface.
+ *
+ * @param string $identity_url verified OpenID URL
+ */
+function _finish_openid_verify($identity_url) {
+	global $openid;
+
+	$user = wp_get_current_user();
+	if (empty($identity_url)) {
+		openid_set_error('Unable to authenticate OpenID.');
+	} else {
+		$store =& openid_getStore();
+		if( !$store->insert_identity($user->ID, $identity_url) ) {
+			openid_set_error('OpenID assertion successful, but this URL is already claimed by '
+			. 'another user on this blog. This is probably a bug. ' . $identity_url);
+		} else {
+			$openid->action = 'success';
+			$openid->message = "Successfully added Identity URL: $identity_url.";
+			
+			// ensure that profile URL is a verified Identity URL
+			set_include_path( dirname(__FILE__) . PATH_SEPARATOR . get_include_path() );
+			require_once 'Auth/OpenID.php';
+			if ($GLOBALS['wp_version'] >= '2.3') {
+				require_once(ABSPATH . 'wp-admin/includes/admin.php');
+			} else {
+				require_once(ABSPATH . WPINC . '/registration.php');
+			}
+			$identities = $store->get_identities($user->ID);
+			$current_url = Auth_OpenID::normalizeUrl($user->user_url);
+
+			$verified_url = false;
+			if (!empty($identities)) {
+				foreach ($identities as $id) {
+					if ($id['url'] == $current_url) {
+						$verified_url = true;
+						break;
+					}
+				}
+
+				if (!$verified_url) {
+					$user->user_url = $identity_url;
+					wp_update_user( get_object_vars( $user ));
+					$openid->message .= '<br /><strong>Note:</strong> For security reasons, your profile URL has been updated to match your Identity URL.';
+				}
+			}
+		}
+	}
+
+	$_SESSION['oid_message'] = $openid->message;
+	$_SESSION['oid_action'] = $openid->action;	
+	$wpp = parse_url(get_option('siteurl'));
+	$redirect_to = $wpp['path'] . '/wp-admin/' . (current_user_can('edit_users') ? 'users.php' : 'profile.php') . '?page=openid';
+	if (function_exists('wp_safe_redirect')) {
+		wp_safe_redirect( $redirect_to );
+	} else {
+		wp_redirect( $redirect_to );
+	}
+	exit;
+}
+
+
+/**
+ * hook in and call when user is updating their profile URL... make sure it is an OpenID they control.
+ */
+function openid_personal_options_update() {
+	set_include_path( dirname(__FILE__) . PATH_SEPARATOR . get_include_path() );
+	require_once 'Auth/OpenID.php';
+	$claimed = Auth_OpenID::normalizeUrl($_POST['url']);
+
+	$user = wp_get_current_user();
+
+	openid_init();
+	$store =& openid_getStore();
+	$identities = $store->get_identities($user->ID);
+
+	if (!empty($identities)) {
+		$urls = array();
+		foreach ($identities as $id) {
+			if ($id['url'] == $claimed) {
+				return; 
+			} else {
+				$urls[] = $id['url'];
+			}
+		}
+
+		wp_die('For security reasons, your profile URL must be one of your claimed '
+		   . 'Identity URLs: <ul><li>' . join('</li><li>', $urls) . '</li></ul>');
+	}
+}
 
 
 ?>

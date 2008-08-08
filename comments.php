@@ -269,4 +269,89 @@ function openid_repost_comment_anonymously($post) {
 	$html .= '</form>';
 	wp_die($html, 'OpenID Authentication Error');
 }
+
+
+/**
+ * Action method for completing the 'comment' action.  This action is used when leaving a comment.
+ *
+ * @param string $identity_url verified OpenID URL
+ */
+function _finish_openid_comment($identity_url) {
+	global $openid;
+
+	if (empty($identity_url)) {
+		openid_repost_comment_anonymously($_SESSION['oid_comment_post']);
+	}
+		
+	openid_set_current_user($identity_url);
+		
+	if (is_user_logged_in()) {
+		// simulate an authenticated comment submission
+		$_SESSION['oid_comment_post']['author'] = null;
+		$_SESSION['oid_comment_post']['email'] = null;
+		$_SESSION['oid_comment_post']['url'] = null;
+	} else {
+		// try to get user data from the verified OpenID
+		$user_data =& openid_get_user_data($identity_url);
+
+		if (!empty($user_data['display_name'])) {
+			$_SESSION['oid_comment_post']['author'] = $user_data['display_name'];
+		}
+		if (!empty($user_data['user_email'])) {
+			$_SESSION['oid_comment_post']['email'] = $user_data['user_email'];
+		}
+		$_SESSION['oid_comment_post']['url'] = $identity_url;
+	}
+		
+	// record that we're about to post an OpenID authenticated comment.
+	// We can't actually record it in the database until after the repost below.
+	$_SESSION['oid_posted_comment'] = true;
+
+	$wpp = parse_url(get_option('siteurl'));
+	openid_repost($wpp['path'] . '/wp-comments-post.php',
+	array_filter($_SESSION['oid_comment_post']));
+}
+
+
+/**
+ * Mark the specified comment as an OpenID comment.
+ *
+ * @param int $id id of comment to set as OpenID
+ */
+function set_comment_openid($id) {
+	global $wpdb;
+
+	$comments_table = openid_comments_table();
+	$wpdb->query("UPDATE $comments_table SET openid='1' WHERE comment_ID='$id' LIMIT 1");
+}
+
+
+/**
+ * Retrieve user data from comment form.
+ *
+ * @param string $identity_url OpenID to get user data about
+ * @param reference $data reference to user data array
+ * @see get_user_data
+ */
+function openid_get_user_data_form($identity_url, $data) {
+	$comment = $_SESSION['oid_comment_post'];
+
+	if (!$comment) {
+		return $data;
+	}
+
+	if ($comment['email']) {
+		$data['user_email'] = $comment['email'];
+	}
+
+	if ($comment['author']) {
+		$data['nickname'] = $comment['author'];
+		$data['user_nicename'] = $comment['author'];
+		$data['display_name'] = $comment['author'];
+	}
+
+	return $data;
+}
+
+
 ?>

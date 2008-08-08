@@ -7,7 +7,6 @@
 register_activation_hook('openid/core.php', 'openid_activate_plugin');
 register_deactivation_hook('openid/core.php', 'openid_deactivate_plugin');
 
-
 // Add hooks to handle actions in WordPress
 add_action( 'init', 'wp_login_openid' ); // openid loop done
 add_action( 'init', 'openid_textdomain' ); // load textdomain
@@ -15,11 +14,21 @@ add_action( 'init', 'openid_textdomain' ); // load textdomain
 // include internal stylesheet
 add_action( 'wp_head', 'openid_style');
 
-
 add_filter( 'init', 'openid_init_errors');
 
 // parse request
 add_action('parse_request', 'openid_parse_request');
+
+add_action( 'delete_user', 'delete_user_openids' );
+add_action( 'cleanup_openid', 'openid_cleanup_nonces' );
+
+
+// hooks for getting user data
+add_filter( 'openid_user_data', 'openid_get_user_data_form', 10, 2);
+add_filter( 'openid_user_data', 'openid_get_user_data_sreg', 10, 2);
+
+add_filter( 'xrds_simple', 'openid_consumer_xrds_simple');
+
 
 // Add custom OpenID options
 add_option( 'oid_enable_commentform', true );
@@ -29,26 +38,16 @@ add_option( 'oid_db_revision', 0 );
 add_option( 'oid_enable_approval', false );
 add_option( 'oid_enable_email_mapping', false );
 
-add_action( 'delete_user', 'openid_delete_user' );
-add_action( 'cleanup_openid', 'openid_cleanup_nonces' );
-
-add_action( 'personal_options_update', 'openid_personal_options_update' );
-
-// hooks for getting user data
-add_filter( 'openid_user_data', 'openid_get_user_data_form', 10, 2);
-add_filter( 'openid_user_data', 'openid_get_user_data_sreg', 10, 2);
-
-add_filter('xrds_simple', 'openid_xrds_simple');
-
 
 
 /**
- * Set the textdomain for this plugin so we can support localizations
+ * Set the textdomain for this plugin so we can support localizations.
  */
 function openid_textdomain() {
 	$lang_folder = PLUGINDIR . '/openid/lang';
 	load_plugin_textdomain('openid', $lang_folder);
 }
+
 
 /**
  * Soft verification of plugin activation
@@ -189,6 +188,10 @@ function openid_activate_plugin() {
 	//$openid->log->warning("activation memory usage: " . (int)((memory_get_usage() - $start_mem) / 1000));
 }
 
+
+/**
+ * Cleanup expired nonces from the OpenID store.
+ */
 function openid_cleanup_nonces() {
 	global $openid;
 	openid_init();
@@ -217,138 +220,6 @@ function openid_customer_error_handler($errno, $errmsg, $filename, $linenum, $va
 
 	if( (2048 & $errno) == 2048 ) return;
 	$openid->log->notice( "Library Error $errno: $errmsg in $filename :$linenum");
-}
-
-
-
-
-/**
- * Handle OpenID profile management.
- */
-function openid_profile_management() {
-	global $wp_version, $openid;
-	openid_init();
-	
-	if( !isset( $_REQUEST['action'] )) return;
-		
-	$openid->action = $_REQUEST['action'];
-		
-	require_once(ABSPATH . 'wp-admin/admin-functions.php');
-
-	if ($wp_version < '2.3') {
-		require_once(ABSPATH . 'wp-admin/admin-db.php');
-		require_once(ABSPATH . 'wp-admin/upgrade-functions.php');
-	}
-
-	auth_redirect();
-	nocache_headers();
-	get_currentuserinfo();
-
-	if( !openid_late_bind() ) return; // something is broken
-		
-	switch( $openid->action ) {
-		case 'add_identity':
-			check_admin_referer('wp-openid-add_identity');
-
-			$user = wp_get_current_user();
-
-			$store =& openid_getStore();
-			$auth_request = openid_begin_consumer($_POST['openid_url']);
-
-			$userid = $store->get_user_by_identity($auth_request->endpoint->claimed_id);
-
-			if ($userid) {
-				global $error;
-				if ($user->ID == $userid) {
-					$error = 'You already have this Identity URL!';
-				} else {
-					$error = 'This Identity URL is already connected to another user.';
-				}
-				return;
-			}
-
-			openid_start_login($_POST['openid_url'], 'verify');
-			break;
-
-		case 'drop_identity':  // Remove a binding.
-			openid_profile_drop_identity($_REQUEST['id']);
-			break;
-	}
-}
-
-
-/**
- * Remove identity URL from current user account.
- *
- * @param int $id id of identity URL to remove
- */
-function openid_profile_drop_identity($id) {
-	global $openid;
-
-	$user = wp_get_current_user();
-
-	if( !isset($id)) {
-		$openid->message = 'Identity url delete failed: ID paramater missing.';
-		$openid->action = 'error';
-		return;
-	}
-
-	$store =& openid_getStore();
-	$deleted_identity_url = $store->get_identities($user->ID, $id);
-	if( FALSE === $deleted_identity_url ) {
-		$openid->message = 'Identity url delete failed: Specified identity does not exist.';
-		$openid->action = 'error';
-		return;
-	}
-
-	$identity_urls = $store->get_identities($user->ID);
-	if (sizeof($identity_urls) == 1 && !$_REQUEST['confirm']) {
-		$openid->message = 'This is your last identity URL.  Are you sure you want to delete it? Doing so may interfere with your ability to login.<br /><br /> '
-		. '<a href="?confirm=true&'.$_SERVER['QUERY_STRING'].'">Yes I\'m sure.  Delete it</a>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;'
-		. '<a href="?page=openid">No, don\'t delete it.</a>';
-		$openid->action = 'warning';
-		return;
-	}
-
-	check_admin_referer('wp-openid-drop-identity_'.$deleted_identity_url);
-		
-
-	if( $store->drop_identity($user->ID, $id) ) {
-		$openid->message = 'Identity url delete successful. <b>' . $deleted_identity_url
-		. '</b> removed.';
-		$openid->action = 'success';
-
-		// ensure that profile URL is still a verified Identity URL
-		set_include_path( dirname(__FILE__) . PATH_SEPARATOR . get_include_path() );
-		require_once 'Auth/OpenID.php';
-		if ($GLOBALS['wp_version'] >= '2.3') {
-			require_once(ABSPATH . 'wp-admin/includes/admin.php');
-		} else {
-			require_once(ABSPATH . WPINC . '/registration.php');
-		}
-		$identities = $store->get_identities($user->ID);
-		$current_url = Auth_OpenID::normalizeUrl($user->user_url);
-
-		$verified_url = false;
-		if (!empty($identities)) {
-			foreach ($identities as $id) {
-				if ($id['url'] == $current_url) {
-					$verified_url = true;
-					break;
-				}
-			}
-
-			if (!$verified_url) {
-				$user->user_url = $identities[0]['url'];
-				wp_update_user( get_object_vars( $user ));
-				$openid->message .= '<br /><strong>Note:</strong> For security reasons, your profile URL has been updated to match your Identity URL.';
-			}
-		}
-		return;
-	}
-		
-	$openid->message = 'Identity url delete failed: Unknown reason.';
-	$openid->action = 'error';
 }
 
 
@@ -645,171 +516,6 @@ function finish_openid($action) {
 
 
 /**
- * Action method for completing the 'login' action.  This action is used when a user is logging in from
- * wp-login.php.
- *
- * @param string $identity_url verified OpenID URL
- */
-function _finish_openid_login($identity_url) {
-	global $openid;
-
-	$redirect_to = urldecode($_REQUEST['redirect_to']);
-		
-	if (empty($identity_url)) {
-		openid_set_error('Unable to authenticate OpenID.');
-		wp_safe_redirect(get_option('siteurl') . '/wp-login.php');
-		exit;
-	}
-		
-	openid_set_current_user($identity_url);
-
-	if (!is_user_logged_in()) {
-		if ( get_option('users_can_register') ) {
-			$user_data =& openid_get_user_data($identity_url);
-			$user = openid_create_new_user($identity_url, $user_data);
-			openid_set_current_user($user->ID);
-		} else {
-			// TODO - Start a registration loop in WPMU.
-			openid_set_error('OpenID authentication valid, but unable '
-			. 'to find a WordPress account associated with this OpenID.<br /><br />'
-			. 'Enable "Anyone can register" to allow creation of new accounts via OpenID.');
-			wp_safe_redirect(get_option('siteurl') . '/wp-login.php');
-			exit;
-		}
-
-	}
-		
-	if (empty($redirect_to)) {
-		$redirect_to = 'wp-admin/';
-	}
-	if ($redirect_to == 'wp-admin/') {
-		if (!current_user_can('edit_posts')) {
-			$redirect_to .= 'profile.php';
-		}
-	}
-	if (!preg_match('#^(http|\/)#', $redirect_to)) {
-		$wpp = parse_url(get_option('siteurl'));
-		$redirect_to = $wpp['path'] . '/' . $redirect_to;
-	}
-
-	if (function_exists('wp_safe_redirect')) {
-		wp_safe_redirect( $redirect_to );
-	} else {
-		wp_redirect( $redirect_to );
-	}
-		
-	exit;
-}
-
-
-/**
- * Action method for completing the 'comment' action.  This action is used when leaving a comment.
- *
- * @param string $identity_url verified OpenID URL
- */
-function _finish_openid_comment($identity_url) {
-	global $openid;
-
-	if (empty($identity_url)) {
-		openid_repost_comment_anonymously($_SESSION['oid_comment_post']);
-	}
-		
-	openid_set_current_user($identity_url);
-		
-	if (is_user_logged_in()) {
-		// simulate an authenticated comment submission
-		$_SESSION['oid_comment_post']['author'] = null;
-		$_SESSION['oid_comment_post']['email'] = null;
-		$_SESSION['oid_comment_post']['url'] = null;
-	} else {
-		// try to get user data from the verified OpenID
-		$user_data =& openid_get_user_data($identity_url);
-
-		if (!empty($user_data['display_name'])) {
-			$_SESSION['oid_comment_post']['author'] = $user_data['display_name'];
-		}
-		if (!empty($user_data['user_email'])) {
-			$_SESSION['oid_comment_post']['email'] = $user_data['user_email'];
-		}
-		$_SESSION['oid_comment_post']['url'] = $identity_url;
-	}
-		
-	// record that we're about to post an OpenID authenticated comment.
-	// We can't actually record it in the database until after the repost below.
-	$_SESSION['oid_posted_comment'] = true;
-
-	$wpp = parse_url(get_option('siteurl'));
-	openid_repost($wpp['path'] . '/wp-comments-post.php',
-	array_filter($_SESSION['oid_comment_post']));
-}
-
-
-/**
- * Action method for completing the 'verify' action.  This action is used adding an identity URL to a
- * WordPress user through the admin interface.
- *
- * @param string $identity_url verified OpenID URL
- */
-function _finish_openid_verify($identity_url) {
-	global $openid;
-
-	$user = wp_get_current_user();
-	if (empty($identity_url)) {
-		openid_set_error('Unable to authenticate OpenID.');
-	} else {
-		$store =& openid_getStore();
-		if( !$store->insert_identity($user->ID, $identity_url) ) {
-			openid_set_error('OpenID assertion successful, but this URL is already claimed by '
-			. 'another user on this blog. This is probably a bug. ' . $identity_url);
-		} else {
-			$openid->action = 'success';
-			$openid->message = "Successfully added Identity URL: $identity_url.";
-			
-			// ensure that profile URL is a verified Identity URL
-			set_include_path( dirname(__FILE__) . PATH_SEPARATOR . get_include_path() );
-			require_once 'Auth/OpenID.php';
-			if ($GLOBALS['wp_version'] >= '2.3') {
-				require_once(ABSPATH . 'wp-admin/includes/admin.php');
-			} else {
-				require_once(ABSPATH . WPINC . '/registration.php');
-			}
-			$identities = $store->get_identities($user->ID);
-			$current_url = Auth_OpenID::normalizeUrl($user->user_url);
-
-			$verified_url = false;
-			if (!empty($identities)) {
-				foreach ($identities as $id) {
-					if ($id['url'] == $current_url) {
-						$verified_url = true;
-						break;
-					}
-				}
-
-				if (!$verified_url) {
-					$user->user_url = $identity_url;
-					wp_update_user( get_object_vars( $user ));
-					$openid->message .= '<br /><strong>Note:</strong> For security reasons, your profile URL has been updated to match your Identity URL.';
-				}
-			}
-		}
-	}
-
-	$_SESSION['oid_message'] = $openid->message;
-	$_SESSION['oid_action'] = $openid->action;	
-	$wpp = parse_url(get_option('siteurl'));
-	$redirect_to = $wpp['path'] . '/wp-admin/' . (current_user_can('edit_users') ? 'users.php' : 'profile.php') . '?page=openid';
-	if (function_exists('wp_safe_redirect')) {
-		wp_safe_redirect( $redirect_to );
-	} else {
-		wp_redirect( $redirect_to );
-	}
-	exit;
-}
-
-
-
-
-/**
  * Create a new WordPress user with the specified identity URL and user data.
  *
  * @param string $identity_url OpenID to associate with the newly
@@ -980,68 +686,9 @@ function openid_get_user_data_hcard($identity_url, $data) {
 	return $data;
 }
 
-/**
- * Retrieve user data from comment form.
- *
- * @param string $identity_url OpenID to get user data about
- * @param reference $data reference to user data array
- * @see get_user_data
- */
-function openid_get_user_data_form($identity_url, $data) {
-	$comment = $_SESSION['oid_comment_post'];
 
-	if (!$comment) {
-		return $data;
-	}
-
-	if ($comment['email']) {
-		$data['user_email'] = $comment['email'];
-	}
-
-	if ($comment['author']) {
-		$data['nickname'] = $comment['author'];
-		$data['user_nicename'] = $comment['author'];
-		$data['display_name'] = $comment['author'];
-	}
-
-	return $data;
-}
-
-
-
-/**
- * hook in and call when user is updating their profile URL... make sure it is an OpenID they control.
- */
-function openid_personal_options_update() {
-	set_include_path( dirname(__FILE__) . PATH_SEPARATOR . get_include_path() );
-	require_once 'Auth/OpenID.php';
-	$claimed = Auth_OpenID::normalizeUrl($_POST['url']);
-
-	$user = wp_get_current_user();
-
-	openid_init();
-	$store =& openid_getStore();
-	$identities = $store->get_identities($user->ID);
-
-	if (!empty($identities)) {
-		$urls = array();
-		foreach ($identities as $id) {
-			if ($id['url'] == $claimed) {
-				return; 
-			} else {
-				$urls[] = $id['url'];
-			}
-		}
-
-		wp_die('For security reasons, your profile URL must be one of your claimed '
-		   . 'Identity URLs: <ul><li>' . join('</li><li>', $urls) . '</li></ul>');
-	}
-}
-
-
-
-
-function openid_xrds_simple($xrds) {
+function openid_consumer_xrds_simple($xrds) {
+	// OpenID Consumer Service
 	$xrds = xrds_add_service($xrds, 'main', 'OpenID Consumer Service', 
 		array(
 			'Type' => array(array('content' => 'http://specs.openid.net/auth/2.0/return_to') ),
@@ -1049,6 +696,7 @@ function openid_xrds_simple($xrds) {
 		)
 	);
 
+	// Identity in the Browser Login Service
 	$siteurl = function_exists('site_url') ? site_url('/wp-login.php', 'login_post') : get_option('siteurl').'/wp-login.php';
 	$xrds = xrds_add_service($xrds, 'main', 'Identity in the Browser Login Service', 
 		array(
@@ -1062,6 +710,7 @@ function openid_xrds_simple($xrds) {
 		)
 	);
 
+	// Identity in the Browser Indicator Service
 	$xrds = xrds_add_service($xrds, 'main', 'Identity in the Browser Indicator Service', 
 		array(
 			'Type' => array(array('content' => 'http://specs.openid.net/idib/1.0/indicator') ),
@@ -1072,6 +721,7 @@ function openid_xrds_simple($xrds) {
 	return $xrds;
 }
 
+
 /**
  * Parse the WordPress request.  If the pagename is 'openid_consumer', then the request
  * is an OpenID response and should be handled accordingly.
@@ -1079,21 +729,26 @@ function openid_xrds_simple($xrds) {
  * @param WP $wp WP instance for the current request
  */
 function openid_parse_request($wp) {
+	
+	// Identity in the Browser Indicator Service
 	if (array_key_exists('openid_check_login', $_REQUEST)) {
 		echo is_user_logged_in() ? 'true' : 'false';
 		exit;
 	}
 
+	// OpenID Consumer Service
 	if (array_key_exists('openid_consumer', $_REQUEST) && $_REQUEST['action']) {
 		openid_init();
 		finish_openid($_REQUEST['action']);
 	}
 }
 
+
 function openid_set_error($error) {
 	$_SESSION['oid_error'] = $error;
 	return;
 }
+
 
 function openid_table_prefix() {
 	global $wpdb;
@@ -1110,6 +765,7 @@ function openid_identity_table() {
 	return (defined('CUSTOM_OPENID_IDENTITY_TABLE') ? CUSTOM_OPENID_IDENTITY_TABLE : penid_table_prefix() . 'openid_identities'); 
 }
 
+
 /**
  * Initialize global OpenID instance.
  */
@@ -1121,17 +777,7 @@ function openid_init() {
 	$GLOBALS['openid'] = new WordPressOpenID();
 }
 
-/**
- * Mark the specified comment as an OpenID comment.
- *
- * @param int $id id of comment to set as OpenID
- */
-function set_comment_openid($id) {
-	global $wpdb;
 
-	$comments_table = openid_comments_table();
-	$wpdb->query("UPDATE $comments_table SET openid='1' WHERE comment_ID='$id' LIMIT 1");
-}
 
 
 /**
