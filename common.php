@@ -75,20 +75,21 @@ function openid_uptodate() {
  * @return WordPressOpenID_Store internal SQL store
  */
 function openid_getStore() {
-	$openid = openid_init();
+	static $store;
 
-	if (!isset($openid->store)) {
+	if (!$store) {
 		set_include_path( dirname(__FILE__) . PATH_SEPARATOR . get_include_path() );
 		require_once 'store.php';
 
-		$openid->store = new WordPressOpenID_Store($openid);
-		if (null === $openid->store) {
+		$store = new WordPressOpenID_Store($openid);
+		if (null === $store) {
+			$openid = openid_init();
 			$openid->log->err('OpenID store could not be created properly.');
 			$openid->enabled = false;
 		}
 	}
 
-	return $openid->store;
+	return $store;
 }
 
 
@@ -415,8 +416,7 @@ function openid_start_login( $claimed_url, $action, $arguments = null) {
 		
 
 	/* If we've never heard of this url before, do attribute query */
-	$store =& openid_getStore();
-	if( $store->get_user_by_identity( $auth_request->endpoint->identity_url ) == NULL ) {
+	if( get_user_by_openid( $auth_request->endpoint->identity_url ) == NULL ) {
 		$attribute_query = true;
 	}
 	if ($attribute_query) {
@@ -471,8 +471,7 @@ function openid_set_current_user($identity, $remember = true) {
 	if (is_numeric($identity)) {
 		$user_id = $identity;
 	} else {
-		$store =& openid_getStore();
-		$user_id = $store->get_user_by_identity( $identity );
+		$user_id = get_user_by_openid( $identity );
 	}
 
 	if (!$user_id) return;
@@ -761,7 +760,7 @@ function openid_usermeta_table() {
 	return (defined('CUSTOM_USER_META_TABLE') ? CUSTOM_USER_META_TABLE : openid_table_prefix() . 'usermeta'); 
 }
 function openid_identity_table() { 
-	return (defined('CUSTOM_OPENID_IDENTITY_TABLE') ? CUSTOM_OPENID_IDENTITY_TABLE : penid_table_prefix() . 'openid_identities'); 
+	return (defined('CUSTOM_OPENID_IDENTITY_TABLE') ? CUSTOM_OPENID_IDENTITY_TABLE : openid_table_prefix() . 'openid_identities'); 
 }
 
 

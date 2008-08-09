@@ -21,19 +21,11 @@ class WordPressOpenID_Store extends Auth_OpenID_MySQLStore {
 	{
 		global $wpdb;
 
-		$table_prefix = isset($wpdb->base_prefix) ? $wpdb->base_prefix : $wpdb->prefix;
-
-		$this->associations_table_name = $table_prefix . 'openid_associations';
-		$this->nonces_table_name = $table_prefix . 'openid_nonces';
-		$this->identity_table_name =  $table_prefix . 'openid_identities';
-		$this->comments_table_name =  $table_prefix . 'comments';
-		$this->usermeta_table_name =  $wpdb->prefix . 'usermeta';
-
-		if (defined('CUSTOM_OPENID_IDENTITY_TABLE'))
-			$this->identity_table_name =  CUSTOM_OPENID_IDENTITY_TABLE;
-
-		if (defined('CUSTOM_USER_META_TABLE'))
-			$this->usermeta_table_name =  CUSTOM_USER_META_TABLE;
+		$this->associations_table_name = openid_associations_table();
+		$this->nonces_table_name = openid_nonces_table();
+		$this->identity_table_name =  openid_identity_table();
+		$this->comments_table_name =  openid_comments_table();
+		$this->usermeta_table_name =  openid_usermeta_table();
 
 		$conn = new WordPressOpenID_Connection( $wpdb );
 		parent::Auth_OpenID_MySQLStore(
@@ -67,7 +59,6 @@ class WordPressOpenID_Store extends Auth_OpenID_MySQLStore {
 	 */
 	function check_tables($retry=true) {
 		global $wpdb;
-		$openid = openid_init();
 
 		$ok = true;
 		$message = array();
@@ -86,12 +77,8 @@ class WordPressOpenID_Store extends Auth_OpenID_MySQLStore {
 		}
 			
 		if( $retry and !$ok) {
-			$openid->setStatus( 'Database Tables', false,
-					'Tables not created properly. Trying to create..' );
 			$this->create_tables();
 			$ok = $this->check_tables( false );
-		} else {
-			$openid->setStatus( 'Database Tables', $ok?'info':false, $message );
 		}
 		return $ok;
 	}
@@ -103,7 +90,6 @@ class WordPressOpenID_Store extends Auth_OpenID_MySQLStore {
 	function create_tables()
 	{
 		global $wp_version, $wpdb;
-		$openid = openid_init();
 
 		if ($wp_version >= '2.3') {
 			require_once(ABSPATH . 'wp-admin/includes/upgrade.php');
@@ -137,6 +123,7 @@ class WordPressOpenID_Store extends Auth_OpenID_MySQLStore {
 				"ALTER TABLE $this->comments_table_name ADD `openid` TINYINT(1) NOT NULL DEFAULT '0'");
 
 		if (!$result) {
+			$openid = openid_init();
 			$openid->log->err('unable to add column `openid` to comments table.');
 		}
 
@@ -153,9 +140,9 @@ class WordPressOpenID_Store extends Auth_OpenID_MySQLStore {
 	function destroy_tables() {
 		global $wpdb;
 
-		$sql = 'drop table ' . WordPressOpenID::associations_table_name();
+		$sql = 'drop table ' . openid_associations_table();
 		$wpdb->query($sql);
-		$sql = 'drop table ' . WordPressOpenID::nonces_table_name();
+		$sql = 'drop table ' . openid_nonces_table();
 		$wpdb->query($sql);
 
 		// just in case they've upgraded from an old version

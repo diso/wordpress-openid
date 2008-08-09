@@ -75,128 +75,128 @@ function openid_admin_panels() {
  */
 function openid_options_page() {
 	global $wp_version;
-	$openid = openid_init();
 
-		openid_late_bind();
+	openid_late_bind();
+
+	if ( isset($_REQUEST['action']) ) {
+		switch($_REQUEST['action']) {
+			case 'rebuild_tables' :
+				check_admin_referer('wp-openid-info_rebuild_tables');
+				$store = openid_getStore();
+				$store->destroy_tables();
+				$store->create_tables();
+				echo '<div class="updated"><p><strong>'.__('OpenID tables rebuilt.', 'openid').'</strong></p></div>';
+				break;
+		}
+	}
+
+	// if we're posted back an update, let's set the values here
+	if ( isset($_POST['info_update']) ) {
 	
-		if ( isset($_REQUEST['action']) ) {
-			switch($_REQUEST['action']) {
-				case 'rebuild_tables' :
-					check_admin_referer('wp-openid-info_rebuild_tables');
-					$openid->store->destroy_tables();
-					$openid->store->create_tables();
-					echo '<div class="updated"><p><strong>'.__('OpenID tables rebuilt.', 'openid').'</strong></p></div>';
-					break;
-			}
-		}
+		check_admin_referer('wp-openid-info_update');
 
-		// if we're posted back an update, let's set the values here
-		if ( isset($_POST['info_update']) ) {
+		$error = '';
 		
-			check_admin_referer('wp-openid-info_update');
+		update_option( 'oid_enable_commentform', isset($_POST['enable_commentform']) ? true : false );
+		update_option( 'oid_enable_approval', isset($_POST['enable_approval']) ? true : false );
+		update_option( 'oid_enable_email_mapping', isset($_POST['enable_email_mapping']) ? true : false );
 
-			$error = '';
-			
-			update_option( 'oid_enable_commentform', isset($_POST['enable_commentform']) ? true : false );
-			update_option( 'oid_enable_approval', isset($_POST['enable_approval']) ? true : false );
-			update_option( 'oid_enable_email_mapping', isset($_POST['enable_email_mapping']) ? true : false );
-
-			if ($error !== '') {
-				echo '<div class="error"><p><strong>'.__('At least one of OpenID options was NOT updated', 'openid').'</strong>'.$error.'</p></div>';
-			} else {
-				echo '<div class="updated"><p><strong>'.__('Open ID options updated', 'openid').'</strong></p></div>';
-			}
-			
+		if ($error !== '') {
+			echo '<div class="error"><p><strong>'.__('At least one of OpenID options was NOT updated', 'openid').'</strong>'.$error.'</p></div>';
+		} else {
+			echo '<div class="updated"><p><strong>'.__('Open ID options updated', 'openid').'</strong></p></div>';
 		}
-
 		
-		// Display the options page form
-		$siteurl = get_option('home');
-		if( substr( $siteurl, -1, 1 ) !== '/' ) $siteurl .= '/';
-		?>
-		<div class="wrap">
-			<h2><?php _e('WP-OpenID Registration Options', 'openid') ?></h2>
+	}
 
-			<?php if ($wp_version >= '2.3') { openid_printSystemStatus(); } ?>
+	
+	// Display the options page form
+	$siteurl = get_option('home');
+	if( substr( $siteurl, -1, 1 ) !== '/' ) $siteurl .= '/';
+	?>
+	<div class="wrap">
+		<h2><?php _e('WP-OpenID Registration Options', 'openid') ?></h2>
 
-			<form method="post">
+		<?php if ($wp_version >= '2.3') { openid_printSystemStatus(); } ?>
 
-				<?php if ($wp_version < '2.3') { ?>
-				<p class="submit"><input type="submit" name="info_update" value="<?php _e('Update Options') ?> &raquo;" /></p>
-				<?php } ?>
+		<form method="post">
 
-				<table class="form-table optiontable editform" cellspacing="2" cellpadding="5" width="100%">
-					<tr valign="top">
-						<th style="width: 33%" scope="row"><?php _e('Automatic Approval:', 'openid') ?></th>
-						<td>
-							<p><input type="checkbox" name="enable_approval" id="enable_approval" <?php 
-								echo get_option('oid_enable_approval') ? 'checked="checked"' : ''; ?> />
-								<label for="enable_approval"><?php _e('Enable OpenID comment auto-approval', 'openid') ?></label>
+			<?php if ($wp_version < '2.3') { ?>
+			<p class="submit"><input type="submit" name="info_update" value="<?php _e('Update Options') ?> &raquo;" /></p>
+			<?php } ?>
 
-							<p><?php _e('For now this option will cause comments made with OpenIDs '
-							. 'to be automatically approved.  Since most spammers haven\'t started '
-							. 'using OpenID yet, this is probably pretty safe.  More importantly '
-							. 'however, this could be a foundation on which to build more advanced '
-							. 'automatic approval such as whitelists or a third-party trust service.', 'openid') ?>
-							</p>
+			<table class="form-table optiontable editform" cellspacing="2" cellpadding="5" width="100%">
+				<tr valign="top">
+					<th style="width: 33%" scope="row"><?php _e('Automatic Approval:', 'openid') ?></th>
+					<td>
+						<p><input type="checkbox" name="enable_approval" id="enable_approval" <?php 
+							echo get_option('oid_enable_approval') ? 'checked="checked"' : ''; ?> />
+							<label for="enable_approval"><?php _e('Enable OpenID comment auto-approval', 'openid') ?></label>
 
-							<p><?php _e('Note that this option will cause OpenID authenticated comments '
-							. 'to appear, even if you have enabled the option, "An administrator must '
-							. 'always approve the comment".', 'openid') ?></p>
-							
-						</td>
-					</tr>
+						<p><?php _e('For now this option will cause comments made with OpenIDs '
+						. 'to be automatically approved.  Since most spammers haven\'t started '
+						. 'using OpenID yet, this is probably pretty safe.  More importantly '
+						. 'however, this could be a foundation on which to build more advanced '
+						. 'automatic approval such as whitelists or a third-party trust service.', 'openid') ?>
+						</p>
 
-					<tr valign="top">
-						<th style="width: 33%" scope="row"><?php _e('Comment Form:', 'openid') ?></th>
-						<td>
-							<p><input type="checkbox" name="enable_commentform" id="enable_commentform" <?php
-							if( get_option('oid_enable_commentform') ) echo 'checked="checked"'
-							?> />
-								<label for="enable_commentform"><?php _e('Add OpenID text to the WordPress post comment form.', 'openid') ?></label></p>
+						<p><?php _e('Note that this option will cause OpenID authenticated comments '
+						. 'to appear, even if you have enabled the option, "An administrator must '
+						. 'always approve the comment".', 'openid') ?></p>
+						
+					</td>
+				</tr>
 
-							<p><?php printf(__('This will work for most themes derived from Kubrick or Sandbox.  '
-							. 'Template authors can tweak the comment form as described in the %sreadme%s.', 'openid'), 
-							'<a href="'. get_option('siteurl') . '/' . PLUGINDIR . '/openid/readme.txt">', '</a>') ?></p>
-							<br />
-						</td>
-					</tr>
+				<tr valign="top">
+					<th style="width: 33%" scope="row"><?php _e('Comment Form:', 'openid') ?></th>
+					<td>
+						<p><input type="checkbox" name="enable_commentform" id="enable_commentform" <?php
+						if( get_option('oid_enable_commentform') ) echo 'checked="checked"'
+						?> />
+							<label for="enable_commentform"><?php _e('Add OpenID text to the WordPress post comment form.', 'openid') ?></label></p>
 
-					<?php /*
-					<tr valign="top">
-						<th style="width: 33%" scope="row"><?php _e('Email Mapping:', 'openid') ?></th>
-						<td>
-							<p><input type="checkbox" name="enable_email_mapping" id="enable_email_mapping" <?php
-							if( get_option('oid_enable_email_mapping') ) echo 'checked="checked"'
-							?> />
-								<label for="enable_email_mapping"><?php _e('Enable email addresses to be mapped to OpenID URLs.', 'openid') ?></label></p>
+						<p><?php printf(__('This will work for most themes derived from Kubrick or Sandbox.  '
+						. 'Template authors can tweak the comment form as described in the %sreadme%s.', 'openid'), 
+						'<a href="'. get_option('siteurl') . '/' . PLUGINDIR . '/openid/readme.txt">', '</a>') ?></p>
+						<br />
+					</td>
+				</tr>
 
-							<p><?php printf(__('This feature uses the Email-To-URL mapping specification to allow OpenID authentication'
-							. ' based on an email address.  If enabled, commentors who do not supply a valid OpenID URL will have their'
-							. ' supplied email address mapped to an OpenID.  If their email provider does not currently support email to'
-							. ' url mapping, the default provider %s will be used.', 'openid'), '<a href="http://emailtoid.net/" target="_blank">Emailtoid.net</a>') ?></p>
-							<br />
-						</td>
-					</tr>
-					*/ ?>
+				<?php /*
+				<tr valign="top">
+					<th style="width: 33%" scope="row"><?php _e('Email Mapping:', 'openid') ?></th>
+					<td>
+						<p><input type="checkbox" name="enable_email_mapping" id="enable_email_mapping" <?php
+						if( get_option('oid_enable_email_mapping') ) echo 'checked="checked"'
+						?> />
+							<label for="enable_email_mapping"><?php _e('Enable email addresses to be mapped to OpenID URLs.', 'openid') ?></label></p>
 
-				</table>
+						<p><?php printf(__('This feature uses the Email-To-URL mapping specification to allow OpenID authentication'
+						. ' based on an email address.  If enabled, commentors who do not supply a valid OpenID URL will have their'
+						. ' supplied email address mapped to an OpenID.  If their email provider does not currently support email to'
+						. ' url mapping, the default provider %s will be used.', 'openid'), '<a href="http://emailtoid.net/" target="_blank">Emailtoid.net</a>') ?></p>
+						<br />
+					</td>
+				</tr>
+				*/ ?>
 
-				<p><?php printf(__('Occasionally, the WP-OpenID tables don\'t get setup properly, and it may help '
-					. 'to %srebuild the tables%s.  Don\'t worry, this won\'t cause you to lose any data... it just '
-					. 'rebuilds a couple of tables that hold only temporary data.', 'openid'), 
-				'<a href="'.wp_nonce_url(sprintf('?page=%s&action=rebuild_tables', $_REQUEST['page']), 'wp-openid-info_rebuild_tables').'">', '</a>') ?></p>
+			</table>
 
-				<?php wp_nonce_field('wp-openid-info_update'); ?>
-				<p class="submit"><input type="submit" name="info_update" value="<?php _e('Update Options') ?> &raquo;" /></p>
-			</form>
+			<p><?php printf(__('Occasionally, the WP-OpenID tables don\'t get setup properly, and it may help '
+				. 'to %srebuild the tables%s.  Don\'t worry, this won\'t cause you to lose any data... it just '
+				. 'rebuilds a couple of tables that hold only temporary data.', 'openid'), 
+			'<a href="'.wp_nonce_url(sprintf('?page=%s&action=rebuild_tables', $_REQUEST['page']), 'wp-openid-info_rebuild_tables').'">', '</a>') ?></p>
 
-		</div>
-			<?php
-		if ($wp_version < '2.3') {
-			echo '<br />';
-			openid_printSystemStatus();
-		}
+			<?php wp_nonce_field('wp-openid-info_update'); ?>
+			<p class="submit"><input type="submit" name="info_update" value="<?php _e('Update Options') ?> &raquo;" /></p>
+		</form>
+
+	</div>
+		<?php
+	if ($wp_version < '2.3') {
+		echo '<br />';
+		openid_printSystemStatus();
+	}
 } // end function options_page
 
 
@@ -253,7 +253,7 @@ function openid_profile_panel() {
 		</p>
 	<?php
 	
-	$urls = $openid->store->get_identities($user->ID);
+	$urls = get_user_openids($user->ID);
 
 	if( count($urls) ) : ?>
 		<p>There are <?php echo count($urls); ?> identities associated with this WordPress user.</p>
@@ -313,18 +313,19 @@ function openid_printSystemStatus() {
 		$paths[$i] = realpath($paths[$i]); 
 	}
 	
-	$openid->setStatus( 'PHP version', 'info', phpversion() );
-	$openid->setStatus( 'PHP memory limit', 'info', ini_get('memory_limit') );
-	$openid->setStatus( 'Include Path', 'info', $paths );
+	$status = array();
+	$status[] = array( 'PHP version', 'info', phpversion() );
+	$status[] = array( 'PHP memory limit', 'info', ini_get('memory_limit') );
+	$status[] = array( 'Include Path', 'info', $paths );
 	
-	$openid->setStatus( 'WordPress version', 'info', $wp_version );
-	$openid->setStatus( 'MySQL version', 'info', function_exists('mysql_get_client_info') ? mysql_get_client_info() : 'Mysql client information not available. Very strange, as WordPress requires MySQL.' );
+	$status[] = array( 'WordPress version', 'info', $wp_version );
+	$status[] = array( 'MySQL version', 'info', function_exists('mysql_get_client_info') ? mysql_get_client_info() : 'Mysql client information not available. Very strange, as WordPress requires MySQL.' );
 
-	$openid->setStatus('WordPress\' table prefix', 'info', isset($wpdb->base_prefix) ? $wpdb->base_prefix : $wpdb->prefix );
+	$status[] = array('WordPress\' table prefix', 'info', isset($wpdb->base_prefix) ? $wpdb->base_prefix : $wpdb->prefix );
 	
 	
 	if ( extension_loaded('suhosin') ) {
-		$openid->setStatus( 'Curl', false, 'Hardened php (suhosin) extension active -- curl version checking skipped.' );
+		$status[] = array( 'Curl', false, 'Hardened php (suhosin) extension active -- curl version checking skipped.' );
 	} else {
 		$curl_message = '';
 		if( function_exists('curl_version') ) {
@@ -343,23 +344,23 @@ function openid_printSystemStatus() {
 				}
 			}
 		}
-		$openid->setStatus( 'Curl Support', function_exists('curl_version'), function_exists('curl_version') ? $curl_message :
+		$status[] = array( 'Curl Support', function_exists('curl_version'), function_exists('curl_version') ? $curl_message :
 				'This PHP installation does not have support for libcurl. Some functionality, such as fetching https:// URLs, will be missing and performance will slightly impared. See <a href="http://www.php.net/manual/en/ref.curl.php">php.net/manual/en/ref.curl.php</a> about enabling libcurl support for PHP.');
 	}
 
 	if (extension_loaded('gmp') and @gmp_init(1)) {
-		$openid->setStatus( 'Big Integer support', true, 'GMP is installed.' );
+		$status[] = array( 'Big Integer support', true, 'GMP is installed.' );
 	} elseif (extension_loaded('bcmath') and @bcadd(1,1)==2) {
-		$openid->setStatus( 'Big Integer support', true, 'BCMath is installed (though <a href="http://www.php.net/gmp">GMP</a> is preferred).' );
+		$status[] = array( 'Big Integer support', true, 'BCMath is installed (though <a href="http://www.php.net/gmp">GMP</a> is preferred).' );
 	} elseif (defined('Auth_OpenID_NO_MATH_SUPPORT')) {
-		$openid->setStatus( 'Big Integer support', false, 'The OpenID Library is operating in Dumb Mode. Recommend installing <a href="http://www.php.net/gmp">GMP</a> support.' );
+		$status[] = array( 'Big Integer support', false, 'The OpenID Library is operating in Dumb Mode. Recommend installing <a href="http://www.php.net/gmp">GMP</a> support.' );
 	}
 
 	
-	$openid->setStatus( 'Plugin Revision', 'info', WPOPENID_PLUGIN_REVISION);
-	$openid->setStatus( 'Plugin Database Revision', 'info', get_option('oid_db_revision'));
+	$status[] = array( 'Plugin Revision', 'info', WPOPENID_PLUGIN_REVISION);
+	$status[] = array( 'Plugin Database Revision', 'info', get_option('oid_db_revision'));
 	
-	$openid->setStatus( '<strong>Overall Plugin Status</strong>', ($openid->enabled), 
+	$status[] = array( '<strong>Overall Plugin Status</strong>', ($openid->enabled), 
 		($openid->enabled ? '' : 'There are problems above that must be dealt with before the plugin can be used.') );
 
 
@@ -373,17 +374,18 @@ function openid_printSystemStatus() {
 		. '</strong></p>';
 	}
 	echo '<div>';
-	foreach( $openid->status as $k=>$v ) {
+	foreach( $status as $s ) {
+		list ($name, $state, $message) = $s;
 		echo '<div><strong>';
-		if( $v['state'] === false ) {
-			echo "<span style='color:red;'>[".__('FAIL', 'openid')."]</span> $k";
-		} elseif( $v['state'] === true ) {
-			echo "<span style='color:green;'>[".__('OK', 'openid')."]</span> $k";
+		if( $state === false ) {
+			echo "<span style='color:red;'>[".__('FAIL', 'openid')."]</span> $name";
+		} elseif( $state === true ) {
+			echo "<span style='color:green;'>[".__('OK', 'openid')."]</span> $name";
 		} else {
-			echo "<span style='color:grey;'>[".__('INFO', 'openid')."]</span> $k";
+			echo "<span style='color:grey;'>[".__('INFO', 'openid')."]</span> $name";
 		}
-		echo ($v['message'] ? ': ' : '') . '</strong>';
-		echo (is_array($v['message']) ? '<ul><li>' . implode('</li><li>', $v['message']) . '</li></ul>' : $v['message']);
+		echo ($message ? ': ' : '') . '</strong>';
+		echo (is_array($message) ? '<ul><li>' . implode('</li><li>', $message) . '</li></ul>' : $message);
 		echo '</div>';
 	}
 	echo '</div></div>';
@@ -447,10 +449,9 @@ function openid_profile_management() {
 
 			$user = wp_get_current_user();
 
-			$store =& openid_getStore();
 			$auth_request = openid_begin_consumer($_POST['openid_url']);
 
-			$userid = $store->get_user_by_identity($auth_request->endpoint->claimed_id);
+			$userid = get_user_by_openid($auth_request->endpoint->claimed_id);
 
 			if ($userid) {
 				global $error;
@@ -496,7 +497,7 @@ function openid_profile_drop_identity($id) {
 		return;
 	}
 
-	$identity_urls = $store->get_identities($user->ID);
+	$identity_urls = get_user_openids($user->ID);
 	if (sizeof($identity_urls) == 1 && !$_REQUEST['confirm']) {
 		$openid->message = 'This is your last identity URL.  Are you sure you want to delete it? Doing so may interfere with your ability to login.<br /><br /> '
 		. '<a href="?confirm=true&'.$_SERVER['QUERY_STRING'].'">Yes I\'m sure.  Delete it</a>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;'
@@ -521,7 +522,7 @@ function openid_profile_drop_identity($id) {
 		} else {
 			require_once(ABSPATH . WPINC . '/registration.php');
 		}
-		$identities = $store->get_identities($user->ID);
+		$identities = get_user_openids($user->ID);
 		$current_url = Auth_OpenID::normalizeUrl($user->user_url);
 
 		$verified_url = false;
@@ -576,7 +577,7 @@ function _finish_openid_verify($identity_url) {
 			} else {
 				require_once(ABSPATH . WPINC . '/registration.php');
 			}
-			$identities = $store->get_identities($user->ID);
+			$identities = get_user_openids($user->ID);
 			$current_url = Auth_OpenID::normalizeUrl($user->user_url);
 
 			$verified_url = false;
@@ -621,8 +622,7 @@ function openid_personal_options_update() {
 	$user = wp_get_current_user();
 
 	openid_init();
-	$store =& openid_getStore();
-	$identities = $store->get_identities($user->ID);
+	$identities = get_user_openids($user->ID);
 
 	if (!empty($identities)) {
 		$urls = array();

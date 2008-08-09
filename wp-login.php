@@ -43,9 +43,10 @@ function openid_wp_authenticate( &$username ) {
 function openid_login_form_hide_username_password_errors($r) {
 	$openid = openid_init();
 
-	if( $_POST['openid_url']
-		or $_REQUEST['action'] == 'login'
-		or $_REQUEST['action'] == 'comment' ) return $openid->message;
+	if( $_POST['openid_url'] or $_REQUEST['action'] == 'login' or $_REQUEST['action'] == 'comment' ) {
+		return $openid->message;
+	}
+
 	return $r;
 }
 
@@ -91,8 +92,6 @@ function openid_wp_register_form() {
  * @param string $identity_url verified OpenID URL
  */
 function _finish_openid_login($identity_url) {
-	$openid = openid_init();
-
 	$redirect_to = urldecode($_REQUEST['redirect_to']);
 		
 	if (empty($identity_url)) {

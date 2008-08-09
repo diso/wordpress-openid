@@ -40,7 +40,6 @@ class WordPressOpenID {
 	var $consumer;
 
 	var $log;
-	var $status = array();
 
 	var $message;	  // Message to be displayed to the user.
 	var $action;	  // Internal action tag. 'success', 'warning', 'error', 'redirect'.
@@ -58,13 +57,6 @@ class WordPressOpenID {
 		// Set the log level
 		$wpopenid_log_level = constant('PEAR_LOG_' . strtoupper(WPOPENID_LOG_LEVEL));
 		$this->log->setMask(Log::UPTO($wpopenid_log_level));
-	}
-
-	/**
-	 * Set Status.
-	 **/
-	function setStatus($slug, $state, $message) {
-		$this->status[$slug] = array('state'=>$state,'message'=>$message);
 	}
 
 }
@@ -109,6 +101,9 @@ function is_comment_openid() {
  * @return array array of user's OpenID identities
  */
 function get_user_openids($user = null) {
+	// TODO: finish implementing
+	$store = openid_getStore();
+	return $store->get_identities($user);
 }
 
 
@@ -119,6 +114,9 @@ function get_user_openids($user = null) {
  * @return int|false ID of associated user, or false if no associated user
  */
 function get_user_by_openid($url) {
+	// TODO: finish implementing
+	$store = openid_getStore();
+	return $store->get_user_by_identity($url);
 }
 
 /**
