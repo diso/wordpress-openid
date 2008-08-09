@@ -6,25 +6,28 @@
 
 
 // add OpenID input field to wp-login.php
-add_action( 'init', 'wp_login_openid' ); // openid loop done
 add_action( 'login_head', 'openid_style');
 add_action( 'login_form', 'openid_wp_login_form');
 add_action( 'register_form', 'openid_wp_register_form');
 add_filter( 'login_errors', 'openid_login_form_hide_username_password_errors');
 add_action( 'wp_authenticate', 'openid_wp_authenticate' );
 
+// WordPress 2.5 has wp_authenticate in the wrong place
+if (strpos($wp_version, '2.5') == 0) {
+	add_action( 'init', 'wp25_login_openid' );
+}
+
 
 /**
  * If we're doing openid authentication ($_POST['openid_identifier'] is set), start the consumer & redirect
  * Otherwise, return and let WordPress handle the login and/or draw the form.
  *
- * @param string $username username provided in login form
+ * @param string $credentials username and password provided in login form
  */
-function openid_wp_authenticate( &$username ) {
+function openid_wp_authenticate(&$credentials) {
 	$openid = openid_init();
 
-	if( !empty( $_POST['openid_identifier'] ) ) {
-		if( !openid_late_bind() ) return; // something is broken
+	if(!empty($_POST['openid_identifier'])) {
 		$redirect_to = '';
 		if( !empty( $_REQUEST['redirect_to'] ) ) $redirect_to = $_REQUEST['redirect_to'];
 		openid_start_login( $_POST['openid_identifier'], 'login', array('redirect_to' => $redirect_to) );
@@ -147,20 +150,11 @@ function _finish_openid_login($identity_url) {
  * WordPress 2.5.x because it has the 'wp_authenticate' action call in the 
  * wrong place.
  */
-function wp_login_openid() {
-	global $wp_version;
-
-	// this is only needed in WordPress 2.5.x
-	if (strpos($wp_version, '2.5') != 0) {
-		return;
-	}
-
+function wp25_login_openid() {
 	$self = basename( $GLOBALS['pagenow'] );
 		
 	if ($self == 'wp-login.php' && !empty($_POST['openid_identifier'])) {
-		if (function_exists('wp_signon')) {
-			wp_signon(array('user_login'=>'openid', 'user_password'=>'openid'));
-		}
+		wp_signon(array('user_login'=>'openid', 'user_password'=>'openid'));
 	}
 }
 

@@ -123,8 +123,7 @@ class WordPressOpenID_Store extends Auth_OpenID_MySQLStore {
 				"ALTER TABLE $this->comments_table_name ADD `openid` TINYINT(1) NOT NULL DEFAULT '0'");
 
 		if (!$result) {
-			$openid = openid_init();
-			$openid->log->err('unable to add column `openid` to comments table.');
+			error_log('unable to add column `openid` to comments table.');
 		}
 
 		// update old style of marking openid comments and users
@@ -376,7 +375,7 @@ class Interpolater {
 	 */
 	function interpolate1($matches) {
 		if (!$this->values) {
-			trigger_error('Not enough values for format string', E_USER_ERROR);
+			error_log('Not enough values for format string');
 		}
 		$value = array_shift($this->values);
 		if (is_null($value)) {
@@ -427,7 +426,7 @@ class Interpolater {
 		$callback = array(&$this, 'interpolate1');
 		$s = preg_replace_callback($this->pattern, $callback, $format_string);
 		if ($this->values) {
-			trigger_error('Too many values for format string: ' . $format_string . " => " . implode(', ', $this->values), E_USER_ERROR);
+			error_log('Too many values for format string: ' . $format_string . " => " . implode(', ', $this->values));
 		}
 		$this->values = false;
 		return $s;

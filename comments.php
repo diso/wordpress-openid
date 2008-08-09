@@ -111,13 +111,11 @@ function openid_option_require_name_email( $value ) {
 		}
 	} else {
 		if (!empty($_POST['url'])) {
-			if (openid_late_bind()) {
-				// check if url is valid OpenID by forming an auth request
-				$auth_request = openid_begin_consumer($_POST['url']);
+			// check if url is valid OpenID by forming an auth request
+			$auth_request = openid_begin_consumer($_POST['url']);
 
-				if (null !== $auth_request) {
-					return false;
-				}
+			if (null !== $auth_request) {
+				return false;
 			}
 		}
 	}

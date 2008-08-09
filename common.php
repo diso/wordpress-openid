@@ -56,16 +56,16 @@ function openid_textdomain() {
 function openid_uptodate() {
 	$openid = openid_init();
 
-	$openid->log->debug('checking if database is up to date');
 	if( get_option('oid_db_revision') != WPOPENID_DB_REVISION ) {
 		$openid->enabled = false;
-		$openid->log->warning('Plugin database is out of date: ' . get_option('oid_db_revision') . ' != ' . WPOPENID_DB_REVISION);
+		error_log('Plugin database is out of date: ' . get_option('oid_db_revision') . ' != ' . WPOPENID_DB_REVISION);
 		update_option('oid_plugin_enabled', false);
 		return false;
 	}
 	$openid->enabled = (get_option('oid_plugin_enabled') == true );
 	return $openid->enabled;
 }
+// XXX - figure out when to perform  uptodate() checks and such (since late_bind is no more)
 
 
 /**
@@ -80,10 +80,10 @@ function openid_getStore() {
 		set_include_path( dirname(__FILE__) . PATH_SEPARATOR . get_include_path() );
 		require_once 'store.php';
 
-		$store = new WordPressOpenID_Store($openid);
+		$store = new WordPressOpenID_Store();
 		if (null === $store) {
+			error_log('OpenID store could not be created properly.');
 			$openid = openid_init();
-			$openid->log->err('OpenID store could not be created properly.');
 			$openid->enabled = false;
 		}
 	}
@@ -98,76 +98,30 @@ function openid_getStore() {
  * @return Auth_OpenID_Consumer OpenID consumer object
  */
 function openid_getConsumer() {
-	$openid = openid_init();
+	static $consumer;
 
-	if (!isset($openid->consumer)) {
+	if (!$consumer) {
+		// setup source of randomness
+		$f = @fopen( '/dev/urandom', 'r');
+		if ($f === false) {
+			define( 'Auth_OpenID_RAND_SOURCE', null );
+		}
+
 		set_include_path( dirname(__FILE__) . PATH_SEPARATOR . get_include_path() );
 		require_once 'Auth/OpenID/Consumer.php';
+		restore_include_path();
 
 		$store = openid_getStore();
-		$openid->consumer = new Auth_OpenID_Consumer($store);
-		if( null === $openid->consumer ) {
-			$openid->log->err('OpenID consumer could not be created properly.');
+		$consumer = new Auth_OpenID_Consumer($store);
+		if( null === $consumer ) {
+			error_log('OpenID consumer could not be created properly.');
+			$openid = openid_init();
 			$openid->enabled = false;
 		}
+
 	}
 
-	return $openid->consumer;
-}
-
-
-/**
- * Initialize required store and consumer and make a few sanity checks.  This method
- * does a lot of the heavy lifting to get everything initialized, so we don't call it
- * until we actually need it.
- */
-function openid_late_bind($reload = false) {
-	global $wpdb;
-	$openid = openid_init();
-
-	$openid->log->debug('beginning late binding');
-
-	$openid->enabled = true; // Be Optimistic
-	if( $openid->bind_done && !$reload ) {
-		$openid->log->debug('we\'ve already done the late bind... moving on');
-		return openid_uptodate();
-	}
-	$openid->bind_done = true;
-
-	$f = @fopen( '/dev/urandom', 'r');
-	if ($f === false) {
-		define( 'Auth_OpenID_RAND_SOURCE', null );
-	}
-		
-	// include required JanRain OpenID library files
-	set_include_path( dirname(__FILE__) . PATH_SEPARATOR . get_include_path() );
-	$openid->log->debug('temporary include path for importing = ' . get_include_path());
-	require_once('Auth/OpenID/Discover.php');
-	require_once('Auth/OpenID/DatabaseConnection.php');
-	require_once('Auth/OpenID/MySQLStore.php');
-	require_once('Auth/OpenID/Consumer.php');
-	require_once('Auth/OpenID/SReg.php');
-	restore_include_path();
-
-	$openid->log->debug("Bootstrap -- checking tables");
-	if( $openid->enabled ) {
-
-		$store =& openid_getStore();
-		if (!$store) return; 	// something broke
-		$openid->enabled = $store->check_tables();
-
-		if( !openid_uptodate() ) {
-			update_option('oid_plugin_enabled', true);
-			update_option('oid_plugin_revision', WPOPENID_PLUGIN_REVISION );
-			update_option('oid_db_revision', WPOPENID_DB_REVISION );
-			openid_uptodate();
-		}
-	} else {
-		$openid->message = 'WPOpenID Core is Disabled!';
-		update_option('oid_plugin_enabled', false);
-	}
-
-	return $openid->enabled;
+	return $consumer;
 }
 
 
@@ -177,14 +131,12 @@ function openid_late_bind($reload = false) {
  * @see register_activation_hook
  */
 function openid_activate_plugin() {
-	$start_mem = memory_get_usage();
-	$openid = openid_init();
-
+	//$start_mem = memory_get_usage();
 	$store =& openid_getStore();
 	$store->create_tables();
 
 	wp_schedule_event(time(), 'hourly', 'cleanup_openid');
-	//$openid->log->warning("activation memory usage: " . (int)((memory_get_usage() - $start_mem) / 1000));
+	//error_log("activation memory usage: " . (int)((memory_get_usage() - $start_mem) / 1000));
 }
 
 
@@ -192,7 +144,6 @@ function openid_activate_plugin() {
  * Cleanup expired nonces from the OpenID store.
  */
 function openid_cleanup_nonces() {
-	$openid = openid_init();
 	$store =& openid_getStore();
 	$store->cleanupNonces();
 }
@@ -214,10 +165,8 @@ function openid_deactivate_plugin() {
  * Customer error handler for calls into the JanRain library
  */
 function openid_customer_error_handler($errno, $errmsg, $filename, $linenum, $vars) {
-	$openid = openid_init();
-
 	if( (2048 & $errno) == 2048 ) return;
-	$openid->log->notice( "Library Error $errno: $errmsg in $filename :$linenum");
+	error_log( "Library Error $errno: $errmsg in $filename :$linenum");
 }
 
 
@@ -229,14 +178,12 @@ function openid_customer_error_handler($errno, $errmsg, $filename, $linenum, $va
  * @param string $return_to URL where the OpenID provider should return the user
  */
 function openid_doRedirect($auth_request, $trust_root, $return_to) {
-	$openid = openid_init();
-
 	if ($auth_request->shouldSendRedirect()) {
 		$trust_root = trailingslashit($trust_root);
 		$redirect_url = $auth_request->redirectURL($trust_root, $return_to);
 
 		if (Auth_OpenID::isFailure($redirect_url)) {
-			$openid->log->error('Could not redirect to server: '.$redirect_url->message);
+			error_log('Could not redirect to server: '.$redirect_url->message);
 		} else {
 			wp_redirect( $redirect_url );
 		}
@@ -245,7 +192,7 @@ function openid_doRedirect($auth_request, $trust_root, $return_to) {
 		$request_message = $auth_request->getMessage($trust_root, $return_to, false);
 
 		if (Auth_OpenID::isFailure($request_message)) {
-			$openid->log->error('Could not redirect to server: '.$request_message->message);
+			error_log('Could not redirect to server: '.$request_message->message);
 		} else {
 			openid_repost($auth_request->endpoint->server_url, $request_message->toPostArgs());
 		}
@@ -283,12 +230,6 @@ function finish_openid_auth() {
 
 			$identity_url = $openid->response->identity_url;
 			$escaped_url = htmlspecialchars($identity_url, ENT_QUOTES);
-			$openid->log->notice('Got back identity URL ' . $escaped_url);
-
-			if ($openid->response->endpoint->canonicalID) {
-				$openid->log->notice('XRI CanonicalID: ' . $openid->response->endpoint->canonicalID);
-			}
-
 			return $escaped_url;
 
 		default:
@@ -307,8 +248,6 @@ function finish_openid_auth() {
  * @return string generated username
  */
 function openid_generate_new_username($url) {
-	$openid = openid_init();
-
 	$base = openid_normalize_username($url);
 	$i='';
 	while(true) {
@@ -382,8 +321,6 @@ function openid_start_login( $claimed_url, $action, $arguments = null) {
 
 	if ( empty($claimed_url) ) return; // do nothing.
 		
-	if( !openid_late_bind() ) return; // something is broken
-
 	$auth_request = openid_begin_consumer( $claimed_url );
 
 	if ( null === $auth_request ) {
@@ -394,13 +331,9 @@ function openid_start_login( $claimed_url, $action, $arguments = null) {
 			$openid->message .= '<br />It looks like you entered an email address, but it '
 				. 'was not able to be transformed into a valid OpenID.';
 		}
-		$openid->log->debug('OpenIDConsumer: ' . $openid->message );
 		return;
 	}
 		
-	$openid->log->debug('OpenIDConsumer: Is an OpenID url. Starting redirect.');
-
-
 	// build return_to URL
 	$return_to = trailingslashit(get_option('home'));
 	$auth_request->return_to_args['openid_consumer'] = '1';
@@ -420,6 +353,7 @@ function openid_start_login( $claimed_url, $action, $arguments = null) {
 	}
 	if ($attribute_query) {
 		// SREG
+		require_once(dirname(__FILE__) . '/Auth/OpenID/SReg.php');
 		$sreg_request = Auth_OpenID_SRegRequest::build(array(),array('nickname','email','fullname'));
 		if ($sreg_request) $auth_request->addExtension($sreg_request);
 
@@ -443,8 +377,6 @@ function openid_start_login( $claimed_url, $action, $arguments = null) {
  * @return void
  */
 function openid_set_current_user($identity, $remember = true) {
-	$openid = openid_init();
-
 	if (is_numeric($identity)) {
 		$user_id = $identity;
 	} else {
@@ -476,8 +408,6 @@ function openid_set_current_user($identity, $remember = true) {
 function finish_openid($action) {
 	$openid = openid_init();
 
-	if( !openid_late_bind() ) return; // something is broken
-		
 	$identity_url = finish_openid_auth();
 		
 	if (!empty($action) && function_exists('_finish_openid_' . $action)) {
@@ -518,15 +448,10 @@ function openid_create_new_user($identity_url, &$user_data) {
 	$user_data['user_pass'] = substr( md5( uniqid( microtime() ) ), 0, 7);
 	$user_id = wp_insert_user( $user_data );
 		
-	$openid->log->debug("wp_create_user( $user_data )  returned $user_id ");
-
 	if( $user_id ) { // created ok
 
 		$user_data['ID'] = $user_id;
 		// XXX this all looks redundant, see openid_set_current_user
-
-		$openid->log->debug("OpenIDConsumer: Created new user $user_id : " . $user_data['user_login'] . " and metadata: "
-		. var_export( $user_data, true ) );
 
 		$user = new WP_User( $user_id );
 
@@ -534,7 +459,7 @@ function openid_create_new_user($identity_url, &$user_data) {
 			$openid->message = 'User was created fine, but wp_login() for the new user failed. '
 			. 'This is probably a bug.';
 			$openid->action= 'error';
-			$openid->log->err( $openid->message );
+			error_log($openid->message);
 			return;
 		}
 
@@ -545,10 +470,7 @@ function openid_create_new_user($identity_url, &$user_data) {
 		wp_setcookie( $user->user_login, md5($user->user_pass), true, '', '', true );
 
 		// Bind the provided identity to the just-created user
-		global $userdata;
-		$userdata = get_userdata( $user_id );
-		$store = openid_getStore();
-		$store->insert_identity($user_id, $identity_url);
+		openid_add_user_identity($user_id, $identity_url);
 
 		$openid->action = 'redirect';
 
@@ -559,7 +481,7 @@ function openid_create_new_user($identity_url, &$user_data) {
 		$openid->message = 'OpenID authentication successful, but failed to create WordPress user. '
 		. 'This is probably a bug.';
 		$openid->action= 'error';
-		$openid->log->error( $openid->message );
+		error_log($openid->message);
 	}
 
 }
@@ -579,8 +501,6 @@ function openid_create_new_user($identity_url, &$user_data) {
  * @return array user data
  */
 function openid_get_user_data($identity_url) {
-	$openid = openid_init();
-
 	$data = array(
 			'ID' => null,
 			'user_url' => $identity_url,
@@ -622,10 +542,10 @@ function openid_get_user_data_ax($identity_url, $data) {
 function openid_get_user_data_sreg($identity_url, $data) {
 	$openid = openid_init();
 
+	require_once(dirname(__FILE__) . '/Auth/OpenID/SReg.php');
 	$sreg_resp = Auth_OpenID_SRegResponse::fromSuccessResponse($openid->response);
 	$sreg = $sreg_resp->contents();
 
-	$openid->log->debug(var_export($sreg, true));
 	if (!$sreg) return $data;
 
 	if (array_key_exists('email', $sreg) && $sreg['email']) {
@@ -754,9 +674,6 @@ function openid_init() {
 	return $openid;
 }
 
-
-
-
 /**
  * Delete user.
  */
@@ -766,5 +683,10 @@ function delete_user_openids($userid) {
 	$store->drop_all_identities_for_user($userid);
 }
 
+
+function openid_add_user_identity($user_id, $identity_url) {
+	$store = openid_getStore();
+	$store->insert_identity($user_id, $identity_url);
+}
 
 ?>

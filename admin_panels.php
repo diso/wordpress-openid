@@ -76,8 +76,6 @@ function openid_admin_panels() {
 function openid_options_page() {
 	global $wp_version;
 
-	openid_late_bind();
-
 	if ( isset($_REQUEST['action']) ) {
 		switch($_REQUEST['action']) {
 			case 'rebuild_tables' :
@@ -213,8 +211,6 @@ function openid_profile_panel() {
 		return;
 	}
 	$user = wp_get_current_user();
-
-	openid_late_bind();
 
 	if (!$openid->action && $_SESSION['oid_action']) {
 		$openid->action = $_SESSION['oid_action'];
@@ -441,8 +437,6 @@ function openid_profile_management() {
 	nocache_headers();
 	get_currentuserinfo();
 
-	if( !openid_late_bind() ) return; // something is broken
-		
 	switch( $openid->action ) {
 		case 'add_identity':
 			check_admin_referer('wp-openid-add_identity');
