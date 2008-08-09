@@ -33,7 +33,7 @@ if( get_option('oid_enable_commentform') ) {
  * @return array comment data
  */
 function openid_process_comment( $comment ) {
-	global $openid;
+	$openid = openid_init();
 
 	if ($_REQUEST['openid_skip']) return $comment;
 		
@@ -99,7 +99,7 @@ function openid_comment_post_redirect($location, $comment) {
  * @see get_user_data
  */
 function openid_option_require_name_email( $value ) {
-	global $openid;
+	$openid = openid_init();
 		
 	if ($_REQUEST['oid_skip']) {
 		return $value;
@@ -136,7 +136,8 @@ function openid_option_require_name_email( $value ) {
  * @return array new array of comments to display
  */
 function openid_comments_array(&$comments, $post_id) {
-	global $wpdb, $openid;
+	global $wpdb;
+	$openid = openid_init();
 	$user = wp_get_current_user();
 
 	$commenter = wp_get_current_commenter();
@@ -214,7 +215,7 @@ function openid_comment_author_link( $html ) {
  * @action post_comment
  */
 function check_comment_author_openid($comment_ID) {
-	global $openid;
+	$openid = openid_init();
 
 	$comment = get_comment($comment_ID);
 	if ( $comment->user_id && !$comment->openid && is_user_openid($comment->user_id) ) {
@@ -277,7 +278,7 @@ function openid_repost_comment_anonymously($post) {
  * @param string $identity_url verified OpenID URL
  */
 function _finish_openid_comment($identity_url) {
-	global $openid;
+	$openid = openid_init();
 
 	if (empty($identity_url)) {
 		openid_repost_comment_anonymously($_SESSION['oid_comment_post']);

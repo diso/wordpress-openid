@@ -20,7 +20,7 @@ add_action( 'wp_authenticate', 'openid_wp_authenticate' );
  * @param string $username username provided in login form
  */
 function openid_wp_authenticate( &$username ) {
-	global $openid;
+	$openid = openid_init;
 
 	if( !empty( $_POST['openid_url'] ) ) {
 		if( !openid_late_bind() ) return; // something is broken
@@ -41,7 +41,7 @@ function openid_wp_authenticate( &$username ) {
  * @filter: login_errors
  **/
 function openid_login_form_hide_username_password_errors($r) {
-	global $openid;
+	$openid = openid_init();
 
 	if( $_POST['openid_url']
 		or $_REQUEST['action'] == 'login'
@@ -91,7 +91,7 @@ function openid_wp_register_form() {
  * @param string $identity_url verified OpenID URL
  */
 function _finish_openid_login($identity_url) {
-	global $openid;
+	$openid = openid_init();
 
 	$redirect_to = urldecode($_REQUEST['redirect_to']);
 		

@@ -55,7 +55,7 @@ function openid_textdomain() {
  * @return boolean if the plugin is okay
  */
 function openid_uptodate() {
-	global $openid;
+	$openid = openid_init();
 
 	$openid->log->debug('checking if database is up to date');
 	if( get_option('oid_db_revision') != WPOPENID_DB_REVISION ) {
@@ -75,7 +75,7 @@ function openid_uptodate() {
  * @return WordPressOpenID_Store internal SQL store
  */
 function openid_getStore() {
-	global $openid;
+	$openid = openid_init();
 
 	if (!isset($openid->store)) {
 		set_include_path( dirname(__FILE__) . PATH_SEPARATOR . get_include_path() );
@@ -98,7 +98,7 @@ function openid_getStore() {
  * @return Auth_OpenID_Consumer OpenID consumer object
  */
 function openid_getConsumer() {
-	global $openid;
+	$openid = openid_init();
 
 	if (!isset($openid->consumer)) {
 		set_include_path( dirname(__FILE__) . PATH_SEPARATOR . get_include_path() );
@@ -122,8 +122,8 @@ function openid_getConsumer() {
  * until we actually need it.
  */
 function openid_late_bind($reload = false) {
-	global $wpdb, $openid;
-	openid_init();
+	global $wpdb;
+	$openid = openid_init();
 
 	$openid->log->debug('beginning late binding');
 
@@ -178,8 +178,7 @@ function openid_late_bind($reload = false) {
  */
 function openid_activate_plugin() {
 	$start_mem = memory_get_usage();
-	global $openid;
-	openid_init();
+	$openid = openid_init();
 
 	$store =& openid_getStore();
 	$store->create_tables();
@@ -193,8 +192,7 @@ function openid_activate_plugin() {
  * Cleanup expired nonces from the OpenID store.
  */
 function openid_cleanup_nonces() {
-	global $openid;
-	openid_init();
+	$openid = openid_init();
 	$store =& openid_getStore();
 	$store->cleanupNonces();
 }
@@ -216,7 +214,7 @@ function openid_deactivate_plugin() {
  * Customer error handler for calls into the JanRain library
  */
 function openid_customer_error_handler($errno, $errmsg, $filename, $linenum, $vars) {
-	global $openid;
+	$openid = openid_init();
 
 	if( (2048 & $errno) == 2048 ) return;
 	$openid->log->notice( "Library Error $errno: $errmsg in $filename :$linenum");
@@ -231,7 +229,7 @@ function openid_customer_error_handler($errno, $errmsg, $filename, $linenum, $va
  * @param string $return_to URL where the OpenID provider should return the user
  */
 function openid_doRedirect($auth_request, $trust_root, $return_to) {
-	global $openid;
+	$openid = openid_init();
 
 	if ($auth_request->shouldSendRedirect()) {
 		$trust_root = trailingslashit($trust_root);
@@ -261,7 +259,7 @@ function openid_doRedirect($auth_request, $trust_root, $return_to) {
  * @return String authenticated identity URL, or null if authentication failed.
  */
 function finish_openid_auth() {
-	global $openid;
+	$openid = openid_init();
 
 	//set_error_handler( 'openid_customer_error_handler'));
 	$consumer = openid_getConsumer();
@@ -309,7 +307,7 @@ function finish_openid_auth() {
  * @return string generated username
  */
 function openid_generate_new_username($url) {
-	global $openid;
+	$openid = openid_init();
 
 	$base = openid_normalize_username($url);
 	$i='';
@@ -380,7 +378,7 @@ function openid_isValidEmail($email) {
  * @param array $arguments array of additional arguments to be included in the 'return_to' URL
  */
 function openid_start_login( $claimed_url, $action, $arguments = null) {
-	global $openid;
+	$openid = openid_init();
 
 	if ( empty($claimed_url) ) return; // do nothing.
 		
@@ -468,7 +466,7 @@ function wp_login_openid() {
  * @return void
  */
 function openid_set_current_user($identity, $remember = true) {
-	global $openid;
+	$openid = openid_init();
 
 	if (is_numeric($identity)) {
 		$user_id = $identity;
@@ -500,7 +498,7 @@ function openid_set_current_user($identity, $remember = true) {
  * @param string $action login action that is being performed
  */
 function finish_openid($action) {
-	global $openid;
+	$openid = openid_init();
 
 	if( !openid_late_bind() ) return; // something is broken
 		
@@ -523,7 +521,8 @@ function finish_openid($action) {
  * @param array $user_data array of user data
  */
 function openid_create_new_user($identity_url, &$user_data) {
-	global $wpdb, $openid;
+	global $wpdb;
+	$openid = openid_init();
 
 	// Identity URL is new, so create a user
 	@include_once( ABSPATH . 'wp-admin/upgrade-functions.php');	// 2.1
@@ -604,7 +603,7 @@ function openid_create_new_user($identity_url, &$user_data) {
  * @return array user data
  */
 function openid_get_user_data($identity_url) {
-	global $openid;
+	$openid = openid_init();
 
 	$data = array(
 			'ID' => null,
@@ -645,7 +644,7 @@ function openid_get_user_data_ax($identity_url, $data) {
  * @see get_user_data
  */
 function openid_get_user_data_sreg($identity_url, $data) {
-	global $openid;
+	$openid = openid_init();
 
 	$sreg_resp = Auth_OpenID_SRegResponse::fromSuccessResponse($openid->response);
 	$sreg = $sreg_resp->contents();
@@ -770,11 +769,13 @@ function openid_identity_table() {
  * Initialize global OpenID instance.
  */
 function openid_init() {
-	if ($GLOBALS['openid'] && is_a($GLOBALS['openid'], 'WordPressOpenID')) {
-		return;
+	$var = openid_table_prefix() . 'openid_instance';
+
+	if (!$GLOBALS[$var] || !is_a($GLOBALS[$var], 'WordPressOpenID')) {
+		$GLOBALS[$var] = new WordPressOpenID();
 	}
 	
-	$GLOBALS['openid'] = new WordPressOpenID();
+	return $GLOBALS[$var];
 }
 
 

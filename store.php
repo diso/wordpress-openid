@@ -66,7 +66,8 @@ class WordPressOpenID_Store extends Auth_OpenID_MySQLStore {
 	 * @return bool if tables are okay
 	 */
 	function check_tables($retry=true) {
-		global $wpdb, $openid;
+		global $wpdb;
+		$openid = openid_init();
 
 		$ok = true;
 		$message = array();
@@ -101,7 +102,8 @@ class WordPressOpenID_Store extends Auth_OpenID_MySQLStore {
 	 */
 	function create_tables()
 	{
-		global $wp_version, $wpdb, $openid;
+		global $wp_version, $wpdb;
+		$openid = openid_init();
 
 		if ($wp_version >= '2.3') {
 			require_once(ABSPATH . 'wp-admin/includes/upgrade.php');

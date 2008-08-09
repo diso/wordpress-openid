@@ -74,7 +74,8 @@ function openid_admin_panels() {
  * @options_page
  */
 function openid_options_page() {
-	global $wp_version, $openid;
+	global $wp_version;
+	$openid = openid_init();
 
 		openid_late_bind();
 	
@@ -205,7 +206,8 @@ function openid_options_page() {
  * @submenu_page: profile.php
  **/
 function openid_profile_panel() {
-	global $error, $openid;
+	global $error;
+	$openid = openid_init();
 
 	if( !current_user_can('read') ) {
 		return;
@@ -303,7 +305,8 @@ function openid_profile_panel() {
  * Print the status of various system libraries.  This is displayed on the main OpenID options page.
  **/
 function openid_printSystemStatus() {
-	global $wp_version, $wpdb, $openid;
+	global $wp_version, $wpdb;
+	$openid = openid_init();
 
 	$paths = explode(PATH_SEPARATOR, get_include_path());
 	for($i=0; $i<sizeof($paths); $i++ ) { 
@@ -418,8 +421,8 @@ function openid_init_errors() {
  * Handle OpenID profile management.
  */
 function openid_profile_management() {
-	global $wp_version, $openid;
-	openid_init();
+	global $wp_version;
+   	$openid = openid_init();
 	
 	if( !isset( $_REQUEST['action'] )) return;
 		
@@ -475,7 +478,7 @@ function openid_profile_management() {
  * @param int $id id of identity URL to remove
  */
 function openid_profile_drop_identity($id) {
-	global $openid;
+	$openid = openid_init();
 
 	$user = wp_get_current_user();
 
@@ -551,7 +554,7 @@ function openid_profile_drop_identity($id) {
  * @param string $identity_url verified OpenID URL
  */
 function _finish_openid_verify($identity_url) {
-	global $openid;
+	$openid = openid_init();
 
 	$user = wp_get_current_user();
 	if (empty($identity_url)) {
