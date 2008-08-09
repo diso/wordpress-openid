@@ -769,13 +769,14 @@ function openid_identity_table() {
  * Initialize global OpenID instance.
  */
 function openid_init() {
-	$var = openid_table_prefix() . 'openid_instance';
+	static $openid;
 
-	if (!$GLOBALS[$var] || !is_a($GLOBALS[$var], 'WordPressOpenID')) {
-		$GLOBALS[$var] = new WordPressOpenID();
+	if (!$openid || !is_a($openid, 'WordPressOpenID')) {
+		error_log('instantiating openid');
+		$openid = new WordPressOpenID();
 	}
 	
-	return $GLOBALS[$var];
+	return $openid;
 }
 
 
