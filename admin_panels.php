@@ -206,30 +206,21 @@ function openid_options_page() {
 function openid_profile_panel() {
 	global $error;
 	$openid = openid_init();
+	$status = openid_status();
 
 	if( !current_user_can('read') ) {
 		return;
 	}
 	$user = wp_get_current_user();
 
-	if (!$openid->action && $_SESSION['oid_action']) {
-		$openid->action = $_SESSION['oid_action'];
-		unset($_SESSION['oid_action']);
+	if( 'success' == $status ) {
+		echo '<div class="updated"><p><strong>'.__('Success:', 'openid').'</strong> '.openid_message().'</p></div>';
 	}
-
-	if (!$openid->message && $_SESSION['oid_message']) {
-		$openid->message = $_SESSION['oid_message'];
-		unset($_SESSION['oid_message']);
+	elseif( 'warning' == $status ) {
+		echo '<div class="error"><p><strong>'.__('Warning:', 'openid').'</strong> '.openid_message().'</p></div>';
 	}
-
-	if( 'success' == $openid->action ) {
-		echo '<div class="updated"><p><strong>'.__('Success:', 'openid').'</strong> '.$openid->message.'</p></div>';
-	}
-	elseif( 'warning' == $openid->action ) {
-		echo '<div class="error"><p><strong>'.__('Warning:', 'openid').'</strong> '.$openid->message.'</p></div>';
-	}
-	elseif( 'error' == $openid->action ) {
-		echo '<div class="error"><p><strong>'.__('Error:', 'openid').'</strong> '.$openid->message.'</p></div>';
+	elseif( 'error' == $status ) {
+		echo '<div class="error"><p><strong>'.__('Error:', 'openid').'</strong> '.openid_message().'</p></div>';
 	}
 
 	if (!empty($error)) {
@@ -281,7 +272,7 @@ function openid_profile_panel() {
 		<?php
 	else:
 		echo '
-		<p class="error">'.__('There are no OpenIDs associated with this WordPress user.', 'openid').'</p>';
+		<p><strong>'.__('There are no OpenIDs associated with this WordPress user.', 'openid').'</strong></p>';
 	endif; ?>
 
 	<p>
@@ -408,13 +399,6 @@ function openid_repost($action, $parameters) {
 	wp_die($html, 'OpenID Authentication Redirect');
 }
 
-function openid_init_errors() {
-	global $error;
-	$error = $_SESSION['oid_error'];
-	unset($_SESSION['oid_error']);
-}
-
-
 /**
  * Handle OpenID profile management.
  */
@@ -423,8 +407,6 @@ function openid_profile_management() {
    	$openid = openid_init();
 	
 	if( !isset( $_REQUEST['action'] )) return;
-		
-	$openid->action = $_REQUEST['action'];
 		
 	require_once(ABSPATH . 'wp-admin/admin-functions.php');
 
@@ -437,7 +419,7 @@ function openid_profile_management() {
 	nocache_headers();
 	get_currentuserinfo();
 
-	switch( $openid->action ) {
+	switch( $_REQUEST['action'] ) {
 		case 'add_identity':
 			check_admin_referer('wp-openid-add_identity');
 
@@ -478,25 +460,25 @@ function openid_profile_drop_identity($id) {
 	$user = wp_get_current_user();
 
 	if( !isset($id)) {
-		$openid->message = 'Identity url delete failed: ID paramater missing.';
-		$openid->action = 'error';
+		openid_message('Identity url delete failed: ID paramater missing.');
+		openid_status('error');
 		return;
 	}
 
 	$store =& openid_getStore();
 	$deleted_identity_url = $store->get_identities($user->ID, $id);
 	if( FALSE === $deleted_identity_url ) {
-		$openid->message = 'Identity url delete failed: Specified identity does not exist.';
-		$openid->action = 'error';
+		openid_message('Identity url delete failed: Specified identity does not exist.');
+		openid_status('error');
 		return;
 	}
 
 	$identity_urls = get_user_openids($user->ID);
 	if (sizeof($identity_urls) == 1 && !$_REQUEST['confirm']) {
-		$openid->message = 'This is your last identity URL.  Are you sure you want to delete it? Doing so may interfere with your ability to login.<br /><br /> '
+		openid_message('This is your last identity URL.  Are you sure you want to delete it? Doing so may interfere with your ability to login.<br /><br /> '
 		. '<a href="?confirm=true&'.$_SERVER['QUERY_STRING'].'">Yes I\'m sure.  Delete it</a>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;'
-		. '<a href="?page=openid">No, don\'t delete it.</a>';
-		$openid->action = 'warning';
+		. '<a href="?page=openid">No, don\'t delete it.</a>');
+		openid_status('warning');
 		return;
 	}
 
@@ -504,9 +486,8 @@ function openid_profile_drop_identity($id) {
 		
 
 	if( $store->drop_identity($user->ID, $id) ) {
-		$openid->message = 'Identity url delete successful. <b>' . $deleted_identity_url
-		. '</b> removed.';
-		$openid->action = 'success';
+		openid_message('Identity url delete successful. <b>' . $deleted_identity_url . '</b> removed.');
+		openid_status('success');
 
 		// ensure that profile URL is still a verified Identity URL
 		set_include_path( dirname(__FILE__) . PATH_SEPARATOR . get_include_path() );
@@ -531,14 +512,14 @@ function openid_profile_drop_identity($id) {
 			if (!$verified_url) {
 				$user->user_url = $identities[0]['url'];
 				wp_update_user( get_object_vars( $user ));
-				$openid->message .= '<br /><strong>Note:</strong> For security reasons, your profile URL has been updated to match your Identity URL.';
+				openid_message(openid_message() . '<br /><strong>Note:</strong> For security reasons, your profile URL has been updated to match your Identity URL.');
 			}
 		}
 		return;
 	}
 		
-	$openid->message = 'Identity url delete failed: Unknown reason.';
-	$openid->action = 'error';
+	openid_message('Identity url delete failed: Unknown reason.');
+	openid_status('error');
 }
 
 
@@ -560,8 +541,8 @@ function _finish_openid_verify($identity_url) {
 			openid_set_error('OpenID assertion successful, but this URL is already claimed by '
 			. 'another user on this blog. This is probably a bug. ' . $identity_url);
 		} else {
-			$openid->action = 'success';
-			$openid->message = "Successfully added Identity URL: $identity_url.";
+			openid_message("Successfully added Identity URL: $identity_url.");
+			openid_status('success');
 			
 			// ensure that profile URL is a verified Identity URL
 			set_include_path( dirname(__FILE__) . PATH_SEPARATOR . get_include_path() );
@@ -586,14 +567,14 @@ function _finish_openid_verify($identity_url) {
 				if (!$verified_url) {
 					$user->user_url = $identity_url;
 					wp_update_user( get_object_vars( $user ));
-					$openid->message .= '<br /><strong>Note:</strong> For security reasons, your profile URL has been updated to match your Identity URL.';
+					openid_message(openid_message() . '<br /><strong>Note:</strong> For security reasons, your profile URL has been updated to match your Identity URL.');
 				}
 			}
 		}
 	}
 
-	$_SESSION['oid_message'] = $openid->message;
-	$_SESSION['oid_action'] = $openid->action;	
+	$_SESSION['openid_message'] = openid_message();
+	$_SESSION['openid_status'] = openid_status();
 	$wpp = parse_url(get_option('siteurl'));
 	$redirect_to = $wpp['path'] . '/wp-admin/' . (current_user_can('edit_users') ? 'users.php' : 'profile.php') . '?page=openid';
 	if (function_exists('wp_safe_redirect')) {

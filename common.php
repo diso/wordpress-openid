@@ -23,6 +23,8 @@ add_action( 'cleanup_openid', 'openid_cleanup_nonces' );
 
 
 // hooks for getting user data
+add_filter('openid_attribute_query_extensions', 'openid_add_sreg_extension');
+
 add_filter( 'openid_user_data', 'openid_get_user_data_form', 10, 2);
 add_filter( 'openid_user_data', 'openid_get_user_data_sreg', 10, 2);
 
@@ -215,26 +217,26 @@ function finish_openid_auth() {
 		
 	switch( $openid->response->status ) {
 		case Auth_OpenID_CANCEL:
-			$openid->message = 'OpenID assertion cancelled';
-			$openid->action = 'error';
+			openid_message('OpenID assertion cancelled');
+			openid_status('error');
 			break;
 
 		case Auth_OpenID_FAILURE:
-			$openid->message = 'OpenID assertion failed: ' . $openid->response->message;
-			$openid->action = 'error';
+			openid_message('OpenID assertion failed: ' . $openid->response->message);
+			openid_status('error');
 			break;
 
 		case Auth_OpenID_SUCCESS:
-			$openid->message = 'OpenID assertion successful';
-			$openid->action = 'success';
+			openid_message('OpenID assertion successful');
+			openid_status('success');
 
 			$identity_url = $openid->response->identity_url;
 			$escaped_url = htmlspecialchars($identity_url, ENT_QUOTES);
 			return $escaped_url;
 
 		default:
-			$openid->message = 'Unknown Status. Bind not successful. This is probably a bug';
-			$openid->action = 'error';
+			openid_message('Unknown Status. Bind not successful. This is probably a bug');
+			openid_status('error');
 	}
 
 	return null;
@@ -260,6 +262,7 @@ function openid_generate_new_username($url) {
 		return $username;
 	}
 }
+
 
 /**
  * Normalize the OpenID URL into a username.  This includes rules like:
@@ -304,6 +307,10 @@ function openid_begin_consumer($url) {
 	return $openid_auth_request;;
 }
 
+
+/**
+ * Check if the provided string looks like an email address.
+ */
 function openid_isValidEmail($email) {
 	return eregi("^[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,}$", $email);
 }
@@ -324,12 +331,12 @@ function openid_start_login( $claimed_url, $action, $arguments = null) {
 	$auth_request = openid_begin_consumer( $claimed_url );
 
 	if ( null === $auth_request ) {
-		$openid->action = 'error';
-		$openid->message = 'Could not discover an OpenID identity server endpoint at the url: '
-		. htmlentities( $claimed_url );
+		openid_status('error');
+		openid_message('Could not discover an OpenID identity server endpoint at the url: '
+		. htmlentities( $claimed_url ));
 		if( strpos( $claimed_url, '@' ) ) {
-			$openid->message .= '<br />It looks like you entered an email address, but it '
-				. 'was not able to be transformed into a valid OpenID.';
+			openid_message(openid_message() . '<br />It looks like you entered an email address, but it '
+				. 'was not able to be transformed into a valid OpenID.');
 		}
 		return;
 	}
@@ -349,15 +356,12 @@ function openid_start_login( $claimed_url, $action, $arguments = null) {
 
 	/* If we've never heard of this url before, do attribute query */
 	if( get_user_by_openid( $auth_request->endpoint->identity_url ) == NULL ) {
-		$attribute_query = true;
-	}
-	if ($attribute_query) {
-		// SREG
-		require_once(dirname(__FILE__) . '/Auth/OpenID/SReg.php');
-		$sreg_request = Auth_OpenID_SRegRequest::build(array(),array('nickname','email','fullname'));
-		if ($sreg_request) $auth_request->addExtension($sreg_request);
-
-		// AX
+		$extensions = apply_filters('openid_attribute_query_extensions', array());
+		foreach ($extensions as $e) {
+			if (is_a($e, 'Auth_OpenID_Extension')) {
+				$auth_request->addExtension($e);
+			}
+		}
 	}
 		
 	$_SESSION['oid_return_to'] = $return_to;
@@ -366,6 +370,15 @@ function openid_start_login( $claimed_url, $action, $arguments = null) {
 }
 
 
+/**
+ * Build an SReg attribute query extension.
+ */
+function openid_add_sreg_extension($extensions) {
+	require_once(dirname(__FILE__) . '/Auth/OpenID/SReg.php');
+	$extensions[] = Auth_OpenID_SRegRequest::build(array(),array('nickname','email','fullname'));
+
+	return $extensions;
+}
 
 
 /**
@@ -415,7 +428,7 @@ function finish_openid($action) {
 	}
 		
 	global $action;
-	$action = $openid->action;
+	$action = openid_status();
 }
 
 
@@ -456,10 +469,10 @@ function openid_create_new_user($identity_url, &$user_data) {
 		$user = new WP_User( $user_id );
 
 		if( ! wp_login( $user->user_login, $user_data['user_pass'] ) ) {
-			$openid->message = 'User was created fine, but wp_login() for the new user failed. '
-			. 'This is probably a bug.';
-			$openid->action= 'error';
-			error_log($openid->message);
+			openid_message('User was created fine, but wp_login() for the new user failed. '
+			. 'This is probably a bug.');
+			openid_action('error');
+			error_log(openid_message());
 			return;
 		}
 
@@ -472,16 +485,16 @@ function openid_create_new_user($identity_url, &$user_data) {
 		// Bind the provided identity to the just-created user
 		openid_add_user_identity($user_id, $identity_url);
 
-		$openid->action = 'redirect';
+		openid_status('redirect');
 
 		if ( !$user->has_cap('edit_posts') ) $redirect_to = '/wp-admin/profile.php';
 
 	} else {
 		// failed to create user for some reason.
-		$openid->message = 'OpenID authentication successful, but failed to create WordPress user. '
-		. 'This is probably a bug.';
-		$openid->action= 'error';
-		error_log($openid->message);
+		openid_message('OpenID authentication successful, but failed to create WordPress user. '
+		. 'This is probably a bug.');
+		openid_status('error');
+		error_log(openid_message());
 	}
 
 }
@@ -645,6 +658,13 @@ function openid_set_error($error) {
 }
 
 
+function openid_init_errors() {
+	global $error;
+	$error = $_SESSION['oid_error'];
+	unset($_SESSION['oid_error']);
+}
+
+
 function openid_table_prefix() {
 	global $wpdb;
 	return isset($wpdb->base_prefix) ? $wpdb->base_prefix : $wpdb->prefix;
@@ -687,6 +707,35 @@ function delete_user_openids($userid) {
 function openid_add_user_identity($user_id, $identity_url) {
 	$store = openid_getStore();
 	$store->insert_identity($user_id, $identity_url);
+}
+
+function openid_status($new = null) {
+	static $status;
+
+	if ($new !== null) $status = $new;
+
+	if ($status == null && $_SESSION['openid_status']) {
+		$status = $_SESSION['openid_status'];
+		unset($_SESSION['openid_status']);
+	}
+
+	return $status;
+}
+
+function openid_message($new = null) {
+	static $message;
+
+	if ($new !== null) $message = $new;
+
+	if ($message == null && $_SESSION['openid_message']) {
+		$message = $_SESSION['openid_message'];
+		unset($_SESSION['openid_message']);
+	}
+
+	return $message;
+}
+
+function openid_print_messages() {
 }
 
 ?>

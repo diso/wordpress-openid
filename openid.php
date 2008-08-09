@@ -22,21 +22,14 @@ require_once( dirname(__FILE__) . '/wp-login.php');
 
 @session_start();
 
-if  (!class_exists('WordPressOpenID')):
 class WordPressOpenID {
-	var $message;	  // Message to be displayed to the user.
-	var $action;	  // Internal action tag. 'success', 'warning', 'error', 'redirect'.
-
 	var $response;
-
 	var $enabled = true;
-
 	var $bind_done = false;
 }
-endif;
 
 
-// public functions
+// -- public functions
 
 
 /**

@@ -32,9 +32,10 @@ function openid_wp_authenticate(&$credentials) {
 		if( !empty( $_REQUEST['redirect_to'] ) ) $redirect_to = $_REQUEST['redirect_to'];
 		openid_start_login( $_POST['openid_identifier'], 'login', array('redirect_to' => $redirect_to) );
 	}
-	if( !empty( $openid->message ) ) {
+	$message = openid_message();
+	if( !empty( $message ) ) {
 		global $error;
-		$error = $openid->message;
+		$error = $message;
 	}
 }
 
@@ -48,7 +49,7 @@ function openid_login_form_hide_username_password_errors($r) {
 	$openid = openid_init();
 
 	if( $_POST['openid_identifier'] or $_REQUEST['action'] == 'login' or $_REQUEST['action'] == 'comment' ) {
-		return $openid->message;
+		return openid_message();
 	}
 
 	return $r;
