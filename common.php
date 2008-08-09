@@ -8,7 +8,6 @@ register_activation_hook('openid/core.php', 'openid_activate_plugin');
 register_deactivation_hook('openid/core.php', 'openid_deactivate_plugin');
 
 // Add hooks to handle actions in WordPress
-add_action( 'init', 'wp_login_openid' ); // openid loop done
 add_action( 'init', 'openid_textdomain' ); // load textdomain
 	
 // include internal stylesheet
@@ -433,28 +432,6 @@ function openid_start_login( $claimed_url, $action, $arguments = null) {
 }
 
 
-/**
- * Intercept login requests on wp-login.php if they include an 'openid_url' 
- * value and start OpenID authentication.  This hook is only necessary in 
- * WordPress 2.5.x because it has the 'wp_authenticate' action call in the 
- * wrong place.
- */
-function wp_login_openid() {
-	global $wp_version;
-
-	// this is only needed in WordPress 2.5.x
-	if (strpos($wp_version, '2.5') != 0) {
-		return;
-	}
-
-	$self = basename( $GLOBALS['pagenow'] );
-		
-	if ($self == 'wp-login.php' && !empty($_POST['openid_url'])) {
-		if (function_exists('wp_signon')) {
-			wp_signon(array('user_login'=>'openid', 'user_password'=>'openid'));
-		}
-	}
-}
 
 
 /**
@@ -771,7 +748,6 @@ function openid_init() {
 	static $openid;
 
 	if (!$openid || !is_a($openid, 'WordPressOpenID')) {
-		error_log('instantiating openid');
 		$openid = new WordPressOpenID();
 	}
 	

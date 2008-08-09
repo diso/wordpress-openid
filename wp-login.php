@@ -6,6 +6,7 @@
 
 
 // add OpenID input field to wp-login.php
+add_action( 'init', 'wp_login_openid' ); // openid loop done
 add_action( 'login_head', 'openid_style');
 add_action( 'login_form', 'openid_wp_login_form');
 add_action( 'register_form', 'openid_wp_register_form');
@@ -14,19 +15,19 @@ add_action( 'wp_authenticate', 'openid_wp_authenticate' );
 
 
 /**
- * If we're doing openid authentication ($_POST['openid_url'] is set), start the consumer & redirect
+ * If we're doing openid authentication ($_POST['openid_identifier'] is set), start the consumer & redirect
  * Otherwise, return and let WordPress handle the login and/or draw the form.
  *
  * @param string $username username provided in login form
  */
 function openid_wp_authenticate( &$username ) {
-	$openid = openid_init;
+	$openid = openid_init();
 
-	if( !empty( $_POST['openid_url'] ) ) {
+	if( !empty( $_POST['openid_identifier'] ) ) {
 		if( !openid_late_bind() ) return; // something is broken
 		$redirect_to = '';
 		if( !empty( $_REQUEST['redirect_to'] ) ) $redirect_to = $_REQUEST['redirect_to'];
-		openid_start_login( $_POST['openid_url'], 'login', array('redirect_to' => $redirect_to) );
+		openid_start_login( $_POST['openid_identifier'], 'login', array('redirect_to' => $redirect_to) );
 	}
 	if( !empty( $openid->message ) ) {
 		global $error;
@@ -43,12 +44,13 @@ function openid_wp_authenticate( &$username ) {
 function openid_login_form_hide_username_password_errors($r) {
 	$openid = openid_init();
 
-	if( $_POST['openid_url'] or $_REQUEST['action'] == 'login' or $_REQUEST['action'] == 'comment' ) {
+	if( $_POST['openid_identifier'] or $_REQUEST['action'] == 'login' or $_REQUEST['action'] == 'comment' ) {
 		return $openid->message;
 	}
 
 	return $r;
 }
+
 
 /**
  * Add OpenID input field to wp-login.php
@@ -59,15 +61,13 @@ function openid_wp_login_form() {
 	global $wp_version;
 
 	$link_class = 'openid_link';
-	if ($wp_version < '2.5') {
-		$link_class .= ' legacy';
-	}
+	if ($wp_version < '2.5') { $link_class .= ' legacy'; }
 
 	?>
 	<hr />
 	<p style="margin-top: 1em;">
 		<label><?php printf(__('Or login using your %s url:', 'openid'), '<a class="'.$link_class.'" href="http://openid.net/">'.__('OpenID', 'openid').'</a>') ?><br/>
-		<input type="text" name="openid_url" id="openid_url" class="input openid_url" value="" size="20" tabindex="25" /></label>
+		<input type="text" name="openid_identifier" id="openid_identifier" class="input openid_identifier" value="" size="20" tabindex="25" /></label>
 	</p>
 	<?php
 }
@@ -138,6 +138,30 @@ function _finish_openid_login($identity_url) {
 	}
 		
 	exit;
+}
+
+
+/**
+ * Intercept login requests on wp-login.php if they include an 'openid_identifier' 
+ * value and start OpenID authentication.  This hook is only necessary in 
+ * WordPress 2.5.x because it has the 'wp_authenticate' action call in the 
+ * wrong place.
+ */
+function wp_login_openid() {
+	global $wp_version;
+
+	// this is only needed in WordPress 2.5.x
+	if (strpos($wp_version, '2.5') != 0) {
+		return;
+	}
+
+	$self = basename( $GLOBALS['pagenow'] );
+		
+	if ($self == 'wp-login.php' && !empty($_POST['openid_identifier'])) {
+		if (function_exists('wp_signon')) {
+			wp_signon(array('user_login'=>'openid', 'user_password'=>'openid'));
+		}
+	}
 }
 
 ?>

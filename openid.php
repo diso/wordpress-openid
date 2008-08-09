@@ -123,7 +123,7 @@ function get_user_by_openid($url) {
  * Get a simple OpenID input field, used for disabling unobtrusive mode.
  */
 function openid_input() {
-	return '<input type="text" id="openid_url" name="openid_url" />';
+	return '<input type="text" id="openid_identifier" name="openid_identifier" />';
 }
 
 

@@ -1,9 +1,9 @@
-#openid_enabled_link, .openid_link,  #openid_url, #commentform #openid_url {
+#openid_enabled_link, .openid_link, #openid_identifier, #commentform #openid_identifier {
 	background: url('openid.gif') center left no-repeat; 
 	padding-left: 18px; 
 }
 
-body.login #openid_url {
+body.login #openid_identifier {
 	width: 92%;
 	font-size: 20px;
 	background-color: #FFF;

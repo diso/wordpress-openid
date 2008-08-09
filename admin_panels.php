@@ -291,7 +291,7 @@ function openid_profile_panel() {
 	<p>
 		<form method="post"><?php _e('Add identity:', 'openid') ?>
 			<?php wp_nonce_field('wp-openid-add_identity'); ?>
-			<input id="openid_url" name="openid_url" /> 
+			<input id="openid_identifier" name="openid_identifier" /> 
 			<input type="submit" value="<?php _e('Add', 'openid') ?>" />
 			<input type="hidden" name="action" value="add_identity" >
 		</form>
@@ -449,7 +449,7 @@ function openid_profile_management() {
 
 			$user = wp_get_current_user();
 
-			$auth_request = openid_begin_consumer($_POST['openid_url']);
+			$auth_request = openid_begin_consumer($_POST['openid_identifier']);
 
 			$userid = get_user_by_openid($auth_request->endpoint->claimed_id);
 
@@ -463,7 +463,7 @@ function openid_profile_management() {
 				return;
 			}
 
-			openid_start_login($_POST['openid_url'], 'verify');
+			openid_start_login($_POST['openid_identifier'], 'verify');
 			break;
 
 		case 'drop_identity':  // Remove a binding.

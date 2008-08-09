@@ -37,7 +37,7 @@ function openid_process_comment( $comment ) {
 
 	if ($_REQUEST['openid_skip']) return $comment;
 		
-	$openid_url = (array_key_exists('openid_url', $_POST) ? $_POST['openid_url'] : $_POST['url']);
+	$openid_url = (array_key_exists('openid_identifier', $_POST) ? $_POST['openid_identifier'] : $_POST['url']);
 
 	if( !empty($openid_url) ) {  // Comment form's OpenID url is filled in.
 		$_SESSION['openid_comment_post'] = $_POST;
@@ -50,7 +50,7 @@ function openid_process_comment( $comment ) {
 
 		// Display an error message only if an explicit OpenID field was used.  Otherwise,
 		// just ignore the error... it just means the user entered a normal URL.
-		if (array_key_exists('openid_url', $_POST)) {
+		if (array_key_exists('openid_identifier', $_POST)) {
 			openid_repost_comment_anonymously($_SESSION['openid_comment_post']);
 		}
 	}
@@ -105,8 +105,8 @@ function openid_option_require_name_email( $value ) {
 		return $value;
 	}
 
-	if (array_key_exists('openid_url', $_POST)) {
-		if( !empty( $_POST['openid_url'] ) ) {
+	if (array_key_exists('openid_identifier', $_POST)) {
+		if( !empty( $_POST['openid_identifier'] ) ) {
 			return false;
 		}
 	} else {

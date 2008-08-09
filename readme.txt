@@ -56,11 +56,11 @@ The easiest way to display the fact that your blog accepts OpenIDs is to enable
 the "Comment Form" option for the plugin.  This will allow the normal website
 field to be used for OpenIDs as well.  If this doesn't display properly for
 your particular theme or you simply prefer to have a separate OpenID field, you
-can modify your comments.php template to include an "openid_url" text field as
+can modify your comments.php template to include an "openid_identifier" text field as
 part of your comment form.  For the default theme, this might look like:
 
-	<p><input type="text" name="openid_url" id="openid_url" />
-	<label for="openid_url"><small>OpenID URL</small></label></p>
+	<p><input type="text" name="openid_identifier" id="openid_identifier" />
+	<label for="openid_identifier"><small>OpenID URL</small></label></p>
 
 The input element MUST have the name "openid\_url".  Additionally, using
 "openid\_url" for the id causes the field to be styled with an OpenID logo.  To
