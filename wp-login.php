@@ -25,7 +25,6 @@ if (strpos($wp_version, '2.5') == 0) {
  * @param string $credentials username and password provided in login form
  */
 function openid_wp_authenticate(&$credentials) {
-	$openid = openid_init();
 
 	if(!empty($_POST['openid_identifier'])) {
 		$redirect_to = '';
@@ -46,7 +45,6 @@ function openid_wp_authenticate(&$credentials) {
  * @filter: login_errors
  **/
 function openid_login_form_hide_username_password_errors($r) {
-	$openid = openid_init();
 
 	if( $_POST['openid_identifier'] or $_REQUEST['action'] == 'login' or $_REQUEST['action'] == 'comment' ) {
 		return openid_message();

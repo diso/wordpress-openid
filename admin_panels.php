@@ -205,7 +205,6 @@ function openid_options_page() {
  **/
 function openid_profile_panel() {
 	global $error;
-	$openid = openid_init();
 	$status = openid_status();
 
 	if( !current_user_can('read') ) {
@@ -293,7 +292,6 @@ function openid_profile_panel() {
  **/
 function openid_printSystemStatus() {
 	global $wp_version, $wpdb;
-	$openid = openid_init();
 
 	$paths = explode(PATH_SEPARATOR, get_include_path());
 	for($i=0; $i<sizeof($paths); $i++ ) { 
@@ -347,12 +345,11 @@ function openid_printSystemStatus() {
 	$status[] = array( 'Plugin Revision', 'info', WPOPENID_PLUGIN_REVISION);
 	$status[] = array( 'Plugin Database Revision', 'info', get_option('oid_db_revision'));
 	
-	$status[] = array( '<strong>Overall Plugin Status</strong>', ($openid->enabled), 
-		($openid->enabled ? '' : 'There are problems above that must be dealt with before the plugin can be used.') );
+	$openid_enabled = openid_enabled();
+	$status[] = array( '<strong>Overall Plugin Status</strong>', ($openid_enabled), 
+		($openid_enabled ? '' : 'There are problems above that must be dealt with before the plugin can be used.') );
 
-
-		
-	if( $openid->enabled ) {	// Display status information
+	if( $openid_enabled ) {	// Display status information
 		echo'<div id="openid_rollup" class="updated">
 		<p><strong>' . __('Status information:', 'openid') . '</strong> ' . __('All Systems Nominal', 'openid') 
 		. '<small> (<a href="#" id="openid_rollup_link">' . __('Toggle More/Less', 'openid') . '</a>)</small> </p>';
@@ -404,7 +401,6 @@ function openid_repost($action, $parameters) {
  */
 function openid_profile_management() {
 	global $wp_version;
-   	$openid = openid_init();
 	
 	if( !isset( $_REQUEST['action'] )) return;
 		
@@ -455,7 +451,6 @@ function openid_profile_management() {
  * @param int $id id of identity URL to remove
  */
 function openid_profile_drop_identity($id) {
-	$openid = openid_init();
 
 	$user = wp_get_current_user();
 
@@ -530,7 +525,6 @@ function openid_profile_drop_identity($id) {
  * @param string $identity_url verified OpenID URL
  */
 function _finish_openid_verify($identity_url) {
-	$openid = openid_init();
 
 	$user = wp_get_current_user();
 	if (empty($identity_url)) {
@@ -596,7 +590,6 @@ function openid_personal_options_update() {
 
 	$user = wp_get_current_user();
 
-	openid_init();
 	$identities = get_user_openids($user->ID);
 
 	if (!empty($identities)) {

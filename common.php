@@ -25,7 +25,6 @@ add_action( 'cleanup_openid', 'openid_cleanup_nonces' );
 // hooks for getting user data
 add_filter('openid_attribute_query_extensions', 'openid_add_sreg_extension');
 
-add_filter( 'openid_user_data', 'openid_get_user_data_form', 10, 2);
 add_filter( 'openid_user_data', 'openid_get_user_data_sreg', 10, 2);
 
 add_filter( 'xrds_simple', 'openid_consumer_xrds_simple');
@@ -56,16 +55,15 @@ function openid_textdomain() {
  * @return boolean if the plugin is okay
  */
 function openid_uptodate() {
-	$openid = openid_init();
 
 	if( get_option('oid_db_revision') != WPOPENID_DB_REVISION ) {
-		$openid->enabled = false;
+		openid_enabled(false);
 		error_log('Plugin database is out of date: ' . get_option('oid_db_revision') . ' != ' . WPOPENID_DB_REVISION);
 		update_option('oid_plugin_enabled', false);
 		return false;
 	}
-	$openid->enabled = (get_option('oid_plugin_enabled') == true );
-	return $openid->enabled;
+	openid_enabled(get_option('oid_plugin_enabled') == true);
+	return openid_enabled();
 }
 // XXX - figure out when to perform  uptodate() checks and such (since late_bind is no more)
 
@@ -85,8 +83,7 @@ function openid_getStore() {
 		$store = new WordPressOpenID_Store();
 		if (null === $store) {
 			error_log('OpenID store could not be created properly.');
-			$openid = openid_init();
-			$openid->enabled = false;
+			openid_enabled(false);
 		}
 	}
 
@@ -117,8 +114,7 @@ function openid_getConsumer() {
 		$consumer = new Auth_OpenID_Consumer($store);
 		if( null === $consumer ) {
 			error_log('OpenID consumer could not be created properly.');
-			$openid = openid_init();
-			$openid->enabled = false;
+			openid_enabled(false);
 		}
 
 	}
@@ -208,21 +204,21 @@ function openid_doRedirect($auth_request, $trust_root, $return_to) {
  * @return String authenticated identity URL, or null if authentication failed.
  */
 function finish_openid_auth() {
-	$openid = openid_init();
 
 	//set_error_handler( 'openid_customer_error_handler'));
 	$consumer = openid_getConsumer();
-	$openid->response = $consumer->complete($_SESSION['oid_return_to']);
+	$response = $consumer->complete($_SESSION['oid_return_to']);
+	openid_response($response);
 	//restore_error_handler();
 		
-	switch( $openid->response->status ) {
+	switch( $response->status ) {
 		case Auth_OpenID_CANCEL:
 			openid_message('OpenID assertion cancelled');
 			openid_status('error');
 			break;
 
 		case Auth_OpenID_FAILURE:
-			openid_message('OpenID assertion failed: ' . $openid->response->message);
+			openid_message('OpenID assertion failed: ' . $response->message);
 			openid_status('error');
 			break;
 
@@ -230,7 +226,7 @@ function finish_openid_auth() {
 			openid_message('OpenID assertion successful');
 			openid_status('success');
 
-			$identity_url = $openid->response->identity_url;
+			$identity_url = $response->identity_url;
 			$escaped_url = htmlspecialchars($identity_url, ENT_QUOTES);
 			return $escaped_url;
 
@@ -304,7 +300,7 @@ function openid_begin_consumer($url) {
 		restore_error_handler();
 	}
 
-	return $openid_auth_request;;
+	return $openid_auth_request;
 }
 
 
@@ -324,8 +320,6 @@ function openid_isValidEmail($email) {
  * @param array $arguments array of additional arguments to be included in the 'return_to' URL
  */
 function openid_start_login( $claimed_url, $action, $arguments = null) {
-	$openid = openid_init();
-
 	if ( empty($claimed_url) ) return; // do nothing.
 		
 	$auth_request = openid_begin_consumer( $claimed_url );
@@ -419,8 +413,6 @@ function openid_set_current_user($identity, $remember = true) {
  * @param string $action login action that is being performed
  */
 function finish_openid($action) {
-	$openid = openid_init();
-
 	$identity_url = finish_openid_auth();
 		
 	if (!empty($action) && function_exists('_finish_openid_' . $action)) {
@@ -441,7 +433,6 @@ function finish_openid($action) {
  */
 function openid_create_new_user($identity_url, &$user_data) {
 	global $wpdb;
-	$openid = openid_init();
 
 	// Identity URL is new, so create a user
 	@include_once( ABSPATH . 'wp-admin/upgrade-functions.php');	// 2.1
@@ -553,10 +544,9 @@ function openid_get_user_data_ax($identity_url, $data) {
  * @see get_user_data
  */
 function openid_get_user_data_sreg($identity_url, $data) {
-	$openid = openid_init();
-
 	require_once(dirname(__FILE__) . '/Auth/OpenID/SReg.php');
-	$sreg_resp = Auth_OpenID_SRegResponse::fromSuccessResponse($openid->response);
+	$response = openid_response();
+	$sreg_resp = Auth_OpenID_SRegResponse::fromSuccessResponse($response);
 	$sreg = $sreg_resp->contents();
 
 	if (!$sreg) return $data;
@@ -646,7 +636,6 @@ function openid_parse_request($wp) {
 
 	// OpenID Consumer Service
 	if (array_key_exists('openid_consumer', $_REQUEST) && $_REQUEST['action']) {
-		openid_init();
 		finish_openid($_REQUEST['action']);
 	}
 }
@@ -682,23 +671,9 @@ function openid_identity_table() {
 
 
 /**
- * Initialize global OpenID instance.
- */
-function openid_init() {
-	static $openid;
-
-	if (!$openid || !is_a($openid, 'WordPressOpenID')) {
-		$openid = new WordPressOpenID();
-	}
-	
-	return $openid;
-}
-
-/**
  * Delete user.
  */
 function delete_user_openids($userid) {
-	openid_init();
 	$store = openid_getStore();
 	$store->drop_all_identities_for_user($userid);
 }
@@ -734,6 +709,18 @@ function openid_message($new = null) {
 
 	return $message;
 }
+
+function openid_response($new = null) {
+	static $response;
+	return ($new == null) ? $response : $response = $new;
+}
+
+function openid_enabled($new = null) {
+	static $enabled;
+	if ($enabled == null) $enabled = true;
+	return ($new == null) ? $enabled : $enabled = $new;
+}
+
 
 function openid_print_messages() {
 }

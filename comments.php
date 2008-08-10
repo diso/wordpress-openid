@@ -21,6 +21,7 @@ if( get_option('oid_enable_commentform') ) {
 	add_action( 'wp_footer', 'openid_comment_profilelink', 10);
 	add_action( 'wp_footer', 'openid_comment_form', 10);
 }
+add_filter( 'openid_user_data', 'openid_get_user_data_form', 10, 2);
 
 
 /**
@@ -33,8 +34,6 @@ if( get_option('oid_enable_commentform') ) {
  * @return array comment data
  */
 function openid_process_comment( $comment ) {
-	$openid = openid_init();
-
 	if ($_REQUEST['openid_skip']) return $comment;
 		
 	$openid_url = (array_key_exists('openid_identifier', $_POST) ? $_POST['openid_identifier'] : $_POST['url']);
@@ -99,7 +98,6 @@ function openid_comment_post_redirect($location, $comment) {
  * @see get_user_data
  */
 function openid_option_require_name_email( $value ) {
-	$openid = openid_init();
 		
 	if ($_REQUEST['oid_skip']) {
 		return $value;
@@ -135,7 +133,6 @@ function openid_option_require_name_email( $value ) {
  */
 function openid_comments_array(&$comments, $post_id) {
 	global $wpdb;
-	$openid = openid_init();
 	$user = wp_get_current_user();
 
 	$commenter = wp_get_current_commenter();
@@ -213,8 +210,6 @@ function openid_comment_author_link( $html ) {
  * @action post_comment
  */
 function check_comment_author_openid($comment_ID) {
-	$openid = openid_init();
-
 	$comment = get_comment($comment_ID);
 	if ( $comment->user_id && !$comment->openid && is_user_openid($comment->user_id) ) {
 		set_comment_openid($comment_ID);
@@ -276,8 +271,6 @@ function openid_repost_comment_anonymously($post) {
  * @param string $identity_url verified OpenID URL
  */
 function _finish_openid_comment($identity_url) {
-	$openid = openid_init();
-
 	if (empty($identity_url)) {
 		openid_repost_comment_anonymously($_SESSION['oid_comment_post']);
 	}

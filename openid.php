@@ -22,15 +22,7 @@ require_once( dirname(__FILE__) . '/wp-login.php');
 
 @session_start();
 
-class WordPressOpenID {
-	var $response;
-	var $enabled = true;
-	var $bind_done = false;
-}
-
-
 // -- public functions
-
 
 /**
  * Check if the user has any OpenIDs.
