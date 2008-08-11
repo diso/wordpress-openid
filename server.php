@@ -71,7 +71,17 @@ function openid_server_request() {
 	$server = openid_server();
 	$request = $server->decodeRequest();
 	if (in_array($request->mode, array('check_immediate', 'checkid_setup'))) {
-		$response = $request->answer(openid_server_check_user_login($request->identity));
+		if ($request->identity == 'http://specs.openid.net/auth/2.0/identifier_select') {
+			$user = wp_get_current_user();
+			$author_url = get_author_posts_url($user->ID);
+			if (!empty($author_url)) {
+				$response = $request->answer(true, null, $author_url);
+			} else {
+				$response = $request->answer(false);
+			}
+		} else {
+			$response = $request->answer(openid_server_check_user_login($request->identity));
+		}
 	} else {
 		$response = $server->handleRequest($request);
 	}
