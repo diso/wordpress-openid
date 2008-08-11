@@ -12,6 +12,9 @@ add_action( 'register_form', 'openid_wp_register_form');
 add_filter( 'login_errors', 'openid_login_form_hide_username_password_errors');
 add_action( 'wp_authenticate', 'openid_wp_authenticate' );
 add_action( 'openid_finish_auth', 'openid_finish_login' );
+if (get_option('force_openid_registration')) {
+	add_filter('registration_errors', 'openid_registration_errors');
+}
 
 // WordPress 2.5 has wp_authenticate in the wrong place
 if (strpos($wp_version, '2.5') == 0) {
@@ -83,7 +86,11 @@ function openid_wp_login_form() {
  **/
 function openid_wp_register_form() {
 	echo '<p>';
-	printf(__('For faster registration, just %s login with %s.', 'openid'), '<a href="'.get_option('siteurl').'/wp-login.php">', '<span class="openid_link">'.__('OpenID', 'openid').'</span></a>');
+	if (get_option('force_openid_registration')) {
+		printf(__('New users must use %s.', 'openid'), '<a class="openid_link" href="'.get_option('siteurl').'/wp-login.php">OpenID</a>');
+	} else {
+		printf(__('For faster registration, just %s login with %s.', 'openid'), '<a href="'.get_option('siteurl').'/wp-login.php">', '<span class="openid_link">'.__('OpenID', 'openid').'</span></a>');
+	}
 	echo '</p>';
 }
 
@@ -158,6 +165,11 @@ function wp25_login_openid() {
 	if ($self == 'wp-login.php' && !empty($_POST['openid_identifier'])) {
 		wp_signon(array('user_login'=>'openid', 'user_password'=>'openid'));
 	}
+}
+
+function openid_registration_errors($errors) {
+	$errors->add('openid_only', __('New users must register using OpenID.', 'openid'));
+	return $errors;
 }
 
 ?>

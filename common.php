@@ -39,7 +39,6 @@ add_option( 'oid_enable_approval', false );
 add_option( 'oid_enable_email_mapping', false );
 
 
-
 /**
  * Set the textdomain for this plugin so we can support localizations.
  */
@@ -725,5 +724,35 @@ function openid_enabled($new = null) {
 
 function openid_print_messages() {
 }
+
+/**
+ * Enqueue required javascript libraries.
+ *
+ * @action: init
+ **/
+function openid_js_setup() {
+	if (is_single() || is_comments_popup() || is_admin()) {
+		wp_enqueue_script( 'jquery' );
+		wp_enqueue_script('jquery.textnode', '/' . PLUGINDIR . '/openid/files/jquery.textnode.min.js', 
+			array('jquery'), WPOPENID_PLUGIN_REVISION);
+		wp_enqueue_script('jquery.xpath', '/' . PLUGINDIR . '/openid/files/jquery.xpath.min.js', 
+			array('jquery'), WPOPENID_PLUGIN_REVISION);
+		wp_enqueue_script('openid', '/' . PLUGINDIR . '/openid/files/openid.min.js', 
+			array('jquery','jquery.textnode'), WPOPENID_PLUGIN_REVISION);
+	}
+}
+
+/**
+ * Include internal stylesheet.
+ *
+ * @action: wp_head, login_head
+ **/
+function openid_style() {
+	$css_path = get_option('siteurl') . '/' . PLUGINDIR . '/openid/files/openid.css?ver='.WPOPENID_PLUGIN_REVISION;
+	echo '
+		<link rel="stylesheet" type="text/css" href="'.$css_path.'" />';
+}
+
+
 
 ?>

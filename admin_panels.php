@@ -10,35 +10,6 @@ add_action( 'admin_menu', 'openid_admin_panels' );
 add_action( 'personal_options_update', 'openid_personal_options_update' );
 add_action( 'openid_finish_auth', 'openid_finish_verify' );
 
-/**
- * Enqueue required javascript libraries.
- *
- * @action: init
- **/
-function openid_js_setup() {
-	if (is_single() || is_comments_popup() || is_admin()) {
-		wp_enqueue_script( 'jquery' );
-		wp_enqueue_script('jquery.textnode', '/' . PLUGINDIR . '/openid/files/jquery.textnode.min.js', 
-			array('jquery'), WPOPENID_PLUGIN_REVISION);
-		wp_enqueue_script('jquery.xpath', '/' . PLUGINDIR . '/openid/files/jquery.xpath.min.js', 
-			array('jquery'), WPOPENID_PLUGIN_REVISION);
-		wp_enqueue_script('openid', '/' . PLUGINDIR . '/openid/files/openid.min.js', 
-			array('jquery','jquery.textnode'), WPOPENID_PLUGIN_REVISION);
-	}
-}
-
-
-/**
- * Include internal stylesheet.
- *
- * @action: wp_head, login_head
- **/
-function openid_style() {
-	$css_path = get_option('siteurl') . '/' . PLUGINDIR . '/openid/files/openid.css?ver='.WPOPENID_PLUGIN_REVISION;
-	echo '
-		<link rel="stylesheet" type="text/css" href="'.$css_path.'" />';
-}
-
 
 
 
@@ -99,6 +70,7 @@ function openid_options_page() {
 		update_option( 'oid_enable_commentform', isset($_POST['enable_commentform']) ? true : false );
 		update_option( 'oid_enable_approval', isset($_POST['enable_approval']) ? true : false );
 		update_option( 'oid_enable_email_mapping', isset($_POST['enable_email_mapping']) ? true : false );
+		update_option( 'force_openid_registration', isset($_POST['force_openid_registration']) ? true : false );
 		update_option( 'openid_blog_owner', $_POST['openid_blog_owner']);
 
 		if ($error !== '') {
@@ -162,6 +134,18 @@ function openid_options_page() {
 					</td>
 				</tr>
 
+				<?php if (get_option('users_can_register')): ?>
+				<tr valign="top">
+					<th scope="row"><?php _e('Force OpenID Registration:', 'openid') ?></th>
+					<td>
+						<p><input type="checkbox" name="force_openid_registration" id="force_openid_registration" <?php
+						if( get_option('force_openid_registration') ) echo 'checked="checked"'
+						?> />
+							<label for="force_openid_registration"><?php _e('Force use of OpenID for new account registration.', 'openid') ?></label></p>
+					</td>
+				</tr>
+				<?php endif; ?>
+
 				<?php /*
 				<tr valign="top">
 					<th scope="row"><?php _e('Email Mapping:', 'openid') ?></th>
@@ -204,6 +188,9 @@ function openid_options_page() {
 						The user designated as the "Blog Owner" will also be able to use
 						the blog root (<?php printf('<a href="%1$s">%1$s</a>', trailingslashit(get_option('home'))); ?>), 
 						as their OpenID.  If this is a single-user blog, you should set this to your main account.</p>
+
+						<p>If no blog owner is selected, then any user may use the blog root to initiate OpenID 
+						authentication and OP-driven identity selection will be used.</p>
 
 						<select id="openid_blog_owner" name="openid_blog_owner">
 							<option value=''>(none)</option>
