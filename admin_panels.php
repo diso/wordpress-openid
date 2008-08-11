@@ -526,7 +526,7 @@ function openid_profile_drop_identity($id) {
  * @param string $identity_url verified OpenID URL
  */
 function openid_finish_verify($identity_url) {
-	if ($_REQUEST['action'] != 'verify') die($_REQUEST['action']);
+	if ($_REQUEST['action'] != 'verify') return;
 
 	$user = wp_get_current_user();
 	if (empty($identity_url)) {
