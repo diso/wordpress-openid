@@ -6,6 +6,10 @@ add_filter( 'xrds_simple', 'openid_provider_xrds_simple');
 function openid_provider_xrds_simple($xrds) {
 	$user = openid_server_requested_user();
 	
+	if (!$user && get_option('openid_blog_owner')) {
+		$user = get_userdatabylogin(get_option('openid_blog_owner'));
+	}
+
 	if ($user) {
 		$identifier = get_author_posts_url($user->ID);
 

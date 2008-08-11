@@ -75,7 +75,7 @@ function openid_admin_panels() {
  * @options_page
  */
 function openid_options_page() {
-	global $wp_version;
+	global $wp_version, $wpdb;
 
 	if ( isset($_REQUEST['action']) ) {
 		switch($_REQUEST['action']) {
@@ -99,6 +99,7 @@ function openid_options_page() {
 		update_option( 'oid_enable_commentform', isset($_POST['enable_commentform']) ? true : false );
 		update_option( 'oid_enable_approval', isset($_POST['enable_approval']) ? true : false );
 		update_option( 'oid_enable_email_mapping', isset($_POST['enable_email_mapping']) ? true : false );
+		update_option( 'openid_blog_owner', $_POST['openid_blog_owner']);
 
 		if ($error !== '') {
 			echo '<div class="error"><p><strong>'.__('At least one of OpenID options was NOT updated', 'openid').'</strong>'.$error.'</p></div>';
@@ -114,11 +115,11 @@ function openid_options_page() {
 	if( substr( $siteurl, -1, 1 ) !== '/' ) $siteurl .= '/';
 	?>
 	<div class="wrap">
-		<h2><?php _e('WP-OpenID Registration Options', 'openid') ?></h2>
-
-		<?php if ($wp_version >= '2.3') { openid_printSystemStatus(); } ?>
-
 		<form method="post">
+
+			<h2><?php _e('OpenID Consumer Options', 'openid') ?></h2>
+
+			<?php if ($wp_version >= '2.3') { openid_printSystemStatus(); } ?>
 
 			<?php if ($wp_version < '2.3') { ?>
 			<p class="submit"><input type="submit" name="info_update" value="<?php _e('Update Options') ?> &raquo;" /></p>
@@ -186,10 +187,41 @@ function openid_options_page() {
 				. 'rebuilds a couple of tables that hold only temporary data.', 'openid'), 
 			'<a href="'.wp_nonce_url(sprintf('?page=%s&action=rebuild_tables', $_REQUEST['page']), 'wp-openid-info_rebuild_tables').'">', '</a>') ?></p>
 
+			<h2><?php _e('OpenID Server Options', 'openid') ?></h2>
+			<?php 
+				$current_user = wp_get_current_user(); 
+				$current_user_url = get_author_posts_url($current_user->ID);
+			?>
+
+			<table class="form-table optiontable editform" cellspacing="2" cellpadding="5" width="100%">
+				<tr valign="top">
+					<th style="width: 33%" scope="row"><?php _e('Set Blog Owner:', 'openid') ?></th>
+					<td>
+
+						<p>Users on this blog can use their author URL (ie. 
+						<em><?php printf('<a href="%1$s">%1$s</a>', $current_user_url); ?></em>) as an 
+						OpenID, either using the local OenID server, or delegating to another provider.  
+						The user designated as the "Blog Owner" will also have their options copied to 
+						the blog root, so that they may optionally use that as their OpenID.  If this 
+						is a single-user blog, you should set this to your main account.</p>
+
+						<select id="openid_blog_owner" name="openid_blog_owner">
+							<option value=''>(none)</option>
+			<?php
+				$users = $wpdb->get_results("SELECT user_login FROM $wpdb->users ORDER BY user_login");
+				foreach($users as $user) { 
+					$selected = (get_option('openid_blog_owner') == $user->user_login) ? ' selected="selected"' : '';
+					echo '<option value="'.$user->user_login.'"'.$selected.'>'.$user->user_login.'</option>';
+				}
+			?>
+						</select>
+					</td>
+				</tr>
+			</table>
+
 			<?php wp_nonce_field('wp-openid-info_update'); ?>
 			<p class="submit"><input type="submit" name="info_update" value="<?php _e('Update Options') ?> &raquo;" /></p>
 		</form>
-
 	</div>
 		<?php
 	if ($wp_version < '2.3') {
