@@ -19,7 +19,7 @@ add_filter( 'init', 'openid_init_errors');
 add_action('parse_request', 'openid_parse_request');
 
 add_action( 'delete_user', 'delete_user_openids' );
-add_action( 'cleanup_openid', 'openid_cleanup_nonces' );
+add_action( 'cleanup_openid', 'openid_cleanup' );
 
 
 // hooks for getting user data
@@ -139,11 +139,12 @@ function openid_activate_plugin() {
 
 
 /**
- * Cleanup expired nonces from the OpenID store.
+ * Cleanup expired nonces and associations from the OpenID store.
  */
-function openid_cleanup_nonces() {
+function openid_cleanup() {
 	$store =& openid_getStore();
 	$store->cleanupNonces();
+	$store->cleanupAssociations();
 }
 
 

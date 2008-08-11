@@ -196,6 +196,12 @@ class WordPressOpenID_Store extends Auth_OpenID_MySQLStore {
 
 		$this->sql['get_expired'] =
 				"SELECT server_url FROM %s WHERE issued + lifetime < %%s";
+
+		$this->sql['clean_nonce'] =
+				"DELETE FROM %s WHERE timestamp < %%s";
+
+		$this->sql['clean_assoc'] =
+				"DELETE FROM %s WHERE issued + lifetime < %%s";
 	}
 
 
@@ -318,6 +324,14 @@ class WordPressOpenID_Connection extends Auth_OpenID_DatabaseConnection {
 		if( DB_FETCHMODE_ASSOC == $mode ) $this->fetchmode = ARRAY_A;
 		if( DB_FETCHMODE_ORDERED == $mode ) $this->fetchmode = ARRAY_N;
 		if( DB_FETCHMODE_OBJECT == $mode ) $this->fetchmode = OBJECT;
+	}
+
+	function affectedRows() { 
+		return mysql_affected_rows($this->wpdb->dbh);
+	}
+
+	function commit() {
+		return @mysql_query('COMMIT', $this->wpdb->dbh);
 	}
 }
 endif;
