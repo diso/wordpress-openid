@@ -11,6 +11,7 @@ add_action( 'login_form', 'openid_wp_login_form');
 add_action( 'register_form', 'openid_wp_register_form');
 add_filter( 'login_errors', 'openid_login_form_hide_username_password_errors');
 add_action( 'wp_authenticate', 'openid_wp_authenticate' );
+add_action( 'openid_finish_auth', 'openid_finish_login' );
 
 // WordPress 2.5 has wp_authenticate in the wrong place
 if (strpos($wp_version, '2.5') == 0) {
@@ -93,7 +94,9 @@ function openid_wp_register_form() {
  *
  * @param string $identity_url verified OpenID URL
  */
-function _finish_openid_login($identity_url) {
+function openid_finish_login($identity_url) {
+	if ($_REQUEST['action'] != 'login') return;
+
 	$redirect_to = urldecode($_REQUEST['redirect_to']);
 		
 	if (empty($identity_url)) {

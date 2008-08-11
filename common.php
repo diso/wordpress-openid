@@ -405,19 +405,13 @@ function openid_set_current_user($identity, $remember = true) {
 
 
 /**
- * Finish OpenID authentication.  After doing the basic stuff, the action method is called to complete the
- * process.  Action methods are based on the action name passed in and are of the form
- * '_finish_openid_$action'.  Action methods are passed the verified identity URL, or null if OpenID
- * authentication failed.
+ * Finish OpenID authentication. 
  *
  * @param string $action login action that is being performed
  */
 function finish_openid($action) {
 	$identity_url = finish_openid_auth();
-		
-	if (!empty($action) && function_exists('_finish_openid_' . $action)) {
-		call_user_func('_finish_openid_' . $action, $identity_url);
-	}
+	do_action('openid_finish_auth', $identity_url);
 		
 	global $action;
 	$action = openid_status();

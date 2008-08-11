@@ -12,6 +12,7 @@ add_filter( 'option_require_name_email', 'openid_option_require_name_email' );
 add_filter( 'comments_array', 'openid_comments_array', 10, 2);
 add_action( 'sanitize_comment_cookies', 'openid_sanitize_comment_cookies', 15);
 add_filter( 'comment_post_redirect', 'openid_comment_post_redirect', 0, 2);
+add_action( 'openid_finish_auth', 'openid_finish_comment' );
 if( get_option('oid_enable_approval') ) {
 	add_filter('pre_comment_approved', 'openid_comment_approval');
 }
@@ -270,7 +271,9 @@ function openid_repost_comment_anonymously($post) {
  *
  * @param string $identity_url verified OpenID URL
  */
-function _finish_openid_comment($identity_url) {
+function openid_finish_comment($identity_url) {
+	if ($_REQUEST['action'] != 'comment') return;
+
 	if (empty($identity_url)) {
 		openid_repost_comment_anonymously($_SESSION['oid_comment_post']);
 	}

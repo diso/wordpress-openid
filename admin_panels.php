@@ -8,6 +8,7 @@
 // -- WordPress Hooks
 add_action( 'admin_menu', 'openid_admin_panels' );
 add_action( 'personal_options_update', 'openid_personal_options_update' );
+add_action( 'openid_finish_auth', 'openid_finish_verify' );
 
 /**
  * Enqueue required javascript libraries.
@@ -524,7 +525,8 @@ function openid_profile_drop_identity($id) {
  *
  * @param string $identity_url verified OpenID URL
  */
-function _finish_openid_verify($identity_url) {
+function openid_finish_verify($identity_url) {
+	if ($_REQUEST['action'] != 'verify') die($_REQUEST['action']);
 
 	$user = wp_get_current_user();
 	if (empty($identity_url)) {
