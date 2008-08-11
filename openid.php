@@ -19,6 +19,7 @@ require_once( dirname(__FILE__) . '/common.php');
 require_once( dirname(__FILE__) . '/admin_panels.php');
 require_once( dirname(__FILE__) . '/comments.php');
 require_once( dirname(__FILE__) . '/wp-login.php');
+require_once( dirname(__FILE__) . '/server.php');
 
 @session_start();
 
