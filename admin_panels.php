@@ -127,7 +127,7 @@ function openid_options_page() {
 
 			<table class="form-table optiontable editform" cellspacing="2" cellpadding="5" width="100%">
 				<tr valign="top">
-					<th style="width: 33%" scope="row"><?php _e('Automatic Approval:', 'openid') ?></th>
+					<th scope="row"><?php _e('Automatic Approval:', 'openid') ?></th>
 					<td>
 						<p><input type="checkbox" name="enable_approval" id="enable_approval" <?php 
 							echo get_option('oid_enable_approval') ? 'checked="checked"' : ''; ?> />
@@ -148,7 +148,7 @@ function openid_options_page() {
 				</tr>
 
 				<tr valign="top">
-					<th style="width: 33%" scope="row"><?php _e('Comment Form:', 'openid') ?></th>
+					<th scope="row"><?php _e('Comment Form:', 'openid') ?></th>
 					<td>
 						<p><input type="checkbox" name="enable_commentform" id="enable_commentform" <?php
 						if( get_option('oid_enable_commentform') ) echo 'checked="checked"'
@@ -164,7 +164,7 @@ function openid_options_page() {
 
 				<?php /*
 				<tr valign="top">
-					<th style="width: 33%" scope="row"><?php _e('Email Mapping:', 'openid') ?></th>
+					<th scope="row"><?php _e('Email Mapping:', 'openid') ?></th>
 					<td>
 						<p><input type="checkbox" name="enable_email_mapping" id="enable_email_mapping" <?php
 						if( get_option('oid_enable_email_mapping') ) echo 'checked="checked"'
@@ -195,7 +195,7 @@ function openid_options_page() {
 
 			<table class="form-table optiontable editform" cellspacing="2" cellpadding="5" width="100%">
 				<tr valign="top">
-					<th style="width: 33%" scope="row"><?php _e('Blog Owner:', 'openid') ?></th>
+					<th scope="row"><?php _e('Blog Owner:', 'openid') ?></th>
 					<td>
 
 						<p>Users on this blog can use their author URL (ie. 
@@ -319,30 +319,48 @@ function openid_profile_panel() {
 
 	<h2><?php _e('Local OpenID', 'openid') ?></h2>
 
-	<p>You may optionally use your author URL (<?php printf('<a 
-	href="%1$s">%1$s</a>', get_author_posts_url($user->ID)); ?>) as an OpenID using 
-	your local WordPress username and password, or may delegate to another 
-	provider.</p>
-
-	<?php
-		$use_openid_provider = get_usermeta($user->ID, 'use_openid_provider');
-	?>
 	<form method="post">
-		<p><input type="radio" name="use_openid_provider" id="no_provider" value="none" <?php echo ($use_openid_provider == 'none' || empty($use_openid_provider)) ? 'checked="checked"' : ''; ?>><label for="no_provider">Don't use local OpenID</label></p>
-		<p><input type="radio" name="use_openid_provider" id="use_local_provider" value="local" <?php echo $use_openid_provider == 'local' ? 'checked="checked"' : ''; ?>><label for="use_local_provider">Use local OpenID Provider</label></p>
-		<p><input type="radio" name="use_openid_provider" id="delegate_provider" value="delegate" <?php echo $use_openid_provider == 'delegate' ? 'checked="checked"' : ''; ?>><label for="delegate_provider">Delegate to another OpenID Provider</label>
-			<div id="delegate_info">
-				<p><input type="text" id="openid_server" name="openid_server" value="<?php echo get_usermeta($user->ID, 'openid_server') ?>"/><label for="openid_server">OpenID Server</label></p>
-				<p><input type="text" id="openid_delegate" name="openid_delegate" value="<?php echo get_usermeta($user->ID, 'openid_delegate') ?>"/><label for="openid_delegate">OpenID Delegate</label></p>
-			</div>
-		</p>
-		<?php wp_nonce_field('wp-openid-update_options'); ?>
-		<input type="hidden" name="action" value="update" />
-		<p><input type="submit" value="<?php _e('Update Options') ?> &raquo;" /></p>
+	<table class="form-table optiontable editform" cellspacing="2" cellpadding="5" width="100%">
+		<tr valign="top">
+			<th scope="row"><?php _e('Local OpenID:', 'openid') ?></th>
+			<td>
+
+			<p>You may optionally use your author URL (<?php printf('<a 
+			href="%1$s">%1$s</a>', get_author_posts_url($user->ID)); ?>) as an OpenID using 
+			your local WordPress username and password, or may delegate to another 
+			provider.</p>
+
+		<?php
+			$use_openid_provider = get_usermeta($user->ID, 'use_openid_provider');
+		?>
+			<p><input type="radio" name="use_openid_provider" id="no_provider" value="none" <?php echo ($use_openid_provider == 'none' || empty($use_openid_provider)) ? 'checked="checked"' : ''; ?>><label for="no_provider">Don't use local OpenID</label></p>
+			<p><input type="radio" name="use_openid_provider" id="use_local_provider" value="local" <?php echo $use_openid_provider == 'local' ? 'checked="checked"' : ''; ?>><label for="use_local_provider">Use local OpenID Provider</label></p>
+			<p><input type="radio" name="use_openid_provider" id="delegate_provider" value="delegate" <?php echo $use_openid_provider == 'delegate' ? 'checked="checked"' : ''; ?>><label for="delegate_provider">Delegate to another OpenID Provider</label>
+				<div id="delegate_info" style="margin-left: 2em;">
+					<p><input type="text" id="openid_server" name="openid_server" value="<?php echo get_usermeta($user->ID, 'openid_server') ?>"/><label for="openid_server">OpenID Server</label></p>
+					<p><input type="text" id="openid_delegate" name="openid_delegate" value="<?php echo get_usermeta($user->ID, 'openid_delegate') ?>"/><label for="openid_delegate">OpenID Delegate</label></p>
+				</div>
+			</p>
+			</td>
+		</tr>
+	</table>
+
+	<?php wp_nonce_field('wp-openid-update_options'); ?>
+	<input type="hidden" name="action" value="update" />
+	<p class="submit"><input type="submit" value="<?php _e('Update Options') ?> &raquo;" /></p>
 	</form>
 	
-
 	</div>
+
+	<script type="text/javascript">
+	jQuery(function() {
+		<?php if ($use_openid_provider != 'delegate') echo 'jQuery(\'#delegate_info\').hide();'; ?>
+
+		jQuery('#no_provider').change(function() { jQuery('#delegate_info').hide(); });
+		jQuery('#use_local_provider').change(function() { jQuery('#delegate_info').hide(); });
+		jQuery('#delegate_provider').change(function() { jQuery('#delegate_info').show(); });
+	});
+	</script>
 	<?php
 }
 
