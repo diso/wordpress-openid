@@ -7,6 +7,11 @@ function openid_provider_xrds_simple($xrds) {
 	$user = openid_server_requested_user();
 	
 	if (!$user && get_option('openid_blog_owner')) {
+		$url_parts = parse_url(get_option('home'));
+		if ('/' . $url_parts['path'] != $_SERVER['REQUEST_URI']) {
+			return $xrds;
+		}
+
 		$user = get_userdatabylogin(get_option('openid_blog_owner'));
 	}
 
