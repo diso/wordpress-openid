@@ -4,10 +4,6 @@
 add_filter( 'xrds_simple', 'openid_provider_xrds_simple');
 
 function openid_provider_xrds_simple($xrds) {
-	if (is_author()) {
-		error_log('is_author');
-	}
-
 	$user = openid_server_requested_user();
 	
 	if ($user) {
@@ -49,7 +45,8 @@ function openid_server_requested_user() {
 	} else {
 		$regex = preg_replace('/%author%/', '(.+)', $wp_rewrite->get_author_permastruct());
 		preg_match('|'.$regex.'|', $_SERVER['REQUEST_URI'], $matches);
-		return get_userdatabylogin($matches[1]);
+		$username = sanitize_user($matches[1], true);
+		return get_userdatabylogin($username);
 	}
 }
 
@@ -63,7 +60,6 @@ function openid_server_request() {
 	}
 
 	$web_response = $server->encodeResponse($response);
-	error_log(var_export($web_response, true));
 
 	if ($web_response->code != AUTH_OPENID_HTTP_OK) {
 		header(sprintf('HTTP/1.1 %d', $web_response->code), true, $web_response->code);
