@@ -11,20 +11,28 @@ function openid_provider_xrds_simple($xrds) {
 	}
 
 	if ($user) {
-		$identifier = get_author_posts_url($user->ID);
+		if (get_usermeta($user->ID, 'use_openid_provider') == 'local') {
+			$server = trailingslashit(get_option('siteurl')) . '?openid_server=1';
+			$identifier = get_author_posts_url($user->ID);
+		} else if (get_usermeta($user->ID, 'use_openid_provider') == 'delegate') {
+			$server = get_usermeta($user-ID, 'openid_server');
+			$identifier = get_usermeta($user-ID, 'openid_delegate');
+		}
 
-		// OpenID Provider Service
-		$xrds = xrds_add_service($xrds, 'main', 'OpenID Provider Service', 
-			array(
-				'Type' => array(
-					array('content' => 'http://specs.openid.net/auth/2.0/signon'),
-					array('content' => 'http://openid.net/signon/1.1'),
-				),
-				'URI' => array(array('content' => trailingslashit(get_option('siteurl')) . '?openid_server=1') ),
-				'LocalID' => array($identifier),
-				'openid:Delegate' => array($identifier),
-			)
-		);
+		if ($server && $identifier) {
+			// OpenID Provider Service
+			$xrds = xrds_add_service($xrds, 'main', 'OpenID Provider Service', 
+				array(
+					'Type' => array(
+						array('content' => 'http://specs.openid.net/auth/2.0/signon'),
+						array('content' => 'http://openid.net/signon/1.1'),
+					),
+					'URI' => array(array('content' => $server )),
+					'LocalID' => array($identifier),
+					'openid:Delegate' => array($identifier),
+				)
+			);
+		}
 	} else {
 		// OpenID Provider Service
 		$xrds = xrds_add_service($xrds, 'main', 'OpenID Provider Service', 

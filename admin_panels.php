@@ -187,7 +187,7 @@ function openid_options_page() {
 				. 'rebuilds a couple of tables that hold only temporary data.', 'openid'), 
 			'<a href="'.wp_nonce_url(sprintf('?page=%s&action=rebuild_tables', $_REQUEST['page']), 'wp-openid-info_rebuild_tables').'">', '</a>') ?></p>
 
-			<h2><?php _e('OpenID Server Options', 'openid') ?></h2>
+			<h2><?php _e('OpenID Provider Options', 'openid') ?></h2>
 			<?php 
 				$current_user = wp_get_current_user(); 
 				$current_user_url = get_author_posts_url($current_user->ID);
@@ -195,15 +195,15 @@ function openid_options_page() {
 
 			<table class="form-table optiontable editform" cellspacing="2" cellpadding="5" width="100%">
 				<tr valign="top">
-					<th style="width: 33%" scope="row"><?php _e('Set Blog Owner:', 'openid') ?></th>
+					<th style="width: 33%" scope="row"><?php _e('Blog Owner:', 'openid') ?></th>
 					<td>
 
 						<p>Users on this blog can use their author URL (ie. 
 						<em><?php printf('<a href="%1$s">%1$s</a>', $current_user_url); ?></em>) as an 
-						OpenID, either using the local OenID server, or delegating to another provider.  
-						The user designated as the "Blog Owner" will also have their options copied to 
-						the blog root, so that they may optionally use that as their OpenID.  If this 
-						is a single-user blog, you should set this to your main account.</p>
+						OpenID, either using the local OpenID server, or delegating to another provider.  
+						The user designated as the "Blog Owner" will also be able to use
+						the blog root (<?php printf('<a href="%1$s">%1$s</a>', trailingslashit(get_option('home'))); ?>), 
+						as their OpenID.  If this is a single-user blog, you should set this to your main account.</p>
 
 						<select id="openid_blog_owner" name="openid_blog_owner">
 							<option value=''>(none)</option>
@@ -315,6 +315,33 @@ function openid_profile_panel() {
 			<input type="hidden" name="action" value="add_identity" >
 		</form>
 	</p>
+
+
+	<h2><?php _e('Local OpenID', 'openid') ?></h2>
+
+	<p>You may optionally use your author URL (<?php printf('<a 
+	href="%1$s">%1$s</a>', get_author_posts_url($user->ID)); ?>) as an OpenID using 
+	your local WordPress username and password, or may delegate to another 
+	provider.</p>
+
+	<?php
+		$use_openid_provider = get_usermeta($user->ID, 'use_openid_provider');
+	?>
+	<form method="post">
+		<p><input type="radio" name="use_openid_provider" id="no_provider" value="none" <?php echo ($use_openid_provider == 'none' || empty($use_openid_provider)) ? 'checked="checked"' : ''; ?>><label for="no_provider">Don't use local OpenID</label></p>
+		<p><input type="radio" name="use_openid_provider" id="use_local_provider" value="local" <?php echo $use_openid_provider == 'local' ? 'checked="checked"' : ''; ?>><label for="use_local_provider">Use local OpenID Provider</label></p>
+		<p><input type="radio" name="use_openid_provider" id="delegate_provider" value="delegate" <?php echo $use_openid_provider == 'delegate' ? 'checked="checked"' : ''; ?>><label for="delegate_provider">Delegate to another OpenID Provider</label>
+			<div id="delegate_info">
+				<p><input type="text" id="openid_server" name="openid_server" value="<?php echo get_usermeta($user->ID, 'openid_server') ?>"/><label for="openid_server">OpenID Server</label></p>
+				<p><input type="text" id="openid_delegate" name="openid_delegate" value="<?php echo get_usermeta($user->ID, 'openid_delegate') ?>"/><label for="openid_delegate">OpenID Delegate</label></p>
+			</div>
+		</p>
+		<?php wp_nonce_field('wp-openid-update_options'); ?>
+		<input type="hidden" name="action" value="update" />
+		<p><input type="submit" value="<?php _e('Update Options') ?> &raquo;" /></p>
+	</form>
+	
+
 	</div>
 	<?php
 }
@@ -437,17 +464,6 @@ function openid_profile_management() {
 	
 	if( !isset( $_REQUEST['action'] )) return;
 		
-	require_once(ABSPATH . 'wp-admin/admin-functions.php');
-
-	if ($wp_version < '2.3') {
-		require_once(ABSPATH . 'wp-admin/admin-db.php');
-		require_once(ABSPATH . 'wp-admin/upgrade-functions.php');
-	}
-
-	auth_redirect();
-	nocache_headers();
-	get_currentuserinfo();
-
 	switch( $_REQUEST['action'] ) {
 		case 'add_identity':
 			check_admin_referer('wp-openid-add_identity');
@@ -473,6 +489,16 @@ function openid_profile_management() {
 
 		case 'drop_identity':  // Remove a binding.
 			openid_profile_drop_identity($_REQUEST['id']);
+			break;
+
+		case 'update': // update information
+			check_admin_referer('wp-openid-update_options');
+			$user = wp_get_current_user();
+			update_usermeta($user->ID, 'use_openid_provider', $_POST['use_openid_provider']);
+			if ($_POST['use_openid_provider'] == 'delegate') {
+				update_usermeta($user->ID, 'openid_server', $_POST['openid_server']);
+				update_usermeta($user->ID, 'openid_delegate', $_POST['openid_delegate']);
+			}
 			break;
 	}
 }
