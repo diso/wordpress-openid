@@ -2,6 +2,7 @@
 
 
 add_filter( 'xrds_simple', 'openid_provider_xrds_simple');
+add_action( 'wp_head', 'openid_provider_link_tags');
 
 function openid_provider_xrds_simple($xrds) {
 	$user = openid_server_requested_user();
@@ -119,4 +120,34 @@ function openid_server() {
 
 	return $server;
 }
+
+function openid_provider_link_tags() {
+
+	if (is_front_page()) {
+		$user = get_userdatabylogin(get_option('openid_blog_owner'));
+	} else if (is_author()) {
+		global $wp_query;
+		$user = $wp_query->get_queried_object();
+	}
+
+	if ($user) {
+		if (get_usermeta($user->ID, 'use_openid_provider') == 'local') {
+			$server = trailingslashit(get_option('siteurl')) . '?openid_server=1';
+			$identifier = get_author_posts_url($user->ID);
+		} else if (get_usermeta($user->ID, 'use_openid_provider') == 'delegate') {
+			$server = get_usermeta($user-ID, 'openid_server');
+			$identifier = get_usermeta($user-ID, 'openid_delegate');
+		}
+	}
+
+	if ($server && $identifier) {
+		echo '
+		<link rel="openid2.provider" href="'.$server.'" />
+		<link rel="openid2.local_id" href="'.$identifier.'" />
+		<link rel="openid.server" href="'.$server.'" />
+		<link rel="openid.delegate" href="'.$identifier.'" />';
+	}
+
+}
+
 ?>
