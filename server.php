@@ -21,8 +21,8 @@ function openid_provider_xrds_simple($xrds) {
 			$server = trailingslashit(get_option('siteurl')) . '?openid_server=1';
 			$identifier = get_author_posts_url($user->ID);
 		} else if (get_usermeta($user->ID, 'use_openid_provider') == 'delegate') {
-			$server = get_usermeta($user-ID, 'openid_server');
-			$identifier = get_usermeta($user-ID, 'openid_delegate');
+			$server = get_usermeta($user->ID, 'openid_server');
+			$identifier = get_usermeta($user->ID, 'openid_delegate');
 		}
 
 		if ($server && $identifier) {
