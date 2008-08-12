@@ -530,8 +530,7 @@ function openid_profile_drop_identity($id) {
 		return;
 	}
 
-	$store =& openid_getStore();
-	$deleted_identity_url = $store->get_identities($user->ID, $id);
+	$deleted_identity_url = openid_get_identities($user->ID, $id);
 	if( FALSE === $deleted_identity_url ) {
 		openid_message('Identity url delete failed: Specified identity does not exist.');
 		openid_status('error');
@@ -550,7 +549,7 @@ function openid_profile_drop_identity($id) {
 	check_admin_referer('wp-openid-drop-identity_'.$deleted_identity_url);
 		
 
-	if( $store->drop_identity($user->ID, $id) ) {
+	if( openid_drop_identity($user->ID, $id) ) {
 		openid_message('Identity url delete successful. <b>' . $deleted_identity_url . '</b> removed.');
 		openid_status('success');
 
@@ -601,8 +600,7 @@ function openid_finish_verify($identity_url) {
 	if (empty($identity_url)) {
 		openid_set_error('Unable to authenticate OpenID.');
 	} else {
-		$store =& openid_getStore();
-		if( !$store->insert_identity($user->ID, $identity_url) ) {
+		if( !openid_add_identity($user->ID, $identity_url) ) {
 			openid_set_error('OpenID assertion successful, but this URL is already claimed by '
 			. 'another user on this blog. This is probably a bug. ' . $identity_url);
 		} else {

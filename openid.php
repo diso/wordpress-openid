@@ -61,8 +61,7 @@ function is_comment_openid() {
  */
 function get_user_openids($user = null) {
 	// TODO: finish implementing
-	$store = openid_getStore();
-	return $store->get_identities($user);
+	return openid_get_identities($user, null);
 }
 
 
@@ -74,8 +73,7 @@ function get_user_openids($user = null) {
  */
 function get_user_by_openid($url) {
 	// TODO: finish implementing
-	$store = openid_getStore();
-	return $store->get_user_by_identity($url);
+	return openid_get_user_by_openid($url);
 }
 
 /**

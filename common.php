@@ -674,14 +674,12 @@ function openid_identity_table() {
  * Delete user.
  */
 function delete_user_openids($userid) {
-	$store = openid_getStore();
-	$store->drop_all_identities_for_user($userid);
+	openid_drop_all_identities($userid);
 }
 
 
 function openid_add_user_identity($user_id, $identity_url) {
-	$store = openid_getStore();
-	$store->insert_identity($user_id, $identity_url);
+	openid_add_identity($user_id, $identity_url);
 }
 
 function openid_status($new = null) {
@@ -753,6 +751,29 @@ function openid_style() {
 		<link rel="stylesheet" type="text/css" href="'.$css_path.'" />';
 }
 
+function openid_add_identity($user_id, $identity_url) {
+	$store =& openid_getStore();
+	return $store->insert_identity($user_id, $identity_url);
+}
 
+function openid_get_identities($user_id, $identity_id) {
+	$store =& openid_getStore();
+	return $store->get_identities($user_id, $identity_id);
+}
+
+function openid_drop_identity($user_id, $identity_id) {
+	$store =& openid_getStore();
+	return $store->drop_identity($user_id, $identity_id);
+}
+
+function openid_drop_all_identities($user_id) {
+	$store =& openid_getStore();
+	return $store->drop_all_identities_for_user($user_id);
+}
+
+function openid_get_user_by_openid($url) {
+	$store = openid_getStore();
+	return $store->get_user_by_identity($url);
+}
 
 ?>
