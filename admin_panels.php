@@ -409,6 +409,12 @@ function openid_printSystemStatus() {
 	
 	$status[] = array( 'Plugin Revision', 'info', WPOPENID_PLUGIN_REVISION);
 	$status[] = array( 'Plugin Database Revision', 'info', get_option('oid_db_revision'));
+
+	if (function_exists('xrds_meta')) {
+		$status[] = array( 'XRDS-Simple', 'info', 'XRDS-Simple plugin is installed.');
+	} else {
+		$status[] = array( 'XRDS-Simple', false, '<a href="http://diso.googlecode.com/svn/wordpress/wp-xrds-simple/branches/refactoring/">XRDS-Simple</a> plugin is not installed.  Some features may not work properly (including providing OpenIDs).');
+	}
 	
 	$openid_enabled = openid_enabled();
 	$status[] = array( '<strong>Overall Plugin Status</strong>', ($openid_enabled), 
