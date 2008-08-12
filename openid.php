@@ -32,13 +32,8 @@ require_once( dirname(__FILE__) . '/server.php');
  * @return bool true if the user has any OpenIDs
  */
 function is_user_openid($user = null) {
-	global $current_user;
-
-	if ($user === null && $current_user !== null) {
-		$user = $current_user->ID;
-	}
-
-	return $user === null ? false : get_usermeta($user, 'has_openid');
+	$urls = get_user_openids($user);
+	return (!empty($urls));
 }
 
 
@@ -56,12 +51,12 @@ function is_comment_openid() {
 /**
  * Get the OpenID identities for the specified user.
  *
- * @param mixed $user the username or ID.  If not provided, the current user will be used.
+ * @param mixed $id_or_name the username or ID.  If not provided, the current user will be used.
  * @return array array of user's OpenID identities
  */
-function get_user_openids($user = null) {
-	// TODO: finish implementing
-	return openid_get_identities($user, null);
+function get_user_openids($id_or_name = null) {
+	$user = get_userdata_by_various($id_or_name);
+	return openid_get_identities($user->ID);
 }
 
 
@@ -69,12 +64,13 @@ function get_user_openids($user = null) {
  * Get the user associated with the specified OpenID.
  *
  * @param string $openid identifier to match
- * @return int|false ID of associated user, or false if no associated user
+ * @return int|null ID of associated user, or null if no associated user
  */
 function get_user_by_openid($url) {
-	// TODO: finish implementing
-	return openid_get_user_by_openid($url);
+	global $wpdb;
+	return $wpdb->get_var( $wpdb->prepare('SELECT user_id FROM '.openid_identity_table().' WHERE url = %s', $url) );
 }
+
 
 /**
  * Get a simple OpenID input field, used for disabling unobtrusive mode.
@@ -83,5 +79,25 @@ function openid_input() {
 	return '<input type="text" id="openid_identifier" name="openid_identifier" />';
 }
 
+
+/**
+ * Convenience method to get user data by ID, username, or from current user.
+ *
+ * @param mixed $id_or_name the username or ID.  If not provided, the current user will be used.
+ * @return bool|object False on failure, User DB row object
+ */
+if (!function_exists('get_user_by_various')) :
+function get_userdata_by_various($id_or_name = null) {
+	if ($id_or_name === null) {
+		$user = wp_get_current_user();
+		if ($user == null) return false;
+		return $user->data;
+	} else if (is_numeric($id_or_name)) {
+		return get_userdata($id_or_name);
+	} else {
+		return get_userdatabylogin($id_or_name);
+	}
+}
+endif;
 
 ?>

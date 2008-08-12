@@ -112,7 +112,8 @@ function openid_finish_login($identity_url) {
 		exit;
 	}
 		
-	openid_set_current_user($identity_url);
+			openid_set_current_user(1);
+	//openid_set_current_user($identity_url);
 
 	if (!is_user_logged_in()) {
 		if ( get_option('users_can_register') ) {

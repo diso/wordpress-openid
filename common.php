@@ -129,8 +129,8 @@ function openid_getConsumer() {
  */
 function openid_activate_plugin() {
 	//$start_mem = memory_get_usage();
-	$store =& openid_getStore();
-	$store->create_tables();
+	openid_getStore(); // just to include store.php for now
+	openid_create_tables();
 
 	wp_schedule_event(time(), 'hourly', 'cleanup_openid');
 	//error_log("activation memory usage: " . (int)((memory_get_usage() - $start_mem) / 1000));
@@ -349,7 +349,8 @@ function openid_start_login( $claimed_url, $action, $arguments = null) {
 		
 
 	/* If we've never heard of this url before, do attribute query */
-	if( get_user_by_openid( $auth_request->endpoint->identity_url ) == NULL ) {
+	$identity_user = get_user_by_openid($auth_request->endpoint->identity_url);
+	if(!$identity_user) {
 		$extensions = apply_filters('openid_attribute_query_extensions', array());
 		foreach ($extensions as $e) {
 			if (is_a($e, 'Auth_OpenID_Extension')) {
@@ -387,7 +388,7 @@ function openid_set_current_user($identity, $remember = true) {
 	if (is_numeric($identity)) {
 		$user_id = $identity;
 	} else {
-		$user_id = get_user_by_openid( $identity );
+		$user_id = get_user_by_openid($identity);
 	}
 
 	if (!$user_id) return;
@@ -751,29 +752,48 @@ function openid_style() {
 		<link rel="stylesheet" type="text/css" href="'.$css_path.'" />';
 }
 
-function openid_add_identity($user_id, $identity_url) {
-	$store =& openid_getStore();
-	return $store->insert_identity($user_id, $identity_url);
+
+/**
+ * Add identity url to user.
+ *
+ * @param int $user_id user id
+ * @param string $url identity url to add
+ */
+function openid_add_identity($user_id, $url) {
+	global $wpdb;
+	return $wpdb->query( $wpdb->prepare('INSERT INTO '.openid_identity_table().' (user_id,url,hash) VALUES ( %s, %s, MD5(%s) )', $user_id, $url, $url) );
 }
 
-function openid_get_identities($user_id, $identity_id) {
-	$store =& openid_getStore();
-	return $store->get_identities($user_id, $identity_id);
+/**
+ * Get OpenID identities for the specified user.
+ * @param int $user_id user id
+ */
+function openid_get_identities($user_id) {
+	global $wpdb;
+	return $wpdb->get_col( $wpdb->prepare('SELECT url FROM '.openid_identity_table().' WHERE user_id = %s', $user_id) );
 }
 
-function openid_drop_identity($user_id, $identity_id) {
-	$store =& openid_getStore();
-	return $store->drop_identity($user_id, $identity_id);
+
+/**
+ * Remove identity url from user.
+ *
+ * @param int $user_id user id
+ * @param string $identity_url identity url to remove
+ */
+function openid_drop_identity($user_id, $identity_url) {
+	global $wpdb;
+	return $wpdb->query( $wpdb->prepare('DELETE FROM '.openid_identity_table().' WHERE user_id = %s AND url = %s', $user_id, $identity_url) );
 }
 
+/**
+ * Remove all identity urls from user.
+ *
+ * @param int $user_id user id
+ */
 function openid_drop_all_identities($user_id) {
-	$store =& openid_getStore();
-	return $store->drop_all_identities_for_user($user_id);
+	global $wpdb;
+	return $wpdb->query( $wpdb->prepare('DELETE FROM '.openid_identity_table().' WHERE user_id = %s', $userid ) );
 }
 
-function openid_get_user_by_openid($url) {
-	$store = openid_getStore();
-	return $store->get_user_by_identity($url);
-}
 
 ?>

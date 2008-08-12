@@ -52,9 +52,9 @@ function openid_options_page() {
 		switch($_REQUEST['action']) {
 			case 'rebuild_tables' :
 				check_admin_referer('wp-openid-info_rebuild_tables');
-				$store = openid_getStore();
-				$store->destroy_tables();
-				$store->create_tables();
+				openid_getStore(); // just to include store.php for now
+				openid_destroy_tables();
+				openid_create_tables();
 				echo '<div class="updated"><p><strong>'.__('OpenID tables rebuilt.', 'openid').'</strong></p></div>';
 				break;
 		}
@@ -267,20 +267,18 @@ function openid_profile_panel() {
 		<table class="widefat">
 		<thead>
 			<tr>
-				<th scope="col" style="text-align: center"><?php _e('ID', 'openid') ?></th>
 				<th scope="col"><?php _e('Identity Url', 'openid') ?></th>
 				<th scope="col" style="text-align: center"><?php _e('Action', 'openid') ?></th>
 			</tr>
 		</thead>
 
-		<?php foreach( $urls as $k=>$v ): ?>
+		<?php foreach( $urls as $url ): ?>
 
 			<tr class="alternate">
-				<th scope="row" style="text-align: center"><?php echo $v['uurl_id']; ?></th>
-				<td><a href="<?php echo $v['url']; ?>"><?php echo $v['url']; ?></a></td>
+				<td><a href="<?php echo $url; ?>"><?php echo $url; ?></a></td>
 				<td style="text-align: center"><a class="delete" href="<?php 
-				echo wp_nonce_url(sprintf('?page=%s&action=drop_identity&id=%s', 'openid', $v['uurl_id']), 
-				'wp-openid-drop-identity_'.$v['url']);
+				echo wp_nonce_url(sprintf('?page=%s&action=drop_identity&url=%s', 'openid', $url), 
+				'wp-openid-drop-identity_'.$url);
 				?>"><?php _e('Delete', 'openid') ?></a></td>
 			</tr>
 
@@ -499,7 +497,7 @@ function openid_profile_management() {
 			break;
 
 		case 'drop_identity':  // Remove a binding.
-			openid_profile_drop_identity($_REQUEST['id']);
+			openid_profile_drop_identity($_REQUEST['url']);
 			break;
 
 		case 'update': // update information
@@ -530,14 +528,13 @@ function openid_profile_drop_identity($id) {
 		return;
 	}
 
-	$deleted_identity_url = openid_get_identities($user->ID, $id);
-	if( FALSE === $deleted_identity_url ) {
-		openid_message('Identity url delete failed: Specified identity does not exist.');
+	$identity_urls = get_user_openids($user->ID);
+	if( !in_array($id, $identity_urls) ) {
+		openid_message('Identity url delete failed: Specified identity does not exist or does not belong to you.');
 		openid_status('error');
 		return;
 	}
 
-	$identity_urls = get_user_openids($user->ID);
 	if (sizeof($identity_urls) == 1 && !$_REQUEST['confirm']) {
 		openid_message('This is your last identity URL.  Are you sure you want to delete it? Doing so may interfere with your ability to login.<br /><br /> '
 		. '<a href="?confirm=true&'.$_SERVER['QUERY_STRING'].'">Yes I\'m sure.  Delete it</a>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;'
@@ -546,7 +543,7 @@ function openid_profile_drop_identity($id) {
 		return;
 	}
 
-	check_admin_referer('wp-openid-drop-identity_'.$deleted_identity_url);
+	check_admin_referer('wp-openid-drop-identity_'.$id);
 		
 
 	if( openid_drop_identity($user->ID, $id) ) {
@@ -567,14 +564,14 @@ function openid_profile_drop_identity($id) {
 		$verified_url = false;
 		if (!empty($identities)) {
 			foreach ($identities as $id) {
-				if ($id['url'] == $current_url) {
+				if ($id == $current_url) {
 					$verified_url = true;
 					break;
 				}
 			}
 
 			if (!$verified_url) {
-				$user->user_url = $identities[0]['url'];
+				$user->user_url = $identities[0];
 				wp_update_user( get_object_vars( $user ));
 				openid_message(openid_message() . '<br /><strong>Note:</strong> For security reasons, your profile URL has been updated to match your Identity URL.');
 			}
@@ -621,7 +618,7 @@ function openid_finish_verify($identity_url) {
 			$verified_url = false;
 			if (!empty($identities)) {
 				foreach ($identities as $id) {
-					if ($id['url'] == $current_url) {
+					if ($id == $current_url) {
 						$verified_url = true;
 						break;
 					}
@@ -664,10 +661,10 @@ function openid_personal_options_update() {
 	if (!empty($identities)) {
 		$urls = array();
 		foreach ($identities as $id) {
-			if ($id['url'] == $claimed) {
+			if ($id == $claimed) {
 				return; 
 			} else {
-				$urls[] = $id['url'];
+				$urls[] = $id;
 			}
 		}
 

@@ -50,107 +50,6 @@ class WordPressOpenID_Store extends Auth_OpenID_MySQLStore {
 		return $blob;
 	}
 
-
-	/**
-	 * Check to see whether the nonce, association, and identity tables exist.
-	 *
-	 * @param bool $retry if true, tables will try to be recreated if they are not okay
-	 * @return bool if tables are okay
-	 */
-	function check_tables($retry=true) {
-		global $wpdb;
-
-		$ok = true;
-		$message = array();
-		$tables = array(
-		$this->associations_table_name,
-		$this->nonces_table_name,
-		$this->identity_table_name,
-		);
-		foreach( $tables as $t ) {
-			if( $wpdb->get_var("SHOW TABLES LIKE '$t'") != $t ) {
-				$ok = false;
-				$message[] = "Table $t doesn't exist.";
-			} else {
-				$message[] = "Table $t exists.";
-			}
-		}
-			
-		if( $retry and !$ok) {
-			$this->create_tables();
-			$ok = $this->check_tables( false );
-		}
-		return $ok;
-	}
-
-
-	/**
-	 * Create OpenID related tables in the WordPress database.
-	 */
-	function create_tables()
-	{
-		global $wp_version, $wpdb;
-
-		if ($wp_version >= '2.3') {
-			require_once(ABSPATH . 'wp-admin/includes/upgrade.php');
-		} else {
-			require_once(ABSPATH . 'wp-admin/admin-db.php');
-			require_once(ABSPATH . 'wp-admin/upgrade-functions.php');
-		}
-
-		// Create the SQL and call the WP schema upgrade function
-		$statements = array(
-		$this->sql['nonce_table'],
-		$this->sql['assoc_table'],
-
-				"CREATE TABLE $this->identity_table_name (
-		uurl_id bigint(20) NOT NULL auto_increment,
-		user_id bigint(20) NOT NULL default '0',
-		url text,
-		hash char(32),
-		PRIMARY KEY  (uurl_id),
-		UNIQUE KEY uurl (hash),
-		KEY url (url(30)),
-		KEY user_id (user_id)
-		)",
-		);
-
-		$sql = implode(';', $statements);
-		dbDelta($sql);
-
-		// add column to comments table
-		$result = maybe_add_column($this->comments_table_name, 'openid',
-				"ALTER TABLE $this->comments_table_name ADD `openid` TINYINT(1) NOT NULL DEFAULT '0'");
-
-		if (!$result) {
-			error_log('unable to add column `openid` to comments table.');
-		}
-
-		// update old style of marking openid comments and users
-		$wpdb->query("update $this->comments_table_name set `comment_type`='', `openid`=1 where `comment_type`='openid'");
-		$wpdb->query("update $this->usermeta_table_name set `meta_key`='has_openid' where `meta_key`='registered_with_openid'");
-	}
-
-	
-	/**
-	 * Remove database tables which hold only transient data - associations and nonces.  Any non-transient data, such
-	 * as linkages between OpenIDs and WordPress user accounts are maintained.
-	 */
-	function destroy_tables() {
-		global $wpdb;
-
-		$sql = 'drop table ' . openid_associations_table();
-		$wpdb->query($sql);
-		$sql = 'drop table ' . openid_nonces_table();
-		$wpdb->query($sql);
-
-		// just in case they've upgraded from an old version
-		$settings_table_name = (isset($wpdb->base_prefix) ? $wpdb->base_prefix : $wpdb->prefix ).'openid_settings';
-		$sql = "drop table if exists $settings_table_name";
-		$wpdb->query($sql);
-	}
-
-
 	/**
 	 * Set SQL for database calls.
 	 * 
@@ -204,83 +103,6 @@ class WordPressOpenID_Store extends Auth_OpenID_MySQLStore {
 				"DELETE FROM %s WHERE issued + lifetime < %%s";
 	}
 
-
-	/* Application-specific database operations */
-
-	function get_identities($user_id, $identity_id = 0 ) {
-		if( $identity_id ) {
-			return $this->connection->getOne(
-					"SELECT url FROM $this->identity_table_name WHERE user_id = %s AND uurl_id = %s",
-			array( (int)$user_id, (int)$identity_id )
-			);
-		} else {
-			return $this->connection->getAll(
-					"SELECT uurl_id,url FROM $this->identity_table_name WHERE user_id = %s",
-			array( (int)$user_id )
-			);
-		}
-	}
-
-
-	function insert_identity($userid, $url) {
-		global $wpdb;
-
-		if (!$userid) {
-			echo "no userID";
-			exit;
-		}
-
-		$old_show_errors = $wpdb->show_errors;
-		if( $old_show_errors ) $wpdb->hide_errors();
-		$ret = @$this->connection->query(
-				"INSERT INTO $this->identity_table_name (user_id,url,hash) VALUES ( %s, %s, MD5(%s) )",
-		array( (int)$userid, $url, $url ) );
-		if( $old_show_errors ) $wpdb->show_errors();
-
-		$this->update_user_openid_status($userid);
-
-		return $ret;
-	}
-
-
-	function drop_all_identities_for_user($userid) {
-		return $this->connection->query(
-				"DELETE FROM $this->identity_table_name WHERE user_id = %s", 
-				array( (int)$userid )
-		);
-	}
-
-	/**
-	 * Drop identity from user.
-	 *
-	 * @param int $user_id id of WordPress user
-	 * @param int $identity_id id of identity
-	 * @return unknown result of database operation
-	 */
-	function drop_identity($user_id, $identity_id) {
-		$ret = $this->connection->query(
-				"DELETE FROM $this->identity_table_name WHERE user_id = %s AND uurl_id = %s",
-		array( (int)$user_id, (int)$identity_id )
-		);
-
-		$this->update_user_openid_status($user_id);
-
-		return $ret;
-	}
-
-	function update_user_openid_status($user_id) {
-		$identities = $this->get_identities($user_id);
-		update_usermeta( $user_id, 'has_openid', (empty($identities) ? false : true) );
-	}
-
-	function get_user_by_identity($url) {
-		if (empty($url)) { return null; }
-			
-		return $this->connection->getOne(
-				"SELECT user_id FROM $this->identity_table_name WHERE url = %s",
-		array( $url )
-		);
-	}
 }
 endif;
 
@@ -467,5 +289,105 @@ class MySQLInterpolater extends Interpolater {
 	}
 }
 endif;
+
+/**
+ * Check to see whether the nonce, association, and identity tables exist.
+ *
+ * @param bool $retry if true, tables will try to be recreated if they are not okay
+ * @return bool if tables are okay
+ */
+function openid_check_tables($retry=true) {
+	global $wpdb;
+
+	$ok = true;
+	$message = array();
+	$tables = array(
+		openid_associations_table(),
+		openid_nonces_table(),
+		openid_identity_table(),
+	);
+	foreach( $tables as $t ) {
+		if( $wpdb->get_var("SHOW TABLES LIKE '$t'") != $t ) {
+			$ok = false;
+			$message[] = "Table $t doesn't exist.";
+		} else {
+			$message[] = "Table $t exists.";
+		}
+	}
+		
+	if( $retry and !$ok) {
+		openid_create_tables();
+		$ok = openid_check_tables( false );
+	}
+	return $ok;
+}
+
+/**
+ * Create OpenID related tables in the WordPress database.
+ */
+function openid_create_tables()
+{
+	global $wp_version, $wpdb;
+
+	$store = openid_getStore();
+
+	if ($wp_version >= '2.3') {
+		require_once(ABSPATH . 'wp-admin/includes/upgrade.php');
+	} else {
+		require_once(ABSPATH . 'wp-admin/admin-db.php');
+		require_once(ABSPATH . 'wp-admin/upgrade-functions.php');
+	}
+
+	// Create the SQL and call the WP schema upgrade function
+	$statements = array(
+		$store->sql['nonce_table'],
+		$store->sql['assoc_table'],
+
+		"CREATE TABLE ".openid_identity_table()." (
+		uurl_id bigint(20) NOT NULL auto_increment,
+		user_id bigint(20) NOT NULL default '0',
+		url text,
+		hash char(32),
+		PRIMARY KEY  (uurl_id),
+		UNIQUE KEY uurl (hash),
+		KEY url (url(30)),
+		KEY user_id (user_id)
+		)",
+	);
+
+	$sql = implode(';', $statements);
+	dbDelta($sql);
+
+	// add column to comments table
+	$result = maybe_add_column(openid_comments_table(), 'openid',
+			"ALTER TABLE ".openid_comments_table()." ADD `openid` TINYINT(1) NOT NULL DEFAULT '0'");
+
+	if (!$result) {
+		error_log('unable to add column `openid` to comments table.');
+	}
+
+	// update old style of marking openid comments and users
+	$wpdb->query("update ".openid_comments_table()." set `comment_type`='', `openid`=1 where `comment_type`='openid'");
+	$wpdb->query("update ".openid_usermeta_table()." set `meta_key`='has_openid' where `meta_key`='registered_with_openid'");
+}
+
+
+/**
+ * Remove database tables which hold only transient data - associations and nonces.  Any non-transient data, such
+ * as linkages between OpenIDs and WordPress user accounts are maintained.
+ */
+function openid_destroy_tables() {
+	global $wpdb;
+
+	$sql = 'drop table ' . openid_associations_table();
+	$wpdb->query($sql);
+	$sql = 'drop table ' . openid_nonces_table();
+	$wpdb->query($sql);
+
+	// just in case they've upgraded from an old version
+	$settings_table_name = (isset($wpdb->base_prefix) ? $wpdb->base_prefix : $wpdb->prefix ).'openid_settings';
+	$sql = "drop table if exists $settings_table_name";
+	$wpdb->query($sql);
+}
 
 ?>
