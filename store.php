@@ -8,6 +8,7 @@
 require_once 'Auth/OpenID/DatabaseConnection.php';
 require_once 'Auth/OpenID/SQLStore.php';
 require_once 'Auth/OpenID/MySQLStore.php';
+require_once 'Auth/OpenID/Association.php';
 
 if (class_exists( 'Auth_OpenID_MySQLStore' ) && !class_exists('WordPressOpenID_Store')):
 class WordPressOpenID_Store extends Auth_OpenID_MySQLStore {

@@ -639,7 +639,6 @@ function openid_parse_request($wp) {
 	
 	// OpenID Provider Service
 	if (array_key_exists('openid_server', $_REQUEST)) {
-		error_log('openid server request');
 		openid_server_request($_REQUEST['action']);
 	}
 }

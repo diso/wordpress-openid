@@ -1,5 +1,6 @@
 <?php
 
+require_once 'Auth/OpenID/Server.php';
 
 add_filter( 'xrds_simple', 'openid_provider_xrds_simple');
 add_action( 'wp_head', 'openid_provider_link_tags');
@@ -70,8 +71,21 @@ function openid_server_requested_user() {
 
 function openid_server_request() {
 	$server = openid_server();
-	$request = $server->decodeRequest();
+
+	if ($_SESSION['openid_server_request']) {
+		$request = $_SESSION['openid_server_request'];
+		unset($_SESSION['openid_server_request']);
+	} else {
+		$request = $server->decodeRequest();
+	}
+
 	if (in_array($request->mode, array('check_immediate', 'checkid_setup'))) {
+
+		if (!is_user_logged_in()) {
+			$_SESSION['openid_server_request'] = $request;
+			auth_redirect();
+		}
+
 		if ($request->identity == 'http://specs.openid.net/auth/2.0/identifier_select') {
 			$user = wp_get_current_user();
 			$author_url = get_author_posts_url($user->ID);
@@ -112,10 +126,7 @@ function openid_server() {
 	static $server;
 
 	if (!$server || !is_a($server, 'Auth_OpenID_Server')) {
-		set_include_path( dirname(__FILE__) . PATH_SEPARATOR . get_include_path() );
-		require_once 'Auth/OpenID/Server.php';
 		$server = new Auth_OpenID_Server(openid_getStore(), trailingslashit(get_option('siteurl')) . '?openid_server=1');
-		restore_include_path();
 	}
 
 	return $server;

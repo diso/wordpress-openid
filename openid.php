@@ -15,11 +15,13 @@ define ( 'WPOPENID_PLUGIN_REVISION', preg_replace( '/\$Rev: (.+) \$/', 'svn-\\1'
 define ( 'WPOPENID_DB_REVISION', 24426);      // last plugin revision that required database schema changes
 
 
-require_once( dirname(__FILE__) . '/common.php');
-require_once( dirname(__FILE__) . '/admin_panels.php');
-require_once( dirname(__FILE__) . '/comments.php');
-require_once( dirname(__FILE__) . '/wp-login.php');
-require_once( dirname(__FILE__) . '/server.php');
+set_include_path( dirname(__FILE__) . PATH_SEPARATOR . get_include_path() );
+require_once 'common.php';
+require_once 'admin_panels.php';
+require_once 'comments.php';
+require_once 'wp-login.php';
+require_once 'server.php';
+restore_include_path();
 
 @session_start();
 
