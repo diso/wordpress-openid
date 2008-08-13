@@ -28,16 +28,24 @@ function openid_provider_xrds_simple($xrds) {
 
 		if ($server && $identifier) {
 			// OpenID Provider Service
-			$xrds = xrds_add_service($xrds, 'main', 'OpenID Provider Service', 
+			$xrds = xrds_add_service($xrds, 'main', 'OpenID 2.0 Provider Service', 
 				array(
 					'Type' => array(
 						array('content' => 'http://specs.openid.net/auth/2.0/signon'),
-						array('content' => 'http://openid.net/signon/1.1'),
 					),
 					'URI' => array(array('content' => $server )),
 					'LocalID' => array($identifier),
+				), 0
+			);
+
+			$xrds = xrds_add_service($xrds, 'main', 'OpenID 1.0 Provider Service', 
+				array(
+					'Type' => array(
+						array('content' => 'http://openid.net/signon/1.1'),
+					),
+					'URI' => array(array('content' => $server )),
 					'openid:Delegate' => array($identifier),
-				)
+				), 1
 			);
 		}
 	} else {
