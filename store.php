@@ -417,7 +417,7 @@ class WordPress_OpenID_OptionStore extends Auth_OpenID_OpenIDStore {
 		if (array_key_exists($key, $nonces)) {
 			return false;
 		} else {
-			$nonces[$nonce] = $timestamp;
+			$nonces[$key] = $timestamp;
 			update_option('openid_nonces', $nonces);
 			return true;
 		}
