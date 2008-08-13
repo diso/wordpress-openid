@@ -795,7 +795,7 @@ function openid_drop_identity($user_id, $identity_url) {
  */
 function openid_drop_all_identities($user_id) {
 	global $wpdb;
-	return $wpdb->query( $wpdb->prepare('DELETE FROM '.openid_identity_table().' WHERE user_id = %s', $userid ) );
+	return $wpdb->query( $wpdb->prepare('DELETE FROM '.openid_identity_table().' WHERE user_id = %s', $user_id ) );
 }
 
 
