@@ -309,7 +309,6 @@ class WordPress_OpenID_OptionStore extends Auth_OpenID_OpenIDStore {
 		}
 		$associations[$key] = $association_s;
 		update_option('openid_associations', $associations);
-		sleep(1);
 	}
 	function getAssociation($server_url, $handle = null) {
 		//wp_cache_delete('openid_associations', 'options');
