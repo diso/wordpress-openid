@@ -37,6 +37,8 @@ add_option( 'oid_plugin_revision', 0 );
 add_option( 'oid_db_revision', 0 );
 add_option( 'oid_enable_approval', false );
 add_option( 'oid_enable_email_mapping', false );
+add_option( 'openid_associations', array(), null, 'no' );
+add_option( 'openid_nonces', array(), null, 'no' );
 
 
 /**
@@ -79,7 +81,8 @@ function openid_getStore() {
 		set_include_path( dirname(__FILE__) . PATH_SEPARATOR . get_include_path() );
 		require_once 'store.php';
 
-		$store = new WordPressOpenID_Store();
+		//$store = new WordPressOpenID_Store();
+		$store = new WordPress_OpenID_OptionStore();
 		if (null === $store) {
 			error_log('OpenID store could not be created properly.');
 			openid_enabled(false);

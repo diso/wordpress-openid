@@ -290,6 +290,194 @@ class MySQLInterpolater extends Interpolater {
 }
 endif;
 
+
+if (!class_exists('WordPress_OpenID_OptionStore')):
+class WordPress_OpenID_OptionStore extends Auth_OpenID_OpenIDStore {
+	var $KEY_LEN = 20;
+	var $MAX_NONCE_AGE = 21600; // 6 * 60 * 60
+	function WordPress_OpenID_SerializedStore() {
+		;
+	}
+	function storeAssociation($server_url, $association) {
+		$key = $this->_getAssociationKey($server_url, $association->handle);
+		$association_s = $association->serialize();
+		// prevent the likelihood of a race condition - don't rely on cache
+		wp_cache_delete('openid_associations', 'options');
+		$associations = get_option('openid_associations');
+		if ($associations == null) {
+			$associations = array();
+		}
+		$associations[$key] = $association_s;
+		update_option('openid_associations', $associations);
+		sleep(1);
+	}
+	function getAssociation($server_url, $handle = null) {
+		//wp_cache_delete('openid_associations', 'options');
+		if ($handle === null) {
+			$handle = '';
+		}
+		$key = $this->_getAssociationKey($server_url, $handle);
+		$associations = get_option('openid_associations');
+		if ($handle && array_key_exists($key, $associations)) {
+			return Auth_OpenID_Association::deserialize(
+				'Auth_OpenID_Association', $associations[$key]
+			);
+		} else {
+			// Return the most recently issued association
+			$matching_keys = array();
+			foreach (array_keys($associations) as $assoc_key) {
+				if (strpos($assoc_key, $key) === 0) {
+					$matching_keys[] = $assoc_key;
+				}
+			}
+			$matching_associations = array();
+			// sort by time issued
+			foreach ($matching_keys as $assoc_key) {
+				if (array_key_exists($assoc_key, $associations)) {
+					$association = Auth_OpenID_Association::deserialize(
+						'Auth_OpenID_Association', $associations[$assoc_key]
+					);
+				}
+				if ($association !== null) {
+					$matching_associations[] = array(
+						$association->issued, $association
+					);
+				}
+			}
+			$issued = array();
+			$assocs = array();
+			foreach ($matching_associations as $assoc_key => $assoc) {
+				$issued[$assoc_key] = $assoc[0];
+				$assocs[$assoc_key] = $assoc[1];
+			}
+			array_multisort($issued, SORT_DESC, $assocs, SORT_DESC,
+							$matching_associations);
+
+			// return the most recently issued one.
+			if ($matching_associations) {
+				list($issued, $assoc) = $matching_associations[0];
+				return $assoc;
+			} else {
+				return null;
+			}
+		}
+	}
+	function _getAssociationKey($server_url, $handle) {
+		if (strpos($server_url, '://') === false) {
+			trigger_error(sprintf("Bad server URL: %s", $server_url),
+						  E_USER_WARNING);
+			return null;
+		}
+		list($proto, $rest) = explode('://', $server_url, 2);
+		$parts = explode('/', $rest);
+		$domain = $parts[0];
+		$url_hash = base64_encode($server_url);
+		if ($handle) {
+			$handle_hash = base64_encode($handle);
+		} else {
+			$handle_hash = '';
+		}
+		return sprintf('%s-%s-%s-%s',
+			$proto, $domain, $url_hash, $handle_hash);
+	}
+
+	function removeAssociation($server_url, $handle) {
+		// Remove the matching association if it's found, and
+		// returns whether the association was removed or not.
+		$key = $this->_getAssociationKey($server_url, $handle);
+		$assoc = $this->getAssociation($server_url, $handle);
+		if ($assoc === null) {
+			return false;
+		} else {
+			$associations = get_option('openid_associations');
+			if (isset($associations[$key])) {
+				unset($associations[$key]);
+				update_option('openid_associations', $associations);
+				return true;
+			} else {
+				return false;
+			}
+		}		
+	}
+	function useNonce($server_url, $timestamp, $salt) {
+		global $Auth_OpenID_SKEW;
+
+		if ( abs($timestamp - time()) > $Auth_OpenID_SKEW ) {
+			return false;
+		}
+
+		$key = $this->_getNonceKey($server_url, $timestamp, $salt);
+
+		// prevent the likelihood of a race condition - don't rely on cache
+		wp_cache_delete('openid_nonces', 'options');
+		$nonces = get_option('openid_nonces');
+		if ($nonces == null) {
+			$nonces = array();
+		}
+
+		if (array_key_exists($key, $nonces)) {
+			return false;
+		} else {
+			$nonces[$nonce] = $timestamp;
+			update_option('openid_nonces', $nonces);
+			return true;
+		}
+	}
+
+	function _getNonceKey($server_url, $timestamp, $salt) {
+		if ($server_url) {
+			list($proto, $rest) = explode('://', $server_url, 2);
+		} else {
+			$proto = '';
+			$rest = '';
+		}
+
+		$parts = explode('/', $rest, 2);
+		$domain = $parts[0];
+		$url_hash = base64_encode($server_url);
+		$salt_hash = base64_encode($salt);
+
+		return sprintf('%08x-%s-%s-%s-%s', $timestamp, $proto, 
+			$domain, $url_hash, $salt_hash);
+	}
+
+	function cleanupNonces() { 
+		global $Auth_OpenID_SKEW;
+
+		$nonces = get_option('openid_nonces');
+
+		foreach ($nonces as $nonce => $time) {
+			if ( abs($time - time()) > $Auth_OpenID_SKEW ) {
+				unset($nonces[$nonce]);
+			}
+		}
+
+		update_option('openid_nonces', $nonces);
+	
+	}
+
+	function cleanupAssociations() { 
+		$associations = get_option('openid_associations');
+
+		foreach ($associations as $key => $assoc_s) {
+			$assoc = Auth_OpenID_Association::deserialize('Auth_OpenID_Association', $assoc_s);
+
+			if ( $assoc->getExpiresIn() == 0) {
+				unset($associations[$key]);
+			}
+		}
+
+		update_option('openid_associations', $associations);
+	}
+
+	function reset() { 
+		update_option('openid_nonces', array());
+		update_option('openid_associations', array());
+	}
+}
+endif;
+
+
 /**
  * Check to see whether the nonce, association, and identity tables exist.
  *

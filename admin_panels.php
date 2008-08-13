@@ -52,9 +52,8 @@ function openid_options_page() {
 		switch($_REQUEST['action']) {
 			case 'rebuild_tables' :
 				check_admin_referer('wp-openid-info_rebuild_tables');
-				openid_getStore(); // just to include store.php for now
-				openid_destroy_tables();
-				openid_create_tables();
+				$store = openid_getStore();
+				$store->reset();
 				echo '<div class="updated"><p><strong>'.__('OpenID tables rebuilt.', 'openid').'</strong></p></div>';
 				break;
 		}
