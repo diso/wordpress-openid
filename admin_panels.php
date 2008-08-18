@@ -291,48 +291,102 @@ function openid_profile_panel() {
 		<p><strong>'.__('There are no OpenIDs associated with this WordPress user.', 'openid').'</strong></p>';
 	endif; ?>
 
-	<p>
-		<form method="post"><?php _e('Add identity:', 'openid') ?>
-			<?php wp_nonce_field('wp-openid-add_identity'); ?>
-			<input id="openid_identifier" name="openid_identifier" /> 
-			<input type="submit" value="<?php _e('Add', 'openid') ?>" />
-			<input type="hidden" name="action" value="add_identity" >
+		<p>
+			<form method="post"><?php _e('Add identity:', 'openid') ?>
+				<?php wp_nonce_field('wp-openid-add_identity'); ?>
+				<input id="openid_identifier" name="openid_identifier" /> 
+				<input type="submit" value="<?php _e('Add', 'openid') ?>" />
+				<input type="hidden" name="action" value="add_identity" >
+			</form>
+		</p>
+
+
+		<h2><?php _e('Local OpenID', 'openid') ?></h2>
+
+		<form method="post">
+		<table class="form-table optiontable editform" cellspacing="2" cellpadding="5" width="100%">
+			<tr valign="top">
+				<th scope="row"><?php _e('Local OpenID:', 'openid') ?></th>
+				<td>
+
+				<p>You may optionally use your author URL (<?php printf('<a 
+				href="%1$s">%1$s</a>', get_author_posts_url($user->ID)); ?>) as an OpenID using 
+				your local WordPress username and password, or may delegate to another 
+				provider.</p>
+
+			<?php
+				$use_openid_provider = get_usermeta($user->ID, 'use_openid_provider');
+			?>
+				<p><input type="radio" name="use_openid_provider" id="no_provider" value="none" <?php echo ($use_openid_provider == 'none' || empty($use_openid_provider)) ? 'checked="checked"' : ''; ?>><label for="no_provider">Don't use local OpenID</label></p>
+				<p><input type="radio" name="use_openid_provider" id="use_local_provider" value="local" <?php echo $use_openid_provider == 'local' ? 'checked="checked"' : ''; ?>><label for="use_local_provider">Use local OpenID Provider</label></p>
+				<p><input type="radio" name="use_openid_provider" id="delegate_provider" value="delegate" <?php echo $use_openid_provider == 'delegate' ? 'checked="checked"' : ''; ?>><label for="delegate_provider">Delegate to another OpenID Provider</label>
+					<div id="delegate_info" style="margin-left: 2em;">
+						<p><input type="text" id="openid_server" name="openid_server" value="<?php echo get_usermeta($user->ID, 'openid_server') ?>"/><label for="openid_server">OpenID Server</label></p>
+						<p><input type="text" id="openid_delegate" name="openid_delegate" value="<?php echo get_usermeta($user->ID, 'openid_delegate') ?>"/><label for="openid_delegate">OpenID Delegate</label></p>
+					</div>
+				</p>
+				</td>
+			</tr>
+		</table>
+
+		<?php wp_nonce_field('wp-openid-update_options'); ?>
+		<input type="hidden" name="action" value="update" />
+		<p class="submit"><input type="submit" value="<?php _e('Update Options') ?> &raquo;" /></p>
 		</form>
-	</p>
 
 
-	<h2><?php _e('Local OpenID', 'openid') ?></h2>
+		<h2><?php _e('Your Trusted Sites', 'openid') ?></h2>
 
-	<form method="post">
-	<table class="form-table optiontable editform" cellspacing="2" cellpadding="5" width="100%">
-		<tr valign="top">
-			<th scope="row"><?php _e('Local OpenID:', 'openid') ?></th>
-			<td>
+		<p><?php _e(' OpenID allows you to log in to other sites that support the OpenID standard.  
+		If a site is on your trusted sites list, you will not be asked if you trust that site when you 
+		attempt to log in to it.', 'openid'); ?></p>
+		
+	<?php
+	
+	$urls = get_usermeta($user-ID, 'openid_trusted_sites');
+	if (!is_array($urls)) {
+		$urls = array();
+	}
 
-			<p>You may optionally use your author URL (<?php printf('<a 
-			href="%1$s">%1$s</a>', get_author_posts_url($user->ID)); ?>) as an OpenID using 
-			your local WordPress username and password, or may delegate to another 
-			provider.</p>
+	if( count($urls) ) : ?>
+		<p>You have <?php echo count($urls); ?> trusted sites.</p>
+
+		<table class="widefat">
+		<thead>
+			<tr>
+				<th scope="col"><?php _e('URL', 'openid') ?></th>
+				<th scope="col" style="text-align: center"><?php _e('Action', 'openid') ?></th>
+			</tr>
+		</thead>
+
+		<?php foreach( $urls as $url ): ?>
+
+			<tr class="alternate">
+				<td><a href="<?php echo $url; ?>"><?php echo $url; ?></a></td>
+				<td style="text-align: center"><a class="delete" href="<?php 
+				echo wp_nonce_url(sprintf('?page=%s&action=drop_trusted_site&url=%s', 'openid', $url), 
+				'wp-openid-drop_trusted_site_'.$url);
+				?>"><?php _e('Delete', 'openid') ?></a></td>
+			</tr>
+
+		<?php endforeach; ?>
+
+		</table>
 
 		<?php
-			$use_openid_provider = get_usermeta($user->ID, 'use_openid_provider');
-		?>
-			<p><input type="radio" name="use_openid_provider" id="no_provider" value="none" <?php echo ($use_openid_provider == 'none' || empty($use_openid_provider)) ? 'checked="checked"' : ''; ?>><label for="no_provider">Don't use local OpenID</label></p>
-			<p><input type="radio" name="use_openid_provider" id="use_local_provider" value="local" <?php echo $use_openid_provider == 'local' ? 'checked="checked"' : ''; ?>><label for="use_local_provider">Use local OpenID Provider</label></p>
-			<p><input type="radio" name="use_openid_provider" id="delegate_provider" value="delegate" <?php echo $use_openid_provider == 'delegate' ? 'checked="checked"' : ''; ?>><label for="delegate_provider">Delegate to another OpenID Provider</label>
-				<div id="delegate_info" style="margin-left: 2em;">
-					<p><input type="text" id="openid_server" name="openid_server" value="<?php echo get_usermeta($user->ID, 'openid_server') ?>"/><label for="openid_server">OpenID Server</label></p>
-					<p><input type="text" id="openid_delegate" name="openid_delegate" value="<?php echo get_usermeta($user->ID, 'openid_delegate') ?>"/><label for="openid_delegate">OpenID Delegate</label></p>
-				</div>
-			</p>
-			</td>
-		</tr>
-	</table>
+	else:
+		echo '
+		<p><strong>'.__('You have no trusted sites.', 'openid').'</strong></p>';
+	endif; ?>
 
-	<?php wp_nonce_field('wp-openid-update_options'); ?>
-	<input type="hidden" name="action" value="update" />
-	<p class="submit"><input type="submit" value="<?php _e('Update Options') ?> &raquo;" /></p>
-	</form>
+	<p>
+		<form method="post"><?php _e('Add trusted site:', 'openid') ?>
+			<?php wp_nonce_field('wp-openid-add_trusted_site'); ?>
+			<input id="url" name="url" /> 
+			<input type="submit" value="<?php _e('Add', 'openid') ?>" />
+			<input type="hidden" name="action" value="add_trusted_site" >
+		</form>
+	</p>
 	
 	</div>
 
@@ -507,6 +561,38 @@ function openid_profile_management() {
 				update_usermeta($user->ID, 'openid_server', $_POST['openid_server']);
 				update_usermeta($user->ID, 'openid_delegate', $_POST['openid_delegate']);
 			}
+			break;
+
+		case 'add_trusted_site':
+			check_admin_referer('wp-openid-add_trusted_site');
+
+			$user = wp_get_current_user();
+			$trusted_sites = get_usermeta($user->ID, 'openid_trusted_sites');
+			if (!is_array($trusted_sites)) {
+				$trusted_sites = array();
+			}
+			$trusted_sites[] = $_REQUEST['url'];
+			update_usermeta($user->ID, 'openid_trusted_sites', $trusted_sites);
+
+			openid_message('Added trusted site: <b>' . $_REQUEST['url'] . '</b>.');
+			openid_status('success');
+			break;
+
+		case 'drop_trusted_site':
+			check_admin_referer('wp-openid-drop_trusted_site_' . $_REQUEST['url']);
+
+			$user = wp_get_current_user();
+			$trusted_sites = get_usermeta($user->ID, 'openid_trusted_sites');
+			$new = array();
+			foreach ($trusted_sites as $site) {
+				if ($site != $_REQUEST['url']) {
+					$new[] = $site;
+				}
+			}
+			update_usermeta($user->ID, 'openid_trusted_sites', $new);
+
+			openid_message('Removed trusted site: <b>' . $_REQUEST['url'] . '</b>.');
+			openid_status('success');
 			break;
 	}
 }

@@ -87,15 +87,19 @@ function openid_server_request() {
 		$request = $server->decodeRequest();
 	}
 
+
 	if (in_array($request->mode, array('check_immediate', 'checkid_setup'))) {
+		// TODO: no prompt allowed for immediate
 
 		if (!is_user_logged_in()) {
 			$_SESSION['openid_server_request'] = $request;
 			auth_redirect();
 		}
 
+		$user = wp_get_current_user();
+
 		if ($request->identity == 'http://specs.openid.net/auth/2.0/identifier_select') {
-			$user = wp_get_current_user();
+			// OpenID Provider driven identity selection
 			$author_url = get_author_posts_url($user->ID);
 			if (!empty($author_url)) {
 				$response = $request->answer(true, null, $author_url);
@@ -103,11 +107,38 @@ function openid_server_request() {
 				$response = $request->answer(false);
 			}
 		} else {
-			$response = $request->answer(openid_server_check_user_login($request->identity));
+			if ($_REQUEST['openid_trust']) {
+				$trust = openid_server_process_trust($request);
+				$user_check = openid_server_check_user_login($request->identity);
+				$response = $request->answer(($trust && $user_check));
+			} else {
+				$trusted_sites = get_usermeta($user->ID, 'openid_trusted_sites');
+				if (in_array($request->trust_root, $trusted_sites)) {
+					$response = $request->answer(openid_server_check_user_login($request->identity));
+				} else {
+					openid_server_trust_prompt($request);
+				}
+			}
 		}
 	} else {
 		$response = $server->handleRequest($request);
 	}
+
+	openid_server_process_response($response);
+}
+
+
+function openid_server_check_user_login($claimed) {
+	$user = wp_get_current_user();
+	if (!$user) return false;
+
+	$identifier = get_author_posts_url($user->ID);
+	return ($claimed == $identifier);
+}
+
+
+function openid_server_process_response($response) {
+	$server = openid_server();
 
 	$web_response = $server->encodeResponse($response);
 
@@ -122,13 +153,6 @@ function openid_server_request() {
 	exit;
 }
 
-function openid_server_check_user_login($claimed) {
-	$user = wp_get_current_user();
-	if (!$user) return false;
-
-	$identifier = get_author_posts_url($user->ID);
-	return ($claimed == $identifier);
-}
 
 function openid_server() {
 	static $server;
@@ -139,6 +163,7 @@ function openid_server() {
 
 	return $server;
 }
+
 
 function openid_provider_link_tags() {
 
@@ -167,6 +192,41 @@ function openid_provider_link_tags() {
 		<link rel="openid.delegate" href="'.$identifier.'" />';
 	}
 
+}
+
+
+function openid_server_trust_prompt($request) {
+	$_SESSION['openid_server_request'] = $request;
+
+	$html = '
+	   	<form action="' . trailingslashit(get_option('siteurl')) . '?openid_server=1" method="post">
+			<p>Do you want to trust the site <strong>'.$request->trust_root.'</strong>?</p>
+			<input type="submit" name="openid_trust" value="No" />
+			<input type="submit" name="openid_trust" value="Trust Once" />
+			<input type="submit" name="openid_trust" value="Trust Always" />
+	' . wp_nonce_field('wp-openid-server_trust', '_wpnonce', true, false) . '
+		</form>';
+
+	wp_die($html, 'OpenID Trust Request');
+}
+
+function openid_server_process_trust($request) {
+	check_admin_referer('wp-openid-server_trust');
+
+	switch ($_REQUEST['openid_trust']) {
+		case 'Trust Always': 
+			$user = wp_get_current_user();
+			$trusted_sites = get_usermeta($user->ID, 'openid_trusted_sites');
+			$trusted_sites[] = $request->trust_root;
+			update_usermeta($user->ID, 'openid_trusted_sites', $trusted_sites);
+			return true;
+			
+		case 'Trust Once': 
+			return true;
+
+		case 'No': 
+			return false;
+	}
 }
 
 ?>
