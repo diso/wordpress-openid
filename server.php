@@ -5,6 +5,11 @@ require_once 'Auth/OpenID/Server.php';
 add_filter( 'xrds_simple', 'openid_provider_xrds_simple');
 add_action( 'wp_head', 'openid_provider_link_tags');
 
+
+/**
+ * Add XRDS entries for OpenID Server.  Entries added will be highly 
+ * dependant on the requested URL and plugin configuration.
+ */
 function openid_provider_xrds_simple($xrds) {
 	$user = openid_server_requested_user();
 	
@@ -64,6 +69,12 @@ function openid_provider_xrds_simple($xrds) {
 	return $xrds;
 }
 
+
+/**
+ * Parse the request URL to determine which author is associated with it.
+ *
+ * @return bool|object false on failure, User DB row object
+ */
 function openid_server_requested_user() {
 	global $wp_rewrite;
 
@@ -77,6 +88,10 @@ function openid_server_requested_user() {
 	}
 }
 
+
+/**
+ * Process an OpenID Server request.
+ */
 function openid_server_request() {
 	$server = openid_server();
 
@@ -128,6 +143,12 @@ function openid_server_request() {
 }
 
 
+/**
+ * Check that the current user's author URL matches the claimed URL.
+ *
+ * @param string $claimed claimed url
+ * @return bool whether the current user matches the claimed URL
+ */
 function openid_server_check_user_login($claimed) {
 	$user = wp_get_current_user();
 	if (!$user) return false;
@@ -137,6 +158,11 @@ function openid_server_check_user_login($claimed) {
 }
 
 
+/**
+ * Process OpenID server response
+ *
+ * @param object $response response object
+ */
 function openid_server_process_response($response) {
 	$server = openid_server();
 
@@ -154,6 +180,11 @@ function openid_server_process_response($response) {
 }
 
 
+/**
+ * Get Auth_OpenID_Server singleton.
+ *
+ * @return object Auth_OpenID_Server singleton instance
+ */
 function openid_server() {
 	static $server;
 
@@ -165,6 +196,9 @@ function openid_server() {
 }
 
 
+/**
+ * Add OpenID HTML link tags when appropriate.
+ */
 function openid_provider_link_tags() {
 
 	if (is_front_page()) {
@@ -195,6 +229,12 @@ function openid_provider_link_tags() {
 }
 
 
+/**
+ * Prompt the user to trust the relying party of the OpenID authentication request.
+ *
+ * @param object $request OpenID request
+ * @see openid_server_process_trust
+ */
 function openid_server_trust_prompt($request) {
 	$_SESSION['openid_server_request'] = $request;
 
@@ -210,6 +250,14 @@ function openid_server_trust_prompt($request) {
 	wp_die($html, 'OpenID Trust Request');
 }
 
+
+/**
+ * Determine if user chose to trust the relying party.
+ *
+ * @param object $request OpenID request
+ * @return bool true if the authentiction request should be answered
+ * @see openid_server_trust_prompt
+ */
 function openid_server_process_trust($request) {
 	check_admin_referer('wp-openid-server_trust');
 
