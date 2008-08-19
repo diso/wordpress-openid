@@ -314,10 +314,14 @@ function openid_finish_comment($identity_url) {
  * @param int $id id of comment to set as OpenID
  */
 function set_comment_openid($id) {
-	global $wpdb;
-
-	$comments_table = openid_comments_table();
-	$wpdb->query("UPDATE $comments_table SET openid='1' WHERE comment_ID='$id' LIMIT 1");
+	$comment = get_comment($id);
+	$openid_comments = get_post_meta($comment->comment_post_ID, 'openid_comments', true);
+	echo 'openid_comments = ' . var_export($openid_comments, true) . '<br />';
+	if (!is_array($openid_comments)) {
+		$openid_comments = array();
+	}
+	$openid_comments[] = $id;
+	update_post_meta($comment->comment_post_ID, 'openid_comments', array_unique($openid_comments));
 }
 
 

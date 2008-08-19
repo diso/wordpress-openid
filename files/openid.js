@@ -8,7 +8,7 @@ jQuery(function() {
 });
 
 function stylize_profilelink() {
-	jQuery('#commentform a[@href$=/wp-admin/profile.php]').addClass('openid_link');
+	jQuery("#commentform a[@href$='profile.php']").addClass('openid_link');
 }
 
 function add_openid_to_comment_form() {

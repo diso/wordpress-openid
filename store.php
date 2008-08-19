@@ -5,300 +5,21 @@
  * Database Connector for wp-openid
  * Dual Licence: GPL & Modified BSD
  */
-require_once 'Auth/OpenID/DatabaseConnection.php';
-require_once 'Auth/OpenID/SQLStore.php';
-require_once 'Auth/OpenID/MySQLStore.php';
+
+require_once 'Auth/OpenID/Interface.php';
 require_once 'Auth/OpenID/Association.php';
 
-if (class_exists( 'Auth_OpenID_MySQLStore' ) && !class_exists('WordPressOpenID_Store')):
-class WordPressOpenID_Store extends Auth_OpenID_MySQLStore {
-	var $associations_table_name;
-	var $nonces_table_name;
-	var $identity_table_name;
-	var $comments_table_name;
-	var $usermeta_table_name;
-
-	function WordPressOpenID_Store()
-	{
-		global $wpdb;
-
-		$this->associations_table_name = openid_associations_table();
-		$this->nonces_table_name = openid_nonces_table();
-		$this->identity_table_name =  openid_identity_table();
-		$this->comments_table_name =  openid_comments_table();
-		$this->usermeta_table_name =  openid_usermeta_table();
-
-		$conn = new WordPressOpenID_Connection( $wpdb );
-		parent::Auth_OpenID_MySQLStore(
-			$conn,
-			$this->associations_table_name,
-			$this->nonces_table_name
-		);
-	}
-
-	function isError($value)
-	{
-		return $value === false;
-	}
-
-	function blobEncode($blob)
-	{
-		return $blob;
-	}
-
-	function blobDecode($blob)
-	{
-		return $blob;
-	}
-
-	/**
-	 * Set SQL for database calls.
-	 * 
-	 * @see Auth_OpenID_SQLStore::setSQL
-	 */
-	function setSQL()
-	{
-		$this->sql['nonce_table'] =
-				"CREATE TABLE %s (
-					server_url varchar(255) CHARACTER SET latin1,
-					timestamp int(11),
-					salt char(40) CHARACTER SET latin1,
-					UNIQUE KEY server_url (server_url(255),timestamp,salt)
-				)";
-
-		$this->sql['assoc_table'] =
-				"CREATE TABLE %s (
-					server_url varchar(255) CHARACTER SET latin1,
-					handle varchar(255) CHARACTER SET latin1,
-					secret blob,
-					issued int(11),
-					lifetime int(11),
-					assoc_type varchar(64),
-					PRIMARY KEY  (server_url(235),handle)
-				)";
-
-		$this->sql['set_assoc'] =
-				"REPLACE INTO %s VALUES (%%s, %%s, %%s, %%d, %%d, %%s)";
-
-		$this->sql['get_assocs'] =
-				"SELECT handle, secret, issued, lifetime, assoc_type FROM %s ".
-				"WHERE server_url = %%s";
-
-		$this->sql['get_assoc'] =
-				"SELECT handle, secret, issued, lifetime, assoc_type FROM %s ".
-				"WHERE server_url = %%s AND handle = %%s";
-
-		$this->sql['remove_assoc'] =
-				"DELETE FROM %s WHERE server_url = %%s AND handle = %%s";
-
-		$this->sql['add_nonce'] =
-				"REPLACE INTO %s (server_url, timestamp, salt) VALUES (%%s, %%d, %%s)";
-
-		$this->sql['get_expired'] =
-				"SELECT server_url FROM %s WHERE issued + lifetime < %%s";
-
-		$this->sql['clean_nonce'] =
-				"DELETE FROM %s WHERE timestamp < %%s";
-
-		$this->sql['clean_assoc'] =
-				"DELETE FROM %s WHERE issued + lifetime < %%s";
-	}
-
-}
-endif;
-
-
-/**
- * WordPressOpenID_Connection class implements a PEAR-style database connection using the WordPress WPDB object.
- * Written by Josh Hoyt
- * Modified to support setFetchMode() by Alan J Castonguay, 2006-06-16
- */
-if (class_exists('Auth_OpenID_DatabaseConnection') && !class_exists('WordPressOpenID_Connection')):
-class WordPressOpenID_Connection extends Auth_OpenID_DatabaseConnection {
-	var $fetchmode = ARRAY_A;  // to fix PHP Fatal error:  Cannot use object of type stdClass as array in /usr/local/php5/lib/php/Auth/OpenID/SQLStore.php on line 495
-
-	function WordPressOpenID_Connection(&$wpdb) {
-		$this->wpdb =& $wpdb;
-	}
-	function _fmt($sql, $args) {
-		$interp = new MySQLInterpolater($this->wpdb->dbh);
-		return $interp->interpolate($sql, $args);
-	}
-	function query($sql, $args) {
-		return $this->wpdb->query($this->_fmt($sql, $args));
-	}
-	function getOne($sql, $args=null) {
-		if($args==null) $args = array();
-		return $this->wpdb->get_var($this->_fmt($sql, $args));
-	}
-	function getRow($sql, $args) {
-		return $this->wpdb->get_row($this->_fmt($sql, $args), $this->fetchmode);
-	}
-	function getAll($sql, $args) {
-		return $this->wpdb->get_results($this->_fmt($sql, $args), $this->fetchmode);
-	}
-
-	/* This function translates fetch mode constants PEAR=>WPDB
-	 * DB_FETCHMODE_ASSOC   => ARRAY_A
-	 * DB_FETCHMODE_ORDERED => ARRAY_N
-	 * DB_FETCHMODE_OBJECT  => OBJECT  (default)
-	 */
-	function setFetchMode( $mode ) {
-		if( DB_FETCHMODE_ASSOC == $mode ) $this->fetchmode = ARRAY_A;
-		if( DB_FETCHMODE_ORDERED == $mode ) $this->fetchmode = ARRAY_N;
-		if( DB_FETCHMODE_OBJECT == $mode ) $this->fetchmode = OBJECT;
-	}
-
-	function affectedRows() { 
-		return mysql_affected_rows($this->wpdb->dbh);
-	}
-
-	function commit() {
-		return @mysql_query('COMMIT', $this->wpdb->dbh);
-	}
-}
-endif;
-
-
-
-/**
- * Object for doing SQL substitution
- *
- * The internal state should be consistent across calls, so feel free
- * to re-use this object for more than one formatting operation.
- *
- * Allowed formats:
- *  %s -> string substitution (binary allowed)
- *  %d -> integer substitution
- */
-if (!class_exists('Interpolater')):
-class Interpolater {
-
-	/**
-	 * The pattern to use for substitution
-	 */
-	var $pattern = '/%([sd])/';
-
-	/**
-	 * Constructor
-	 *
-	 * Just sets the initial state to empty
-	 */
-	function Interpolater() {
-		$this->values = false;
-	}
-
-	/**
-	 * Escape a string for an SQL engine.
-	 *
-	 * Override this function to customize string escaping.
-	 *
-	 * @param string $s The string to escape
-	 * @return string $escaped The escaped string
-	 */
-	function escapeString($s) {
-		return addslashes($s);
-	}
-
-	/**
-	 * Perform one replacement on a value
-	 *
-	 * Dispatch to the approprate format function
-	 *
-	 * @param array $matches The matches from this object's pattern
-	 *	 with preg_match
-	 * @return string $escaped An appropriately escaped value
-	 * @access private
-	 */
-	function interpolate1($matches) {
-		if (!$this->values) {
-			error_log('Not enough values for format string');
-		}
-		$value = array_shift($this->values);
-		if (is_null($value)) {
-			return 'NULL';
-		}
-		return call_user_func(array($this, 'format_' . $matches[1]), $value);
-	}
-
-	/**
-	 * Format and quote a string for use in an SQL query
-	 *
-	 * @param string $value The string to escape. It may contain any
-	 *	 characters.
-	 * @return string $escaped The escaped string
-	 * @access private
-	 */
-
-	function format_s($value) {
-		if (get_magic_quotes_gpc()) {
-			$value = stripslashes($value);
-		}
-		$val_esc = $this->escapeString($value);
-		return "'$val_esc'";
-	}
-
-	/**
-	 * Format an integer for use in an SQL query
-	 *
-	 * @param integer $value The number to use in the query
-	 * @return string $escaped The number formatted as a string
-	 * @access private
-	 */
-	function format_d($value) {
-		$val_int = (integer)$value;
-		return (string)$val_int;
-	}
-
-	/**
-	 * Create an escaped query given this format string and these
-	 * values to substitute
-	 *
-	 * @param string $format_string A string to match
-	 * @param array $values The values to substitute into the format string
-	 */
-	function interpolate($format_string, $values) {
-		$matches = array();
-		$this->values = $values;
-		$callback = array(&$this, 'interpolate1');
-		$s = preg_replace_callback($this->pattern, $callback, $format_string);
-		if ($this->values) {
-			error_log('Too many values for format string: ' . $format_string . " => " . implode(', ', $this->values));
-		}
-		$this->values = false;
-		return $s;
-	}
-}
-endif;
-
-/**
- * Interpolate MySQL queries
- */
-if (class_exists('Interpolater') && !class_exists('MySQLInterpolater')):
-class MySQLInterpolater extends Interpolater {
-	function MySQLInterpolater($dbconn=false) {
-		$this->dbconn = $dbconn;
-		$this->values = false;
-	}
-
-	function escapeString($s) {
-		if ($this->dbconn === false) {
-			return mysql_real_escape_string($s);
-		} else {
-			return mysql_real_escape_string($s, $this->dbconn);
-		}
-	}
-}
-endif;
-
-
 if (!class_exists('WordPress_OpenID_OptionStore')):
+/**
+ * OpenID store that uses the WordPress options table for storage.  Originally 
+ * written by Simon Willison for use in the mu-open-id plugin.  Modified a fair 
+ * amount for use in wp-openid.
+ */
 class WordPress_OpenID_OptionStore extends Auth_OpenID_OpenIDStore {
-	var $KEY_LEN = 20;
-	var $MAX_NONCE_AGE = 21600; // 6 * 60 * 60
 	function WordPress_OpenID_SerializedStore() {
 		;
 	}
+
 	function storeAssociation($server_url, $association) {
 		$key = $this->_getAssociationKey($server_url, $association->handle);
 		$association_s = $association->serialize();
@@ -311,6 +32,7 @@ class WordPress_OpenID_OptionStore extends Auth_OpenID_OpenIDStore {
 		$associations[$key] = $association_s;
 		update_option('openid_associations', $associations);
 	}
+
 	function getAssociation($server_url, $handle = null) {
 		//wp_cache_delete('openid_associations', 'options');
 		if ($handle === null) {
@@ -362,6 +84,7 @@ class WordPress_OpenID_OptionStore extends Auth_OpenID_OpenIDStore {
 			}
 		}
 	}
+
 	function _getAssociationKey($server_url, $handle) {
 		if (strpos($server_url, '://') === false) {
 			trigger_error(sprintf("Bad server URL: %s", $server_url),
@@ -399,6 +122,7 @@ class WordPress_OpenID_OptionStore extends Auth_OpenID_OpenIDStore {
 			}
 		}		
 	}
+	
 	function useNonce($server_url, $timestamp, $salt) {
 		global $Auth_OpenID_SKEW;
 
@@ -490,8 +214,6 @@ function openid_check_tables($retry=true) {
 	$ok = true;
 	$message = array();
 	$tables = array(
-		openid_associations_table(),
-		openid_nonces_table(),
 		openid_identity_table(),
 	);
 	foreach( $tables as $t ) {
@@ -528,9 +250,6 @@ function openid_create_tables()
 
 	// Create the SQL and call the WP schema upgrade function
 	$statements = array(
-		$store->sql['nonce_table'],
-		$store->sql['assoc_table'],
-
 		"CREATE TABLE ".openid_identity_table()." (
 		uurl_id bigint(20) NOT NULL auto_increment,
 		user_id bigint(20) NOT NULL default '0',
@@ -545,37 +264,28 @@ function openid_create_tables()
 
 	$sql = implode(';', $statements);
 	dbDelta($sql);
-
-	// add column to comments table
-	$result = maybe_add_column(openid_comments_table(), 'openid',
-			"ALTER TABLE ".openid_comments_table()." ADD `openid` TINYINT(1) NOT NULL DEFAULT '0'");
-
-	if (!$result) {
-		error_log('unable to add column `openid` to comments table.');
-	}
-
-	// update old style of marking openid comments and users
-	$wpdb->query("update ".openid_comments_table()." set `comment_type`='', `openid`=1 where `comment_type`='openid'");
-	$wpdb->query("update ".openid_usermeta_table()." set `meta_key`='has_openid' where `meta_key`='registered_with_openid'");
 }
 
 
-/**
- * Remove database tables which hold only transient data - associations and nonces.  Any non-transient data, such
- * as linkages between OpenIDs and WordPress user accounts are maintained.
- */
-function openid_destroy_tables() {
+function openid_migrate_old_data() {
 	global $wpdb;
 
-	$sql = 'drop table ' . openid_associations_table();
-	$wpdb->query($sql);
-	$sql = 'drop table ' . openid_nonces_table();
-	$wpdb->query($sql);
+	// remove old nonce and associations tables
+	$wpdb->query('DROP TABLE IF EXISTS '.openid_nonces_table());
+	$wpdb->query('DROP TABLE IF EXISTS '.openid_associations_table());
+	
+	// update old style of marking openid comments 
+	$comments = $wpdb->get_col($wpdb->prepare('SELECT comment_ID from '.openid_comments_table().' WHERE openid=%s OR comment_type=%s', 1, 'openid'));
+	foreach ($comments as $id) {
+		set_comment_openid($id);
+	}
+	@$wpdb->query('ALTER table '.openid_comments_table().' DROP COLUMN openid');
+	$wpdb->query($wpdb->prepare('UPDATE '.openid_comments_table().' SET comment_type=%s WHERE comment_type=%s', '', 'openid'));
 
-	// just in case they've upgraded from an old version
-	$settings_table_name = (isset($wpdb->base_prefix) ? $wpdb->base_prefix : $wpdb->prefix ).'openid_settings';
-	$sql = "drop table if exists $settings_table_name";
-	$wpdb->query($sql);
+
+	// remove old style of marking openid users
+	$wpdb->query($wpdb->prepare('DELETE FROM '.openid_usermeta_table().' WHERE meta_key=%s OR meta_key=%s', 'has_openid', 'registered_with_openid'));
 }
+
 
 ?>

@@ -21,6 +21,7 @@ require_once 'admin_panels.php';
 require_once 'comments.php';
 require_once 'wp-login.php';
 require_once 'server.php';
+require_once 'store.php';
 restore_include_path();
 
 @session_start();
@@ -43,10 +44,16 @@ function is_user_openid($user = null) {
  * If the current comment was submitted with OpenID, return true
  * useful for  <?php echo ( is_comment_openid() ? 'Submitted with OpenID' : '' ); ?>
  */
-// TODO: should we take a parameter here?
-function is_comment_openid() {
-	global $comment;
-	return ( $comment->openid == 1 );
+function is_comment_openid($id = null) {
+	if (is_numeric($id)) {
+		$comment = get_comment($id);
+	} else {
+		global $comment;
+	}
+
+	$openid_comments = get_post_meta($comment->comment_post_ID, 'openid_comments', true);
+	if (!is_array($openid_comments)) return false;
+	return (in_array($comment->comment_ID, $openid_comments));
 }
 
 

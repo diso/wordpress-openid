@@ -4,8 +4,8 @@
  */
 
 // -- WP Hooks
-register_activation_hook('openid/core.php', 'openid_activate_plugin');
-register_deactivation_hook('openid/core.php', 'openid_deactivate_plugin');
+register_activation_hook('openid/openid.php', 'openid_activate_plugin');
+register_deactivation_hook('openid/openid.php', 'openid_deactivate_plugin');
 
 // Add hooks to handle actions in WordPress
 add_action( 'init', 'openid_textdomain' ); // load textdomain
@@ -78,15 +78,7 @@ function openid_getStore() {
 	static $store;
 
 	if (!$store) {
-		set_include_path( dirname(__FILE__) . PATH_SEPARATOR . get_include_path() );
-		require_once 'store.php';
-
-		//$store = new WordPressOpenID_Store();
 		$store = new WordPress_OpenID_OptionStore();
-		if (null === $store) {
-			error_log('OpenID store could not be created properly.');
-			openid_enabled(false);
-		}
 	}
 
 	return $store;
@@ -132,8 +124,8 @@ function openid_getConsumer() {
  */
 function openid_activate_plugin() {
 	//$start_mem = memory_get_usage();
-	openid_getStore(); // just to include store.php for now
 	openid_create_tables();
+	openid_migrate_old_data();
 
 	wp_schedule_event(time(), 'hourly', 'cleanup_openid');
 	//error_log("activation memory usage: " . (int)((memory_get_usage() - $start_mem) / 1000));
@@ -156,9 +148,8 @@ function openid_cleanup() {
  * @see register_deactivation_hook
  */
 function openid_deactivate_plugin() {
-	set_include_path( dirname(__FILE__) . PATH_SEPARATOR . get_include_path() );
-	require_once 'store.php';
-	WordPressOpenID_Store::destroy_tables();
+	delete_option('openid_server_associations');
+	delete_option('openid_server_nonces');
 }
 
 
