@@ -363,9 +363,12 @@ function openid_start_login( $claimed_url, $action, $arguments = null) {
  * Build an SReg attribute query extension.
  */
 function openid_add_sreg_extension($extensions) {
-	require_once(dirname(__FILE__) . '/Auth/OpenID/SReg.php');
-	$extensions[] = Auth_OpenID_SRegRequest::build(array(),array('nickname','email','fullname'));
 
+	set_include_path( dirname(__FILE__) . PATH_SEPARATOR . get_include_path() );
+	require_once('Auth/OpenID/SReg.php');
+	restore_include_path();
+
+	$extensions[] = Auth_OpenID_SRegRequest::build(array(),array('nickname','email','fullname'));
 	return $extensions;
 }
 
