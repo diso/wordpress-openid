@@ -118,10 +118,23 @@ function openid_server_request() {
 		if ($request->identity == 'http://specs.openid.net/auth/2.0/identifier_select') {
 			// OpenID Provider driven identity selection
 			$author_url = get_author_posts_url($user->ID);
-			if (!empty($author_url)) {
-				$response = $request->answer(true, null, $author_url);
-			} else {
+			if (empty($author_url)) {
 				$response = $request->answer(false);
+			}
+
+			if ($_REQUEST['openid_trust']) {
+				if (openid_server_process_trust($request)) {
+					$response = $request->answer(true, null, $author_url);
+				} else {
+					$response = $request->answer(false);
+				}
+			} else {
+				$trusted_sites = get_usermeta($user->ID, 'openid_trusted_sites');
+				if (in_array($request->trust_root, $trusted_sites)) {
+					$response = $request->answer(true, null, $author_url);
+				} else {
+					openid_server_trust_prompt($request);
+				}
 			}
 		} else {
 			if ($_REQUEST['openid_trust']) {
