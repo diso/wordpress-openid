@@ -19,7 +19,9 @@ function openid_provider_xrds_simple($xrds) {
 			return $xrds;
 		}
 
-		$user = get_userdatabylogin(get_option('openid_blog_owner'));
+		if (defined(OPENID_ALLOW_OWNER) && OPENID_ALLOW_OWNER) {
+			$user = get_userdatabylogin(get_option('openid_blog_owner'));
+		}
 	}
 
 	if ($user) {

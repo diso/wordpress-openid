@@ -75,7 +75,7 @@ function openid_options_page() {
 		if ($error !== '') {
 			echo '<div class="error"><p><strong>'.__('At least one of OpenID options was NOT updated', 'openid').'</strong>'.$error.'</p></div>';
 		} else {
-			echo '<div class="updated"><p><strong>'.__('Open ID options updated', 'openid').'</strong></p></div>';
+			echo '<div class="updated"><p><strong>'.__('OpenID options updated', 'openid').'</strong></p></div>';
 		}
 		
 	}
@@ -174,6 +174,9 @@ function openid_options_page() {
 			<?php 
 				$current_user = wp_get_current_user(); 
 				$current_user_url = get_author_posts_url($current_user->ID);
+
+				$blog_owner = get_option('openid_blog_owner');
+				$can_change_owner = (empty($blog_owner) || $user->user_login == $blog_owner) ? true : false;
 			?>
 
 			<table class="form-table optiontable editform" cellspacing="2" cellpadding="5" width="100%">
@@ -191,19 +194,35 @@ function openid_options_page() {
 						<p>If no blog owner is selected, then any user may use the blog root to initiate OpenID 
 						authentication and OP-driven identity selection will be used.</p>
 
-						<select id="openid_blog_owner" name="openid_blog_owner">
-							<option value=''>(none)</option>
-			<?php
-				$users = $wpdb->get_results("SELECT user_login FROM $wpdb->users ORDER BY user_login");
-				foreach($users as $user) { 
-					$selected = (get_option('openid_blog_owner') == $user->user_login) ? ' selected="selected"' : '';
-					echo '<option value="'.$user->user_login.'"'.$selected.'>'.$user->user_login.'</option>';
-				}
+			<?php 
+				if (defined('OPENID_ALLOW_OWNER') && OPENID_ALLOW_OWNER) {
+					$blog_owner = get_option('openid_blog_owner');
+
+					if (empty($blog_owner) || $blog_owner == $current_user->user_login) {
+						echo '<select id="openid_blog_owner" name="openid_blog_owner"><option value="">(none)</option>';
+
+						$users = $wpdb->get_results("SELECT user_login FROM $wpdb->users ORDER BY user_login");
+						foreach($users as $user) { 
+							$selected = (get_option('openid_blog_owner') == $user->user_login) ? ' selected="selected"' : '';
+							echo '<option value="'.$user->user_login.'"'.$selected.'>'.$user->user_login.'</option>';
+						}
+						echo '</select>';
+
+					} else {
+						echo '<p class="error">Only the current blog owner ('.$blog_owner.') can set another user as the owner.</p>';
+					}
+				} else {
+					echo '
+						<p class="error">
+							You must add the following line to your <code>wp-config.php</code> file in order to set a blog owner:<br />
+							<code style="margin:1em;">define("OPENID_ALLOW_OWNER", 1);</code>
+						</p>';
+				} 
 			?>
-						</select>
-					</td>
-				</tr>
-			</table>
+
+						</td>
+					</tr>
+				</table>
 
 			<?php wp_nonce_field('wp-openid-info_update'); ?>
 			<p class="submit"><input type="submit" name="info_update" value="<?php _e('Update Options') ?> &raquo;" /></p>
