@@ -174,9 +174,6 @@ function openid_options_page() {
 			<?php 
 				$current_user = wp_get_current_user(); 
 				$current_user_url = get_author_posts_url($current_user->ID);
-
-				$blog_owner = get_option('openid_blog_owner');
-				$can_change_owner = (empty($blog_owner) || $user->user_login == $blog_owner) ? true : false;
 			?>
 
 			<table class="form-table optiontable editform" cellspacing="2" cellpadding="5" width="100%">
