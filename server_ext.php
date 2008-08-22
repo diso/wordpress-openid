@@ -24,11 +24,19 @@ function openid_server_sreg_post_auth($request) {
 function openid_server_sreg_trust_form() {
 	$sreg_request = $GLOBALS['openid_server_sreg_request'];
 	$sreg_fields = $sreg_request->allRequestedFields();
-	foreach ($sreg_fields as $field) {
-		$name = $GLOBALS['Auth_OpenID_sreg_data_fields'][$field];
+	if (!empty($sreg_fields)) {
 		echo '
-			<label for="sreg_'.$field.'">'.$name.':</label>
-			<input type="text id="sreg_'.$field.'" name="sreg['.$field.']" value="'.openid_server_sreg_from_profile($field).'" /><br />';
+			<p>The following profile data will be included:</p>
+			<table class="form-table">';
+		foreach ($sreg_fields as $field) {
+			$name = $GLOBALS['Auth_OpenID_sreg_data_fields'][$field];
+			echo '
+				<tr>
+					<th><label for="sreg_'.$field.'">'.$name.':</label></th>
+					<td><input type="text id="sreg_'.$field.'" name="sreg['.$field.']" value="'.openid_server_sreg_from_profile($field).'" /></td>
+				</tr>';
+		}
+		echo '</table>';
 	}
 }
 

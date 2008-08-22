@@ -291,14 +291,17 @@ function openid_server_user_trust($request) {
 		ob_start();
 		echo '
 			<form action="' . trailingslashit(get_option('siteurl')) . '?openid_server=1" method="post">
-			<h1>Do you want to trust the site <strong>'.$request->trust_root.'</strong>?</h1>';
+			<h1>OpenID Trust Request</h1>
+			<p>Do you want to trust the site <strong>'.$request->trust_root.'</strong>?</p>';
 
 		do_action('openid_server_trust_form');
 
 		echo '
+			<p class="submit">
 				<input type="submit" name="openid_trust" value="No" />
 				<input type="submit" name="openid_trust" value="Trust Once" />
-				<input type="submit" name="openid_trust" value="Trust Always" />';
+				<input type="submit" name="openid_trust" value="Trust Always" />
+			</p>';
 
 		wp_nonce_field('wp-openid-server_trust', '_wpnonce', true);
 
