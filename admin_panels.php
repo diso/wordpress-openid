@@ -268,8 +268,8 @@ function openid_profile_panel() {
 	<div class="wrap">
 		<h2><?php _e('Your Identity URLs', 'openid') ?></h2>
 
-		<p><?php printf(__('The following Identity URLs %s are tied to this user account. You can login '
-		. 'with equivalent permissions using any of the following identities.', 'openid'), 
+		<p><?php printf(__('The following Identity URLs %s are tied to this user account. '
+		. 'You may use any of them to login to this account.' , 'openid'), 
 		'<a title="'.__('What is OpenID?', 'openid').'" href="http://openid.net/">'.__('?', 'openid').'</a>') ?>
 		</p>
 	<?php
@@ -287,17 +287,17 @@ function openid_profile_panel() {
 			</tr>
 		</thead>
 
-		<?php foreach( $urls as $url ): ?>
+		<?php for($i=0; $i<sizeof($urls); $i++): ?>
 
-			<tr class="alternate">
-				<td><a href="<?php echo $url; ?>"><?php echo $url; ?></a></td>
+			<tr class="<?php _e($i%2==0 ? 'alternate' : '') ?>">
+				<td><a href="<?php echo $urls[$i]; ?>"><?php echo $urls[$i]; ?></a></td>
 				<td style="text-align: center"><a class="delete" href="<?php 
-				echo wp_nonce_url(sprintf('?page=%s&action=drop_identity&url=%s', 'openid', $url), 
-				'wp-openid-drop-identity_'.$url);
+				echo wp_nonce_url(sprintf('?page=%s&action=drop_identity&url=%s', 'openid', $urls[$i]), 
+				'wp-openid-drop-identity_'.$urls[$i]);
 				?>"><?php _e('Delete', 'openid') ?></a></td>
 			</tr>
 
-		<?php endforeach; ?>
+		<?php endfor; ?>
 
 		</table>
 
@@ -307,16 +307,23 @@ function openid_profile_panel() {
 		<p><strong>'.__('There are no OpenIDs associated with this WordPress user.', 'openid').'</strong></p>';
 	endif; ?>
 
-		<p>
-			<form method="post"><?php _e('Add identity:', 'openid') ?>
-				<?php wp_nonce_field('wp-openid-add_identity'); ?>
-				<input id="openid_identifier" name="openid_identifier" /> 
-				<input type="submit" value="<?php _e('Add', 'openid') ?>" />
-				<input type="hidden" name="action" value="add_identity" >
-			</form>
+		<h3><?php _e('Add Identity', 'openid') ?></h3>
+		<form method="post">
+		<table class="form-table">
+			<tr>
+				<th scope="row"><label for="openid_identifier"><?php _e('Identity URL', 'openid') ?></label></th>
+				<td><input id="openid_identifier" name="openid_identifier" /></td>
+			</tr>
+		</table>
+		<?php wp_nonce_field('wp-openid-add_identity'); ?>
+		<p class="submit">
+			<input type="submit" value="<?php _e('Add Identity', 'openid') ?>" />
+			<input type="hidden" name="action" value="add_identity" >
 		</p>
+		</form>
 
 
+		<br class="clear" />
 		<h2><?php _e('Local OpenID', 'openid') ?></h2>
 
 		<form method="post">
@@ -335,7 +342,7 @@ function openid_profile_panel() {
 			?>
 				<p><input type="radio" name="use_openid_provider" id="no_provider" value="none" <?php echo ($use_openid_provider == 'none' || empty($use_openid_provider)) ? 'checked="checked"' : ''; ?>><label for="no_provider">Don't use local OpenID</label></p>
 				<p><input type="radio" name="use_openid_provider" id="use_local_provider" value="local" <?php echo $use_openid_provider == 'local' ? 'checked="checked"' : ''; ?>><label for="use_local_provider">Use local OpenID Provider</label></p>
-				<p><input type="radio" name="use_openid_provider" id="delegate_provider" value="delegate" <?php echo $use_openid_provider == 'delegate' ? 'checked="checked"' : ''; ?>><label for="delegate_provider">Delegate to another OpenID Provider</label>
+				<p><input type="radio" name="use_openid_provider" id="delegate_provider" value="delegate" <?php echo $use_openid_provider == 'delegate' ? 'checked="checked"' : ''; ?>><label for="delegate_provider">Delegate to another OpenID</label>
 					<div id="delegate_info" style="margin-left: 2em;">
 						<p><input type="text" id="openid_server" name="openid_server" value="<?php echo get_usermeta($user->ID, 'openid_server') ?>"/><label for="openid_server">OpenID Server</label></p>
 						<p><input type="text" id="openid_delegate" name="openid_delegate" value="<?php echo get_usermeta($user->ID, 'openid_delegate') ?>"/><label for="openid_delegate">OpenID Delegate</label></p>
@@ -351,6 +358,7 @@ function openid_profile_panel() {
 		</form>
 
 
+		<br class="clear" />
 		<h2><?php _e('Your Trusted Sites', 'openid') ?></h2>
 
 		<p><?php _e(' OpenID allows you to log in to other sites that support the OpenID standard.  
@@ -395,14 +403,20 @@ function openid_profile_panel() {
 		<p><strong>'.__('You have no trusted sites.', 'openid').'</strong></p>';
 	endif; ?>
 
-	<p>
-		<form method="post"><?php _e('Add trusted site:', 'openid') ?>
-			<?php wp_nonce_field('wp-openid-add_trusted_site'); ?>
-			<input id="url" name="url" /> 
-			<input type="submit" value="<?php _e('Add', 'openid') ?>" />
+		<h3><?php _e('Add Trusted Site', 'openid') ?></h3>
+		<form method="post">
+		<table class="form-table">
+			<tr>
+				<th scope="row"><label for="url"><?php _e('Site URL', 'openid') ?></label></th>
+				<td><input id="url" name="url" /></td>
+			</tr>
+		</table>
+		<?php wp_nonce_field('wp-openid-add_trusted_site'); ?>
+		<p class="submit">
+			<input type="submit" value="<?php _e('Add Site', 'openid') ?>" />
 			<input type="hidden" name="action" value="add_trusted_site" >
+		</p>
 		</form>
-	</p>
 	
 	</div>
 
