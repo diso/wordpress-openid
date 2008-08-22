@@ -1,6 +1,7 @@
 <?php
 
 require_once 'Auth/OpenID/Server.php';
+require_once 'server_ext.php';
 
 add_filter( 'xrds_simple', 'openid_provider_xrds_simple');
 add_action( 'wp_head', 'openid_provider_link_tags');
@@ -19,7 +20,7 @@ function openid_provider_xrds_simple($xrds) {
 			return $xrds;
 		}
 
-		if (defined(OPENID_ALLOW_OWNER) && OPENID_ALLOW_OWNER) {
+		if (defined('OPENID_ALLOW_OWNER') && OPENID_ALLOW_OWNER) {
 			$user = get_userdatabylogin(get_option('openid_blog_owner'));
 		}
 	}
@@ -97,6 +98,7 @@ function openid_server_requested_user() {
 function openid_server_request() {
 	$server = openid_server();
 
+	// get OpenID request, either from session or HTTP request
 	if ($_SESSION['openid_server_request']) {
 		$request = $_SESSION['openid_server_request'];
 		unset($_SESSION['openid_server_request']);
@@ -104,58 +106,66 @@ function openid_server_request() {
 		$request = $server->decodeRequest();
 	}
 
-
+	// process request
 	if (in_array($request->mode, array('check_immediate', 'checkid_setup'))) {
-		// TODO: no prompt allowed for immediate
-
-		if (!is_user_logged_in()) {
-			$_SESSION['openid_server_request'] = $request;
-			auth_redirect();
-		}
-
-		$user = wp_get_current_user();
-
-		if ($request->identity == 'http://specs.openid.net/auth/2.0/identifier_select') {
-			// OpenID Provider driven identity selection
-			$author_url = get_author_posts_url($user->ID);
-			if (empty($author_url)) {
-				$response = $request->answer(false);
-			}
-
-			if ($_REQUEST['openid_trust']) {
-				if (openid_server_process_trust($request)) {
-					$response = $request->answer(true, null, $author_url);
-				} else {
-					$response = $request->answer(false);
-				}
-			} else {
-				$trusted_sites = get_usermeta($user->ID, 'openid_trusted_sites');
-				if (in_array($request->trust_root, $trusted_sites)) {
-					$response = $request->answer(true, null, $author_url);
-				} else {
-					openid_server_trust_prompt($request);
-				}
-			}
-		} else {
-			if ($_REQUEST['openid_trust']) {
-				$trust = openid_server_process_trust($request);
-				$user_check = openid_server_check_user_login($request->identity);
-				$response = $request->answer(($trust && $user_check));
-			} else {
-				$trusted_sites = get_usermeta($user->ID, 'openid_trusted_sites');
-				if (in_array($request->trust_root, $trusted_sites)) {
-					$response = $request->answer(openid_server_check_user_login($request->identity));
-				} else {
-					openid_server_trust_prompt($request);
-				}
-			}
-		}
+		$response = openid_server_auth_request($request);
+		$response = apply_filters('openid_server_auth_response', $response);
 	} else {
 		$response = $server->handleRequest($request);
 	}
 
 	openid_server_process_response($response);
 }
+
+
+/**
+ * Process an OpenID Server authentication request.
+ */
+function openid_server_auth_request($request) {
+
+	do_action('openid_server_pre_auth', $request);
+
+	// user must be logged in
+	if (!is_user_logged_in()) {
+		if ($request->mode == 'check_immediate') {
+			return $request->answer(false);
+		} else {
+			$_SESSION['openid_server_request'] = $request;
+			auth_redirect();
+		}
+	}
+
+	do_action('openid_server_post_auth', $request);
+
+	// get some user data
+	$user = wp_get_current_user();
+	$author_url = get_author_posts_url($user->ID);
+	$id_select = ($request->identity == 'http://specs.openid.net/auth/2.0/identifier_select');
+
+	// bail if user doesn't own identity and not using id select
+	if (!$id_select && ($author_url != $request->identity)) {
+		return $request->answer(false);
+	}
+
+	// if user trusts site, we're done
+	$trusted_sites = get_usermeta($user->ID, 'openid_trusted_sites');
+	if (in_array($request->trust_root, $trusted_sites)) {
+		return $id_select ? $request->answer(true, null, $author_url) : $request->answer(true);
+	}
+
+	// that's all we can do without interacting with the user... bail if using immediate
+	if ($request->mode == 'check_immediate') {
+		return $request->answer(false);
+	}
+		
+	// finally, prompt the user to trust this site
+	if (openid_server_user_trust($request)) {
+		return $id_select ? $request->answer(true, null, $author_url) : $request->answer(true);
+	} else {
+		return $request->answer(false);
+	}
+}
+
 
 
 /**
@@ -245,51 +255,63 @@ function openid_provider_link_tags() {
 
 
 /**
- * Prompt the user to trust the relying party of the OpenID authentication request.
- *
- * @param object $request OpenID request
- * @see openid_server_process_trust
+ * Determine if the current user trusts the the relying party of the OpenID authentication request.
  */
-function openid_server_trust_prompt($request) {
-	$_SESSION['openid_server_request'] = $request;
+function openid_server_user_trust($request) {
+	if ($_REQUEST['openid_trust']) {
+		// the user has made a trust decision, now process it
+		check_admin_referer('wp-openid-server_trust');
+		$trust = null;
 
-	$html = '
-	   	<form action="' . trailingslashit(get_option('siteurl')) . '?openid_server=1" method="post">
-			<p>Do you want to trust the site <strong>'.$request->trust_root.'</strong>?</p>
-			<input type="submit" name="openid_trust" value="No" />
-			<input type="submit" name="openid_trust" value="Trust Once" />
-			<input type="submit" name="openid_trust" value="Trust Always" />
-	' . wp_nonce_field('wp-openid-server_trust', '_wpnonce', true, false) . '
-		</form>';
+		switch ($_REQUEST['openid_trust']) {
+			case 'Trust Always': 
+				$user = wp_get_current_user();
+				$trusted_sites = get_usermeta($user->ID, 'openid_trusted_sites');
+				$trusted_sites[] = $request->trust_root;
+				update_usermeta($user->ID, 'openid_trusted_sites', array_unique($trusted_sites));
+				$trust = true;
+				break;
+				
+			case 'Trust Once': 
+				$trust = true;
+				break;
 
-	wp_die($html, 'OpenID Trust Request');
-}
+			case 'No': 
+				$trust = false;
+				break;
+		}
 
+		do_action('openid_server_trust_submit', $trust, $_REQUEST);
+		return $trust;
 
-/**
- * Determine if user chose to trust the relying party.
- *
- * @param object $request OpenID request
- * @return bool true if the authentiction request should be answered
- * @see openid_server_trust_prompt
- */
-function openid_server_process_trust($request) {
-	check_admin_referer('wp-openid-server_trust');
+	} else {
+		// prompt the user to make a trust decision
+		$_SESSION['openid_server_request'] = $request;
 
-	switch ($_REQUEST['openid_trust']) {
-		case 'Trust Always': 
-			$user = wp_get_current_user();
-			$trusted_sites = get_usermeta($user->ID, 'openid_trusted_sites');
-			$trusted_sites[] = $request->trust_root;
-			update_usermeta($user->ID, 'openid_trusted_sites', $trusted_sites);
-			return true;
-			
-		case 'Trust Once': 
-			return true;
+		ob_start();
+		echo '
+			<form action="' . trailingslashit(get_option('siteurl')) . '?openid_server=1" method="post">
+			<h1>Do you want to trust the site <strong>'.$request->trust_root.'</strong>?</h1>';
 
-		case 'No': 
-			return false;
+		do_action('openid_server_trust_form');
+
+		echo '
+				<input type="submit" name="openid_trust" value="No" />
+				<input type="submit" name="openid_trust" value="Trust Once" />
+				<input type="submit" name="openid_trust" value="Trust Always" />';
+
+		wp_nonce_field('wp-openid-server_trust', '_wpnonce', true);
+
+		echo '
+			</form>';
+
+		$html = ob_get_contents();
+		ob_end_clean();
+
+		wp_die($html, 'OpenID Trust Request');
 	}
 }
+
+
 
 ?>
