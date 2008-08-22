@@ -344,8 +344,7 @@ function openid_profile_panel() {
 				<p><input type="radio" name="use_openid_provider" id="use_local_provider" value="local" <?php echo $use_openid_provider == 'local' ? 'checked="checked"' : ''; ?>><label for="use_local_provider">Use local OpenID Provider</label></p>
 				<p><input type="radio" name="use_openid_provider" id="delegate_provider" value="delegate" <?php echo $use_openid_provider == 'delegate' ? 'checked="checked"' : ''; ?>><label for="delegate_provider">Delegate to another OpenID</label>
 					<div id="delegate_info" style="margin-left: 2em;">
-						<p><input type="text" id="openid_server" name="openid_server" value="<?php echo get_usermeta($user->ID, 'openid_server') ?>"/><label for="openid_server">OpenID Server</label></p>
-						<p><input type="text" id="openid_delegate" name="openid_delegate" value="<?php echo get_usermeta($user->ID, 'openid_delegate') ?>"/><label for="openid_delegate">OpenID Delegate</label></p>
+						<p><input type="text" id="openid_delegate" name="openid_delegate" class="openid_link" value="<?php echo get_usermeta($user->ID, 'openid_delegate') ?>" size="30" /></p>
 					</div>
 				</p>
 				</td>
@@ -586,11 +585,20 @@ function openid_profile_management() {
 		case 'update': // update information
 			check_admin_referer('wp-openid-update_options');
 			$user = wp_get_current_user();
-			update_usermeta($user->ID, 'use_openid_provider', $_POST['use_openid_provider']);
+
 			if ($_POST['use_openid_provider'] == 'delegate') {
-				update_usermeta($user->ID, 'openid_server', $_POST['openid_server']);
-				update_usermeta($user->ID, 'openid_delegate', $_POST['openid_delegate']);
+				$delegate = Auth_OpenID::normalizeUrl($_POST['openid_delegate']);
+				if(openid_server_update_delegation_info($user->ID, $delegate)) {
+					openid_message('Successfully gathered OpenID information for delegate URL <strong>'.$delegate.'</strong>');
+					openid_status('success');
+				} else {
+					openid_message('Unable to find any OpenID information for delegate URL <strong>'.$delegate.'</strong>');
+					openid_status('error');
+					break;
+				}
 			}
+
+			update_usermeta($user->ID, 'use_openid_provider', $_POST['use_openid_provider']);
 			break;
 
 		case 'add_trusted_site':

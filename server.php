@@ -27,34 +27,40 @@ function openid_provider_xrds_simple($xrds) {
 
 	if ($user) {
 		if (get_usermeta($user->ID, 'use_openid_provider') == 'local') {
-			$server = trailingslashit(get_option('siteurl')) . '?openid_server=1';
-			$identifier = get_author_posts_url($user->ID);
+			$services = array(
+				0 => array(
+					'types' => array('http://specs.openid.net/auth/2.0/signon'),
+					'server' => trailingslashit(get_option('siteurl')) . '?openid_server=1',
+					'local' => get_author_posts_url($user->ID),
+				),
+				1 => array(
+					'types' => array('http://openid.net/signon/1.1'),
+					'server' => trailingslashit(get_option('siteurl')) . '?openid_server=1',
+					'local' => get_author_posts_url($user->ID),
+				),
+			);
 		} else if (get_usermeta($user->ID, 'use_openid_provider') == 'delegate') {
-			$server = get_usermeta($user->ID, 'openid_server');
-			$identifier = get_usermeta($user->ID, 'openid_delegate');
+			$services = get_usermeta($user->ID, 'openid_delegate_services');
 		}
 
-		if ($server && $identifier) {
-			// OpenID Provider Service
-			$xrds = xrds_add_service($xrds, 'main', 'OpenID 2.0 Provider Service', 
-				array(
-					'Type' => array(
-						array('content' => 'http://specs.openid.net/auth/2.0/signon'),
-					),
-					'URI' => array(array('content' => $server )),
-					'LocalID' => array($identifier),
-				), 0
-			);
+		if (!empty($services)) {
+			$priority = 0;
 
-			$xrds = xrds_add_service($xrds, 'main', 'OpenID 1.0 Provider Service', 
-				array(
-					'Type' => array(
-						array('content' => 'http://openid.net/signon/1.1'),
-					),
-					'URI' => array(array('content' => $server )),
-					'openid:Delegate' => array($identifier),
-				), 1
-			);
+			foreach ($services as $service) {
+				$types = array();
+				foreach ($service['types'] as $t) {
+					$types[] = array('content' => $t);
+				}
+
+				$xrds = xrds_add_service($xrds, 'main', 'OpenID Provider Service ' . $priority, 
+					array(
+						'Type' => $types,
+						'URI' => array(array('content' => $service['server'])),
+						'LocalID' => array($service['local']),
+						'openid:Delegate' => array($service['local']),
+					), $priority++
+				);
+			}
 		}
 	} else {
 		// OpenID Provider Service
@@ -316,5 +322,35 @@ function openid_server_user_trust($request) {
 }
 
 
+/**
+ * Discovery and cache OpenID services for a user's delegate OpenID.
+ *
+ * @param int $userid user ID
+ * @url string URL to discover.  If not provided, user's current delegate will be used
+ * @return bool true if successful
+ */
+function openid_server_update_delegation_info($userid, $url = null) {
+	if (empty($url)) $url = get_usermeta($userid, 'openid_delegate');
+	if (empty($url)) return false;
+
+	$fetcher = Auth_Yadis_Yadis::getHTTPFetcher();
+	$discoveryResult = Auth_Yadis_Yadis::discover($url, $fetcher);
+
+	$endpoints = Auth_OpenID_ServiceEndpoint::fromDiscoveryResult($discoveryResult);
+
+	$services = array();
+	foreach ($endpoints as $endpoint) {
+		$services[] = array(
+			'types' => $endpoint->type_uris,
+			'server' => $endpoint->server_url,
+			'local' => $endpoint->local_id,
+		);
+	}
+
+	if (empty($services)) return false;
+
+	update_usermeta($userid, 'openid_delegate_services', $services);
+	return true;
+}
 
 ?>
