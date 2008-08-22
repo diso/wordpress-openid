@@ -29,50 +29,35 @@ function openid_provider_xrds_simple($xrds) {
 		if (get_usermeta($user->ID, 'use_openid_provider') == 'local') {
 			$services = array(
 				0 => array(
-					'types' => array('http://specs.openid.net/auth/2.0/signon'),
-					'server' => trailingslashit(get_option('siteurl')) . '?openid_server=1',
-					'local' => get_author_posts_url($user->ID),
+					'Type' => array(array('content' => 'http://specs.openid.net/auth/2.0/signon')),
+					'URI' => trailingslashit(get_option('siteurl')) . '?openid_server=1',
+					'LocalID' => get_author_posts_url($user->ID),
 				),
 				1 => array(
-					'types' => array('http://openid.net/signon/1.1'),
-					'server' => trailingslashit(get_option('siteurl')) . '?openid_server=1',
-					'local' => get_author_posts_url($user->ID),
+					'Type' => array(array('content' => 'http://openid.net/signon/1.1')),
+					'URI' => trailingslashit(get_option('siteurl')) . '?openid_server=1',
+					'openid:Delegate' => get_author_posts_url($user->ID),
 				),
 			);
 		} else if (get_usermeta($user->ID, 'use_openid_provider') == 'delegate') {
 			$services = get_usermeta($user->ID, 'openid_delegate_services');
 		}
-
-		if (!empty($services)) {
-			$priority = 0;
-
-			foreach ($services as $service) {
-				$types = array();
-				foreach ($service['types'] as $t) {
-					$types[] = array('content' => $t);
-				}
-
-				$xrds = xrds_add_service($xrds, 'main', 'OpenID Provider Service ' . $priority, 
-					array(
-						'Type' => $types,
-						'URI' => array(array('content' => $service['server'])),
-						'LocalID' => array($service['local']),
-						'openid:Delegate' => array($service['local']),
-					), $priority++
-				);
-			}
-		}
 	} else {
-		// OpenID Provider Service
-		$xrds = xrds_add_service($xrds, 'main', 'OpenID Provider Service', 
+		$services = array(
 			array(
-				'Type' => array(
-					array('content' => 'http://specs.openid.net/auth/2.0/server'),
-				),
-				'URI' => array(array('content' => trailingslashit(get_option('siteurl')) . '?openid_server=1') ),
-				'LocalID' => array('http://specs.openid.net/auth/2.0/identifier_select'),
+				'Type' => array(array('content' => 'http://specs.openid.net/auth/2.0/server')),
+				'URI' => trailingslashit(get_option('siteurl')) . '?openid_server=1',
+				'LocalID' => 'http://specs.openid.net/auth/2.0/identifier_select',
 			)
 		);
+	}
+
+
+	if (!empty($services)) {
+		foreach ($services as $index => $service) {
+			$name = 'OpenID Provider Service (' . $index . ')';
+			$xrds = xrds_add_service($xrds, 'main', $name, $service, $index);
+		}
 	}
 
 	return $xrds;
@@ -335,16 +320,28 @@ function openid_server_update_delegation_info($userid, $url = null) {
 
 	$fetcher = Auth_Yadis_Yadis::getHTTPFetcher();
 	$discoveryResult = Auth_Yadis_Yadis::discover($url, $fetcher);
-
 	$endpoints = Auth_OpenID_ServiceEndpoint::fromDiscoveryResult($discoveryResult);
 
 	$services = array();
 	foreach ($endpoints as $endpoint) {
-		$services[] = array(
-			'types' => $endpoint->type_uris,
-			'server' => $endpoint->server_url,
-			'local' => $endpoint->local_id,
+		$service = array(
+			'Type' => array(),
+			'URI' => $endpoint->server_url,
 		);
+
+		foreach ($endpoint->type_uris as $type) {
+			$service['Type'][] = array('content' => $type);
+
+			if ($type == Auth_OpenID_TYPE_2_0_IDP) {
+				$service['LocalID'] = Auth_OpenID_IDENTIFIER_SELECT;
+			} else if ($type == Auth_OpenID_TYPE_2_0) {
+				$service['LocalID'] = $endpoint->local_id;
+			} else if (in_array($type, array(Auth_OpenID_TYPE_1_0, Auth_OpenID_TYPE_1_1, Auth_OpenID_TYPE_1_2))) {
+				$service['openid:Delegate'] = $endpoint->local_id;
+			}
+		}
+
+		$services[] = $service;
 	}
 
 	if (empty($services)) return false;
