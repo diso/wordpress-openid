@@ -349,6 +349,7 @@ function openid_server_update_delegation_info($userid, $url = null) {
 
 	if (empty($services)) return false;
 
+	update_usermeta($userid, 'openid_delegate', $url);
 	update_usermeta($userid, 'openid_delegate_services', $services);
 	return true;
 }
