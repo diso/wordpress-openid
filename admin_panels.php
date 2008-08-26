@@ -192,7 +192,13 @@ function openid_options_page() {
 						authentication and OP-driven identity selection will be used.</p>
 
 			<?php 
-				if (defined('OPENID_ALLOW_OWNER') && OPENID_ALLOW_OWNER) {
+				if (defined('OPENID_DISALLOW_OWNER') && OPENID_DISALLOW_OWNER) {
+					echo '
+						<p class="error">
+							A blog owner cannot be set for this WordPress blog.  To enable setting a blog owner, remove the follwoing line from your <code>wp-config.php</code>:<br />
+							<code style="margin:1em;">define("OPENID_DISALLOW_OWNER", 1);</code>
+						</p>';
+				} else {
 					$blog_owner = get_option('openid_blog_owner');
 
 					if (empty($blog_owner) || $blog_owner == $current_user->user_login) {
@@ -208,12 +214,6 @@ function openid_options_page() {
 					} else {
 						echo '<p class="error">Only the current blog owner ('.$blog_owner.') can set another user as the owner.</p>';
 					}
-				} else {
-					echo '
-						<p class="error">
-							You must add the following line to your <code>wp-config.php</code> file in order to set a blog owner:<br />
-							<code style="margin:1em;">define("OPENID_ALLOW_OWNER", 1);</code>
-						</p>';
 				} 
 			?>
 
