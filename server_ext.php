@@ -72,39 +72,36 @@ function openid_server_sreg_auth_response($response) {
 
 
 /**
- * Try to pre-populate SReg data from user's profile.  Some of this require the diso-profile plugin.
+ * Try to pre-populate SReg data from user's profile.  The following fields 
+ * are not handled by the plugin: dob, gender, postcode, country, and language.
+ * Other plugins may provide this data by implementing the filter 
+ * openid_server_sreg_${fieldname}.
  */
 function openid_server_sreg_from_profile($field) {
 	$user = wp_get_current_user();
+	$value = '';
+
 	switch($field) {
-		case 'nickname': // wp-core
-			return get_usermeta($user->ID, 'nickname');
+		case 'nickname':
+			$value = get_usermeta($user->ID, 'nickname');
+			break;
 
-		case 'email': // wp-core
-			return $user->user_email;
+		case 'email':
+			$value = $user->user_email;
+			break;
 
-		case 'fullname': // wp-core
-			return get_usermeta($user->ID, 'display_name');
+		case 'fullname':
+			$value = get_usermeta($user->ID, 'display_name');
+			break;
 		
-		case 'dob': // ?
-			return;
-
-		case 'gender': // ?
-			return;
-
-		case 'postcode': // diso-profile
-			return get_usermeta($user->ID, 'postalcode');
-
-		case 'country': // diso-profile
-			return get_usermeta($user->ID, 'countryname');
-
-		case 'language': // ?
-			return;
-
-		case 'timezone': // wp-core (use's blog timezone)
-			if (!function_exists('timezone_name_from_abbr')) return; // added in PHP 5.1.0
-			return timezone_name_from_abbr('', (get_option('gmt_offset') * 3600), 0);
+		case 'timezone':
+			if (function_exists('timezone_name_from_abbr')) { // added in PHP 5.1.0
+				$value = timezone_name_from_abbr('', (get_option('gmt_offset') * 3600), 0);
+			}
+			break;
 	}
+
+	return apply_filters('openid_server_sreg_' . $field, $value);
 }
 
 
