@@ -138,6 +138,36 @@ function openid_server_auth_request($request) {
 		return $request->answer(false);
 	}
 
+	// if using id select but user is delegating, display error to user (unless check_immediate)
+	if ($id_select && (get_usermeta($user->ID, 'use_openid_provider') == 'delegate')) {
+		if ($request->mode != 'check_immediate') {
+			if ($_REQUEST['action'] == 'cancel') {
+				check_admin_referer('wp-openid-server_cancel');
+				return $request->answer(false);
+			} else {
+				$_SESSION['openid_server_request'] = $request;
+				ob_start();
+
+				echo '<h1>OpenID Login Error</h1> 
+					<p>You cannot use Identifier Select if you are delegating your OpenID.  Instead, 
+					you will need to use your full OpenID when logging in.</p>
+					<p>Your OpenID is: <strong>'.$author_url.'</strong></p>
+					<form method="post">
+						<input type="submit" value="Continue" />
+						<input type="hidden" name="action" value="cancel" />
+						<input type="hidden" name="openid_server" value="1" />';
+				wp_nonce_field('wp-openid-server_cancel', '_wpnonce', true);
+				echo '
+					</form>
+				';
+
+				$html = ob_get_contents();
+				ob_end_clean();
+				wp_die($html, 'OpenID Login Error');
+			}
+		}
+	}
+
 	// if user trusts site, we're done
 	$trusted_sites = get_usermeta($user->ID, 'openid_trusted_sites');
 	if (in_array($request->trust_root, $trusted_sites)) {
