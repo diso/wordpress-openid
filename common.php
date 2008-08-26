@@ -771,6 +771,16 @@ function openid_get_identities($user_id) {
 
 
 /**
+ * Format OpenID for display... namely, remove the fragment if present.
+ * @param string $url url to display
+ * @return url formatted for display
+ */
+function openid_display_identity($url) {
+	return preg_replace('/#.+$/', '', $url);
+}
+
+
+/**
  * Remove identity url from user.
  *
  * @param int $user_id user id

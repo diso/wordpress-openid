@@ -290,9 +290,9 @@ function openid_profile_panel() {
 		<?php for($i=0; $i<sizeof($urls); $i++): ?>
 
 			<tr class="<?php _e($i%2==0 ? 'alternate' : '') ?>">
-				<td><a href="<?php echo $urls[$i]; ?>"><?php echo $urls[$i]; ?></a></td>
+				<td><a href="<?php echo $urls[$i]; ?>"><?php echo openid_display_identity($urls[$i]); ?></a></td>
 				<td style="text-align: center"><a class="delete" href="<?php 
-				echo wp_nonce_url(sprintf('?page=%s&action=drop_identity&url=%s', 'openid', $urls[$i]), 
+				echo wp_nonce_url(sprintf('?page=%s&action=drop_identity&url=%s', 'openid', urlencode($urls[$i])), 
 				'wp-openid-drop-identity_'.$urls[$i]);
 				?>"><?php _e('Delete', 'openid') ?></a></td>
 			</tr>
@@ -724,7 +724,7 @@ function openid_finish_verify($identity_url) {
 			openid_set_error('OpenID assertion successful, but this URL is already claimed by '
 			. 'another user on this blog. This is probably a bug. ' . $identity_url);
 		} else {
-			openid_message("Successfully added Identity URL: $identity_url.");
+			openid_message('Successfully added Identity URL: ' . openid_display_identity($identity_url));
 			openid_status('success');
 			
 			// ensure that profile URL is a verified Identity URL
