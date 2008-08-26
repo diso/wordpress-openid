@@ -526,26 +526,6 @@ function openid_printSystemStatus() {
 	echo '</div></div>';
 }
 
-function openid_repost($action, $parameters) {
-	$html = '
-	<noscript><p>Since your browser does not support JavaScript, you must press the Continue button once to proceed.</p></noscript>
-	<form action="'.$action.'" method="post">';
-
-	foreach ($parameters as $k => $v) {
-		if ($k == 'submit') continue;
-		$html .= "\n" . '<input type="hidden" name="'.$k.'" value="' . htmlspecialchars(stripslashes($v), ENT_COMPAT, get_option('blog_charset')) . '" />';
-	}
-	$html .= '
-		<noscript><div><input type="submit" value="Continue" /></div></noscript>
-	</form>
-	
-	<script type="text/javascript">
-		document.write("<h2>Please Wait...</h2>"); 
-		document.forms[0].submit()
-	</script>';
-
-	wp_die($html, 'OpenID Authentication Redirect');
-}
 
 /**
  * Handle OpenID profile management.

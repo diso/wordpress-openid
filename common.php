@@ -717,8 +717,38 @@ function openid_enabled($new = null) {
 }
 
 
-function openid_print_messages() {
+/**
+ * Send HTTP post through the user-agent.  If javascript is not supported, the 
+ * user will need to click on a "continue" button.
+ *
+ * @param string $action form action (URL to POST form to)
+ * @param array $parameters key-value pairs of parameters to include in the form
+ */
+function openid_repost($action, $parameters) {
+	$html = '
+	<noscript><p>Since your browser does not support JavaScript, you must press the Continue button once to proceed.</p></noscript>
+	<form action="'.$action.'" method="post">';
+
+	foreach ($parameters as $k => $v) {
+		if ($k == 'submit') continue;
+		$html .= "\n" . '<input type="hidden" name="'.$k.'" value="' . htmlspecialchars(stripslashes($v), ENT_COMPAT, get_option('blog_charset')) . '" />';
+	}
+	$html .= '
+		<noscript><div><input type="submit" value="Continue" /></div></noscript>
+	</form>
+	
+	<script type="text/javascript">
+		document.write("<h2>Please Wait...</h2>"); 
+		document.forms[0].submit()
+	</script>';
+
+	status_header(200);
+	nocache_headers();
+	header( 'Content-Type: text/html; charset=utf-8' );
+	echo "\n"; // send headers
+	wp_die($html, 'OpenID Authentication Redirect');
 }
+
 
 /**
  * Enqueue required javascript libraries.

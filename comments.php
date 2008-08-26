@@ -143,6 +143,8 @@ function openid_comments_array(&$comments, $post_id) {
 	$email_db  = $wpdb->escape($comment_author_email);
 	$url_db  = $wpdb->escape($comment_author_url);
 
+	// TODO: how do we do this without the openid column, and is it even necessary?
+	/*
 	if ($url_db) {
 		$comments_table = openid_comments_table();
 		$additional = $wpdb->get_results(
@@ -162,6 +164,7 @@ function openid_comments_array(&$comments, $post_id) {
 					'return strcmp($a->comment_date_gmt, $b->comment_date_gmt);'));
 		}
 	}
+	 */
 
 	return $comments;
 }
@@ -275,27 +278,27 @@ function openid_finish_comment($identity_url) {
 	if ($_REQUEST['action'] != 'comment') return;
 
 	if (empty($identity_url)) {
-		openid_repost_comment_anonymously($_SESSION['oid_comment_post']);
+		openid_repost_comment_anonymously($_SESSION['openid_comment_post']);
 	}
 		
 	openid_set_current_user($identity_url);
 		
 	if (is_user_logged_in()) {
 		// simulate an authenticated comment submission
-		$_SESSION['oid_comment_post']['author'] = null;
-		$_SESSION['oid_comment_post']['email'] = null;
-		$_SESSION['oid_comment_post']['url'] = null;
+		$_SESSION['openid_comment_post']['author'] = null;
+		$_SESSION['openid_comment_post']['email'] = null;
+		$_SESSION['openid_comment_post']['url'] = null;
 	} else {
 		// try to get user data from the verified OpenID
 		$user_data =& openid_get_user_data($identity_url);
 
 		if (!empty($user_data['display_name'])) {
-			$_SESSION['oid_comment_post']['author'] = $user_data['display_name'];
+			$_SESSION['openid_comment_post']['author'] = $user_data['display_name'];
 		}
 		if (!empty($user_data['user_email'])) {
-			$_SESSION['oid_comment_post']['email'] = $user_data['user_email'];
+			$_SESSION['openid_comment_post']['email'] = $user_data['user_email'];
 		}
-		$_SESSION['oid_comment_post']['url'] = $identity_url;
+		$_SESSION['openid_comment_post']['url'] = $identity_url;
 	}
 		
 	// record that we're about to post an OpenID authenticated comment.
@@ -304,7 +307,7 @@ function openid_finish_comment($identity_url) {
 
 	$wpp = parse_url(get_option('siteurl'));
 	openid_repost($wpp['path'] . '/wp-comments-post.php',
-	array_filter($_SESSION['oid_comment_post']));
+	array_filter($_SESSION['openid_comment_post']));
 }
 
 
@@ -316,7 +319,6 @@ function openid_finish_comment($identity_url) {
 function set_comment_openid($id) {
 	$comment = get_comment($id);
 	$openid_comments = get_post_meta($comment->comment_post_ID, 'openid_comments', true);
-	echo 'openid_comments = ' . var_export($openid_comments, true) . '<br />';
 	if (!is_array($openid_comments)) {
 		$openid_comments = array();
 	}
@@ -333,7 +335,7 @@ function set_comment_openid($id) {
  * @see get_user_data
  */
 function openid_get_user_data_form($identity_url, $data) {
-	$comment = $_SESSION['oid_comment_post'];
+	$comment = $_SESSION['openid_comment_post'];
 
 	if (!$comment) {
 		return $data;
