@@ -153,9 +153,11 @@ function openid_server_auth_request($request) {
 					you will need to use your full OpenID when logging in.</p>
 					<p>Your OpenID is: <strong>'.$author_url.'</strong></p>
 					<form method="post">
-						<input type="submit" value="Continue" />
-						<input type="hidden" name="action" value="cancel" />
-						<input type="hidden" name="openid_server" value="1" />';
+						<p class="submit">
+							<input type="submit" value="Continue" />
+							<input type="hidden" name="action" value="cancel" />
+							<input type="hidden" name="openid_server" value="1" />
+						</p>';
 				wp_nonce_field('wp-openid-server_cancel', '_wpnonce', true);
 				echo '
 					</form>
