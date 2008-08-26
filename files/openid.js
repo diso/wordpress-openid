@@ -23,6 +23,7 @@ function add_openid_to_comment_form() {
 					'<a href="http://openid.net/get/">find an OpenID provider</a>.' +
 				'</div> ';
 
+	jQuery('#commentform #url').attr('maxlength', '100');
 	var label = jQuery('#commentform label[@for=url]');
 	var children = jQuery(':visible:hastext', label);
 
