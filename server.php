@@ -250,7 +250,9 @@ function openid_server() {
 function openid_provider_link_tags() {
 
 	if (is_front_page()) {
-		$user = get_userdatabylogin(get_option('openid_blog_owner'));
+		if (!defined('OPENID_DISALLOW_OWNER') || !OPENID_DISALLOW_OWNER) {
+			$user = get_userdatabylogin(get_option('openid_blog_owner'));
+		}
 	} else if (is_author()) {
 		global $wp_query;
 		$user = $wp_query->get_queried_object();
@@ -260,18 +262,33 @@ function openid_provider_link_tags() {
 		if (get_usermeta($user->ID, 'use_openid_provider') == 'local') {
 			$server = trailingslashit(get_option('siteurl')) . '?openid_server=1';
 			$identifier = get_author_posts_url($user->ID);
-		} else if (get_usermeta($user->ID, 'use_openid_provider') == 'delegate') {
-			$server = get_usermeta($user-ID, 'openid_server');
-			$identifier = get_usermeta($user-ID, 'openid_delegate');
-		}
-	}
 
-	if ($server && $identifier) {
-		echo '
-		<link rel="openid2.provider" href="'.$server.'" />
-		<link rel="openid2.local_id" href="'.$identifier.'" />
-		<link rel="openid.server" href="'.$server.'" />
-		<link rel="openid.delegate" href="'.$identifier.'" />';
+			echo '
+			<link rel="openid2.provider" href="'.$server.'" />
+			<link rel="openid2.local_id" href="'.$identifier.'" />
+			<link rel="openid.server" href="'.$server.'" />
+			<link rel="openid.delegate" href="'.$identifier.'" />';
+
+		} else if (get_usermeta($user->ID, 'use_openid_provider') == 'delegate') {
+			$services = get_usermeta($user->ID, 'openid_delegate_services');
+			$openid_1 = false;
+			$openid_2 = false;
+			foreach($services as $service) {
+				if (!$openid_1 && $service['openid:Delegate']) {
+					echo '
+					<link rel="openid.server" href="'.$service['URI'].'" />
+					<link rel="openid.delegate" href="'.$service['openid:Delegate'].'" />';
+					$openid_1 = true;
+				}
+
+				if (!$openid_2 && $service['LocalID']) {
+					echo '
+					<link rel="openid2.provider" href="'.$service['URI'].'" />
+					<link rel="openid2.local_id" href="'.$service['LocalID'].'" />';
+					$openid_2 = true;
+				}
+			}
+		}
 	}
 
 }
