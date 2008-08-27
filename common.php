@@ -45,8 +45,15 @@ add_option( 'openid_nonces', array(), null, 'no' );
  * Set the textdomain for this plugin so we can support localizations.
  */
 function openid_textdomain() {
-	$lang_folder = PLUGINDIR . '/openid/lang';
-	load_plugin_textdomain('openid', $lang_folder);
+	load_plugin_textdomain('openid', null, 'openid/lang');
+}
+
+function openid_plugin_url() {
+	if (function_exists('plugins_url')) {
+		return plugins_url('openid');
+	} else {
+		return get_bloginfo('wpurl') . PLUGINDIR . '/openid';
+	}
 }
 
 
@@ -758,11 +765,11 @@ function openid_repost($action, $parameters) {
 function openid_js_setup() {
 	if (is_single() || is_comments_popup() || is_admin()) {
 		wp_enqueue_script( 'jquery' );
-		wp_enqueue_script('jquery.textnode', '/' . PLUGINDIR . '/openid/files/jquery.textnode.min.js', 
+		wp_enqueue_script('jquery.textnode', openid_plugin_url() . '/files/jquery.textnode.min.js', 
 			array('jquery'), WPOPENID_PLUGIN_REVISION);
-		wp_enqueue_script('jquery.xpath', '/' . PLUGINDIR . '/openid/files/jquery.xpath.min.js', 
+		wp_enqueue_script('jquery.xpath', openid_plugin_url() . '/files/jquery.xpath.min.js', 
 			array('jquery'), WPOPENID_PLUGIN_REVISION);
-		wp_enqueue_script('openid', '/' . PLUGINDIR . '/openid/files/openid.min.js', 
+		wp_enqueue_script('openid', openid_plugin_url() . '/files/openid.min.js', 
 			array('jquery','jquery.textnode'), WPOPENID_PLUGIN_REVISION);
 	}
 }
@@ -773,9 +780,9 @@ function openid_js_setup() {
  * @action: wp_head, login_head
  **/
 function openid_style() {
-	$css_path = get_option('siteurl') . '/' . PLUGINDIR . '/openid/files/openid.css?ver='.WPOPENID_PLUGIN_REVISION;
+	$css_path = openid_plugin_url() . '/files/openid.css?ver='.WPOPENID_PLUGIN_REVISION;
 	echo '
-		<link rel="stylesheet" type="text/css" href="'.$css_path.'" />';
+		<link rel="stylesheet" type="text/css" href="'.clean_url($css_path).'" />';
 }
 
 
