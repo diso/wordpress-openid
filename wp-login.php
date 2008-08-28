@@ -9,15 +9,15 @@
 add_action( 'login_head', 'openid_style');
 add_action( 'login_form', 'openid_wp_login_form');
 add_action( 'register_form', 'openid_wp_register_form');
-add_filter( 'login_errors', 'openid_login_form_hide_username_password_errors');
 add_action( 'wp_authenticate', 'openid_wp_authenticate' );
 add_action( 'openid_finish_auth', 'openid_finish_login' );
 if (get_option('force_openid_registration')) {
 	add_filter('registration_errors', 'openid_registration_errors');
 }
+add_action( 'init', 'openid_login_errors' );
 
 // WordPress 2.5 has wp_authenticate in the wrong place
-if (strpos($wp_version, '2.5') == 0) {
+if (strpos($wp_version, '2.5') !== false && strpos($wp_version, '2.5') == 0) {
 	add_action( 'init', 'wp25_login_openid' );
 }
 
@@ -29,34 +29,30 @@ if (strpos($wp_version, '2.5') == 0) {
  * @param string $credentials username and password provided in login form
  */
 function openid_wp_authenticate(&$credentials) {
-
-	if(!empty($_POST['openid_identifier'])) {
-		$redirect_to = '';
-		if( !empty( $_REQUEST['redirect_to'] ) ) $redirect_to = $_REQUEST['redirect_to'];
-		openid_start_login( $_POST['openid_identifier'], 'login', array('redirect_to' => $redirect_to) );
+	if (array_key_exists('openid_consumer', $_REQUEST)) {
+		finish_openid('login');
+	} else if (!empty($_POST['openid_identifier'])) {
+		openid_start_login( $_POST['openid_identifier'], 'login', array('redirect_to' => $_REQUEST['redirect_to']), site_url('/wp-login.php', 'login_post'));
 	}
-	$message = openid_message();
-	if( !empty( $message ) ) {
+}
+
+function openid_login_errors() {
+	$self = basename( $GLOBALS['pagenow'] );
+		
+	if ($self != 'wp-login.php') return;
+
+	if ($_REQUEST['openid_error']) {
 		global $error;
-		$error = $message;
-	}
-}
-
-
-/**
- * Provide more useful OpenID error message to the user.
- *
- * @filter: login_errors
- **/
-function openid_login_form_hide_username_password_errors($r) {
-
-	if( $_POST['openid_identifier'] or $_REQUEST['action'] == 'login' or $_REQUEST['action'] == 'comment' ) {
-		return openid_message();
+		$error = $_REQUEST['openid_error'];
 	}
 
-	return $r;
+	if ($_REQUEST['registration_closed']) {
+		global $error;
+		$error = 'OpenID authentication valid, but unable '
+			. 'to find a WordPress account associated with this OpenID.<br /><br />'
+			. 'Enable "Anyone can register" to allow creation of new accounts via OpenID.';
+	}
 }
-
 
 /**
  * Add OpenID input field to wp-login.php
@@ -107,8 +103,8 @@ function openid_finish_login($identity_url) {
 	$redirect_to = urldecode($_REQUEST['redirect_to']);
 		
 	if (empty($identity_url)) {
-		openid_set_error('Unable to authenticate OpenID.');
-		wp_safe_redirect(get_option('siteurl') . '/wp-login.php');
+		$url = get_option('siteurl') . '/wp-login.php?openid_error=' . urlencode(openid_message());
+		wp_safe_redirect($url);
 		exit;
 	}
 		
@@ -121,10 +117,8 @@ function openid_finish_login($identity_url) {
 			openid_set_current_user($user->ID);
 		} else {
 			// TODO - Start a registration loop in WPMU.
-			openid_set_error('OpenID authentication valid, but unable '
-			. 'to find a WordPress account associated with this OpenID.<br /><br />'
-			. 'Enable "Anyone can register" to allow creation of new accounts via OpenID.');
-			wp_safe_redirect(get_option('siteurl') . '/wp-login.php');
+			$url = get_option('siteurl') . '/wp-login.php?registration_closed=1';
+			wp_safe_redirect($url);
 			exit;
 		}
 

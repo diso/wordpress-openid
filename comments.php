@@ -6,12 +6,11 @@
 
 
 // -- WordPress Hooks
+add_action( 'parse_request', 'openid_parse_comment_request');
 add_action( 'preprocess_comment', 'openid_process_comment', -99 );
-add_action( 'comment_post', 'check_comment_author_openid', 5 );
+add_action( 'comment_post', 'update_comment_openid', 5 );
 add_filter( 'option_require_name_email', 'openid_option_require_name_email' );
-add_filter( 'comments_array', 'openid_comments_array', 10, 2);
 add_action( 'sanitize_comment_cookies', 'openid_sanitize_comment_cookies', 15);
-add_filter( 'comment_post_redirect', 'openid_comment_post_redirect', 0, 2);
 add_action( 'openid_finish_auth', 'openid_finish_comment' );
 if( get_option('oid_enable_approval') ) {
 	add_filter('pre_comment_approved', 'openid_comment_approval');
@@ -35,6 +34,8 @@ add_filter( 'openid_user_data', 'openid_get_user_data_form', 10, 2);
  * @return array comment data
  */
 function openid_process_comment( $comment ) {
+	@session_start();
+
 	if ($_REQUEST['openid_skip']) return $comment;
 		
 	$openid_url = (array_key_exists('openid_identifier', $_POST) ? $_POST['openid_identifier'] : $_POST['url']);
@@ -67,31 +68,14 @@ function openid_process_comment( $comment ) {
  * @return string new comment approval status
  */
 function openid_comment_approval($approved) {
-	return ($_SESSION['oid_posted_comment'] ? 1 : $approved);
-}
-
-
-/**
- * If last comment was authenticated by an OpenID, record that in the database.
- *
- * @param string $location redirect location
- * @param object $comment comment that was just left
- * @return string redirect location
- */
-function openid_comment_post_redirect($location, $comment) {
-	if ($_SESSION['oid_posted_comment']) {
-		set_comment_openid($comment->comment_ID);
-		unset($_SESSION['oid_posted_comment']);
-	}
-		
-	return $location;
+	return ($_SESSION['openid_posted_comment'] ? 1 : $approved);
 }
 
 
 /**
  * If the comment contains a valid OpenID, skip the check for requiring a name and email address.  Even if
  * this data is provided in the form, we may get it through other methods, so we don't want to bail out
- * prematurely.  After OpenID authentication has completed (and $_SESSION['oid_skip'] is set), we don't
+ * prematurely.  After OpenID authentication has completed (and $_REQUEST['openid_skip'] is set), we don't
  * interfere so that this data can be required if desired.
  *
  * @param boolean $value existing value of flag, whether to require name and email
@@ -100,7 +84,7 @@ function openid_comment_post_redirect($location, $comment) {
  */
 function openid_option_require_name_email( $value ) {
 		
-	if ($_REQUEST['oid_skip']) {
+	if ($_REQUEST['openid_skip']) {
 		return $value;
 	}
 
@@ -120,53 +104,6 @@ function openid_option_require_name_email( $value ) {
 	}
 
 	return $value;
-}
-
-
-/**
- * Get any additional comments awaiting moderation by this user.  WordPress
- * core has been udpated to grab most, but we still do one last check for
- * OpenID comments that have a URL match with the current user.
- *
- * @param array $comments array of comments to display
- * @param int $post_id id of the post to display comments for
- * @return array new array of comments to display
- */
-function openid_comments_array(&$comments, $post_id) {
-	global $wpdb;
-	$user = wp_get_current_user();
-
-	$commenter = wp_get_current_commenter();
-	extract($commenter);
-
-	$author_db = $wpdb->escape($comment_author);
-	$email_db  = $wpdb->escape($comment_author_email);
-	$url_db  = $wpdb->escape($comment_author_url);
-
-	// TODO: how do we do this without the openid column, and is it even necessary?
-	/*
-	if ($url_db) {
-		$comments_table = openid_comments_table();
-		$additional = $wpdb->get_results(
-				"SELECT * FROM $comments_table"
-		. " WHERE comment_post_ID = '$post_id'"
-		. " AND openid = '1'"             // get OpenID comments
-		. " AND comment_author_url = '$url_db'"      // where only the URL matches
-		. ($user ? " AND user_id != '$user->ID'" : '')
-		. ($author_db ? " AND comment_author != '$author_db'" : '')
-		. ($email_db ? " AND comment_author_email != '$email_db'" : '')
-		. " AND comment_approved = '0'"
-		. " ORDER BY comment_date");
-
-		if ($additional) {
-			$comments = array_merge($comments, $additional);
-			usort($comments, create_function('$a,$b',
-					'return strcmp($a->comment_date_gmt, $b->comment_date_gmt);'));
-		}
-	}
-	 */
-
-	return $comments;
 }
 
 
@@ -208,16 +145,22 @@ function openid_comment_author_link( $html ) {
 
 
 /**
- * For comments that were handled by WordPress normally (not our code), check if the author
- * registered with OpenID and set comment openid flag if so.
+ * Check if the comment was posted with OpenID, either directly or by an author registered with OpenID.  Update the comment accordingly.
  *
  * @action post_comment
  */
-function check_comment_author_openid($comment_ID) {
-	$comment = get_comment($comment_ID);
-	if ( $comment->user_id && !$comment->openid && is_user_openid($comment->user_id) ) {
+function update_comment_openid($comment_ID) {
+	if ($_SESSION['openid_posted_comment']) {
 		set_comment_openid($comment_ID);
+		unset($_SESSION['openid_posted_comment']);
+	} else {
+		$comment = get_comment($comment_ID);
+
+		if ( is_user_openid($comment->user_id) ) {
+			set_comment_openid($comment_ID);
+		}
 	}
+
 }
 
 
@@ -256,7 +199,7 @@ function openid_repost_comment_anonymously($post) {
 		<p>URL: <input name="url" value="'.$post['url'].'" /></p>
 		<textarea name="comment" cols="80%" rows="10">'.stripslashes($post['comment']).'</textarea>
 		<input type="submit" name="submit" value="Submit Comment" />
-		<input type="hidden" name="oid_skip" value="1" />';
+		<input type="hidden" name="openid_skip" value="1" />';
 	foreach ($post as $name => $value) {
 		if (!in_array($name, array('author', 'email', 'url', 'comment', 'submit'))) {
 			$html .= '
@@ -303,7 +246,7 @@ function openid_finish_comment($identity_url) {
 		
 	// record that we're about to post an OpenID authenticated comment.
 	// We can't actually record it in the database until after the repost below.
-	$_SESSION['oid_posted_comment'] = true;
+	$_SESSION['openid_posted_comment'] = true;
 
 	$wpp = parse_url(get_option('siteurl'));
 	openid_repost($wpp['path'] . '/wp-comments-post.php',
@@ -354,5 +297,17 @@ function openid_get_user_data_form($identity_url, $data) {
 	return $data;
 }
 
+
+/**
+ * Parse the WordPress request.  If the pagename is 'openid_consumer', then the request
+ * is an OpenID response and should be handled accordingly.
+ *
+ * @param WP $wp WP instance for the current request
+ */
+function openid_parse_comment_request($wp) {
+	if (array_key_exists('openid_consumer', $_REQUEST) && $_REQUEST['action']) {
+		finish_openid($_REQUEST['action']);
+	}
+}
 
 ?>

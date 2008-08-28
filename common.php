@@ -13,10 +13,8 @@ add_action( 'init', 'openid_textdomain' ); // load textdomain
 // include internal stylesheet
 add_action( 'wp_head', 'openid_style');
 
-add_filter( 'init', 'openid_init_errors');
-
 // parse request
-add_action('parse_request', 'openid_parse_request');
+add_action('parse_request', 'openid_parse_idib_request');
 
 add_action( 'delete_user', 'delete_user_openids' );
 add_action( 'cleanup_openid', 'openid_cleanup' );
@@ -205,12 +203,11 @@ function openid_doRedirect($auth_request, $trust_root, $return_to) {
  * @return String authenticated identity URL, or null if authentication failed.
  */
 function finish_openid_auth() {
+	@session_start();
 
-	//set_error_handler( 'openid_customer_error_handler'));
 	$consumer = openid_getConsumer();
-	$response = $consumer->complete($_SESSION['oid_return_to']);
+	$response = $consumer->complete($_SESSION['openid_return_to']);
 	openid_response($response);
-	//restore_error_handler();
 		
 	switch( $response->status ) {
 		case Auth_OpenID_CANCEL:
@@ -279,13 +276,15 @@ function openid_normalize_username($username) {
 	return $username;
 }
 
-function openid_begin_consumer($url) {
-	global $openid_auth_request;
 
-	if ($openid_auth_request == NULL) {
+function openid_begin_consumer($url) {
+	static $request;
+
+	@session_start();
+	if ($request == NULL) {
 		set_error_handler( 'openid_customer_error_handler');
 
-		if (openid_isValidEmail($url)) {
+		if (is_email($url)) {
 			$_SESSION['openid_login_email'] = $url;
 			set_include_path( dirname(__FILE__) . PATH_SEPARATOR . get_include_path() );
 			require_once 'Auth/Yadis/Email.php';
@@ -296,20 +295,12 @@ function openid_begin_consumer($url) {
 		}
 
 		$consumer = openid_getConsumer();
-		$openid_auth_request = $consumer->begin($url);
+		$request = $consumer->begin($url);
 
 		restore_error_handler();
 	}
 
-	return $openid_auth_request;
-}
-
-
-/**
- * Check if the provided string looks like an email address.
- */
-function openid_isValidEmail($email) {
-	return eregi("^[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,}$", $email);
+	return $request;
 }
 
 
@@ -320,7 +311,7 @@ function openid_isValidEmail($email) {
  * @param action $action OpenID action being performed
  * @param array $arguments array of additional arguments to be included in the 'return_to' URL
  */
-function openid_start_login( $claimed_url, $action, $arguments = null) {
+function openid_start_login( $claimed_url, $action, $arguments = null, $return_to = null) {
 	if ( empty($claimed_url) ) return; // do nothing.
 		
 	$auth_request = openid_begin_consumer( $claimed_url );
@@ -337,7 +328,9 @@ function openid_start_login( $claimed_url, $action, $arguments = null) {
 	}
 		
 	// build return_to URL
-	$return_to = trailingslashit(get_option('home'));
+	if (empty($return_to)) {
+		$return_to = trailingslashit(get_option('home'));
+	}
 	$auth_request->return_to_args['openid_consumer'] = '1';
 	$auth_request->return_to_args['action'] = $action;
 	if (is_array($arguments) && !empty($arguments)) {
@@ -360,7 +353,7 @@ function openid_start_login( $claimed_url, $action, $arguments = null) {
 		}
 	}
 		
-	$_SESSION['oid_return_to'] = $return_to;
+	$_SESSION['openid_return_to'] = $return_to;
 	openid_doRedirect($auth_request, get_option('home'), $return_to);
 	exit(0);
 }
@@ -590,6 +583,7 @@ function openid_consumer_xrds_simple($xrds) {
 		array(
 			'Type' => array(array('content' => 'http://specs.openid.net/auth/2.0/return_to') ),
 			'URI' => array(array('content' => trailingslashit(get_option('home'))) ),
+			// TODO: allow components to register additional return_to URLs
 		)
 	);
 
@@ -625,36 +619,11 @@ function openid_consumer_xrds_simple($xrds) {
  *
  * @param WP $wp WP instance for the current request
  */
-function openid_parse_request($wp) {
-	
-	// Identity in the Browser Indicator Service
+function openid_parse_idib_request($wp) {
 	if (array_key_exists('openid_check_login', $_REQUEST)) {
 		echo is_user_logged_in() ? 'true' : 'false';
 		exit;
 	}
-
-	// OpenID Consumer Service
-	if (array_key_exists('openid_consumer', $_REQUEST) && $_REQUEST['action']) {
-		finish_openid($_REQUEST['action']);
-	}
-	
-	// OpenID Provider Service
-	if (array_key_exists('openid_server', $_REQUEST)) {
-		openid_server_request($_REQUEST['action']);
-	}
-}
-
-
-function openid_set_error($error) {
-	$_SESSION['oid_error'] = $error;
-	return;
-}
-
-
-function openid_init_errors() {
-	global $error;
-	$error = $_SESSION['oid_error'];
-	unset($_SESSION['oid_error']);
 }
 
 
@@ -688,28 +657,12 @@ function openid_add_user_identity($user_id, $identity_url) {
 
 function openid_status($new = null) {
 	static $status;
-
-	if ($new !== null) $status = $new;
-
-	if ($status == null && $_SESSION['openid_status']) {
-		$status = $_SESSION['openid_status'];
-		unset($_SESSION['openid_status']);
-	}
-
-	return $status;
+	return ($new == null) ? $status : $status = $new;
 }
 
 function openid_message($new = null) {
 	static $message;
-
-	if ($new !== null) $message = $new;
-
-	if ($message == null && $_SESSION['openid_message']) {
-		$message = $_SESSION['openid_message'];
-		unset($_SESSION['openid_message']);
-	}
-
-	return $message;
+	return ($new == null) ? $message : $message = $new;
 }
 
 function openid_response($new = null) {

@@ -3,6 +3,7 @@
 require_once 'Auth/OpenID/Server.php';
 require_once 'server_ext.php';
 
+add_action( 'parse_request', 'openid_server_parse_request');
 add_filter( 'xrds_simple', 'openid_provider_xrds_simple');
 add_action( 'wp_head', 'openid_provider_link_tags');
 
@@ -90,11 +91,13 @@ function openid_server_request() {
 	$server = openid_server();
 
 	// get OpenID request, either from session or HTTP request
-	if ($_SESSION['openid_server_request']) {
-		$request = $_SESSION['openid_server_request'];
-		unset($_SESSION['openid_server_request']);
-	} else {
-		$request = $server->decodeRequest();
+	$request = $server->decodeRequest();
+	if (Auth_OpenID_isError($request)) {
+		@session_start();
+		if ($_SESSION['openid_server_request']) {
+			$request = $_SESSION['openid_server_request'];
+			unset($_SESSION['openid_server_request']);
+		}
 	}
 
 	// process request
@@ -121,6 +124,7 @@ function openid_server_auth_request($request) {
 		if ($request->mode == 'check_immediate') {
 			return $request->answer(false);
 		} else {
+			@session_start();
 			$_SESSION['openid_server_request'] = $request;
 			auth_redirect();
 		}
@@ -145,6 +149,7 @@ function openid_server_auth_request($request) {
 				check_admin_referer('wp-openid-server_cancel');
 				return $request->answer(false);
 			} else {
+				@session_start();
 				$_SESSION['openid_server_request'] = $request;
 				ob_start();
 
@@ -326,6 +331,7 @@ function openid_server_user_trust($request) {
 
 	} else {
 		// prompt the user to make a trust decision
+		@session_start();
 		$_SESSION['openid_server_request'] = $request;
 
 		ob_start();
@@ -402,6 +408,18 @@ function openid_server_update_delegation_info($userid, $url = null) {
 	update_usermeta($userid, 'openid_delegate', $url);
 	update_usermeta($userid, 'openid_delegate_services', $services);
 	return true;
+}
+
+
+/**
+ * Parse the WordPress request.  
+ *
+ * @param WP $wp WP instance for the current request
+ */
+function openid_server_parse_request($wp) {
+	if (array_key_exists('openid_server', $_REQUEST)) {
+		openid_server_request($_REQUEST['action']);
+	}
 }
 
 ?>

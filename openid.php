@@ -24,8 +24,6 @@ require_once 'server.php';
 require_once 'store.php';
 restore_include_path();
 
-@session_start();
-
 // -- public functions
 
 /**

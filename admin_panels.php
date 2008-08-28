@@ -536,6 +536,10 @@ function openid_profile_management() {
 	if( !isset( $_REQUEST['action'] )) return;
 		
 	switch( $_REQUEST['action'] ) {
+		case 'verify':
+			finish_openid($_REQUEST['action']);
+			break;
+
 		case 'add_identity':
 			check_admin_referer('wp-openid-add_identity');
 
@@ -555,7 +559,8 @@ function openid_profile_management() {
 				return;
 			}
 
-			openid_start_login($_POST['openid_identifier'], 'verify');
+			$return_to = admin_url(current_user_can('edit_users') ? 'users.php' : 'profile.php');
+			openid_start_login($_POST['openid_identifier'], 'verify', array('page' => 'openid'), $return_to);
 			break;
 
 		case 'drop_identity':  // Remove a binding.
@@ -698,10 +703,10 @@ function openid_finish_verify($identity_url) {
 
 	$user = wp_get_current_user();
 	if (empty($identity_url)) {
-		openid_set_error('Unable to authenticate OpenID.');
+		openid_message('Unable to authenticate OpenID.');
 	} else {
 		if( !openid_add_identity($user->ID, $identity_url) ) {
-			openid_set_error('OpenID assertion successful, but this URL is already claimed by '
+			openid_message('OpenID assertion successful, but this URL is already claimed by '
 			. 'another user on this blog. This is probably a bug. ' . $identity_url);
 		} else {
 			openid_message('Successfully added Identity URL: ' . openid_display_identity($identity_url));
@@ -736,10 +741,10 @@ function openid_finish_verify($identity_url) {
 		}
 	}
 
-	$_SESSION['openid_message'] = openid_message();
-	$_SESSION['openid_status'] = openid_status();
 	$wpp = parse_url(get_option('siteurl'));
 	$redirect_to = $wpp['path'] . '/wp-admin/' . (current_user_can('edit_users') ? 'users.php' : 'profile.php') . '?page=openid';
+	$redirect_to .= "&action=$action&message=$message&identity=$identity_url";
+	return;
 	if (function_exists('wp_safe_redirect')) {
 		wp_safe_redirect( $redirect_to );
 	} else {
