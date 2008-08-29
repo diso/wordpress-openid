@@ -578,6 +578,7 @@ function openid_get_user_data_hcard($identity_url, $data) {
 
 
 function openid_consumer_xrds_simple($xrds) {
+/*
 	// OpenID Consumer Service
 	$xrds = xrds_add_service($xrds, 'main', 'OpenID Consumer Service', 
 		array(
@@ -586,7 +587,6 @@ function openid_consumer_xrds_simple($xrds) {
 			// TODO: allow components to register additional return_to URLs
 		)
 	);
-
 	// Identity in the Browser Login Service
 	$siteurl = function_exists('site_url') ? site_url('/wp-login.php', 'login_post') : get_option('siteurl').'/wp-login.php';
 	$xrds = xrds_add_service($xrds, 'main', 'Identity in the Browser Login Service', 
@@ -608,6 +608,7 @@ function openid_consumer_xrds_simple($xrds) {
 			'URI' => array(array('content' => trailingslashit(get_option('home')) . '?openid_check_login')),
 		)
 	);
+*/
 
 	return $xrds;
 }
