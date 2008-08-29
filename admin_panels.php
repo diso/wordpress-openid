@@ -679,8 +679,7 @@ function openid_profile_drop_identity($id) {
 			}
 
 			if (!$verified_url) {
-				$user->user_url = $identities[0];
-				wp_update_user( get_object_vars( $user ));
+				wp_update_user( array('ID' => $user->ID, 'user_url' => $identities[0]) );
 				openid_message(openid_message() . '<br /><strong>Note:</strong> For security reasons, your profile URL has been updated to match your Identity URL.');
 			}
 		}
@@ -733,8 +732,7 @@ function openid_finish_verify($identity_url) {
 				}
 
 				if (!$verified_url) {
-					$user->user_url = $identity_url;
-					wp_update_user( get_object_vars( $user ));
+					wp_update_user( array('ID' => $user->ID, 'user_url' => $identity_url) );
 					openid_message(openid_message() . '<br /><strong>Note:</strong> For security reasons, your profile URL has been updated to match your Identity URL.');
 				}
 			}
