@@ -27,6 +27,10 @@ function openid_provider_xrds_simple($xrds) {
 	}
 
 	if ($user) {
+		// if user doesn't have capability, bail
+		$user_object = new WP_User($user->ID);
+		if (!$user_object->has_cap('use_openid_provider')) return $xrds;
+
 		if (get_usermeta($user->ID, 'use_openid_provider') == 'local') {
 			$services = array(
 				0 => array(
@@ -136,6 +140,9 @@ function openid_server_auth_request($request) {
 	$user = wp_get_current_user();
 	$author_url = get_author_posts_url($user->ID);
 	$id_select = ($request->identity == 'http://specs.openid.net/auth/2.0/identifier_select');
+
+	// bail if user does not have access to OpenID provider
+	if (!$user->has_cap('use_openid_provider')) return $request->answer(false);
 
 	// bail if user doesn't own identity and not using id select
 	if (!$id_select && ($author_url != $request->identity)) {
@@ -274,6 +281,10 @@ function openid_provider_link_tags() {
 	}
 
 	if ($user) {
+		// if user doesn't have capability, bail
+		$user_object = new WP_User($user->ID);
+		if (!$user_object->has_cap('use_openid_provider')) return;
+
 		if (get_usermeta($user->ID, 'use_openid_provider') == 'local') {
 			$server = trailingslashit(get_option('siteurl')) . '?openid_server=1';
 			$identifier = get_author_posts_url($user->ID);

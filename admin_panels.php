@@ -46,7 +46,7 @@ function openid_admin_panels() {
  * @options_page
  */
 function openid_options_page() {
-	global $wp_version, $wpdb;
+	global $wp_version, $wpdb, $wp_roles;
 
 	if ( isset($_REQUEST['action']) ) {
 		switch($_REQUEST['action']) {
@@ -71,6 +71,17 @@ function openid_options_page() {
 		update_option( 'oid_enable_email_mapping', isset($_POST['enable_email_mapping']) ? true : false );
 		update_option( 'force_openid_registration', isset($_POST['force_openid_registration']) ? true : false );
 		update_option( 'openid_blog_owner', $_POST['openid_blog_owner']);
+
+		// set OpenID Capability
+		foreach ($wp_roles->get_names() as $name) {
+			$role = $wp_roles->get_role(strtolower($name));
+			$option_set = $_POST['openid_cap_' . strtolower(htmlentities($name))] == 'on' ? true : false;
+			if ($role->has_cap('use_openid_provider')) {
+			   	if (!$option_set) $role->remove_cap('use_openid_provider');
+			} else {
+			   	if ($option_set) $role->add_cap('use_openid_provider');
+			}
+		}
 
 		if ($error !== '') {
 			echo '<div class="error"><p><strong>'.__('At least one of OpenID options was NOT updated', 'openid').'</strong>'.$error.'</p></div>';
@@ -176,19 +187,41 @@ function openid_options_page() {
 				$current_user_url = get_author_posts_url($current_user->ID);
 			?>
 
+			<p>This plugin includes an OpenID Provider that allows authorized 
+			users to use their <em>Author Posts URL</em> as an OpenID, either using their 
+			local WordPress credentials, or by delegating to another OpenID Provider.</p>
+
 			<table class="form-table optiontable editform" cellspacing="2" cellpadding="5" width="100%">
+				<tr valign="top">
+					<th scope="row"><?php _e('OpenID Capability:', 'openid') ?></th>
+					<td>
+
+						<p>Choose which user roles are allowed to use the local OpenID Provider:</p>
+
+						<p>
+							<?php 
+				foreach ($wp_roles->get_names() as $name) {
+					$role = $wp_roles->get_role(strtolower($name));
+					$checked = $role->has_cap('use_openid_provider') ? ' checked="checked"' : '';
+					$option_name = 'openid_cap_' . strtolower(htmlentities($name));
+					echo '<input type="checkbox" id="'.$option_name.'" name="'.$option_name.'"'.$checked.' /><label for="'.$option_name.'"> '.$name.'</label><br />' . "\n";
+				}
+							?>
+						</p>
+					</td>
+				</tr>
+
 				<tr valign="top">
 					<th scope="row"><?php _e('Blog Owner:', 'openid') ?></th>
 					<td>
 
-						<p>Users on this blog can use their author URL (ie. 
+						<p>Authorized Users on this blog can use their author URL (ie. 
 						<em><?php printf('<a href="%1$s">%1$s</a>', $current_user_url); ?></em>) as an 
-						OpenID, either using the local OpenID server, or delegating to another provider.  
-						The user designated as the "Blog Owner" will also be able to use
-						the blog root (<?php printf('<a href="%1$s">%1$s</a>', trailingslashit(get_option('home'))); ?>), 
+						OpenID.  The user designated as the "Blog Owner" will also be able to use
+						the blog home (<?php printf('<a href="%1$s">%1$s</a>', trailingslashit(get_option('home'))); ?>), 
 						as their OpenID.  If this is a single-user blog, you should set this to your main account.</p>
 
-						<p>If no blog owner is selected, then any user may use the blog root to initiate OpenID 
+						<p>If no blog owner is selected, then any user may use the blog home to initiate OpenID 
 						authentication and OP-driven identity selection will be used.</p>
 
 			<?php 
@@ -322,8 +355,14 @@ function openid_profile_panel() {
 		</p>
 		</form>
 
-
 		<br class="clear" />
+
+	<?php 
+	if (!current_user_can('use_openid_provider')) {
+		echo '</div>';
+	   	return;
+	}
+	?>
 		<h2><?php _e('Local OpenID', 'openid') ?></h2>
 
 		<form method="post">
