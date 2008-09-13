@@ -200,8 +200,8 @@ function openid_options_page() {
 
 						<p>
 							<?php 
-				foreach ($wp_roles->get_names() as $name) {
-					$role = $wp_roles->get_role(strtolower($name));
+				foreach ($wp_roles->role_names as $key => $name) {
+					$role = $wp_roles->get_role($key);
 					$checked = $role->has_cap('use_openid_provider') ? ' checked="checked"' : '';
 					$option_name = 'openid_cap_' . strtolower(htmlentities($name));
 					echo '<input type="checkbox" id="'.$option_name.'" name="'.$option_name.'"'.$checked.' /><label for="'.$option_name.'"> '.$name.'</label><br />' . "\n";
