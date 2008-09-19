@@ -17,7 +17,8 @@ function openid_provider_xrds_simple($xrds) {
 	
 	if (!$user && get_option('openid_blog_owner')) {
 		$url_parts = parse_url(get_option('home'));
-		if ('/' . $url_parts['path'] != $_SERVER['REQUEST_URI']) {
+
+		if ('/' . $url_parts['path'] != $_SERVER['REQUEST_URI'] && !is_admin()) {
 			return $xrds;
 		}
 
@@ -78,7 +79,11 @@ function openid_server_requested_user() {
 	global $wp_rewrite;
 
 	if ($_REQUEST['author']) {
-		return get_userdatabylogin($_REQUEST['author']);
+		if (is_numeric($_REQUEST['author'])) {
+			return get_userdata($_REQUEST['author']);
+		} else {
+			return get_userdatabylogin($_REQUEST['author']);
+		}
 	} else {
 		$regex = preg_replace('/%author%/', '(.+)', $wp_rewrite->get_author_permastruct());
 		preg_match('|'.$regex.'|', $_SERVER['REQUEST_URI'], $matches);

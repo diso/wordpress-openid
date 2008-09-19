@@ -264,6 +264,8 @@ function openid_create_tables()
 
 	$sql = implode(';', $statements);
 	dbDelta($sql);
+
+	update_option('openid_db_revision', OPENID_DB_REVISION);
 }
 
 

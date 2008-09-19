@@ -6,6 +6,7 @@
 // -- WP Hooks
 register_activation_hook('openid/openid.php', 'openid_activate_plugin');
 register_deactivation_hook('openid/openid.php', 'openid_deactivate_plugin');
+add_action( 'init', 'openid_activate_wpmu' ); // wpmu activation
 
 // Add hooks to handle actions in WordPress
 add_action( 'init', 'openid_textdomain' ); // load textdomain
@@ -29,14 +30,21 @@ add_filter( 'xrds_simple', 'openid_consumer_xrds_simple');
 
 
 // Add custom OpenID options
-add_option( 'oid_enable_commentform', true );
-add_option( 'oid_plugin_enabled', true );
-add_option( 'oid_plugin_revision', 0 );
-add_option( 'oid_db_revision', 0 );
-add_option( 'oid_enable_approval', false );
-add_option( 'oid_enable_email_mapping', false );
+add_option( 'openid_enable_commentform', true );
+add_option( 'openid_plugin_enabled', true );
+add_option( 'openid_plugin_revision', 0 );
+add_option( 'openid_db_revision', 0 );
+add_option( 'openid_enable_approval', false );
+add_option( 'openid_enable_email_mapping', false );
 add_option( 'openid_associations', array(), null, 'no' );
 add_option( 'openid_nonces', array(), null, 'no' );
+
+delete_option( 'oid_enable_commentform' );
+delete_option( 'oid_plugin_enabled' );
+delete_option( 'oid_plugin_revision' );
+delete_option( 'oid_db_revision' );
+delete_option( 'oid_enable_approval' );
+delete_option( 'oid_enable_email_mapping' );
 
 
 /**
@@ -46,15 +54,6 @@ function openid_textdomain() {
 	load_plugin_textdomain('openid', null, 'openid/lang');
 }
 
-function openid_plugin_url() {
-	if (function_exists('plugins_url')) {
-		return plugins_url('openid');
-	} else {
-		return get_bloginfo('wpurl') . PLUGINDIR . '/openid';
-	}
-}
-
-
 /**
  * Soft verification of plugin activation
  *
@@ -62,13 +61,13 @@ function openid_plugin_url() {
  */
 function openid_uptodate() {
 
-	if( get_option('oid_db_revision') != WPOPENID_DB_REVISION ) {
+	if( get_option('openid_db_revision') != OPENID_DB_REVISION ) {
 		openid_enabled(false);
-		error_log('Plugin database is out of date: ' . get_option('oid_db_revision') . ' != ' . WPOPENID_DB_REVISION);
-		update_option('oid_plugin_enabled', false);
+		error_log('Plugin database is out of date: ' . get_option('openid_db_revision') . ' != ' . OPENID_DB_REVISION);
+		update_option('openid_plugin_enabled', false);
 		return false;
 	}
-	openid_enabled(get_option('oid_plugin_enabled') == true);
+	openid_enabled(get_option('openid_plugin_enabled') == true);
 	return openid_enabled();
 }
 // XXX - figure out when to perform  uptodate() checks and such (since late_bind is no more)
@@ -121,6 +120,15 @@ function openid_getConsumer() {
 	return $consumer;
 }
 
+
+function openid_activate_wpmu() {
+	global $wpmu_version;
+	if ($wpmu_version && is_admin()) {
+		if (get_option('openid_db_revision') != OPENID_DB_REVISION) {
+			openid_activate_plugin();
+		}
+	}
+}
 
 /**
  * Called on plugin activation.
@@ -578,17 +586,22 @@ function openid_get_user_data_hcard($identity_url, $data) {
 
 
 function openid_consumer_xrds_simple($xrds) {
-/*
 	// OpenID Consumer Service
+	$uris = array();
+	$return_urls = apply_filters('openid_consumer_return_urls', array());
+	$return_urls = array_unique($return_urls);
+	foreach($return_urls as $url) {
+		$uris[] = array('content' => $url);
+	}
+
 	$xrds = xrds_add_service($xrds, 'main', 'OpenID Consumer Service', 
 		array(
 			'Type' => array(array('content' => 'http://specs.openid.net/auth/2.0/return_to') ),
-			'URI' => array(array('content' => trailingslashit(get_option('home'))) ),
-			// TODO: allow components to register additional return_to URLs
+			'URI' => $uris,
 		)
 	);
 	// Identity in the Browser Login Service
-	$siteurl = function_exists('site_url') ? site_url('/wp-login.php', 'login_post') : get_option('siteurl').'/wp-login.php';
+	$siteurl = site_url('/wp-login.php', 'login_post');
 	$xrds = xrds_add_service($xrds, 'main', 'Identity in the Browser Login Service', 
 		array(
 			'Type' => array(array('content' => 'http://specs.openid.net/idib/1.0/login') ),
@@ -608,7 +621,6 @@ function openid_consumer_xrds_simple($xrds) {
 			'URI' => array(array('content' => trailingslashit(get_option('home')) . '?openid_check_login')),
 		)
 	);
-*/
 
 	return $xrds;
 }
@@ -628,14 +640,18 @@ function openid_parse_idib_request($wp) {
 }
 
 
-function openid_table_prefix() {
+function openid_table_prefix($blog_specific = false) {
 	global $wpdb;
-	return isset($wpdb->base_prefix) ? $wpdb->base_prefix : $wpdb->prefix;
+	if (isset($wpdb->base_prefix)) {
+		return $wpdb->base_prefix . ($blog_specific ? $wpdb->blogid . '_' : '');
+	} else {
+		return $wpdb->prefix;
+	}
 }
 
-function openid_associations_table() { return openid_table_prefix() . 'openid_associations'; }
-function openid_nonces_table() { return openid_table_prefix() . 'openid_nonces'; }
-function openid_comments_table() { return openid_table_prefix() . 'comments'; }
+function openid_associations_table() { return openid_table_prefix(true) . 'openid_associations'; }
+function openid_nonces_table() { return openid_table_prefix(true) . 'openid_nonces'; }
+function openid_comments_table() { return openid_table_prefix(true) . 'comments'; }
 function openid_usermeta_table() { 
 	return (defined('CUSTOM_USER_META_TABLE') ? CUSTOM_USER_META_TABLE : openid_table_prefix() . 'usermeta'); 
 }
@@ -719,12 +735,12 @@ function openid_repost($action, $parameters) {
 function openid_js_setup() {
 	if (is_single() || is_comments_popup() || is_admin()) {
 		wp_enqueue_script( 'jquery' );
-		wp_enqueue_script('jquery.textnode', openid_plugin_url() . '/files/jquery.textnode.min.js', 
-			array('jquery'), WPOPENID_PLUGIN_REVISION);
-		wp_enqueue_script('jquery.xpath', openid_plugin_url() . '/files/jquery.xpath.min.js', 
-			array('jquery'), WPOPENID_PLUGIN_REVISION);
-		wp_enqueue_script('openid', openid_plugin_url() . '/files/openid.min.js', 
-			array('jquery','jquery.textnode'), WPOPENID_PLUGIN_REVISION);
+		wp_enqueue_script('jquery.textnode', plugins_url('openid') . '/files/jquery.textnode.min.js', 
+			array('jquery'), OPENID_PLUGIN_REVISION);
+		wp_enqueue_script('jquery.xpath', plugins_url('openid') . '/files/jquery.xpath.min.js', 
+			array('jquery'), OPENID_PLUGIN_REVISION);
+		wp_enqueue_script('openid', plugins_url('openid') . '/files/openid.min.js', 
+			array('jquery','jquery.textnode'), OPENID_PLUGIN_REVISION);
 	}
 }
 
@@ -734,7 +750,7 @@ function openid_js_setup() {
  * @action: wp_head, login_head
  **/
 function openid_style() {
-	$css_path = openid_plugin_url() . '/files/openid.css?ver='.WPOPENID_PLUGIN_REVISION;
+	$css_path = plugins_url('openid') . '/files/openid.css?ver='.OPENID_PLUGIN_REVISION;
 	echo '
 		<link rel="stylesheet" type="text/css" href="'.clean_url($css_path).'" />';
 }

@@ -9,7 +9,11 @@
 add_action( 'admin_menu', 'openid_admin_panels' );
 add_action( 'personal_options_update', 'openid_personal_options_update' );
 add_action( 'openid_finish_auth', 'openid_finish_verify' );
+add_filter( 'openid_consumer_return_urls', 'openid_admin_return_url' );
 
+if ($wp_version < '2.5') {
+	add_filter('clean_url', 'openid_compat_clean_url');
+}
 
 
 
@@ -66,16 +70,16 @@ function openid_options_page() {
 
 		$error = '';
 		
-		update_option( 'oid_enable_commentform', isset($_POST['enable_commentform']) ? true : false );
-		update_option( 'oid_enable_approval', isset($_POST['enable_approval']) ? true : false );
-		update_option( 'oid_enable_email_mapping', isset($_POST['enable_email_mapping']) ? true : false );
+		update_option( 'openid_enable_commentform', isset($_POST['enable_commentform']) ? true : false );
+		update_option( 'openid_enable_approval', isset($_POST['enable_approval']) ? true : false );
+		update_option( 'openid_enable_email_mapping', isset($_POST['enable_email_mapping']) ? true : false );
 		update_option( 'force_openid_registration', isset($_POST['force_openid_registration']) ? true : false );
 		update_option( 'openid_blog_owner', $_POST['openid_blog_owner']);
 
 		// set OpenID Capability
-		foreach ($wp_roles->get_names() as $name) {
-			$role = $wp_roles->get_role(strtolower($name));
-			$option_set = $_POST['openid_cap_' . strtolower(htmlentities($name))] == 'on' ? true : false;
+		foreach ($wp_roles->role_names as $key => $name) {
+			$role = $wp_roles->get_role($key);
+			$option_set = $_POST['openid_cap_' . htmlentities($key)] == 'on' ? true : false;
 			if ($role->has_cap('use_openid_provider')) {
 			   	if (!$option_set) $role->remove_cap('use_openid_provider');
 			} else {
@@ -112,7 +116,7 @@ function openid_options_page() {
 					<th scope="row"><?php _e('Automatic Approval:', 'openid') ?></th>
 					<td>
 						<p><input type="checkbox" name="enable_approval" id="enable_approval" <?php 
-							echo get_option('oid_enable_approval') ? 'checked="checked"' : ''; ?> />
+							echo get_option('openid_enable_approval') ? 'checked="checked"' : ''; ?> />
 							<label for="enable_approval"><?php _e('Enable OpenID comment auto-approval', 'openid') ?></label>
 
 						<p><?php _e('For now this option will cause comments made with OpenIDs '
@@ -133,13 +137,13 @@ function openid_options_page() {
 					<th scope="row"><?php _e('Comment Form:', 'openid') ?></th>
 					<td>
 						<p><input type="checkbox" name="enable_commentform" id="enable_commentform" <?php
-						if( get_option('oid_enable_commentform') ) echo 'checked="checked"'
+						if( get_option('openid_enable_commentform') ) echo 'checked="checked"'
 						?> />
 							<label for="enable_commentform"><?php _e('Add OpenID text to the WordPress post comment form.', 'openid') ?></label></p>
 
 						<p><?php printf(__('This will work for most themes derived from Kubrick or Sandbox.  '
 						. 'Template authors can tweak the comment form as described in the %sreadme%s.', 'openid'), 
-						'<a href="'.clean_url(openid_plugin_url().'/readme.txt').'">', '</a>') ?></p>
+						'<a href="'.clean_url(plugins_url('openid').'/readme.txt').'">', '</a>') ?></p>
 						<br />
 					</td>
 				</tr>
@@ -161,7 +165,7 @@ function openid_options_page() {
 					<th scope="row"><?php _e('Email Mapping:', 'openid') ?></th>
 					<td>
 						<p><input type="checkbox" name="enable_email_mapping" id="enable_email_mapping" <?php
-						if( get_option('oid_enable_email_mapping') ) echo 'checked="checked"'
+						if( get_option('openid_enable_email_mapping') ) echo 'checked="checked"'
 						?> />
 							<label for="enable_email_mapping"><?php _e('Enable email addresses to be mapped to OpenID URLs.', 'openid') ?></label></p>
 
@@ -203,7 +207,7 @@ function openid_options_page() {
 				foreach ($wp_roles->role_names as $key => $name) {
 					$role = $wp_roles->get_role($key);
 					$checked = $role->has_cap('use_openid_provider') ? ' checked="checked"' : '';
-					$option_name = 'openid_cap_' . strtolower(htmlentities($name));
+					$option_name = 'openid_cap_' . htmlentities($key);
 					echo '<input type="checkbox" id="'.$option_name.'" name="'.$option_name.'"'.$checked.' /><label for="'.$option_name.'"> '.$name.'</label><br />' . "\n";
 				}
 							?>
@@ -512,9 +516,14 @@ function openid_printSystemStatus() {
 					$curl_message .= 'Supports: ' . $curl_version['protocols'] . '. ';
 				}
 			}
+		} else {
+			$curl_message =	'This PHP installation does not have support for libcurl. Some functionality, such as '
+				. 'fetching https:// URLs, will be missing and performance will slightly impared. See '
+				. '<a href="http://www.php.net/manual/en/ref.curl.php">php.net/manual/en/ref.curl.php</a> about '
+				. 'enabling libcurl support for PHP.';
 		}
-		$status[] = array( 'Curl Support', function_exists('curl_version'), function_exists('curl_version') ? $curl_message :
-				'This PHP installation does not have support for libcurl. Some functionality, such as fetching https:// URLs, will be missing and performance will slightly impared. See <a href="http://www.php.net/manual/en/ref.curl.php">php.net/manual/en/ref.curl.php</a> about enabling libcurl support for PHP.');
+
+		$status[] = array( 'Curl Support', isset($curl_version), $curl_message );
 	}
 
 	if (extension_loaded('gmp') and @gmp_init(1)) {
@@ -526,8 +535,8 @@ function openid_printSystemStatus() {
 	}
 
 	
-	$status[] = array( 'Plugin Revision', 'info', WPOPENID_PLUGIN_REVISION);
-	$status[] = array( 'Plugin Database Revision', 'info', get_option('oid_db_revision'));
+	$status[] = array( 'Plugin Revision', 'info', OPENID_PLUGIN_REVISION);
+	$status[] = array( 'Plugin Database Revision', 'info', get_option('openid_db_revision'));
 
 	if (function_exists('xrds_meta')) {
 		$status[] = array( 'XRDS-Simple', 'info', 'XRDS-Simple plugin is installed.');
@@ -705,23 +714,13 @@ function openid_profile_drop_identity($id) {
 		} else {
 			require_once(ABSPATH . WPINC . '/registration.php');
 		}
-		$identities = get_user_openids($user->ID);
-		$current_url = Auth_OpenID::normalizeUrl($user->user_url);
 
-		$verified_url = false;
-		if (!empty($identities)) {
-			foreach ($identities as $id) {
-				if ($id == $current_url) {
-					$verified_url = true;
-					break;
-				}
-			}
-
-			if (!$verified_url) {
-				wp_update_user( array('ID' => $user->ID, 'user_url' => $identities[0]) );
-				openid_message(openid_message() . '<br /><strong>Note:</strong> For security reasons, your profile URL has been updated to match your Identity URL.');
-			}
+		if (!openid_ensure_url_match($user)) {
+			$identities = get_user_openids($user->ID);
+			wp_update_user( array('ID' => $user->ID, 'user_url' => $identities[0]) );
+			openid_message(openid_message() . '<br /><strong>Note:</strong> For security reasons, your profile URL has been updated to match your Identity URL.');
 		}
+
 		return;
 	}
 		
@@ -758,36 +757,29 @@ function openid_finish_verify($identity_url) {
 			} else {
 				require_once(ABSPATH . WPINC . '/registration.php');
 			}
-			$identities = get_user_openids($user->ID);
-			$current_url = Auth_OpenID::normalizeUrl($user->user_url);
 
-			$verified_url = false;
-			if (!empty($identities)) {
-				foreach ($identities as $id) {
-					if ($id == $current_url) {
-						$verified_url = true;
-						break;
-					}
-				}
-
-				if (!$verified_url) {
-					wp_update_user( array('ID' => $user->ID, 'user_url' => $identity_url) );
-					openid_message(openid_message() . '<br /><strong>Note:</strong> For security reasons, your profile URL has been updated to match your Identity URL.');
-				}
+			if (!openid_ensure_url_match($user)) {
+				wp_update_user( array('ID' => $user->ID, 'user_url' => $identity_url) );
+				openid_message(openid_message() . '<br /><strong>Note:</strong> For security reasons, your profile URL has been updated to match your Identity URL.');
 			}
 		}
 	}
 
-	$wpp = parse_url(get_option('siteurl'));
-	$redirect_to = $wpp['path'] . '/wp-admin/' . (current_user_can('edit_users') ? 'users.php' : 'profile.php') . '?page=openid';
-	$redirect_to .= "&action=$action&message=$message&identity=$identity_url";
 	return;
-	if (function_exists('wp_safe_redirect')) {
-		wp_safe_redirect( $redirect_to );
-	} else {
-		wp_redirect( $redirect_to );
+}
+
+
+/**
+ * Prior to WordPress 2.5, the 'personal_options_update' hook was called 
+ * AFTER updating the user's profile.  We need to ensure the profile URL 
+ * matches before then.
+ */
+function openid_compat_clean_url($url) {
+	if ($_POST['from'] == 'profile') {
+		openid_personal_options_update();
 	}
-	exit;
+
+	return $url;
 }
 
 
@@ -795,28 +787,39 @@ function openid_finish_verify($identity_url) {
  * hook in and call when user is updating their profile URL... make sure it is an OpenID they control.
  */
 function openid_personal_options_update() {
-	set_include_path( dirname(__FILE__) . PATH_SEPARATOR . get_include_path() );
-	require_once 'Auth/OpenID.php';
-	$claimed = Auth_OpenID::normalizeUrl($_POST['url']);
-
 	$user = wp_get_current_user();
 
-	$identities = get_user_openids($user->ID);
-
-	if (!empty($identities)) {
-		$urls = array();
-		foreach ($identities as $id) {
-			if ($id == $claimed) {
-				return; 
-			} else {
-				$urls[] = $id;
-			}
-		}
-
+	if (!openid_ensure_url_match($user, $_POST['url'])) {
 		wp_die('For security reasons, your profile URL must be one of your claimed '
-		   . 'Identity URLs: <ul><li>' . join('</li><li>', $urls) . '</li></ul>');
+		   . 'Identity URLs: <ul><li>' . join('</li><li>', get_user_openids($user->ID)) . '</li></ul>');
 	}
 }
 
+
+/**
+ * Ensure that the user's profile URL matches one of their Identity URLs.
+ */
+function openid_ensure_url_match($user, $url = null) {
+	$identities = get_user_openids($user->ID);
+	if (empty($identities)) return true;
+
+	set_include_path( dirname(__FILE__) . PATH_SEPARATOR . get_include_path() );
+	require_once 'Auth/OpenID.php';
+
+	if ($url == null) $url = $user->user_url;
+	$url = Auth_OpenID::normalizeUrl($url);
+
+	foreach ($identities as $id) {
+		if ($id == $url) return true; 
+	}
+
+	return false;
+}
+
+function openid_admin_return_url($urls) {
+	$urls[] = admin_url('users.php');
+	$urls[] = admin_url('profile.php');
+	return $urls;
+}
 
 ?>

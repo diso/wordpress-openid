@@ -15,6 +15,7 @@ if (get_option('force_openid_registration')) {
 	add_filter('registration_errors', 'openid_registration_errors');
 }
 add_action( 'init', 'openid_login_errors' );
+add_filter( 'openid_consumer_return_urls', 'openid_wp_login_return_url' );
 
 // WordPress 2.5 has wp_authenticate in the wrong place
 if (strpos($wp_version, '2.5') !== false && strpos($wp_version, '2.5') == 0) {
@@ -137,12 +138,7 @@ function openid_finish_login($identity_url) {
 		$redirect_to = $wpp['path'] . '/' . $redirect_to;
 	}
 
-	if (function_exists('wp_safe_redirect')) {
-		wp_safe_redirect( $redirect_to );
-	} else {
-		wp_redirect( $redirect_to );
-	}
-		
+	wp_safe_redirect( $redirect_to );
 	exit;
 }
 
@@ -166,4 +162,8 @@ function openid_registration_errors($errors) {
 	return $errors;
 }
 
+function openid_wp_login_return_url($urls) {
+	$urls[] = site_url('/wp-login.php', 'login-post');
+	return $urls;
+}
 ?>

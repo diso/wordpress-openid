@@ -9,14 +9,22 @@
  License: Dual GPL (http://www.fsf.org/licensing/licenses/info/GPLv2.html) and Modified BSD (http://www.fsf.org/licensing/licenses/index_html#ModifiedBSD)
  */
 
-define ( 'WPOPENID_PLUGIN_REVISION', preg_replace( '/\$Rev: (.+) \$/', 'svn-\\1',
+define ( 'OPENID_PLUGIN_REVISION', preg_replace( '/\$Rev: (.+) \$/', 'svn-\\1',
 	'$Rev$') ); // this needs to be on a separate line so that svn:keywords can work its magic
 
-define ( 'WPOPENID_DB_REVISION', 24426);      // last plugin revision that required database schema changes
+// last plugin revision that required database schema changes
+define ( 'OPENID_DB_REVISION', 24426);
 
 
-set_include_path( dirname(__FILE__) . PATH_SEPARATOR . get_include_path() );
+$openid_include_path = dirname(__FILE__);
+if (file_exists(dirname(__FILE__) . '/openid')) {
+	// for WPMU mu-plugins folder
+	$openid_include_path .= PATH_SEPARATOR . dirname(__FILE__) . '/openid';
+}
+
+set_include_path( $openid_include_path . PATH_SEPARATOR . get_include_path() );
 require_once 'common.php';
+require_once 'compatibility.php';
 require_once 'admin_panels.php';
 require_once 'comments.php';
 require_once 'wp-login.php';

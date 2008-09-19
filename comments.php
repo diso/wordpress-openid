@@ -12,16 +12,17 @@ add_action( 'comment_post', 'update_comment_openid', 5 );
 add_filter( 'option_require_name_email', 'openid_option_require_name_email' );
 add_action( 'sanitize_comment_cookies', 'openid_sanitize_comment_cookies', 15);
 add_action( 'openid_finish_auth', 'openid_finish_comment' );
-if( get_option('oid_enable_approval') ) {
+if( get_option('openid_enable_approval') ) {
 	add_filter('pre_comment_approved', 'openid_comment_approval');
 }
 add_filter( 'get_comment_author_link', 'openid_comment_author_link');
-if( get_option('oid_enable_commentform') ) {
+if( get_option('openid_enable_commentform') ) {
 	add_action( 'wp_head', 'openid_js_setup', 9);
 	add_action( 'wp_footer', 'openid_comment_profilelink', 10);
 	add_action( 'wp_footer', 'openid_comment_form', 10);
 }
 add_filter( 'openid_user_data', 'openid_get_user_data_form', 10, 2);
+add_filter( 'openid_consumer_return_urls', 'openid_comment_return_url' );
 
 
 /**
@@ -308,6 +309,12 @@ function openid_parse_comment_request($wp) {
 	if (array_key_exists('openid_consumer', $_REQUEST) && $_REQUEST['action']) {
 		finish_openid($_REQUEST['action']);
 	}
+}
+
+
+function openid_comment_return_url($urls) {
+	$urls[] = get_option('home');
+	return $urls;
 }
 
 ?>
