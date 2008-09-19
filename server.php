@@ -386,7 +386,8 @@ function openid_server_user_trust($request) {
 		status_header(200);
 		nocache_headers();
 		header( 'Content-Type: text/html; charset=utf-8' );
-		echo "\n"; // send headers
+		global $wp_version;
+		if ($wp_version >= '2.3') echo "\n"; // send headers
 		wp_die($html, 'OpenID Trust Request');
 	}
 }

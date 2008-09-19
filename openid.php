@@ -83,7 +83,7 @@ function get_user_openids($id_or_name = null) {
  */
 function get_user_by_openid($url) {
 	global $wpdb;
-	return $wpdb->get_var( $wpdb->prepare('SELECT user_id FROM '.openid_identity_table().' WHERE url = %s', $url) );
+	return $wpdb->get_var( wpdb_prepare('SELECT user_id FROM '.openid_identity_table().' WHERE url = %s', $url) );
 }
 
 

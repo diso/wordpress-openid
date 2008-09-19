@@ -12,7 +12,7 @@ add_action( 'openid_finish_auth', 'openid_finish_verify' );
 add_filter( 'openid_consumer_return_urls', 'openid_admin_return_url' );
 
 if ($wp_version < '2.5') {
-	add_filter('clean_url', 'openid_compat_clean_url');
+	add_filter('pre_user_url', 'openid_compat_pre_user_url');
 }
 
 
@@ -774,7 +774,7 @@ function openid_finish_verify($identity_url) {
  * AFTER updating the user's profile.  We need to ensure the profile URL 
  * matches before then.
  */
-function openid_compat_clean_url($url) {
+function openid_compat_pre_user_url($url) {
 	if ($_POST['from'] == 'profile') {
 		openid_personal_options_update();
 	}

@@ -47,4 +47,25 @@ function is_front_page() {
 }
 endif;
 
+/* since 2.3 - copied from $wpdb->prepare */
+if (!function_exists('wpdb_prepare')):
+function wpdb_prepare($args=null) {
+	global $wpdb;
+
+	if (is_null($args)) return;
+	$args = func_get_args();
+
+	if (method_exists($wpdb, 'prepare')) {
+		return call_user_func_array(array($wpdb,'prepare'), $args);
+	} else {
+		$query = array_shift($args);
+		$query = str_replace("'%s'", '%s', $query); // in case someone mistakenly already singlequoted it
+		$query = str_replace('"%s"', '%s', $query); // doublequote unquoting
+		$query = str_replace('%s', "'%s'", $query); // quote the strings
+		array_walk($args, create_function('&$s', '$s = addslashes($s);'));
+		return @vsprintf($query, $args);
+	}
+}
+endif;
+
 ?>

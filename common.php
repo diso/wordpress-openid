@@ -764,7 +764,7 @@ function openid_style() {
  */
 function openid_add_identity($user_id, $url) {
 	global $wpdb;
-	return $wpdb->query( $wpdb->prepare('INSERT INTO '.openid_identity_table().' (user_id,url,hash) VALUES ( %s, %s, MD5(%s) )', $user_id, $url, $url) );
+	return $wpdb->query( wpdb_prepare('INSERT INTO '.openid_identity_table().' (user_id,url,hash) VALUES ( %s, %s, MD5(%s) )', $user_id, $url, $url) );
 }
 
 /**
@@ -773,7 +773,7 @@ function openid_add_identity($user_id, $url) {
  */
 function openid_get_identities($user_id) {
 	global $wpdb;
-	return $wpdb->get_col( $wpdb->prepare('SELECT url FROM '.openid_identity_table().' WHERE user_id = %s', $user_id) );
+	return $wpdb->get_col( wpdb_prepare('SELECT url FROM '.openid_identity_table().' WHERE user_id = %s', $user_id) );
 }
 
 
@@ -795,7 +795,7 @@ function openid_display_identity($url) {
  */
 function openid_drop_identity($user_id, $identity_url) {
 	global $wpdb;
-	return $wpdb->query( $wpdb->prepare('DELETE FROM '.openid_identity_table().' WHERE user_id = %s AND url = %s', $user_id, $identity_url) );
+	return $wpdb->query( wpdb_prepare('DELETE FROM '.openid_identity_table().' WHERE user_id = %s AND url = %s', $user_id, $identity_url) );
 }
 
 /**
@@ -805,7 +805,7 @@ function openid_drop_identity($user_id, $identity_url) {
  */
 function openid_drop_all_identities($user_id) {
 	global $wpdb;
-	return $wpdb->query( $wpdb->prepare('DELETE FROM '.openid_identity_table().' WHERE user_id = %s', $user_id ) );
+	return $wpdb->query( wpdb_prepare('DELETE FROM '.openid_identity_table().' WHERE user_id = %s', $user_id ) );
 }
 
 
