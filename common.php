@@ -36,8 +36,15 @@ add_option( 'openid_plugin_revision', 0 );
 add_option( 'openid_db_revision', 0 );
 add_option( 'openid_enable_approval', false );
 add_option( 'openid_enable_email_mapping', false );
-add_option( 'openid_associations', array(), null, 'no' );
-add_option( 'openid_nonces', array(), null, 'no' );
+
+// TODO: wpmu doesn't support non-autoload options
+if (isset($wpmu_version)) {
+	add_option( 'openid_associations', array(), null, 'yes' );
+	add_option( 'openid_nonces', array(), null, 'yes' );
+} else {
+	add_option( 'openid_associations', array(), null, 'no' );
+	add_option( 'openid_nonces', array(), null, 'no' );
+}
 
 delete_option( 'oid_enable_commentform' );
 delete_option( 'oid_plugin_enabled' );
@@ -736,14 +743,34 @@ function openid_repost($action, $parameters) {
 function openid_js_setup() {
 	if (is_single() || is_comments_popup() || is_admin()) {
 		wp_enqueue_script( 'jquery' );
-		wp_enqueue_script('jquery.textnode', plugins_url('openid') . '/files/jquery.textnode.min.js', 
+		wp_enqueue_script('jquery.textnode', openid_plugin_url() . '/f/jquery.textnode.min.js', 
 			array('jquery'), OPENID_PLUGIN_REVISION);
-		wp_enqueue_script('jquery.xpath', plugins_url('openid') . '/files/jquery.xpath.min.js', 
+		wp_enqueue_script('jquery.xpath', openid_plugin_url() . '/f/jquery.xpath.min.js', 
 			array('jquery'), OPENID_PLUGIN_REVISION);
-		wp_enqueue_script('openid', plugins_url('openid') . '/files/openid.min.js', 
+		wp_enqueue_script('openid', openid_plugin_url() . '/f/openid.min.js', 
 			array('jquery','jquery.textnode'), OPENID_PLUGIN_REVISION);
 	}
 }
+
+
+/**
+ * Get opend plugin URL, keeping in mind that for WordPress MU, it may be in either the normal
+ * plugins directory or mu-plugins.
+ */
+function openid_plugin_url() {
+	static $openid_plugin_url;
+
+	if (!$openid_plugin_url) {
+		if (defined('MUPLUGINDIR') && file_exists(ABSPATH . MUPLUGINDIR . '/openid')) {
+			$openid_plugin_url =  trailingslashit(get_option('siteurl')) . MUPLUGINDIR . '/openid';
+		} else {
+			$openid_plugin_url =  plugins_url('openid');
+		}
+	}
+
+	return $openid_plugin_url;
+}
+
 
 /**
  * Include internal stylesheet.
@@ -751,7 +778,7 @@ function openid_js_setup() {
  * @action: wp_head, login_head
  **/
 function openid_style() {
-	$css_path = plugins_url('openid') . '/files/openid.css?ver='.OPENID_PLUGIN_REVISION;
+	$css_path = openid_plugin_url() . '/f/openid.css?ver='.OPENID_PLUGIN_REVISION;
 	echo '
 		<link rel="stylesheet" type="text/css" href="'.clean_url($css_path).'" />';
 }

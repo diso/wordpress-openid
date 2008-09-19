@@ -143,7 +143,7 @@ function openid_options_page() {
 
 						<p><?php printf(__('This will work for most themes derived from Kubrick or Sandbox.  '
 						. 'Template authors can tweak the comment form as described in the %sreadme%s.', 'openid'), 
-						'<a href="'.clean_url(plugins_url('openid').'/readme.txt').'">', '</a>') ?></p>
+						'<a href="'.clean_url(openid_plugin_url().'/readme.txt').'">', '</a>') ?></p>
 						<br />
 					</td>
 				</tr>

@@ -4,7 +4,7 @@ require_once 'Auth/OpenID/Server.php';
 require_once 'server_ext.php';
 
 add_action( 'parse_request', 'openid_server_parse_request');
-add_filter( 'xrds_simple', 'openid_provider_xrds_simple');
+add_filter( 'xrds_simple', 'openid_provider_xrds_simple', 5);
 add_action( 'wp_head', 'openid_provider_link_tags');
 
 
