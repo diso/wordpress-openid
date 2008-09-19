@@ -1,7 +1,7 @@
 jQuery(function() {
-	jQuery('body.wp-admin #openid_rollup > div').hide();
+	jQuery('#openid_rollup > div').hide();
 
-	jQuery('body.wp-admin #openid_rollup_link').click( function() {
+	jQuery('#openid_rollup_link').click( function() {
 		jQuery('#openid_rollup > div').toggle();
 		return false;
 	});

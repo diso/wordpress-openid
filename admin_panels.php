@@ -105,7 +105,7 @@ function openid_options_page() {
 
 			<h2><?php _e('OpenID Consumer Options', 'openid') ?></h2>
 
-			<?php if ($wp_version >= '2.3') { openid_printSystemStatus(); } ?>
+			<?php openid_printSystemStatus(); ?>
 
 			<?php if ($wp_version < '2.3') { ?>
 			<p class="submit"><input type="submit" name="info_update" value="<?php _e('Update Options') ?> &raquo;" /></p>
@@ -263,10 +263,6 @@ function openid_options_page() {
 		</form>
 	</div>
 		<?php
-	if ($wp_version < '2.3') {
-		echo '<br />';
-		openid_printSystemStatus();
-	}
 } // end function options_page
 
 
@@ -709,11 +705,8 @@ function openid_profile_drop_identity($id) {
 		// ensure that profile URL is still a verified Identity URL
 		set_include_path( dirname(__FILE__) . PATH_SEPARATOR . get_include_path() );
 		require_once 'Auth/OpenID.php';
-		if ($GLOBALS['wp_version'] >= '2.3') {
-			require_once(ABSPATH . 'wp-admin/includes/admin.php');
-		} else {
-			require_once(ABSPATH . WPINC . '/registration.php');
-		}
+		@include_once(ABSPATH . WPINC . '/registration.php');	// WP < 2.3
+		@include_once(ABSPATH . 'wp-admin/includes/admin.php');	// WP >= 2.3
 
 		if (!openid_ensure_url_match($user)) {
 			$identities = get_user_openids($user->ID);
