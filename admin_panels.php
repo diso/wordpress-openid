@@ -241,8 +241,10 @@ function openid_options_page() {
 					if (empty($blog_owner) || $blog_owner == $current_user->user_login) {
 						echo '<select id="openid_blog_owner" name="openid_blog_owner"><option value="">(none)</option>';
 
-						$users = $wpdb->get_results("SELECT user_login FROM $wpdb->users ORDER BY user_login");
-						foreach($users as $user) { 
+						$users = get_users_of_blog();
+						$users = array_filter($users, create_function('$u', '$u = new WP_User($u->user_id); return $u->has_cap("use_openid_provider");'));
+
+						foreach ($users as $user) {
 							$selected = (get_option('openid_blog_owner') == $user->user_login) ? ' selected="selected"' : '';
 							echo '<option value="'.$user->user_login.'"'.$selected.'>'.$user->user_login.'</option>';
 						}

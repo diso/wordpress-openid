@@ -29,16 +29,9 @@ add_filter( 'openid_user_data', 'openid_get_user_data_sreg', 10, 2);
 add_filter( 'xrds_simple', 'openid_consumer_xrds_simple');
 
 
-// Add custom OpenID options
-add_option( 'openid_enable_commentform', true );
-add_option( 'openid_plugin_enabled', true );
-add_option( 'openid_plugin_revision', 0 );
-add_option( 'openid_db_revision', 0 );
-add_option( 'openid_enable_approval', false );
-add_option( 'openid_enable_email_mapping', false );
 
-// TODO: wpmu doesn't support non-autoload options
 if (isset($wpmu_version)) {
+	// wpmu doesn't support non-autoload options
 	add_option( 'openid_associations', array(), null, 'yes' );
 	add_option( 'openid_nonces', array(), null, 'yes' );
 } else {
@@ -46,12 +39,6 @@ if (isset($wpmu_version)) {
 	add_option( 'openid_nonces', array(), null, 'no' );
 }
 
-delete_option( 'oid_enable_commentform' );
-delete_option( 'oid_plugin_enabled' );
-delete_option( 'oid_plugin_revision' );
-delete_option( 'oid_db_revision' );
-delete_option( 'oid_enable_approval' );
-delete_option( 'oid_enable_email_mapping' );
 
 
 /**
@@ -143,12 +130,46 @@ function openid_activate_wpmu() {
  * @see register_activation_hook
  */
 function openid_activate_plugin() {
-	//$start_mem = memory_get_usage();
+	// if first time activation, set OpenID capability for administrators
+	if (get_option('openid_plugin_revision') === false) {
+		global $wp_roles;
+		$role = $wp_roles->get_role('administrator');
+		if ($role) $role->add_cap('use_openid_provider');
+	}
+
+
+	// Add custom OpenID options
+	add_option( 'openid_enable_commentform', true );
+	add_option( 'openid_plugin_enabled', true );
+	add_option( 'openid_plugin_revision', 0 );
+	add_option( 'openid_db_revision', 0 );
+	add_option( 'openid_enable_approval', false );
+	add_option( 'openid_enable_email_mapping', false );
+	add_option( 'openid_xrds_returnto', true );
+	add_option( 'openid_xrds_idib', true );
+
 	openid_create_tables();
 	openid_migrate_old_data();
 
 	wp_schedule_event(time(), 'hourly', 'cleanup_openid');
-	//error_log("activation memory usage: " . (int)((memory_get_usage() - $start_mem) / 1000));
+
+
+
+	// cleanup old option names
+	delete_option( 'oid_db_revision' );
+	delete_option( 'oid_db_version' );
+	delete_option( 'oid_enable_approval' );
+	delete_option( 'oid_enable_commentform' );
+	delete_option( 'oid_enable_email_mapping' );
+	delete_option( 'oid_enable_foaf' );
+	delete_option( 'oid_enable_localaccounts' );
+	delete_option( 'oid_enable_loginform' );
+	delete_option( 'oid_enable_selfstyle' );
+	delete_option( 'oid_enable_unobtrusive' );
+	delete_option( 'oid_plugin_enabled' );
+	delete_option( 'oid_plugin_revision' );
+	delete_option( 'oid_plugin_version' );
+	delete_option( 'oid_trust_root' );
 }
 
 
@@ -593,41 +614,48 @@ function openid_get_user_data_hcard($identity_url, $data) {
 
 
 function openid_consumer_xrds_simple($xrds) {
-	// OpenID Consumer Service
-	$uris = array();
-	$return_urls = apply_filters('openid_consumer_return_urls', array());
-	$return_urls = array_unique($return_urls);
-	foreach($return_urls as $url) {
-		$uris[] = array('content' => $url);
+
+	if (get_option('openid_xrds_returnto')) {
+		// OpenID Consumer Service
+		$uris = array();
+
+		$return_urls = array_unique(apply_filters('openid_consumer_return_urls', array()));
+		foreach($return_urls as $url) {
+			$uris[] = array('content' => $url);
+		}
+
+		if (!empty($uris)) {
+			$xrds = xrds_add_service($xrds, 'main', 'OpenID Consumer Service', 
+				array(
+					'Type' => array(array('content' => 'http://specs.openid.net/auth/2.0/return_to') ),
+					'URI' => $uris,
+				)
+			);
+		}
 	}
 
-	$xrds = xrds_add_service($xrds, 'main', 'OpenID Consumer Service', 
-		array(
-			'Type' => array(array('content' => 'http://specs.openid.net/auth/2.0/return_to') ),
-			'URI' => $uris,
-		)
-	);
-	// Identity in the Browser Login Service
-	$siteurl = site_url('/wp-login.php', 'login_post');
-	$xrds = xrds_add_service($xrds, 'main', 'Identity in the Browser Login Service', 
-		array(
-			'Type' => array(array('content' => 'http://specs.openid.net/idib/1.0/login') ),
-			'URI' => array(
-				array(
-					'simple:httpMethod' => 'POST',
-					'content' => $siteurl,
+	if (get_option('openid_xrds_idib')) {
+		// Identity in the Browser Login Service
+		$xrds = xrds_add_service($xrds, 'main', 'Identity in the Browser Login Service', 
+			array(
+				'Type' => array(array('content' => 'http://specs.openid.net/idib/1.0/login') ),
+				'URI' => array(
+					array(
+						'simple:httpMethod' => 'POST',
+						'content' => site_url('/wp-login.php', 'login_post'),
+					),
 				),
-			),
-		)
-	);
+			)
+		);
 
-	// Identity in the Browser Indicator Service
-	$xrds = xrds_add_service($xrds, 'main', 'Identity in the Browser Indicator Service', 
-		array(
-			'Type' => array(array('content' => 'http://specs.openid.net/idib/1.0/indicator') ),
-			'URI' => array(array('content' => trailingslashit(get_option('home')) . '?openid_check_login')),
-		)
-	);
+		// Identity in the Browser Indicator Service
+		$xrds = xrds_add_service($xrds, 'main', 'Identity in the Browser Indicator Service', 
+			array(
+				'Type' => array(array('content' => 'http://specs.openid.net/idib/1.0/indicator') ),
+				'URI' => array(array('content' => trailingslashit(get_option('home')) . '?openid_check_login')),
+			)
+		);
+	}
 
 	return $xrds;
 }
