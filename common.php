@@ -57,7 +57,7 @@ function openid_uptodate() {
 
 	if( get_option('openid_db_revision') != OPENID_DB_REVISION ) {
 		openid_enabled(false);
-		error_log('Plugin database is out of date: ' . get_option('openid_db_revision') . ' != ' . OPENID_DB_REVISION);
+		openid_debug('Plugin database is out of date: ' . get_option('openid_db_revision') . ' != ' . OPENID_DB_REVISION);
 		update_option('openid_plugin_enabled', false);
 		return false;
 	}
@@ -105,7 +105,7 @@ function openid_getConsumer() {
 		$store = openid_getStore();
 		$consumer = new Auth_OpenID_Consumer($store);
 		if( null === $consumer ) {
-			error_log('OpenID consumer could not be created properly.');
+			openid_error('OpenID consumer could not be created properly.');
 			openid_enabled(false);
 		}
 
@@ -199,7 +199,7 @@ function openid_deactivate_plugin() {
  */
 function openid_customer_error_handler($errno, $errmsg, $filename, $linenum, $vars) {
 	if( (2048 & $errno) == 2048 ) return;
-	error_log( "Library Error $errno: $errmsg in $filename :$linenum");
+	openid_error( "Library Error $errno: $errmsg in $filename :$linenum");
 }
 
 
@@ -216,7 +216,7 @@ function openid_doRedirect($auth_request, $trust_root, $return_to) {
 		$redirect_url = $auth_request->redirectURL($trust_root, $return_to);
 
 		if (Auth_OpenID::isFailure($redirect_url)) {
-			error_log('Could not redirect to server: '.$redirect_url->message);
+			openid_error('Could not redirect to server: '.$redirect_url->message);
 		} else {
 			wp_redirect( $redirect_url );
 		}
@@ -225,7 +225,7 @@ function openid_doRedirect($auth_request, $trust_root, $return_to) {
 		$request_message = $auth_request->getMessage($trust_root, $return_to, false);
 
 		if (Auth_OpenID::isFailure($request_message)) {
-			error_log('Could not redirect to server: '.$request_message->message);
+			openid_error('Could not redirect to server: '.$request_message->message);
 		} else {
 			openid_repost($auth_request->endpoint->server_url, $request_message->toPostArgs());
 		}
@@ -247,17 +247,17 @@ function finish_openid_auth() {
 		
 	switch( $response->status ) {
 		case Auth_OpenID_CANCEL:
-			openid_message('OpenID assertion cancelled');
+			openid_message('OpenID login was cancelled.');
 			openid_status('error');
 			break;
 
 		case Auth_OpenID_FAILURE:
-			openid_message('OpenID assertion failed: ' . $response->message);
+			openid_message('OpenID login failed: ' . $response->message);
 			openid_status('error');
 			break;
 
 		case Auth_OpenID_SUCCESS:
-			openid_message('OpenID assertion successful');
+			openid_message('OpenID login successful');
 			openid_status('success');
 
 			$identity_url = $response->identity_url;
@@ -265,7 +265,7 @@ function finish_openid_auth() {
 			return $escaped_url;
 
 		default:
-			openid_message('Unknown Status. Bind not successful. This is probably a bug');
+			openid_message('Unknown Status. Bind not successful. This is probably a bug.');
 			openid_status('error');
 	}
 
@@ -491,7 +491,7 @@ function openid_create_new_user($identity_url, &$user_data) {
 			openid_message('User was created fine, but wp_login() for the new user failed. '
 			. 'This is probably a bug.');
 			openid_action('error');
-			error_log(openid_message());
+			openid_error(openid_message());
 			return;
 		}
 
@@ -513,7 +513,7 @@ function openid_create_new_user($identity_url, &$user_data) {
 		openid_message('OpenID authentication successful, but failed to create WordPress user. '
 		. 'This is probably a bug.');
 		openid_status('error');
-		error_log(openid_message());
+		openid_error(openid_message());
 	}
 
 }
@@ -771,6 +771,7 @@ function openid_repost($action, $parameters) {
 function openid_js_setup() {
 	if (is_single() || is_comments_popup() || is_admin()) {
 		wp_enqueue_script( 'jquery' );
+		wp_enqueue_script( 'jquery-ui-sortable' );
 		wp_enqueue_script('jquery.textnode', openid_plugin_url() . '/f/jquery.textnode.min.js', 
 			array('jquery'), OPENID_PLUGIN_REVISION);
 		wp_enqueue_script('jquery.xpath', openid_plugin_url() . '/f/jquery.xpath.min.js', 
@@ -864,5 +865,15 @@ function openid_drop_all_identities($user_id) {
 	return $wpdb->query( wpdb_prepare('DELETE FROM '.openid_identity_table().' WHERE user_id = %s', $user_id ) );
 }
 
+
+function openid_error($msg) {
+	error_log('[OpenID] ' . $msg);
+}
+
+function openid_debug($msg) {
+	if (defined('WP_DEBUG') && WP_DEBUG) {
+		openid_error($msg);
+	}
+}
 
 ?>
