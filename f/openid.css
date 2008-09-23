@@ -26,3 +26,5 @@ body.login form#registerform a.legacy {
 
 #openid_rollup div div { margin: 0.5em; }
 #openid_rollup ul { margin: 0; padding: 0 0 0 5em; }
+
+#trusted_sites h4, #trusted_sites p { margin: 0; }

@@ -330,26 +330,21 @@ function openid_provider_link_tags() {
  */
 function openid_server_user_trust($request) {
 	if ($_REQUEST['openid_trust']) {
-		// the user has made a trust decision, now process it
-		check_admin_referer('wp-openid-server_trust');
 		$trust = null;
 
-		switch ($_REQUEST['openid_trust']) {
-			case 'Trust Always': 
+		if ($_REQUEST['openid_trust'] == 'cancel') {
+			$trust = false;
+		} else {
+			check_admin_referer('wp-openid-server_trust');
+
+			$trust = true;
+
+			if ($_REQUEST['add_trusted'] == 'on') {
 				$user = wp_get_current_user();
 				$trusted_sites = get_usermeta($user->ID, 'openid_trusted_sites');
 				$trusted_sites[] = $request->trust_root;
 				update_usermeta($user->ID, 'openid_trusted_sites', array_unique($trusted_sites));
-				$trust = true;
-				break;
-				
-			case 'Trust Once': 
-				$trust = true;
-				break;
-
-			case 'No': 
-				$trust = false;
-				break;
+			}
 		}
 
 		do_action('openid_server_trust_submit', $trust, $_REQUEST);
@@ -363,17 +358,20 @@ function openid_server_user_trust($request) {
 		ob_start();
 		echo '
 			<form action="' . trailingslashit(get_option('siteurl')) . '?openid_server=1" method="post">
-			<h1>OpenID Trust Request</h1>
-			<p>Do you want to trust the site <strong>'.$request->trust_root.'</strong>?</p>';
+			<h1>OpenID Login</h1>
+			<p>Your are logging in to the site <strong>'.$request->trust_root.'</strong>.</p>';
+		echo '
+			<p class="submit" style="margin: 1em 0 0 1em;">
+				<input type="submit" name="openid_trust" value="Continue" style="font-size: 18px; padding: 10px 35px 10px;" />
+			</p>';
 
 		do_action('openid_server_trust_form');
 
 		echo '
-			<p class="submit">
-				<input type="submit" name="openid_trust" value="No" />
-				<input type="submit" name="openid_trust" value="Trust Once" />
-				<input type="submit" name="openid_trust" value="Trust Always" />
-			</p>';
+			<p style="float: right"><a href="'.trailingslashit(get_option('site_url')) . '?openid_server=1&openid_trust=cancel">Cancel login</a></p>	
+			<p><input type="checkbox" name="add_trusted" id="add_trusted" checked="checked" /><label for="add_trusted"> Skip this step from now on for this site.</label></p>
+		';
+
 
 		wp_nonce_field('wp-openid-server_trust', '_wpnonce', true);
 

@@ -37,7 +37,7 @@ function openid_admin_panels() {
 	add_action("load-$hookname", 'openid_js_setup' );
 	add_action("admin_head-$hookname", 'openid_style' );
 
-	$hookname =	add_submenu_page('profile.php', __('Your Identity URLs', 'openid'), __('Your Identity URLs', 'openid'), 
+	$hookname =	add_submenu_page('profile.php', __('Your OpenIDs', 'openid'), __('Your OpenIDs', 'openid'), 
 		'read', 'openid', 'openid_profile_panel' );
 	add_action("admin_head-$hookname", 'openid_style' );
 	add_action("load-$hookname", 'openid_profile_management' );
@@ -113,7 +113,7 @@ function openid_options_page() {
 
 			<table class="form-table optiontable editform" cellspacing="2" cellpadding="5" width="100%">
 				<tr valign="top">
-					<th scope="row"><?php _e('Automatic Approval:', 'openid') ?></th>
+					<th scope="row"><?php _e('Automatic Approval', 'openid') ?></th>
 					<td>
 						<p><input type="checkbox" name="enable_approval" id="enable_approval" <?php 
 							echo get_option('openid_enable_approval') ? 'checked="checked"' : ''; ?> />
@@ -134,7 +134,7 @@ function openid_options_page() {
 				</tr>
 
 				<tr valign="top">
-					<th scope="row"><?php _e('Comment Form:', 'openid') ?></th>
+					<th scope="row"><?php _e('Comment Form', 'openid') ?></th>
 					<td>
 						<p><input type="checkbox" name="enable_commentform" id="enable_commentform" <?php
 						if( get_option('openid_enable_commentform') ) echo 'checked="checked"'
@@ -150,7 +150,7 @@ function openid_options_page() {
 
 				<?php if (get_option('users_can_register')): ?>
 				<tr valign="top">
-					<th scope="row"><?php _e('Force OpenID Registration:', 'openid') ?></th>
+					<th scope="row"><?php _e('Force OpenID Registration', 'openid') ?></th>
 					<td>
 						<p><input type="checkbox" name="force_openid_registration" id="force_openid_registration" <?php
 						if( get_option('force_openid_registration') ) echo 'checked="checked"'
@@ -197,7 +197,7 @@ function openid_options_page() {
 
 			<table class="form-table optiontable editform" cellspacing="2" cellpadding="5" width="100%">
 				<tr valign="top">
-					<th scope="row"><?php _e('OpenID Capability:', 'openid') ?></th>
+					<th scope="row"><?php _e('OpenID Capability', 'openid') ?></th>
 					<td>
 
 						<p>Choose which user roles are allowed to use the local OpenID Provider:</p>
@@ -215,8 +215,14 @@ function openid_options_page() {
 					</td>
 				</tr>
 
+			<?php
+				$users = get_users_of_blog();
+				$users = array_filter($users, create_function('$u', '$u = new WP_User($u->user_id); return $u->has_cap("use_openid_provider");'));
+
+				if (!empty($users)):
+			?>
 				<tr valign="top">
-					<th scope="row"><?php _e('Blog Owner:', 'openid') ?></th>
+					<th scope="row"><?php _e('Blog Owner', 'openid') ?></th>
 					<td>
 
 						<p>Authorized Users on this blog can use their author URL (ie. 
@@ -241,8 +247,6 @@ function openid_options_page() {
 					if (empty($blog_owner) || $blog_owner == $current_user->user_login) {
 						echo '<select id="openid_blog_owner" name="openid_blog_owner"><option value="">(none)</option>';
 
-						$users = get_users_of_blog();
-						$users = array_filter($users, create_function('$u', '$u = new WP_User($u->user_id); return $u->has_cap("use_openid_provider");'));
 
 						foreach ($users as $user) {
 							$selected = (get_option('openid_blog_owner') == $user->user_login) ? ' selected="selected"' : '';
@@ -254,10 +258,11 @@ function openid_options_page() {
 						echo '<p class="error">Only the current blog owner ('.$blog_owner.') can set another user as the owner.</p>';
 					}
 				} 
-			?>
 
+			?>
 						</td>
 					</tr>
+			<?php endif; //!empty($users) ?>
 				</table>
 
 			<?php wp_nonce_field('wp-openid-info_update'); ?>
@@ -301,23 +306,21 @@ function openid_profile_panel() {
 	?>
 
 	<div class="wrap">
-		<h2><?php _e('Your Identity URLs', 'openid') ?></h2>
+		<h2><?php _e('Your OpenID URLs and Options', 'openid') ?></h2>
 
-		<p><?php printf(__('The following Identity URLs %s are tied to this user account. '
-		. 'You may use any of them to login to this account.' , 'openid'), 
-		'<a title="'.__('What is OpenID?', 'openid').'" href="http://openid.net/">'.__('?', 'openid').'</a>') ?>
-		</p>
+		<p><?php _e('You may setup one or more OpenIDs to be used with this account.  This will allow you to login '
+		. 'to WordPress with your OpenID instead of a username and password.  <a href="http://openid.net/what/" '
+		. 'target="_blank">Learn more...</a>', 'openid')?></p>
+
 	<?php
 	
 	$urls = get_user_openids($user->ID);
 
 	if( count($urls) ) : ?>
-		<p>There are <?php echo count($urls); ?> identities associated with this WordPress user.</p>
-
 		<table class="widefat">
 		<thead>
 			<tr>
-				<th scope="col"><?php _e('Identity Url', 'openid') ?></th>
+				<th scope="col"><?php _e('OpenID', 'openid') ?></th>
 				<th scope="col" style="text-align: center"><?php _e('Action', 'openid') ?></th>
 			</tr>
 		</thead>
@@ -337,22 +340,18 @@ function openid_profile_panel() {
 		</table>
 
 		<?php
-	else:
-		echo '
-		<p><strong>'.__('There are no OpenIDs associated with this WordPress user.', 'openid').'</strong></p>';
 	endif; ?>
 
-		<h3><?php _e('Add Identity', 'openid') ?></h3>
 		<form method="post">
 		<table class="form-table">
 			<tr>
-				<th scope="row"><label for="openid_identifier"><?php _e('Identity URL', 'openid') ?></label></th>
+				<th scope="row"><label for="openid_identifier"><?php _e('Add OpenID', 'openid') ?></label></th>
 				<td><input id="openid_identifier" name="openid_identifier" /></td>
 			</tr>
 		</table>
 		<?php wp_nonce_field('wp-openid-add_identity'); ?>
 		<p class="submit">
-			<input type="submit" value="<?php _e('Add Identity', 'openid') ?>" />
+			<input type="submit" value="<?php _e('Add OpenID', 'openid') ?>" />
 			<input type="hidden" name="action" value="add_identity" >
 		</p>
 		</form>
@@ -365,12 +364,12 @@ function openid_profile_panel() {
 	   	return;
 	}
 	?>
-		<h2><?php _e('Local OpenID', 'openid') ?></h2>
+		<h3><?php _e('Local OpenID', 'openid') ?></h3>
 
 		<form method="post">
 		<table class="form-table optiontable editform" cellspacing="2" cellpadding="5" width="100%">
 			<tr valign="top">
-				<th scope="row"><?php _e('Local OpenID:', 'openid') ?></th>
+				<th scope="row"><?php _e('Local OpenID', 'openid') ?></th>
 				<td>
 
 				<p>You may optionally use your author URL (<?php printf('<a 
@@ -383,6 +382,28 @@ function openid_profile_panel() {
 			?>
 				<p><input type="radio" name="use_openid_provider" id="no_provider" value="none" <?php echo ($use_openid_provider == 'none' || empty($use_openid_provider)) ? 'checked="checked"' : ''; ?>><label for="no_provider">Don't use local OpenID</label></p>
 				<p><input type="radio" name="use_openid_provider" id="use_local_provider" value="local" <?php echo $use_openid_provider == 'local' ? 'checked="checked"' : ''; ?>><label for="use_local_provider">Use local OpenID Provider</label></p>
+					<div id="trusted_sites" style="margin-left: 2em;">
+						<h4>Trusted Sites</h4>
+						<p><?php _e('You will not be asked to approve login requests for your trusted sites.' , 'openid'); ?></p>
+
+						<?php
+							$urls = get_usermeta($user->ID, 'openid_trusted_sites');
+							if( !empty($urls) ) {
+								echo '<ul>';
+								foreach( $urls as $url ) {
+									echo '
+									<li><a href="'.$url.'">'.$url.'</a>
+										<small>(<a class="delete" href="'
+										. wp_nonce_url("?page=openid&action=drop_trusted_site&url=$url", "wp-openid-drop_trusted_site_$url")
+										. '">' . __('Delete', 'openid') . ' </a>)</small>
+									</li>';
+								}
+								echo '</ul>';
+							}
+						?>
+
+					</div>
+
 				<p><input type="radio" name="use_openid_provider" id="delegate_provider" value="delegate" <?php echo $use_openid_provider == 'delegate' ? 'checked="checked"' : ''; ?>><label for="delegate_provider">Delegate to another OpenID</label>
 					<div id="delegate_info" style="margin-left: 2em;">
 						<p><input type="text" id="openid_delegate" name="openid_delegate" class="openid_link" value="<?php echo get_usermeta($user->ID, 'openid_delegate') ?>" size="30" /></p>
@@ -397,76 +418,25 @@ function openid_profile_panel() {
 		<p class="submit"><input type="submit" value="<?php _e('Update Options') ?> &raquo;" /></p>
 		</form>
 
+	<?php
+		if ($use_openid_provider == 'local'):
+	?>
 
 		<br class="clear" />
-		<h2><?php _e('Your Trusted Sites', 'openid') ?></h2>
-
-		<p><?php _e(' OpenID allows you to log in to other sites that support the OpenID standard.  
-		If a site is on your trusted sites list, you will not be asked if you trust that site when you 
-		attempt to log in to it.', 'openid'); ?></p>
 		
-	<?php
-	
-	$urls = get_usermeta($user-ID, 'openid_trusted_sites');
-	if (!is_array($urls)) {
-		$urls = array();
-	}
 
-	if( count($urls) ) : ?>
-		<p>You have <?php echo count($urls); ?> trusted sites.</p>
-
-		<table class="widefat">
-		<thead>
-			<tr>
-				<th scope="col"><?php _e('URL', 'openid') ?></th>
-				<th scope="col" style="text-align: center"><?php _e('Action', 'openid') ?></th>
-			</tr>
-		</thead>
-
-		<?php foreach( $urls as $url ): ?>
-
-			<tr class="alternate">
-				<td><a href="<?php echo $url; ?>"><?php echo $url; ?></a></td>
-				<td style="text-align: center"><a class="delete" href="<?php 
-				echo wp_nonce_url(sprintf('?page=%s&action=drop_trusted_site&url=%s', 'openid', $url), 
-				'wp-openid-drop_trusted_site_'.$url);
-				?>"><?php _e('Delete', 'openid') ?></a></td>
-			</tr>
-
-		<?php endforeach; ?>
-
-		</table>
-
-		<?php
-	else:
-		echo '
-		<p><strong>'.__('You have no trusted sites.', 'openid').'</strong></p>';
-	endif; ?>
-
-		<h3><?php _e('Add Trusted Site', 'openid') ?></h3>
-		<form method="post">
-		<table class="form-table">
-			<tr>
-				<th scope="row"><label for="url"><?php _e('Site URL', 'openid') ?></label></th>
-				<td><input id="url" name="url" /></td>
-			</tr>
-		</table>
-		<?php wp_nonce_field('wp-openid-add_trusted_site'); ?>
-		<p class="submit">
-			<input type="submit" value="<?php _e('Add Site', 'openid') ?>" />
-			<input type="hidden" name="action" value="add_trusted_site" >
-		</p>
-		</form>
+	<?php endif; ?>
 	
 	</div>
 
 	<script type="text/javascript">
 	jQuery(function() {
+		<?php if ($use_openid_provider != 'local') echo 'jQuery(\'#trusted_sites\').hide();'; ?>
 		<?php if ($use_openid_provider != 'delegate') echo 'jQuery(\'#delegate_info\').hide();'; ?>
 
-		jQuery('#no_provider').change(function() { jQuery('#delegate_info').hide(); });
-		jQuery('#use_local_provider').change(function() { jQuery('#delegate_info').hide(); });
-		jQuery('#delegate_provider').change(function() { jQuery('#delegate_info').show(); });
+		jQuery('#no_provider').change(function() { jQuery('#trusted_sites').hide(); jQuery('#delegate_info').hide(); });
+		jQuery('#use_local_provider').change(function() { jQuery('#trusted_sites').show(); jQuery('#delegate_info').hide(); });
+		jQuery('#delegate_provider').change(function() { jQuery('#trusted_sites').hide(); jQuery('#delegate_info').show(); });
 	});
 	</script>
 	<?php
@@ -598,9 +568,9 @@ function openid_profile_management() {
 			if ($userid) {
 				global $error;
 				if ($user->ID == $userid) {
-					$error = 'You already have this Identity URL!';
+					$error = 'You already have this OpenID!';
 				} else {
-					$error = 'This Identity URL is already connected to another user.';
+					$error = 'This OpenID is already connected to another user.';
 				}
 				return;
 			}
@@ -677,14 +647,14 @@ function openid_profile_drop_identity($id) {
 	$user = wp_get_current_user();
 
 	if( !isset($id)) {
-		openid_message('Identity url delete failed: ID paramater missing.');
+		openid_message('OpenID delete failed: ID paramater missing.');
 		openid_status('error');
 		return;
 	}
 
 	$identity_urls = get_user_openids($user->ID);
 	if( !in_array($id, $identity_urls) ) {
-		openid_message('Identity url delete failed: Specified identity does not exist or does not belong to you.');
+		openid_message('OpenID delete failed: Specified identity does not exist or does not belong to you.');
 		openid_status('error');
 		return;
 	}
@@ -701,10 +671,10 @@ function openid_profile_drop_identity($id) {
 		
 
 	if( openid_drop_identity($user->ID, $id) ) {
-		openid_message('Identity url delete successful. <b>' . $deleted_identity_url . '</b> removed.');
+		openid_message('OpenID delete successful. <b>' . $deleted_identity_url . '</b> removed.');
 		openid_status('success');
 
-		// ensure that profile URL is still a verified Identity URL
+		// ensure that profile URL is still a verified OpenID
 		set_include_path( dirname(__FILE__) . PATH_SEPARATOR . get_include_path() );
 		require_once 'Auth/OpenID.php';
 		@include_once(ABSPATH . WPINC . '/registration.php');	// WP < 2.3
@@ -713,13 +683,13 @@ function openid_profile_drop_identity($id) {
 		if (!openid_ensure_url_match($user)) {
 			$identities = get_user_openids($user->ID);
 			wp_update_user( array('ID' => $user->ID, 'user_url' => $identities[0]) );
-			openid_message(openid_message() . '<br /><strong>Note:</strong> For security reasons, your profile URL has been updated to match your Identity URL.');
+			openid_message(openid_message() . '<br /><strong>Note:</strong> For security reasons, your profile URL has been updated to match your OpenID.');
 		}
 
 		return;
 	}
 		
-	openid_message('Identity url delete failed: Unknown reason.');
+	openid_message('OpenID delete failed: Unknown reason.');
 	openid_status('error');
 }
 
@@ -735,16 +705,17 @@ function openid_finish_verify($identity_url) {
 
 	$user = wp_get_current_user();
 	if (empty($identity_url)) {
-		openid_message('Unable to authenticate OpenID.');
+		$message = openid_message();
+		if (empty($message)) openid_message('Unable to authenticate OpenID.');
 	} else {
 		if( !openid_add_identity($user->ID, $identity_url) ) {
 			openid_message('OpenID assertion successful, but this URL is already claimed by '
 			. 'another user on this blog. This is probably a bug. ' . $identity_url);
 		} else {
-			openid_message('Successfully added Identity URL: ' . openid_display_identity($identity_url));
+			openid_message('Successfully added OpenID: ' . openid_display_identity($identity_url));
 			openid_status('success');
 			
-			// ensure that profile URL is a verified Identity URL
+			// ensure that profile URL is a verified OpenID
 			set_include_path( dirname(__FILE__) . PATH_SEPARATOR . get_include_path() );
 			require_once 'Auth/OpenID.php';
 			if ($GLOBALS['wp_version'] >= '2.3') {
@@ -755,7 +726,7 @@ function openid_finish_verify($identity_url) {
 
 			if (!openid_ensure_url_match($user)) {
 				wp_update_user( array('ID' => $user->ID, 'user_url' => $identity_url) );
-				openid_message(openid_message() . '<br /><strong>Note:</strong> For security reasons, your profile URL has been updated to match your Identity URL.');
+				openid_message(openid_message() . '<br /><strong>Note:</strong> For security reasons, your profile URL has been updated to match your OpenID.');
 			}
 		}
 	}
@@ -786,13 +757,13 @@ function openid_personal_options_update() {
 
 	if (!openid_ensure_url_match($user, $_POST['url'])) {
 		wp_die('For security reasons, your profile URL must be one of your claimed '
-		   . 'Identity URLs: <ul><li>' . join('</li><li>', get_user_openids($user->ID)) . '</li></ul>');
+		   . 'OpenIDs: <ul><li>' . join('</li><li>', get_user_openids($user->ID)) . '</li></ul>');
 	}
 }
 
 
 /**
- * Ensure that the user's profile URL matches one of their Identity URLs.
+ * Ensure that the user's profile URL matches one of their OpenIDs
  */
 function openid_ensure_url_match($user, $url = null) {
 	$identities = get_user_openids($user->ID);
