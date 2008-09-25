@@ -1,3 +1,5 @@
+// use yuicompress (http://developer.yahoo.com/yui/compressor/) to generate openid.min.js
+
 jQuery(function() {
 	jQuery('#openid_rollup > div').hide();
 

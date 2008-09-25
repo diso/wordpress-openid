@@ -1,3 +1,7 @@
+/* yuicompress openid.css -o openid.min.css
+ * @see http://developer.yahoo.com/yui/compressor/
+ */
+
 #openid_enabled_link, .openid_link, #openid_identifier, #commentform #openid_identifier {
 	background-image: url('openid.gif');
 	background-position: center left;
@@ -26,5 +30,3 @@ body.login form#registerform a.legacy {
 
 #openid_rollup div div { margin: 0.5em; }
 #openid_rollup ul { margin: 0; padding: 0 0 0 5em; }
-
-#trusted_sites h4, #trusted_sites p { margin: 0; }

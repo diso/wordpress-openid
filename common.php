@@ -776,7 +776,9 @@ function openid_js_setup() {
 			array('jquery'), OPENID_PLUGIN_REVISION);
 		wp_enqueue_script('jquery.xpath', openid_plugin_url() . '/f/jquery.xpath.min.js', 
 			array('jquery'), OPENID_PLUGIN_REVISION);
-		wp_enqueue_script('openid', openid_plugin_url() . '/f/openid.min.js', 
+
+		$js_file = (defined('WP_DEBUG') && WP_DEBUG) ? 'openid.js' : 'openid.min.js';
+		wp_enqueue_script('openid', openid_plugin_url() . '/f/' . $js_file, 
 			array('jquery','jquery.textnode'), OPENID_PLUGIN_REVISION);
 	}
 }
@@ -807,7 +809,9 @@ function openid_plugin_url() {
  * @action: wp_head, login_head
  **/
 function openid_style() {
-	$css_path = openid_plugin_url() . '/f/openid.css?ver='.OPENID_PLUGIN_REVISION;
+	$css_file = (defined('WP_DEBUG') && WP_DEBUG) ? 'openid.css' : 'openid.min.css';
+	$css_path = openid_plugin_url() . '/f/' . $css_file . '?ver=' . OPENID_PLUGIN_REVISION;
+
 	echo '
 		<link rel="stylesheet" type="text/css" href="'.clean_url($css_path).'" />';
 }
