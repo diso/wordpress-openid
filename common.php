@@ -759,7 +759,34 @@ function openid_repost($action, $parameters) {
 	header( 'Content-Type: text/html; charset=utf-8' );
 	global $wp_version;
 	if ($wp_version >= '2.3') echo "\n"; // send headers
-	wp_die($html, __('OpenID Authentication Redirect', 'openid'));
+	openid_page($html, __('OpenID Authentication Redirect', 'openid'));
+}
+
+
+function openid_page($message, $title = '') {
+	global $wp_locale;
+?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" <?php if ( function_exists( 'language_attributes' ) ) language_attributes(); ?>>
+<head>
+	<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+	<title><?php echo $title ?></title>
+<?php
+	wp_admin_css('install', true);
+	if ( ($wp_locale) && ('rtl' == $wp_locale->text_direction) ) {
+		wp_admin_css('login-rtl', true);
+	}
+
+	do_action('admin_head');
+	do_action('openid_page_head');
+?>
+</head>
+<body id="openid-page">
+	<?php echo $message; ?>
+</body>
+</html>
+<?php
+	die();
 }
 
 

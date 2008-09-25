@@ -24,27 +24,50 @@ function openid_server_sreg_post_auth($request) {
 function openid_server_sreg_trust_form() {
 	$sreg_request = $GLOBALS['openid_server_sreg_request'];
 	$sreg_fields = $sreg_request->allRequestedFields();
+
 	if (!empty($sreg_fields)) {
-		echo '
-			<p>The following profile data will be included:</p>
-			<table class="form-table">';
+		$display_fields = array();
 		foreach ($sreg_fields as $field) {
-			$name = $GLOBALS['Auth_OpenID_sreg_data_fields'][$field];
-			echo '
-				<tr>
-					<th><label for="sreg_'.$field.'">'.$name.':</label></th>
-					<td><input type="text id="sreg_'.$field.'" name="sreg['.$field.']" value="'.openid_server_sreg_from_profile($field).'" /></td>
-				</tr>';
+			$value = openid_server_sreg_from_profile($field);
+			if (!empty($value)) {
+				$display_fields[] = strtolower($GLOBALS['Auth_OpenID_sreg_data_fields'][$field]);
+			}
 		}
-		echo '</table>';
+
+		if (!empty($display_fields)) {
+			$fields = openid_server_sreg_field_string($display_fields);
+
+			echo '
+			<p class="trust_form_add" style="padding: 0">
+				<input type="checkbox" id="include_sreg" name="include_sreg" checked="checked" style="display: block; float: left; margin: 0.8em;" />
+				<label for="include_sreg" style="display: block; padding: 0.5em 2em;">'.sprintf(__('Also grant access to see my %s.', 'openid'), $fields) . '</label>
+			</p>';
+		}
+
 	}
+}
+
+function openid_server_sreg_field_string($fields, $string = '') {
+	if (empty($fields)) return $string;
+
+	if (empty($string)) {
+		if (sizeof($fields) == 2) 
+			return join(' and ', $fields);
+		$string = array_shift($fields);
+	} else if (sizeof($fields) == 1) {
+		$string .= ', and ' . array_shift($fields);
+	} else if (sizeof($fields) > 1) {
+		$string .= ', ' . array_shift($fields);
+	}
+
+	return openid_server_sreg_field_string($fields, $string);
 }
 
 /**
  * Based on input from the OpenID trust form, prep data to be included in the authentication response
  */
 function openid_server_sreg_trust_submit($trust, $input) {
-	if ($trust) {
+	if ($trust && $input['include_sreg'] == 'on') {
 		$GLOBALS['openid_server_sreg_input'] = $input['sreg'];
 	} else {
 		$GLOBALS['openid_server_sreg_input'] = array();

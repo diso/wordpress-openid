@@ -165,23 +165,20 @@ function openid_server_auth_request($request) {
 				$_SESSION['openid_server_request'] = $request;
 				ob_start();
 
-				echo '<h1>OpenID Login Error</h1>';
+				echo '<h1>'.__('OpenID Login Error', 'openid').'</h1>';
 
 				if (get_usermeta($user->ID, 'use_openid_provider') == 'delegate') {
-					echo '
-					<p>You cannot use Identifier Select if you are delegating your OpenID.  Instead, 
-					you will need to use your full OpenID when logging in.</p>
-					<p>Your OpenID is: <strong>'.$author_url.'</strong></p>';
+					echo '<p>' . __('You cannot use Identifier Select if you are delegating your OpenID.  Instead, you will need to use your full OpenID when logging in', 'openid') . '</p>';
+					echo '<p>' . sprintf(__('Your OpenID is: %s', 'openid'), '<strong>'.$author_url.'</strong>') . '</p>';
 				} else {
-					echo '
-						<p>You have currently selected not to use OpenID on this WordPress blog.  
-						You can update that preference <a href="'.admin_url('/profile.php?page=openid').'">here</a>.</p>';
+					printf('<p>' . __('You have currently selected not to use OpenID on this WordPress blog. '
+						. 'You can update that preference <a href="%s">here</a>.', 'openid'), admin_url('/profile.php?page=openid'));
 				}
 
 				echo '
 					<form method="post">
 						<p class="submit">
-							<input type="submit" value="Continue" />
+							<input type="submit" value="'.__('Continue').'" />
 							<input type="hidden" name="action" value="cancel" />
 							<input type="hidden" name="openid_server" value="1" />
 						</p>';
@@ -329,6 +326,8 @@ function openid_provider_link_tags() {
  * Determine if the current user trusts the the relying party of the OpenID authentication request.
  */
 function openid_server_user_trust($request) {
+	$user = wp_get_current_user();
+
 	if ($_REQUEST['openid_trust']) {
 		$trust = null;
 
@@ -339,12 +338,9 @@ function openid_server_user_trust($request) {
 
 			$trust = true;
 
-			if ($_REQUEST['add_trusted'] == 'on') {
-				$user = wp_get_current_user();
-				$trusted_sites = get_usermeta($user->ID, 'openid_trusted_sites');
-				$trusted_sites[] = $request->trust_root;
-				update_usermeta($user->ID, 'openid_trusted_sites', array_unique($trusted_sites));
-			}
+			$trusted_sites = get_usermeta($user->ID, 'openid_trusted_sites');
+			$trusted_sites[] = $request->trust_root;
+			update_usermeta($user->ID, 'openid_trusted_sites', array_unique($trusted_sites));
 		}
 
 		do_action('openid_server_trust_submit', $trust, $_REQUEST);
@@ -357,21 +353,53 @@ function openid_server_user_trust($request) {
 
 		ob_start();
 		echo '
-			<form action="' . trailingslashit(get_option('siteurl')) . '?openid_server=1" method="post">
-			<h1>OpenID Login</h1>
-			<p>Your are logging in to the site <strong>'.$request->trust_root.'</strong>.</p>';
+			<style type="text/css">
+				#banner { margin-bottom: 4em; }
+				#banner #site { float: left; color: #555; }
+				#banner #loggedin { font-size: 0.7em; float: right; }
+				p.trust_form_add {
+					margin: 3em auto 1em; padding: 0.5em; border: 1px solid #999; background: #FFEBE8; width: 80%; font-size: 0.8em; -moz-border-radius: 3px;
+				}
+				#submit { font-size: 18px; padding: 10px 35px; margin-left: 1em; }
+			</style>
+
+			<div id="banner">
+				<div id="site">'.get_option('blogname').'</div>';
+
+		if (is_user_logged_in()) {
+			$user = wp_get_current_user();
+			echo '
+				<div id="loggedin">' . sprintf(__('Logged in as %1$s (<a href="%2$s">Use a different account?</a>)', 'openid'), $user->display_name, '#') . '</div>';
+		}
+
 		echo '
-			<p class="submit" style="margin: 1em 0 0 1em;">
-				<input type="submit" name="openid_trust" value="Continue" style="font-size: 18px; padding: 10px 35px 10px;" />
-			</p>';
+			</div>
+
+			<form action="' . trailingslashit(get_option('siteurl')) . '?openid_server=1" method="post">
+			<h1>'.__('Verify Your Identity', 'openid').'</h1>
+			<p style="margin: 1.5em 0 1em 0;">'
+				. sprintf(__('%s has asked to verify your identity.', 'openid'), '<strong>'.$request->trust_root.'</strong>')
+				. '</p>
+			
+			<p style="margin: 1em 0;">'
+				. __('Click <strong>Continue</strong> to verify your identity and login without creating a new password.', 'openid')
+			. '</p>';
 
 		do_action('openid_server_trust_form');
 
 		echo '
-			<p style="float: right"><a href="'.trailingslashit(get_option('site_url')) . '?openid_server=1&openid_trust=cancel">Cancel login</a></p>	
-			<p><input type="checkbox" name="add_trusted" id="add_trusted" checked="checked" /><label for="add_trusted"> Skip this step from now on for this site.</label></p>
-		';
+			<p class="submit" style="text-align: center; margin-top: 2.4em;">
+				<a href="'.trailingslashit(get_option('site_url')) . '?openid_server=1&openid_trust=cancel">'.__('Cancel and go back', 'openid').'</a>
+				<input type="submit" id="submit" name="openid_trust" value="'.__('Continue', 'openid').'" />
+			</p>
 
+			<p style="margin: 3em 0 1em 0; font-size: 0.8em;">'
+				. sprintf(__('Manage or remove access on the <a href="%s">Trusted Sites</a> page.', 'openid'), '#')
+				. '</p>
+			<p style="margin: 1em 0; font-size: 0.8em;">'
+				. sprintf(__('<a href="%s">Edit your profile</a> to change the information that gets shared with Trusted Sites.', 'openid'), '#')
+				. '</p>
+		';
 
 		wp_nonce_field('wp-openid-server_trust', '_wpnonce', true);
 
@@ -381,12 +409,7 @@ function openid_server_user_trust($request) {
 		$html = ob_get_contents();
 		ob_end_clean();
 
-		status_header(200);
-		nocache_headers();
-		header( 'Content-Type: text/html; charset=utf-8' );
-		global $wp_version;
-		if ($wp_version >= '2.3') echo "\n"; // send headers
-		wp_die($html, 'OpenID Trust Request');
+		openid_page($html, __('Verify Your Identity', 'openid'));
 	}
 }
 

@@ -192,6 +192,7 @@ function openid_comment_form() {
 
 function openid_repost_comment_anonymously($post) {
 	$html = '
+	<h1>'.__('OpenID Authentication Error', 'openid').'</h1>
 	<p id="error">'.__('We were unable to authenticate your claimed OpenID, however you '
 	. 'can continue to post your comment without OpenID:', 'openid').'</p>
 
@@ -210,7 +211,7 @@ function openid_repost_comment_anonymously($post) {
 	}
 	
 	$html .= '</form>';
-	wp_die($html, __('OpenID Authentication Error', 'openid'));
+	openid_page($html, __('OpenID Authentication Error', 'openid'));
 }
 
 
