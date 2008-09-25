@@ -49,9 +49,9 @@ function openid_login_errors() {
 
 	if ($_REQUEST['registration_closed']) {
 		global $error;
-		$error = 'OpenID authentication valid, but unable '
-			. 'to find a WordPress account associated with this OpenID.<br /><br />'
-			. 'Enable "Anyone can register" to allow creation of new accounts via OpenID.';
+		$error = __('OpenID authentication valid, but unable to find a WordPress account associated with this OpenID.', 'openid')
+			. '<br /><br />'
+			. __('Enable "Anyone can register" to allow creation of new accounts via OpenID.', 'openid');
 	}
 }
 
@@ -163,7 +163,9 @@ function openid_registration_errors($errors) {
 }
 
 function openid_wp_login_return_url($urls) {
-	$urls[] = site_url('/wp-login.php', 'login-post');
+	$url = site_url('/wp-login.php', 'login_post');
+	error_log('url = ' . $url);
+	$urls[] = $url;
 	return $urls;
 }
 ?>

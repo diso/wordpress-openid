@@ -192,15 +192,15 @@ function openid_comment_form() {
 
 function openid_repost_comment_anonymously($post) {
 	$html = '
-	<p id="error">We were unable to authenticate your claimed OpenID, however you 
-	can continue to post your comment without OpenID:</p>
+	<p id="error">'.__('We were unable to authenticate your claimed OpenID, however you '
+	. 'can continue to post your comment without OpenID:', 'openid').'</p>
 
 	<form action="' . get_option('siteurl') . '/wp-comments-post.php" method="post">
 		<p>Name: <input name="author" value="'.$post['author'].'" /></p>
 		<p>Email: <input name="email" value="'.$post['email'].'" /></p>
 		<p>URL: <input name="url" value="'.$post['url'].'" /></p>
 		<textarea name="comment" cols="80%" rows="10">'.stripslashes($post['comment']).'</textarea>
-		<input type="submit" name="submit" value="Submit Comment" />
+		<input type="submit" name="submit" value="'.__('Submit Comment').'" />
 		<input type="hidden" name="openid_skip" value="1" />';
 	foreach ($post as $name => $value) {
 		if (!in_array($name, array('author', 'email', 'url', 'comment', 'submit'))) {
@@ -210,7 +210,7 @@ function openid_repost_comment_anonymously($post) {
 	}
 	
 	$html .= '</form>';
-	wp_die($html, 'OpenID Authentication Error');
+	wp_die($html, __('OpenID Authentication Error', 'openid'));
 }
 
 
