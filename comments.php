@@ -183,8 +183,8 @@ function openid_comment_profilelink() {
  * @action: comment_form
  **/
 function openid_comment_form() {
-	global $wp_script;
-	if (!is_user_logged_in() && $wp_script->query('openid') && (is_single() || is_comment_popup())) {
+	global $wp_scripts;
+	if (!is_user_logged_in() && (is_single() || is_comments_popup()) && isset($wp_scripts) && $wp_scripts->query('openid')) {
 		echo '<script type="text/javascript">add_openid_to_comment_form()</script>';
 	}
 }
