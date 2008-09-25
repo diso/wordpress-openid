@@ -247,17 +247,17 @@ function finish_openid_auth() {
 		
 	switch( $response->status ) {
 		case Auth_OpenID_CANCEL:
-			openid_message('OpenID login was cancelled.');
+			openid_message(__('OpenID login was cancelled.', 'openid'));
 			openid_status('error');
 			break;
 
 		case Auth_OpenID_FAILURE:
-			openid_message('OpenID login failed: ' . $response->message);
+			openid_message(sprintf(__('OpenID login failed: %s', 'openid'), $response->message));
 			openid_status('error');
 			break;
 
 		case Auth_OpenID_SUCCESS:
-			openid_message('OpenID login successful');
+			openid_message(__('OpenID login successful', 'openid'));
 			openid_status('success');
 
 			$identity_url = $response->identity_url;
@@ -265,7 +265,7 @@ function finish_openid_auth() {
 			return $escaped_url;
 
 		default:
-			openid_message('Unknown Status. Bind not successful. This is probably a bug.');
+			openid_message(__('Unknown Status. Bind not successful. This is probably a bug.', 'openid'));
 			openid_status('error');
 	}
 
@@ -354,11 +354,13 @@ function openid_start_login( $claimed_url, $action, $arguments = null, $return_t
 
 	if ( null === $auth_request ) {
 		openid_status('error');
-		openid_message('Could not discover an OpenID identity server endpoint at the url: '
-		. htmlentities( $claimed_url ));
+		openid_message(sprintf(
+			__('Could not discover an OpenID identity server endpoint at the url: %s', 'openid'), 
+			htmlentities($claimed_url)
+		));
 		if( strpos( $claimed_url, '@' ) ) {
-			openid_message(openid_message() . '<br />It looks like you entered an email address, but it '
-				. 'was not able to be transformed into a valid OpenID.');
+			openid_message(openid_message() . '<br />' . __('It looks like you entered an email address, but it '
+				. 'was not able to be transformed into a valid OpenID.', 'openid'));
 		}
 		return;
 	}
@@ -488,8 +490,7 @@ function openid_create_new_user($identity_url, &$user_data) {
 		$user = new WP_User( $user_id );
 
 		if( ! wp_login( $user->user_login, $user_data['user_pass'] ) ) {
-			openid_message('User was created fine, but wp_login() for the new user failed. '
-			. 'This is probably a bug.');
+			openid_message(__('User was created fine, but wp_login() for the new user failed. This is probably a bug.', 'openid'));
 			openid_action('error');
 			openid_error(openid_message());
 			return;
@@ -510,8 +511,7 @@ function openid_create_new_user($identity_url, &$user_data) {
 
 	} else {
 		// failed to create user for some reason.
-		openid_message('OpenID authentication successful, but failed to create WordPress user. '
-		. 'This is probably a bug.');
+		openid_message(__('OpenID authentication successful, but failed to create WordPress user. This is probably a bug.', 'openid'));
 		openid_status('error');
 		openid_error(openid_message());
 	}
@@ -738,7 +738,7 @@ function openid_enabled($new = null) {
  */
 function openid_repost($action, $parameters) {
 	$html = '
-	<noscript><p>Since your browser does not support JavaScript, you must press the Continue button once to proceed.</p></noscript>
+	<noscript><p>' . __('Since your browser does not support JavaScript, you must press the Continue button once to proceed.', 'openid') . '</p></noscript>
 	<form action="'.$action.'" method="post">';
 
 	foreach ($parameters as $k => $v) {
@@ -746,11 +746,11 @@ function openid_repost($action, $parameters) {
 		$html .= "\n" . '<input type="hidden" name="'.$k.'" value="' . htmlspecialchars(stripslashes($v), ENT_COMPAT, get_option('blog_charset')) . '" />';
 	}
 	$html .= '
-		<noscript><div><input type="submit" value="Continue" /></div></noscript>
+		<noscript><div><input type="submit" value="' . __('Continue') . '" /></div></noscript>
 	</form>
 	
 	<script type="text/javascript">
-		document.write("<h2>Please Wait...</h2>"); 
+		document.write("<h2>'.__('Please Wait...', 'openid').'</h2>"); 
 		document.forms[0].submit()
 	</script>';
 
@@ -759,7 +759,7 @@ function openid_repost($action, $parameters) {
 	header( 'Content-Type: text/html; charset=utf-8' );
 	global $wp_version;
 	if ($wp_version >= '2.3') echo "\n"; // send headers
-	wp_die($html, 'OpenID Authentication Redirect');
+	wp_die($html, __('OpenID Authentication Redirect', 'openid'));
 }
 
 
