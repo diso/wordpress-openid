@@ -754,11 +754,6 @@ function openid_repost($action, $parameters) {
 		document.forms[0].submit()
 	</script>';
 
-	status_header(200);
-	nocache_headers();
-	header( 'Content-Type: text/html; charset=utf-8' );
-	global $wp_version;
-	if ($wp_version >= '2.3') echo "\n"; // send headers
 	openid_page($html, __('OpenID Authentication Redirect', 'openid'));
 }
 

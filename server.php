@@ -32,7 +32,9 @@ function openid_provider_xrds_simple($xrds) {
 		$user_object = new WP_User($user->ID);
 		if (!$user_object->has_cap('use_openid_provider')) return $xrds;
 
-		if (get_usermeta($user->ID, 'use_openid_provider') == 'local') {
+		if (get_usermeta($user->ID, 'enable_openid_delegation')) {
+			$services = get_usermeta($user->ID, 'openid_delegate_services');
+		} else {
 			$services = array(
 				0 => array(
 					'Type' => array(array('content' => 'http://specs.openid.net/auth/2.0/signon')),
@@ -45,8 +47,6 @@ function openid_provider_xrds_simple($xrds) {
 					'openid:Delegate' => get_author_posts_url($user->ID),
 				),
 			);
-		} else if (get_usermeta($user->ID, 'use_openid_provider') == 'delegate') {
-			$services = get_usermeta($user->ID, 'openid_delegate_services');
 		}
 	} else {
 		$services = array(
@@ -155,10 +155,10 @@ function openid_server_auth_request($request) {
 	}
 
 	// if using id select but user is delegating, display error to user (unless check_immediate)
-	if ($id_select && (get_usermeta($user->ID, 'use_openid_provider') != 'local')) {
+	if ($id_select && get_usermeta($user->ID, 'enable_openid_delegation')) {
 		if ($request->mode != 'check_immediate') {
 			if ($_REQUEST['action'] == 'cancel') {
-				check_admin_referer('wp-openid-server_cancel');
+				check_admin_referer('openid-server_cancel');
 				return $request->answer(false);
 			} else {
 				@session_start();
@@ -167,7 +167,7 @@ function openid_server_auth_request($request) {
 
 				echo '<h1>'.__('OpenID Login Error', 'openid').'</h1>';
 
-				if (get_usermeta($user->ID, 'use_openid_provider') == 'delegate') {
+				if (get_usermeta($user->ID, 'enable_openid_delegation')) {
 					echo '<p>' . __('You cannot use Identifier Select if you are delegating your OpenID.  Instead, you will need to use your full OpenID when logging in', 'openid') . '</p>';
 					echo '<p>' . sprintf(__('Your OpenID is: %s', 'openid'), '<strong>'.$author_url.'</strong>') . '</p>';
 				} else {
@@ -182,7 +182,7 @@ function openid_server_auth_request($request) {
 							<input type="hidden" name="action" value="cancel" />
 							<input type="hidden" name="openid_server" value="1" />
 						</p>';
-				wp_nonce_field('wp-openid-server_cancel', '_wpnonce', true);
+				wp_nonce_field('openid-server_cancel', '_wpnonce', true);
 				echo '
 					</form>
 				';
@@ -287,20 +287,11 @@ function openid_provider_link_tags() {
 		$user_object = new WP_User($user->ID);
 		if (!$user_object->has_cap('use_openid_provider')) return;
 
-		if (get_usermeta($user->ID, 'use_openid_provider') == 'local') {
-			$server = trailingslashit(get_option('siteurl')) . '?openid_server=1';
-			$identifier = get_author_posts_url($user->ID);
-
-			echo '
-			<link rel="openid2.provider" href="'.$server.'" />
-			<link rel="openid2.local_id" href="'.$identifier.'" />
-			<link rel="openid.server" href="'.$server.'" />
-			<link rel="openid.delegate" href="'.$identifier.'" />';
-
-		} else if (get_usermeta($user->ID, 'use_openid_provider') == 'delegate') {
+		if (get_usermeta($user->ID, 'enable_openid_delegation')) {
 			$services = get_usermeta($user->ID, 'openid_delegate_services');
 			$openid_1 = false;
 			$openid_2 = false;
+
 			foreach($services as $service) {
 				if (!$openid_1 && $service['openid:Delegate']) {
 					echo '
@@ -316,7 +307,17 @@ function openid_provider_link_tags() {
 					$openid_2 = true;
 				}
 			}
+		} else  {
+			$server = trailingslashit(get_option('siteurl')) . '?openid_server=1';
+			$identifier = get_author_posts_url($user->ID);
+
+			echo '
+			<link rel="openid2.provider" href="'.$server.'" />
+			<link rel="openid2.local_id" href="'.$identifier.'" />
+			<link rel="openid.server" href="'.$server.'" />
+			<link rel="openid.delegate" href="'.$identifier.'" />';
 		}
+
 	}
 
 }
@@ -334,7 +335,7 @@ function openid_server_user_trust($request) {
 		if ($_REQUEST['openid_trust'] == 'cancel') {
 			$trust = false;
 		} else {
-			check_admin_referer('wp-openid-server_trust');
+			check_admin_referer('openid-server_trust');
 
 			$trust = true;
 
@@ -401,7 +402,7 @@ function openid_server_user_trust($request) {
 				. '</p>
 		';
 
-		wp_nonce_field('wp-openid-server_trust', '_wpnonce', true);
+		wp_nonce_field('openid-server_trust', '_wpnonce', true);
 
 		echo '
 			</form>';
@@ -425,30 +426,70 @@ function openid_server_update_delegation_info($userid, $url = null) {
 	if (empty($url)) $url = get_usermeta($userid, 'openid_delegate');
 	if (empty($url)) return false;
 
+	error_log('delegate url = ' . $url);
+
 	$fetcher = Auth_Yadis_Yadis::getHTTPFetcher();
 	$discoveryResult = Auth_Yadis_Yadis::discover($url, $fetcher);
 	$endpoints = Auth_OpenID_ServiceEndpoint::fromDiscoveryResult($discoveryResult);
-
 	$services = array();
-	foreach ($endpoints as $endpoint) {
-		$service = array(
-			'Type' => array(),
-			'URI' => $endpoint->server_url,
-		);
 
-		foreach ($endpoint->type_uris as $type) {
-			$service['Type'][] = array('content' => $type);
+	if (!empty($endpoints)) {
+		foreach ($endpoints as $endpoint) {
+			$service = array(
+				'Type' => array(),
+				'URI' => $endpoint->server_url,
+			);
 
-			if ($type == Auth_OpenID_TYPE_2_0_IDP) {
-				$service['LocalID'] = Auth_OpenID_IDENTIFIER_SELECT;
-			} else if ($type == Auth_OpenID_TYPE_2_0) {
-				$service['LocalID'] = $endpoint->local_id;
-			} else if (in_array($type, array(Auth_OpenID_TYPE_1_0, Auth_OpenID_TYPE_1_1, Auth_OpenID_TYPE_1_2))) {
-				$service['openid:Delegate'] = $endpoint->local_id;
+			foreach ($endpoint->type_uris as $type) {
+				$service['Type'][] = array('content' => $type);
+
+				if ($type == Auth_OpenID_TYPE_2_0_IDP) {
+					$service['LocalID'] = Auth_OpenID_IDENTIFIER_SELECT;
+				} else if ($type == Auth_OpenID_TYPE_2_0) {
+					$service['LocalID'] = $endpoint->local_id;
+				} else if (in_array($type, array(Auth_OpenID_TYPE_1_0, Auth_OpenID_TYPE_1_1, Auth_OpenID_TYPE_1_2))) {
+					$service['openid:Delegate'] = $endpoint->local_id;
+				}
 			}
+
+			$services[] = $service;
+		}
+	}
+
+	if (empty($services)) {
+		// resort to checking for HTML links
+		error_log('checking html');
+		
+		$response = $fetcher->get($url);
+		$html_content = $response->body;
+		$p = new Auth_OpenID_Parse();
+		$link_attrs = $p->parseLinkAttrs($html_content);
+
+		// check HTML for OpenID2
+		$server_url = $p->findFirstHref($link_attrs, 'openid2.provider');
+		error_log('openid2.provider = ' . $server_url);
+		if ($server_url !== null) {
+			$openid_url = $p->findFirstHref($link_attrs, 'openid2.local_id');
+			if ($openid_url == null) $openid_url = $url;
+			$services[] = array(
+				'Type' => array(array('content' => Auth_OpenID_Type_1_1)),
+				'URI' => $server_url,
+				'LocalID' => $openid_url,
+			);
 		}
 
-		$services[] = $service;
+		// check HTML for OpenID1
+		$server_url = $p->findFirstHref($link_attrs, 'openid.server');
+		error_log('openid.server = ' . $server_url);
+		if ($server_url !== null) {
+			$openid_url = $p->findFirstHref($link_attrs, 'openid.delegate');
+			if ($openid_url == null) $openid_url = $url;
+			$services[] = array(
+				'Type' => array(array('content' => Auth_OpenID_Type_2_0)),
+				'URI' => $server_url,
+				'openid:Delegate' => $openid_url,
+			);
+		}
 	}
 
 	if (empty($services)) return false;

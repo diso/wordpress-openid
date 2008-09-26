@@ -164,7 +164,6 @@ function openid_registration_errors($errors) {
 
 function openid_wp_login_return_url($urls) {
 	$url = site_url('/wp-login.php', 'login_post');
-	error_log('url = ' . $url);
 	$urls[] = $url;
 	return $urls;
 }

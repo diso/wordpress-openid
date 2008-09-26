@@ -2,7 +2,7 @@
 /**
  * store.php
  *
- * Database Connector for wp-openid
+ * Database Connector for WordPress OpenID
  * Dual Licence: GPL & Modified BSD
  */
 
@@ -13,7 +13,7 @@ if (!class_exists('WordPress_OpenID_OptionStore')):
 /**
  * OpenID store that uses the WordPress options table for storage.  Originally 
  * written by Simon Willison for use in the mu-open-id plugin.  Modified a fair 
- * amount for use in wp-openid.
+ * amount for use in WordPress OpenID.
  */
 class WordPress_OpenID_OptionStore extends Auth_OpenID_OpenIDStore {
 	function WordPress_OpenID_SerializedStore() {
