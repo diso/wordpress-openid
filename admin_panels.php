@@ -666,8 +666,8 @@ function openid_profile_delete_openids($delete) {
 			<form action='.sprintf('%s?page=%s', $_SERVER['PHP_SELF'], $_REQUEST['page']).' method="post">
 			<p>'.__('Are you sure you want to delete all of your verified accounts? Doing so may interfere with your ability to login.', 'openid').'</p>
 			<div class="submit">
-				<input type="submit" name="confirm" value="'.__("Yes I'm sure. Delete.", 'openid').' />
-				<input type="submit" name="cancel" value="'.__("No, don't delete.", 'openid').' />
+				<input type="submit" name="confirm" value="'.__("Yes I'm sure. Delete.", 'openid').'" />
+				<input type="submit" name="cancel" value="'.__("No, don't delete.", 'openid').'" />
 			</div>';
 
 		foreach ($delete as $d) {

@@ -395,10 +395,11 @@ function openid_server_user_trust($request) {
 			</p>
 
 			<p style="margin: 3em 0 1em 0; font-size: 0.8em;">'
-				. sprintf(__('Manage or remove access on the <a href="%s">Trusted Sites</a> page.', 'openid'), '#')
+				. sprintf(__('Manage or remove access on the <a href="%s" target="_blank">Trusted Sites</a> page.', 'openid'), 
+					admin_url((current_user_can('edit_users') ? 'users.php' : 'profile.php') . '?page=openid_trusted_sites'))
 				. '</p>
 			<p style="margin: 1em 0; font-size: 0.8em;">'
-				. sprintf(__('<a href="%s">Edit your profile</a> to change the information that gets shared with Trusted Sites.', 'openid'), '#')
+				. sprintf(__('<a href="%s" target="_blank">Edit your profile</a> to change the information that gets shared with Trusted Sites.', 'openid'), admin_url('profile.php'))
 				. '</p>
 		';
 
