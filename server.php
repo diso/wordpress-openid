@@ -95,6 +95,8 @@ function openid_server_requested_user() {
 
 /**
  * Process an OpenID Server request.
+ *
+ * @uses apply_filters() Calls 'openid_server_auth_response' before sending the authentication response.
  */
 function openid_server_request() {
 	$server = openid_server();
@@ -123,6 +125,9 @@ function openid_server_request() {
 
 /**
  * Process an OpenID Server authentication request.
+ *
+ * @uses do_action() Calls the 'openid_server_pre_auth' hook action before checking if the user is logged in.
+ * @uses do_action() Calls the 'openid_server_post_auth' hook action after ensuring that the user is logged in.
  */
 function openid_server_auth_request($request) {
 
@@ -335,6 +340,10 @@ function openid_server_remove_trust_site() {
 
 /**
  * Determine if the current user trusts the the relying party of the OpenID authentication request.
+ *
+ * @uses do_action() Calls the 'openid_server_trust_form' hook action when displaying the trust form.
+ * @uses do_action() Calls the 'openid_server_trust_submit' hook action when processing the submitted trust form.
+ * @uses apply_filters() Calls 'openid_server_store_trusted_site' before storing trusted site data.
  */
 function openid_server_user_trust($request) {
 	$user = wp_get_current_user();

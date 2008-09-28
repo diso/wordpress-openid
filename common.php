@@ -22,7 +22,7 @@ add_action( 'cleanup_openid', 'openid_cleanup' );
 
 
 // hooks for getting user data
-add_filter('openid_attribute_query_extensions', 'openid_add_sreg_extension');
+add_filter('openid_auth_request_extensions', 'openid_add_sreg_extension');
 
 add_filter( 'openid_user_data', 'openid_get_user_data_sreg', 10, 2);
 
@@ -346,6 +346,7 @@ function openid_begin_consumer($url) {
  * @param string $claimed_url claimed OpenID URL
  * @param action $action OpenID action being performed
  * @param array $arguments array of additional arguments to be included in the 'return_to' URL
+ * @uses apply_filters() Calls 'openid_auth_request_extensions' to gather extensions to be attached to auth request
  */
 function openid_start_login( $claimed_url, $action, $arguments = null, $return_to = null) {
 	if ( empty($claimed_url) ) return; // do nothing.
@@ -383,7 +384,7 @@ function openid_start_login( $claimed_url, $action, $arguments = null, $return_t
 	/* If we've never heard of this url before, do attribute query */
 	$identity_user = get_user_by_openid($auth_request->endpoint->identity_url);
 	if(!$identity_user) {
-		$extensions = apply_filters('openid_attribute_query_extensions', array());
+		$extensions = apply_filters('openid_auth_request_extensions', array());
 		foreach ($extensions as $e) {
 			if (is_a($e, 'Auth_OpenID_Extension')) {
 				$auth_request->addExtension($e);
@@ -444,6 +445,7 @@ function openid_set_current_user($identity, $remember = true) {
  * Finish OpenID authentication. 
  *
  * @param string $action login action that is being performed
+ * @uses do_action() Calls 'openid_finish_auth' hook action after processing the authentication response.
  */
 function finish_openid($action) {
 	$identity_url = finish_openid_auth();
@@ -531,6 +533,7 @@ function openid_create_new_user($identity_url, &$user_data) {
  *
  * @param string $identity_url OpenID to get user data about
  * @return array user data
+ * @uses apply_filters() Calls 'openid_user_data' to gather profile data associated with the identity URL
  */
 function openid_get_user_data($identity_url) {
 	$data = array(
@@ -613,6 +616,10 @@ function openid_get_user_data_hcard($identity_url, $data) {
 }
 
 
+/**
+ *
+ * @uses apply_filters() Calls 'openid_consumer_return_urls' to collect return_to URLs to be included in XRDS document.
+ */
 function openid_consumer_xrds_simple($xrds) {
 
 	if (get_option('openid_xrds_returnto')) {
@@ -735,6 +742,7 @@ function openid_enabled($new = null) {
  *
  * @param string $action form action (URL to POST form to)
  * @param array $parameters key-value pairs of parameters to include in the form
+ * @uses do_action() Calls 'openid_page_head' hook action
  */
 function openid_repost($action, $parameters) {
 	$html = '

@@ -32,13 +32,15 @@ require_once 'server.php';
 require_once 'store.php';
 restore_include_path();
 
+
 // -- public functions
 
 /**
  * Check if the user has any OpenIDs.
  *
- * @param mixed $user the username or ID  If not provided, the current user will be used.
+ * @param mixed $user the username or ID.  If not provided, the current user will be used.
  * @return bool true if the user has any OpenIDs
+ * @since 1.0
  */
 function is_user_openid($user = null) {
 	$urls = get_user_openids($user);
@@ -47,8 +49,13 @@ function is_user_openid($user = null) {
 
 
 /**
- * If the current comment was submitted with OpenID, return true
- * useful for  <?php echo ( is_comment_openid() ? 'Submitted with OpenID' : '' ); ?>
+ * Check if the current comment was submitted using an OpenID. Useful for 
+ * <pre><?php echo ( is_comment_openid() ? 'Submitted with OpenID' : '' ); ?></pre>
+ *
+ * @param int $id comment ID to check for.  If not provided, the current comment will be used.
+ * @return bool true if the comment was submitted using an OpenID
+ * @access public
+ * @since 1.0
  */
 function is_comment_openid($id = null) {
 	if (is_numeric($id)) {
@@ -68,6 +75,8 @@ function is_comment_openid($id = null) {
  *
  * @param mixed $id_or_name the username or ID.  If not provided, the current user will be used.
  * @return array array of user's OpenID identities
+ * @access public
+ * @since 3.0
  */
 function get_user_openids($id_or_name = null) {
 	$user = get_userdata_by_various($id_or_name);
@@ -80,6 +89,8 @@ function get_user_openids($id_or_name = null) {
  *
  * @param string $openid identifier to match
  * @return int|null ID of associated user, or null if no associated user
+ * @access public
+ * @since 3.0
  */
 function get_user_by_openid($url) {
 	global $wpdb;
@@ -88,7 +99,10 @@ function get_user_by_openid($url) {
 
 
 /**
- * Get a simple OpenID input field, used for disabling unobtrusive mode.
+ * Get a simple OpenID input field.
+ *
+ * @access public
+ * @since 2.0
  */
 function openid_input() {
 	return '<input type="text" id="openid_identifier" name="openid_identifier" />';
@@ -100,8 +114,10 @@ function openid_input() {
  *
  * @param mixed $id_or_name the username or ID.  If not provided, the current user will be used.
  * @return bool|object False on failure, User DB row object
+ * @access public
+ * @since 3.0
  */
-if (!function_exists('get_user_by_various')) :
+if (!function_exists('get_userdata_by_various')) :
 function get_userdata_by_various($id_or_name = null) {
 	if ($id_or_name === null) {
 		$user = wp_get_current_user();

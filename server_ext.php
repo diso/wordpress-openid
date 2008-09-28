@@ -125,6 +125,9 @@ function openid_server_sreg_auth_response($response) {
  * are not handled by the plugin: dob, gender, postcode, country, and language.
  * Other plugins may provide this data by implementing the filter 
  * openid_server_sreg_${fieldname}.
+ *
+ * @uses apply_filters() Calls 'openid_server_sreg_*' before returning sreg values, 
+ *       where '*' is the name of the sreg attribute.
  */
 function openid_server_sreg_from_profile($field) {
 	$user = wp_get_current_user();
