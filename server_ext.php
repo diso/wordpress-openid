@@ -145,12 +145,6 @@ function openid_server_sreg_from_profile($field) {
 		case 'fullname':
 			$value = get_usermeta($user->ID, 'display_name');
 			break;
-		
-		case 'timezone':
-			if (function_exists('timezone_name_from_abbr')) { // added in PHP 5.1.0
-				$value = timezone_name_from_abbr('', (get_option('gmt_offset') * 3600), 0);
-			}
-			break;
 	}
 
 	return apply_filters('openid_server_sreg_' . $field, $value);
