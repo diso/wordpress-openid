@@ -13,6 +13,7 @@ function openid_server_sreg_post_auth($request) {
 		$GLOBALS['openid_server_sreg_request'] = $sreg_request;
 		add_action('openid_server_trust_form', 'openid_server_sreg_trust_form');
 		add_action('openid_server_trust_submit', 'openid_server_sreg_trust_submit', 10, 2);
+		add_filter('openid_server_store_trusted_site', 'openid_server_sreg_store_trusted_site');
 		add_action('openid_server_auth_response', 'openid_server_sreg_auth_response' );
 	}
 }
@@ -63,15 +64,25 @@ function openid_server_sreg_field_string($fields, $string = '') {
 	return openid_server_sreg_field_string($fields, $string);
 }
 
+
 /**
  * Based on input from the OpenID trust form, prep data to be included in the authentication response
  */
 function openid_server_sreg_trust_submit($trust, $input) {
 	if ($trust && $input['include_sreg'] == 'on') {
-		$GLOBALS['openid_server_sreg_input'] = $input['sreg'];
+		$GLOBALS['openid_server_sreg_trust'] = true;
 	} else {
-		$GLOBALS['openid_server_sreg_input'] = array();
+		$GLOBALS['openid_server_sreg_trust'] = false;
 	}
+}
+
+
+/**
+ * Store user's decision on whether to release attributes to the site.
+ */
+function openid_server_sreg_store_trusted_site($site) {
+	$site['release_attributes'] = $GLOBALS['openid_server_sreg_trust'];
+	return $site;
 }
 
 
@@ -79,16 +90,31 @@ function openid_server_sreg_trust_submit($trust, $input) {
  * Attach SReg response to authentication response.
  */
 function openid_server_sreg_auth_response($response) {
-	if (isset($GLOBALS['openid_server_sreg_input'])) {
-		$sreg_data = $GLOBALS['openid_server_sreg_input'];
+	$user = wp_get_current_user();
+
+	// should we include SREG in the response?
+	$include_sreg = false;
+
+	if (isset($GLOBALS['openid_server_sreg_trust'])) {
+		$include_sreg = $GLOBALS['openid_server_sreg_trust'];
 	} else {
-		foreach ($GLOBALS['Auth_OpenID_sreg_data_fields'] as $field => $name) {
-			$sreg_data[$field] = openid_server_sreg_from_profile($field);
+		$trusted_sites = get_usermeta($user->ID, 'openid_trusted_sites');
+		$request = $response->request;
+		$site_hash = md5($request->trust_root);
+		if (is_array($trusted_sites) && array_key_exists($site_hash, $trusted_sites)) {
+			$include_sreg = $trusted_sites[$site_hash]['release_attributes'];
 		}
 	}
 
-	$sreg_response = Auth_OpenID_SRegResponse::extractResponse($GLOBALS['openid_server_sreg_request'], $sreg_data);
-	$response->addExtension($sreg_response);
+	if ($include_sreg) {
+		$sreg_data = array();
+		foreach ($GLOBALS['Auth_OpenID_sreg_data_fields'] as $field => $name) {
+			$sreg_data[$field] = openid_server_sreg_from_profile($field);
+		}
+
+		$sreg_response = Auth_OpenID_SRegResponse::extractResponse($GLOBALS['openid_server_sreg_request'], $sreg_data);
+		$response->addExtension($sreg_response);
+	}
 
 	return $response;
 }

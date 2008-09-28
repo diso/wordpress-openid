@@ -166,14 +166,8 @@ function openid_server_auth_request($request) {
 				ob_start();
 
 				echo '<h1>'.__('OpenID Login Error', 'openid').'</h1>';
-
-				if (get_usermeta($user->ID, 'enable_openid_delegation')) {
-					echo '<p>' . __('You cannot use Identifier Select if you are delegating your OpenID.  Instead, you will need to use your full OpenID when logging in', 'openid') . '</p>';
-					echo '<p>' . sprintf(__('Your OpenID is: %s', 'openid'), '<strong>'.$author_url.'</strong>') . '</p>';
-				} else {
-					printf('<p>' . __('You have currently selected not to use OpenID on this WordPress blog. '
-						. 'You can update that preference <a href="%s">here</a>.', 'openid'), admin_url('/profile.php?page=openid'));
-				}
+				echo '<p>' . __('You cannot use Identifier Select if you are delegating your OpenID.  Instead, you will need to use your full OpenID when logging in.', 'openid') . '</p>';
+				echo '<p>' . sprintf(__('Your OpenID is: %s', 'openid'), '<strong>'.$author_url.'</strong>') . '</p>';
 
 				echo '
 					<form method="post">
@@ -181,11 +175,9 @@ function openid_server_auth_request($request) {
 							<input type="submit" value="'.__('Continue').'" />
 							<input type="hidden" name="action" value="cancel" />
 							<input type="hidden" name="openid_server" value="1" />
-						</p>';
-				wp_nonce_field('openid-server_cancel', '_wpnonce', true);
-				echo '
-					</form>
-				';
+						</p>'
+					. wp_nonce_field('openid-server_cancel', '_wpnonce', true, false)
+					.'</form>';
 
 				$html = ob_get_contents();
 				ob_end_clean();
@@ -196,8 +188,16 @@ function openid_server_auth_request($request) {
 
 	// if user trusts site, we're done
 	$trusted_sites = get_usermeta($user->ID, 'openid_trusted_sites');
-	if (is_array($trusted_sites) && in_array($request->trust_root, $trusted_sites)) {
-		return $id_select ? $request->answer(true, null, $author_url) : $request->answer(true);
+	$site_hash = md5($request->trust_root);
+	if (is_array($trusted_sites) && array_key_exists($site_hash, $trusted_sites)) {
+		$trusted_sites[$site_hash]['last_login'] = time();
+		update_usermeta($user->ID, 'openid_trusted_sites', $trusted_sites);
+
+		if ($id_select) { 
+			return $request->answer(true, null, $author_url);
+		} else { 
+			return $request->answer(true);
+		}
 	}
 
 	// that's all we can do without interacting with the user... bail if using immediate
@@ -207,7 +207,11 @@ function openid_server_auth_request($request) {
 		
 	// finally, prompt the user to trust this site
 	if (openid_server_user_trust($request)) {
-		return $id_select ? $request->answer(true, null, $author_url) : $request->answer(true);
+		if ($id_select) { 
+			return $request->answer(true, null, $author_url);
+		} else { 
+			return $request->answer(true);
+		}
 	} else {
 		return $request->answer(false);
 	}
@@ -323,6 +327,12 @@ function openid_provider_link_tags() {
 }
 
 
+function openid_server_add_trust_site($user_id, $site_url, $site_name = null, $release_attributes) {
+}
+
+function openid_server_remove_trust_site() {
+}
+
 /**
  * Determine if the current user trusts the the relying party of the OpenID authentication request.
  */
@@ -337,16 +347,24 @@ function openid_server_user_trust($request) {
 		} else {
 			check_admin_referer('openid-server_trust');
 			$trust = true;
+		}
 
-			// allow hidden constant (OPENID_NO_AUTO_TRUST) for debugging and such
+		do_action('openid_server_trust_submit', $trust, $_REQUEST, $request);
+
+		if ($trust) {
+			// store trusted site (unless hidden constant is set)
 			if (!defined('OPENID_NO_AUTO_TRUST') || !OPENID_NO_AUTO_TRUST) {
+				$site = array( 'url' => $request->trust_root, 'last_login' => time());
+				$site = apply_filters('openid_server_store_trusted_site', $site);
+
 				$trusted_sites = get_usermeta($user->ID, 'openid_trusted_sites');
-				$trusted_sites[] = $request->trust_root;
-				update_usermeta($user->ID, 'openid_trusted_sites', array_unique($trusted_sites));
+				$site_hash = md5($request->trust_root);
+				$trusted_sites[$site_hash] = $site;
+
+				update_usermeta($user->ID, 'openid_trusted_sites', $trusted_sites);
 			}
 		}
 
-		do_action('openid_server_trust_submit', $trust, $_REQUEST);
 		return $trust;
 
 	} else {
@@ -430,8 +448,6 @@ function openid_server_update_delegation_info($userid, $url = null) {
 	if (empty($url)) $url = get_usermeta($userid, 'openid_delegate');
 	if (empty($url)) return false;
 
-	error_log('delegate url = ' . $url);
-
 	$fetcher = Auth_Yadis_Yadis::getHTTPFetcher();
 	$discoveryResult = Auth_Yadis_Yadis::discover($url, $fetcher);
 	$endpoints = Auth_OpenID_ServiceEndpoint::fromDiscoveryResult($discoveryResult);
@@ -462,8 +478,6 @@ function openid_server_update_delegation_info($userid, $url = null) {
 
 	if (empty($services)) {
 		// resort to checking for HTML links
-		error_log('checking html');
-		
 		$response = $fetcher->get($url);
 		$html_content = $response->body;
 		$p = new Auth_OpenID_Parse();
@@ -471,7 +485,6 @@ function openid_server_update_delegation_info($userid, $url = null) {
 
 		// check HTML for OpenID2
 		$server_url = $p->findFirstHref($link_attrs, 'openid2.provider');
-		error_log('openid2.provider = ' . $server_url);
 		if ($server_url !== null) {
 			$openid_url = $p->findFirstHref($link_attrs, 'openid2.local_id');
 			if ($openid_url == null) $openid_url = $url;
@@ -484,7 +497,6 @@ function openid_server_update_delegation_info($userid, $url = null) {
 
 		// check HTML for OpenID1
 		$server_url = $p->findFirstHref($link_attrs, 'openid.server');
-		error_log('openid.server = ' . $server_url);
 		if ($server_url !== null) {
 			$openid_url = $p->findFirstHref($link_attrs, 'openid.delegate');
 			if ($openid_url == null) $openid_url = $url;
@@ -514,5 +526,6 @@ function openid_server_parse_request($wp) {
 		openid_server_request($_REQUEST['action']);
 	}
 }
+
 
 ?>

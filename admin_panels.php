@@ -406,11 +406,12 @@ function openid_manage_trusted_sites() {
 			}
 
 			$site = clean_url($site);
+			$site_hash = md5($site);
 
-			if (in_array($site, $trusted_sites)) continue;
+			if (array_key_exists($site_hash, $trusted_sites)) continue;
 
 			$count++;
-			$trusted_sites[] = $site;
+			$trusted_sites[$site_hash] = array('url' => $site);
 		}
 
 		if ($count) {
@@ -426,19 +427,18 @@ function openid_manage_trusted_sites() {
 		check_admin_referer('openid-delete_trusted_sites');
 
 		$trusted_sites = get_usermeta($user->ID, 'openid_trusted_sites');
-		$new = array();
-		$deleted = array();
-		foreach ($trusted_sites as $site) {
-			if (in_array(md5($site), $_REQUEST['delete'])) {
-				$deleted[] = $site;
-			} else {
-				$new[] = $site;
+		$count = 0;
+		foreach ($_REQUEST['delete'] as $site_hash) {
+			if (array_key_exists($site_hash, $trusted_sites)) {
+				$trusted_sites[$site_hash] = null;
+				$count++;
 			}
 		}
-		update_usermeta($user->ID, 'openid_trusted_sites', $new);
 
-		if (!empty($deleted)) {
-			echo '<div class="updated"><p>'.__('Revoked access for '.count($deleted).' trusted site' . (count($deleted)>1 ? 's' : '') . '.').'</p></div>';
+		update_usermeta($user->ID, 'openid_trusted_sites', array_filter($trusted_sites));
+
+		if ($count) {
+			echo '<div class="updated"><p>'.__('Revoked access for '.$count.' trusted site' . ($count>1 ? 's' : '') . '.').'</p></div>';
 		}
 		break;
 	}
@@ -463,20 +463,28 @@ function openid_manage_trusted_sites() {
 				<tr>
 					<th scope="col" class="check-column"><input type="checkbox" /></th>
 					<th scope="col">URL</th>
+					<th scope="col">Last Login</th>
 				</tr>
 			</thead>
 			<tbody>
 
 			<?php
-				$urls = get_usermeta($user->ID, 'openid_trusted_sites');
-				if( empty($urls) ) {
-					echo '<tr><td colspan="2">'.__('No Trusted Sites.', 'openid').'</td></tr>';
+				$trusted_sites = get_usermeta($user->ID, 'openid_trusted_sites');
+				if(empty($trusted_sites)) {
+					echo '<tr><td colspan="3">'.__('No Trusted Sites.', 'openid').'</td></tr>';
 				} else {
-					foreach( $urls as $url ) {
+					foreach( $trusted_sites as $site_hash => $site ) {
+						if ($site['last_login']) {
+							$last_login = date(get_option('date_format') . ' - ' . get_option('time_format'), $site['last_login']);
+						} else {
+							$last_login = '-';
+						}
+
 						echo '
 						<tr>
-							<th scope="row" class="check-column"><input type="checkbox" name="delete[]" value="'.md5($url).'" /></th>
-							<td>'.$url.'</td>
+							<th scope="row" class="check-column"><input type="checkbox" name="delete[]" value="'.$site_hash.'" /></th>
+							<td>'.$site['url'].'</td>
+							<td>'.$last_login.'</td>
 						</tr>';
 					}
 				}
