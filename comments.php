@@ -23,6 +23,7 @@ if( get_option('openid_enable_commentform') ) {
 }
 add_filter( 'openid_user_data', 'openid_get_user_data_form', 10, 2);
 add_filter( 'openid_consumer_return_urls', 'openid_comment_return_url' );
+add_action( 'delete_comment', 'unset_comment_openid' );
 
 
 /**
@@ -274,6 +275,26 @@ function set_comment_openid($id) {
 
 
 /**
+ * Unmark the specified comment as an OpenID comment
+ *
+ * @param int $id id of comment to set as OpenID
+ */
+function unset_comment_openid($id) {
+	$comment = get_comment($id);
+	$openid_comments = get_post_meta($comment->comment_post_ID, 'openid_comments', true);
+
+	if (is_array($openid_comments) && in_array($id, $openid_comments)) {
+		$new = array();
+		foreach($openid_comments as $c) {
+			if ($c == $id) continue;
+			$new[] = $c;
+		}
+		update_post_meta($comment->comment_post_ID, 'openid_comments', array_unique($new));
+	}
+}
+
+
+/**
  * Retrieve user data from comment form.
  *
  * @param string $identity_url OpenID to get user data about
@@ -318,5 +339,6 @@ function openid_comment_return_url($urls) {
 	$urls[] = get_option('home');
 	return $urls;
 }
+
 
 ?>
