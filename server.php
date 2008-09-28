@@ -336,12 +336,14 @@ function openid_server_user_trust($request) {
 			$trust = false;
 		} else {
 			check_admin_referer('openid-server_trust');
-
 			$trust = true;
 
-			$trusted_sites = get_usermeta($user->ID, 'openid_trusted_sites');
-			$trusted_sites[] = $request->trust_root;
-			update_usermeta($user->ID, 'openid_trusted_sites', array_unique($trusted_sites));
+			// allow hidden constant (OPENID_NO_AUTO_TRUST) for debugging and such
+			if (!defined('OPENID_NO_AUTO_TRUST') || !OPENID_NO_AUTO_TRUST) {
+				$trusted_sites = get_usermeta($user->ID, 'openid_trusted_sites');
+				$trusted_sites[] = $request->trust_root;
+				update_usermeta($user->ID, 'openid_trusted_sites', array_unique($trusted_sites));
+			}
 		}
 
 		do_action('openid_server_trust_submit', $trust, $_REQUEST);
@@ -369,8 +371,9 @@ function openid_server_user_trust($request) {
 
 		if (is_user_logged_in()) {
 			$user = wp_get_current_user();
+			$logout_url = site_url('wp-login.php?action=logout&redirect_to=' . urlencode(site_url('?openid_server=1')), 'login');
 			echo '
-				<div id="loggedin">' . sprintf(__('Logged in as %1$s (<a href="%2$s">Use a different account?</a>)', 'openid'), $user->display_name, '#') . '</div>';
+				<div id="loggedin">' . sprintf(__('Logged in as %1$s (%2$s). <a href="%3$s">Use a different account?</a>', 'openid'), $user->display_name, $user->user_login, $logout_url ) . '</div>';
 		}
 
 		echo '
