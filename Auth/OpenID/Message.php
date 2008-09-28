@@ -903,10 +903,6 @@ class Auth_OpenID_Message {
             }
         }
 
-		if ($aliased_key == 'ns') {
-            return $this->namespaces->getNamespaceURI(Auth_OpenID_NULL_NAMESPACE);
-		}
-
         if ($ns === null) {
             $key = $aliased_key;
             $ns = $this->getOpenIDNamespace();
