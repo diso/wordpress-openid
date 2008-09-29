@@ -11,7 +11,7 @@ add_action( 'login_form', 'openid_wp_login_form');
 add_action( 'register_form', 'openid_wp_register_form');
 add_action( 'wp_authenticate', 'openid_wp_authenticate' );
 add_action( 'openid_finish_auth', 'openid_finish_login' );
-if (get_option('force_openid_registration')) {
+if (get_option('openid_required_for_registration')) {
 	add_filter('registration_errors', 'openid_registration_errors');
 }
 add_action( 'init', 'openid_login_errors' );
@@ -83,7 +83,7 @@ function openid_wp_login_form() {
  **/
 function openid_wp_register_form() {
 	echo '<p>';
-	if (get_option('force_openid_registration')) {
+	if (get_option('openid_required_for_registration')) {
 		printf(__('New users must use %s.', 'openid'), '<a class="openid_link" href="'.get_option('siteurl').'/wp-login.php">OpenID</a>');
 	} else {
 		printf(__('For faster registration, just %s login with %s.', 'openid'), '<a href="'.get_option('siteurl').'/wp-login.php">', '<span class="openid_link">'.__('OpenID', 'openid').'</span></a>');

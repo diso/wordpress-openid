@@ -2,15 +2,15 @@
 /*
  Plugin Name: OpenID
  Plugin URI: http://wordpress.org/extend/plugins/openid
- Description: Allows the use of OpenID for account registration, authentication, and commenting.  <em>By <a href="http://verselogic.net">Alan Castonguay</a>.</em>
- Author: Will Norris
- Author URI: http://willnorris.com/
- Version: 2.2.2
+ Description: Allows the use of OpenID for account registration, authentication, and commenting.  Also includes an OpenID provider which can turn WordPress author URLs into OpenIDs.
+ Author: DiSo Development Team
+ Author URI: http://diso-project.org/
+ Version: trunk
  License: Dual GPL (http://www.fsf.org/licensing/licenses/info/GPLv2.html) and Modified BSD (http://www.fsf.org/licensing/licenses/index_html#ModifiedBSD)
  */
 
 define ( 'OPENID_PLUGIN_REVISION', preg_replace( '/\$Rev: (.+) \$/', 'svn-\\1',
-	'$Rev$') ); // this needs to be on a separate line so that svn:keywords can work its magic
+	'$Rev: 518 $') ); // this needs to be on a separate line so that svn:keywords can work its magic
 
 // last plugin revision that required database schema changes
 define ( 'OPENID_DB_REVISION', 24426);
