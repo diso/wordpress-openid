@@ -68,8 +68,8 @@ function openid_server_sreg_field_string($fields, $string = '') {
 /**
  * Based on input from the OpenID trust form, prep data to be included in the authentication response
  */
-function openid_server_sreg_trust_submit($trust, $input) {
-	if ($trust && $input['include_sreg'] == 'on') {
+function openid_server_sreg_trust_submit($trust, $request) {
+	if ($trust && $_REQUEST['include_sreg'] == 'on') {
 		$GLOBALS['openid_server_sreg_trust'] = true;
 	} else {
 		$GLOBALS['openid_server_sreg_trust'] = false;

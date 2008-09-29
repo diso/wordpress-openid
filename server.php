@@ -358,7 +358,7 @@ function openid_server_user_trust($request) {
 			$trust = true;
 		}
 
-		do_action('openid_server_trust_submit', $trust, $_REQUEST, $request);
+		do_action('openid_server_trust_submit', $trust, $request);
 
 		if ($trust) {
 			// store trusted site (unless hidden constant is set)

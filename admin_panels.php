@@ -860,7 +860,6 @@ function openid_profile_update($user_id) {
 			openid_message(sprintf(__('Unable to find any OpenID information for delegate URL %s', 'openid'), '<strong>'.$delegate.'</strong>'));
 			openid_status('error');
 		}
-		error_log(openid_message());
 	} else {
 		update_usermeta($user_id, 'enable_openid_delegation', false);
 	}

@@ -22,7 +22,7 @@ add_action( 'cleanup_openid', 'openid_cleanup' );
 
 
 // hooks for getting user data
-add_filter('openid_auth_request_extensions', 'openid_add_sreg_extension');
+add_filter('openid_auth_request_extensions', 'openid_add_sreg_extension', 10, 2);
 
 add_filter( 'openid_user_data', 'openid_get_user_data_sreg', 10, 2);
 
@@ -380,15 +380,10 @@ function openid_start_login( $claimed_url, $action, $arguments = null, $return_t
 		}
 	}
 		
-
-	/* If we've never heard of this url before, do attribute query */
-	$identity_user = get_user_by_openid($auth_request->endpoint->identity_url);
-	if(!$identity_user) {
-		$extensions = apply_filters('openid_auth_request_extensions', array());
-		foreach ($extensions as $e) {
-			if (is_a($e, 'Auth_OpenID_Extension')) {
-				$auth_request->addExtension($e);
-			}
+	$extensions = apply_filters('openid_auth_request_extensions', array(), $auth_request);
+	foreach ($extensions as $e) {
+		if (is_a($e, 'Auth_OpenID_Extension')) {
+			$auth_request->addExtension($e);
 		}
 	}
 		
@@ -399,15 +394,17 @@ function openid_start_login( $claimed_url, $action, $arguments = null, $return_t
 
 
 /**
- * Build an SReg attribute query extension.
+ * Build an SReg attribute query extension if we've never seen this OpenID before.
  */
-function openid_add_sreg_extension($extensions) {
+function openid_add_sreg_extension($extensions, $auth_request) {
+	if(!get_user_by_openid($auth_request->endpoint->claimed_id)) {
+		set_include_path( dirname(__FILE__) . PATH_SEPARATOR . get_include_path() );
+		require_once('Auth/OpenID/SReg.php');
+		restore_include_path();
 
-	set_include_path( dirname(__FILE__) . PATH_SEPARATOR . get_include_path() );
-	require_once('Auth/OpenID/SReg.php');
-	restore_include_path();
+		$extensions[] = Auth_OpenID_SRegRequest::build(array(),array('nickname','email','fullname'));
+	}
 
-	$extensions[] = Auth_OpenID_SRegRequest::build(array(),array('nickname','email','fullname'));
 	return $extensions;
 }
 
