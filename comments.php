@@ -301,7 +301,7 @@ function unset_comment_openid($id) {
  * @param reference $data reference to user data array
  * @see get_user_data
  */
-function openid_get_user_data_form($identity_url, $data) {
+function openid_get_user_data_form($data, $identity_url) {
 	$comment = $_SESSION['openid_comment_post'];
 
 	if (!$comment) {

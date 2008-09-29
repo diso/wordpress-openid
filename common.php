@@ -545,7 +545,7 @@ function openid_get_user_data($identity_url) {
 		$data['user_url'] = 'http://xri.net/' . $identity_url;
 	}
 
-	$data = apply_filters('openid_user_data', $identity_url, $data);
+	$data = apply_filters('openid_user_data', $data, $identity_url);
 
 	return $data;
 }
@@ -558,7 +558,7 @@ function openid_get_user_data($identity_url) {
  * @param reference $data reference to user data array
  * @see get_user_data
  */
-function openid_get_user_data_ax($identity_url, $data) {
+function openid_get_user_data_ax($data, $identity_url) {
 	// TODO implement attribute exchange
 	return $data;
 }
@@ -571,7 +571,7 @@ function openid_get_user_data_ax($identity_url, $data) {
  * @param reference $data reference to user data array
  * @see get_user_data
  */
-function openid_get_user_data_sreg($identity_url, $data) {
+function openid_get_user_data_sreg($data, $identity_url) {
 	require_once(dirname(__FILE__) . '/Auth/OpenID/SReg.php');
 	$response = openid_response();
 	$sreg_resp = Auth_OpenID_SRegResponse::fromSuccessResponse($response);
@@ -607,7 +607,7 @@ function openid_get_user_data_sreg($identity_url, $data) {
  * @param reference $data reference to user data array
  * @see get_user_data
  */
-function openid_get_user_data_hcard($identity_url, $data) {
+function openid_get_user_data_hcard($data, $identity_url) {
 	// TODO implement hcard discovery
 	return $data;
 }
