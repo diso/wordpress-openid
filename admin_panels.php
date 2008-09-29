@@ -50,7 +50,7 @@ function openid_admin_panels() {
 		add_action('show_user_profile', 'openid_extend_profile', 5);
 		add_action('profile_update', 'openid_profile_update');
 
-		if (!get_usermeta($user->ID, 'enable_openid_delegation')) {
+		if (!get_usermeta($user->ID, 'openid_enable_delegation')) {
 			$hookname =	add_submenu_page('profile.php', __('Your Trusted Sites', 'openid'), 
 				__('Your Trusted Sites', 'openid'), 'read', 'openid_trusted_sites', 'openid_manage_trusted_sites' );
 			add_action("admin_head-$hookname", 'openid_style' );
@@ -830,7 +830,7 @@ function openid_extend_profile() {
 	<th>'.__('OpenID Delegation', 'openid').'</th>
 	<td>
 		<label for="openid_delegation"><input type="checkbox" name="openid_delegation" id="openid_delegation" '
-		. (get_usermeta($user->ID, 'enable_openid_delegation') ? 'checked="checked"' : '').'/> '.__('Delegate my OpenID.', 'openid').'</label>
+		. (get_usermeta($user->ID, 'openid_enable_delegation') ? 'checked="checked"' : '').'/> '.__('Delegate my OpenID.', 'openid').'</label>
 			<div id="delegate_info" style="margin-left: 2em;">
 				<p><input type="text" id="openid_delegate" name="openid_delegate" class="openid_link" value="'.get_usermeta($user->ID, 'openid_delegate').'" size="30" /></p>
 			</div>
@@ -840,7 +840,7 @@ function openid_extend_profile() {
 
 	<script type="text/javascript">
 	jQuery(function() {
-		' . ( !get_usermeta($user->ID, 'enable_openid_delegation') ? 'jQuery("#delegate_info").hide();' : '' ) . '
+		' . ( !get_usermeta($user->ID, 'openid_enable_delegation') ? 'jQuery("#delegate_info").hide();' : '' ) . '
 		jQuery("#openid_delegation").change(function() { jQuery("#delegate_info").toggle(); });
 	});
 	</script>
@@ -849,7 +849,7 @@ function openid_extend_profile() {
 
 function openid_profile_update($user_id) {
 	if ($_POST['openid_delegation'] == 'on') {
-		update_usermeta($user_id, 'enable_openid_delegation', true);
+		update_usermeta($user_id, 'openid_enable_delegation', true);
 		$old_delegate = get_usermeta($user_id, 'openid_delegate');
 		$delegate = Auth_OpenID::normalizeUrl($_POST['openid_delegate']);
 
@@ -861,7 +861,7 @@ function openid_profile_update($user_id) {
 			openid_status('error');
 		}
 	} else {
-		update_usermeta($user_id, 'enable_openid_delegation', false);
+		update_usermeta($user_id, 'openid_enable_delegation', false);
 	}
 }
 

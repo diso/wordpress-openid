@@ -32,7 +32,7 @@ function openid_provider_xrds_simple($xrds) {
 		$user_object = new WP_User($user->ID);
 		if (!$user_object->has_cap('use_openid_provider')) return $xrds;
 
-		if (get_usermeta($user->ID, 'enable_openid_delegation')) {
+		if (get_usermeta($user->ID, 'openid_enable_delegation')) {
 			$services = get_usermeta($user->ID, 'openid_delegate_services');
 		} else {
 			$services = array(
@@ -160,7 +160,7 @@ function openid_server_auth_request($request) {
 	}
 
 	// if using id select but user is delegating, display error to user (unless check_immediate)
-	if ($id_select && get_usermeta($user->ID, 'enable_openid_delegation')) {
+	if ($id_select && get_usermeta($user->ID, 'openid_enable_delegation')) {
 		if ($request->mode != 'check_immediate') {
 			if ($_REQUEST['action'] == 'cancel') {
 				check_admin_referer('openid-server_cancel');
@@ -296,7 +296,7 @@ function openid_provider_link_tags() {
 		$user_object = new WP_User($user->ID);
 		if (!$user_object->has_cap('use_openid_provider')) return;
 
-		if (get_usermeta($user->ID, 'enable_openid_delegation')) {
+		if (get_usermeta($user->ID, 'openid_enable_delegation')) {
 			$services = get_usermeta($user->ID, 'openid_delegate_services');
 			$openid_1 = false;
 			$openid_2 = false;
