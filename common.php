@@ -626,20 +626,9 @@ function openid_consumer_xrds_simple($xrds) {
 
 	if (get_option('openid_xrds_returnto')) {
 		// OpenID Consumer Service
-		$uris = array();
-
 		$return_urls = array_unique(apply_filters('openid_consumer_return_urls', array()));
-		foreach($return_urls as $url) {
-			$uris[] = array('content' => $url);
-		}
-
-		if (!empty($uris)) {
-			$xrds = xrds_add_service($xrds, 'main', 'OpenID Consumer Service', 
-				array(
-					'Type' => array(array('content' => 'http://specs.openid.net/auth/2.0/return_to') ),
-					'URI' => $uris,
-				)
-			);
+		if (!empty($return_urls)) {
+			$xrds = xrds_add_simple_service($xrds, 'OpenID Consumer Service', 'http://specs.openid.net/auth/2.0/return_to', $return_urls);
 		}
 	}
 
@@ -658,12 +647,8 @@ function openid_consumer_xrds_simple($xrds) {
 		);
 
 		// Identity in the Browser Indicator Service
-		$xrds = xrds_add_service($xrds, 'main', 'Identity in the Browser Indicator Service', 
-			array(
-				'Type' => array(array('content' => 'http://specs.openid.net/idib/1.0/indicator') ),
-				'URI' => array(array('content' => trailingslashit(get_option('home')) . '?openid_check_login')),
-			)
-		);
+		$xrds = xrds_add_simple_service($xrds, 'Identity in the Browser Indicator Service', 
+			'http://specs.openid.net/idib/1.0/indicator', trailingslashit(get_option('home')) . '?openid_check_login');
 	}
 
 	return $xrds;
