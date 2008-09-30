@@ -9,8 +9,9 @@ add_filter( 'xrds_simple', 'openid_eaut_xrds_simple');
 
 function openid_eaut_mapper($email) {
 	$user = get_user_by_email($email);
-	$user = new WP_User($user->ID);
-	if ($user->has_cap('use_openid_provider')) {
+	if ($user) $user = new WP_User($user->ID);
+
+	if ($user && $user->has_cap('use_openid_provider')) {
 		if (get_usermeta($user->ID, 'openid_enable_delegation')) {
 			$openid = get_usermeta($user->ID, 'openid_delegate');
 		} else {
