@@ -112,7 +112,7 @@ function openid_server_request() {
 	}
 
 	// process request
-	if (in_array($request->mode, array('check_immediate', 'checkid_setup'))) {
+	if (in_array($request->mode, array('checkid_immediate', 'checkid_setup'))) {
 		$response = openid_server_auth_request($request);
 		$response = apply_filters('openid_server_auth_response', $response);
 	} else {
@@ -135,7 +135,8 @@ function openid_server_auth_request($request) {
 
 	// user must be logged in
 	if (!is_user_logged_in()) {
-		if ($request->mode == 'check_immediate') {
+		if ($request->mode == 'checkid_immediate') {
+			error_log('need to login');
 			return $request->answer(false);
 		} else {
 			@session_start();
@@ -159,9 +160,9 @@ function openid_server_auth_request($request) {
 		return $request->answer(false);
 	}
 
-	// if using id select but user is delegating, display error to user (unless check_immediate)
+	// if using id select but user is delegating, display error to user (unless checkid_immediate)
 	if ($id_select && get_usermeta($user->ID, 'openid_enable_delegation')) {
-		if ($request->mode != 'check_immediate') {
+		if ($request->mode != 'checkid_immediate') {
 			if ($_REQUEST['action'] == 'cancel') {
 				check_admin_referer('openid-server_cancel');
 				return $request->answer(false);
@@ -195,6 +196,7 @@ function openid_server_auth_request($request) {
 	$trusted_sites = get_usermeta($user->ID, 'openid_trusted_sites');
 	$site_hash = md5($request->trust_root);
 	if (is_array($trusted_sites) && array_key_exists($site_hash, $trusted_sites)) {
+		error_log('logged in and trusted');
 		$trusted_sites[$site_hash]['last_login'] = time();
 		update_usermeta($user->ID, 'openid_trusted_sites', $trusted_sites);
 
@@ -206,7 +208,7 @@ function openid_server_auth_request($request) {
 	}
 
 	// that's all we can do without interacting with the user... bail if using immediate
-	if ($request->mode == 'check_immediate') {
+	if ($request->mode == 'checkid_immediate') {
 		return $request->answer(false);
 	}
 		
