@@ -2,6 +2,7 @@
 
 require_once 'Auth/OpenID/Server.php';
 require_once 'server_ext.php';
+require_once 'server_eaut.php';
 
 add_action( 'parse_request', 'openid_server_parse_request');
 add_filter( 'xrds_simple', 'openid_provider_xrds_simple');

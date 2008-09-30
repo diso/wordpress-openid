@@ -147,6 +147,7 @@ function openid_activate_plugin() {
 	add_option( 'openid_enable_email_mapping', false );
 	add_option( 'openid_xrds_returnto', true );
 	add_option( 'openid_xrds_idib', true );
+	add_option( 'openid_xrds_eaut', true );
 
 	openid_create_tables();
 	openid_migrate_old_data();
@@ -648,7 +649,7 @@ function openid_consumer_xrds_simple($xrds) {
 
 		// Identity in the Browser Indicator Service
 		$xrds = xrds_add_simple_service($xrds, 'Identity in the Browser Indicator Service', 
-			'http://specs.openid.net/idib/1.0/indicator', trailingslashit(get_option('home')) . '?openid_check_login');
+			'http://specs.openid.net/idib/1.0/indicator', site_url('/') . '?openid_check_login');
 	}
 
 	return $xrds;
