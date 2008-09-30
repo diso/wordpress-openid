@@ -136,7 +136,6 @@ function openid_server_auth_request($request) {
 	// user must be logged in
 	if (!is_user_logged_in()) {
 		if ($request->mode == 'checkid_immediate') {
-			error_log('need to login');
 			return $request->answer(false);
 		} else {
 			@session_start();
@@ -196,7 +195,6 @@ function openid_server_auth_request($request) {
 	$trusted_sites = get_usermeta($user->ID, 'openid_trusted_sites');
 	$site_hash = md5($request->trust_root);
 	if (is_array($trusted_sites) && array_key_exists($site_hash, $trusted_sites)) {
-		error_log('logged in and trusted');
 		$trusted_sites[$site_hash]['last_login'] = time();
 		update_usermeta($user->ID, 'openid_trusted_sites', $trusted_sites);
 
