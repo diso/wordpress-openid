@@ -16,11 +16,12 @@ function openid_eaut_mapper($email) {
 		} else {
 			$openid = get_author_posts_url($user->ID);
 		}
+
+		wp_redirect($openid);
 	} else {
-		$openid = get_option('home');
+		header('HTTP/1.0 500 Internal Server Error');
 	}
 
-	wp_redirect($openid);
 	die;
 }
 
