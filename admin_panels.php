@@ -645,7 +645,7 @@ function openid_profile_management() {
 			}
 
 			$return_to = admin_url(current_user_can('edit_users') ? 'users.php' : 'profile.php');
-			openid_start_login($_POST['openid_identifier'], 'verify', array('page' => 'openid'), $return_to);
+			openid_start_login($_POST['openid_identifier'], 'verify', array('page' => $_REQUEST['page']), $return_to);
 			break;
 
 		case 'delete':
