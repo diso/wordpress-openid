@@ -386,9 +386,14 @@ function openid_start_login( $claimed_url, $action, $arguments = null, $return_t
 			$auth_request->addExtension($e);
 		}
 	}
+
+	$trust_root = get_option('home');
+	if (preg_match('/^https/', $return_to)) {
+		$trust_root = preg_replace('/^http\:/', 'https:', $trust_root);
+	}  
 		
 	$_SESSION['openid_return_to'] = $return_to;
-	openid_doRedirect($auth_request, get_option('home'), $return_to);
+	openid_doRedirect($auth_request, $trust_root, $return_to);
 	exit(0);
 }
 
