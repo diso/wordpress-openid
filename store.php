@@ -16,9 +16,6 @@ if (!class_exists('WordPress_OpenID_OptionStore')):
  * amount for use in WordPress OpenID.
  */
 class WordPress_OpenID_OptionStore extends Auth_OpenID_OpenIDStore {
-	function WordPress_OpenID_SerializedStore() {
-		;
-	}
 
 	function storeAssociation($server_url, $association) {
 		$key = $this->_getAssociationKey($server_url, $association->handle);
@@ -269,24 +266,56 @@ function openid_create_tables()
 }
 
 
+/**
+ * Migrate old data to new locations.
+ */
 function openid_migrate_old_data() {
 	global $wpdb;
 
 	// remove old nonce and associations tables
-	$wpdb->query('DROP TABLE IF EXISTS '.openid_nonces_table());
-	$wpdb->query('DROP TABLE IF EXISTS '.openid_associations_table());
+	$wpdb->query('DROP TABLE IF EXISTS ' . openid_table_prefix(true) . 'openid_nonces');
+	$wpdb->query('DROP TABLE IF EXISTS ' . openid_table_prefix(true) . 'openid_associations');
 	
-	// update old style of marking openid comments 
-	$comments = $wpdb->get_col(wpdb_prepare('SELECT comment_ID from '.openid_comments_table().' WHERE openid=%s OR comment_type=%s', 1, 'openid'));
-	foreach ($comments as $id) {
-		set_comment_openid($id);
+	// update old style of marking openid comments.  For performance reason, we 
+	// migrate them en masse rather than using set_comment_openid()
+	$comments_table = openid_table_prefix(true) . 'comments';
+	$comment_data = $wpdb->get_results(wpdb_prepare('SELECT comment_ID, comment_post_ID from ' . $comments_table . ' WHERE openid=%s OR comment_type=%s', 1, 'openid'));
+	if (!empty($comment_data)) {
+		$openid_comments = array();
+		foreach ($comment_data as $comment) {
+			if (!array_key_exists($comment->comment_post_ID, $openid_comments)) {
+				$openid_comments[$comment->comment_post_ID] = array();
+			}
+			$openid_comments[$comment->comment_post_ID][] = $comment->comment_ID;
+		}
+
+		foreach ($openid_comments as $post_id => $comments) {
+			$current = get_post_meta($comment->comment_post_ID, 'openid_comments', true);
+			if (!empty($current)) $comments = array_merge($comments, $current);
+			update_post_meta($post_id, 'openid_comments', array_unique($comments));
+		}
 	}
-	@$wpdb->query('ALTER table '.openid_comments_table().' DROP COLUMN openid');
-	$wpdb->query(wpdb_prepare('UPDATE '.openid_comments_table().' SET comment_type=%s WHERE comment_type=%s', '', 'openid'));
+
+	@$wpdb->query('ALTER table ' . $comments_table . ' DROP COLUMN openid');
+	$wpdb->query(wpdb_prepare('UPDATE ' . $comments_table . ' SET comment_type=%s WHERE comment_type=%s', '', 'openid'));
 
 
 	// remove old style of marking openid users
-	$wpdb->query(wpdb_prepare('DELETE FROM '.openid_usermeta_table().' WHERE meta_key=%s OR meta_key=%s', 'has_openid', 'registered_with_openid'));
+	$usermeta_table = defined('CUSTOM_USER_META_TABLE') ? CUSTOM_USER_META_TABLE : openid_table_prefix() . 'usermeta'; 
+	$wpdb->query(wpdb_prepare('DELETE FROM ' . $usermeta_table . ' WHERE meta_key=%s OR meta_key=%s', 'has_openid', 'registered_with_openid'));
+}
+
+function openid_table_prefix($blog_specific = false) {
+	global $wpdb;
+	if (isset($wpdb->base_prefix)) {
+		return $wpdb->base_prefix . ($blog_specific ? $wpdb->blogid . '_' : '');
+	} else {
+		return $wpdb->prefix;
+	}
+}
+
+function openid_identity_table() { 
+	return (defined('CUSTOM_OPENID_IDENTITY_TABLE') ? CUSTOM_OPENID_IDENTITY_TABLE : openid_table_prefix() . 'openid_identities'); 
 }
 
 

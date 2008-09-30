@@ -184,7 +184,7 @@ function openid_cleanup() {
 
 
 /**
- * Called on plugin deactivation.  Cleanup all transient tables.
+ * Called on plugin deactivation.  Cleanup all transient data.
  *
  * @see register_deactivation_hook
  */
@@ -666,26 +666,6 @@ function openid_parse_idib_request($wp) {
 		echo is_user_logged_in() ? 'true' : 'false';
 		exit;
 	}
-}
-
-
-function openid_table_prefix($blog_specific = false) {
-	global $wpdb;
-	if (isset($wpdb->base_prefix)) {
-		return $wpdb->base_prefix . ($blog_specific ? $wpdb->blogid . '_' : '');
-	} else {
-		return $wpdb->prefix;
-	}
-}
-
-function openid_associations_table() { return openid_table_prefix(true) . 'openid_associations'; }
-function openid_nonces_table() { return openid_table_prefix(true) . 'openid_nonces'; }
-function openid_comments_table() { return openid_table_prefix(true) . 'comments'; }
-function openid_usermeta_table() { 
-	return (defined('CUSTOM_USER_META_TABLE') ? CUSTOM_USER_META_TABLE : openid_table_prefix() . 'usermeta'); 
-}
-function openid_identity_table() { 
-	return (defined('CUSTOM_OPENID_IDENTITY_TABLE') ? CUSTOM_OPENID_IDENTITY_TABLE : openid_table_prefix() . 'openid_identities'); 
 }
 
 
