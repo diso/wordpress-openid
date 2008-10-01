@@ -33,22 +33,24 @@ function openid_admin_notices_plugin_problem_warning() {
  * @action: admin_menu
  **/
 function openid_admin_panels() {
+	// global options page
 	$hookname = add_options_page(__('OpenID options', 'openid'), __('OpenID', 'openid'), 8, 'global-openid-options', 'openid_options_page' );
 	add_action("load-$hookname", 'openid_js_setup' );
 	add_action("admin_head-$hookname", 'openid_style' );
 	
-
+	// all users can setup external OpenIDs
 	$hookname =	add_users_page(__('Your Accounts', 'openid'), __('Your Accounts', 'openid'), 
 		'read', 'openid_accounts', 'openid_profile_panel' );
 	add_action("admin_head-$hookname", 'openid_style' );
 	add_action("load-$hookname", create_function('', 'wp_enqueue_script("admin-forms");'));
 	add_action("load-$hookname", 'openid_profile_management' );
 
-
+	// additional options for users authorized to use OpenID provider
 	$user = wp_get_current_user();
 	if ($user->has_cap('use_openid_provider')) {
 		add_action('show_user_profile', 'openid_extend_profile', 5);
 		add_action('profile_update', 'openid_profile_update');
+		add_action('admin_head-profile.php', 'openid_style');
 
 		if (!get_usermeta($user->ID, 'openid_enable_delegation')) {
 			$hookname =	add_submenu_page('profile.php', __('Your Trusted Sites', 'openid'), 
@@ -57,9 +59,6 @@ function openid_admin_panels() {
 			add_action("load-$hookname", create_function('', 'wp_enqueue_script("admin-forms");'));
 		}
 	}
-
-	global $pagenow;
-	if ($pagenow == 'profile.php') add_action("admin_head", 'openid_style' );
 }
 
 
@@ -202,7 +201,7 @@ function openid_options_page() {
 			<p><?php printf(__('Occasionally, the WordPress OpenID tables don\'t get setup properly, and it may help '
 				. 'to %srebuild the tables%s.  Don\'t worry, this won\'t cause you to lose any data... it just '
 				. 'rebuilds a couple of tables that hold only temporary data.', 'openid'), 
-			'<a href="'.wp_nonce_url(sprintf('?page=%s&action=rebuild_tables', $_REQUEST['page']), 'openid-rebuild_tables').'">', '</a>') ?></p>
+			'<a href="' . wp_nonce_url(add_query_arg('action', 'rebuild_tables'), 'openid-rebuild_tables') . '">', '</a>') ?></p>
 
 			<h2><?php _e('OpenID Provider Options', 'openid') ?></h2>
 			<?php 
@@ -210,16 +209,16 @@ function openid_options_page() {
 				$current_user_url = get_author_posts_url($current_user->ID);
 			?>
 
-			<p>This plugin includes an OpenID Provider that allows authorized 
-			users to use their <em>Author Posts URL</em> as an OpenID, either using their 
-			local WordPress credentials, or by delegating to another OpenID Provider.</p>
+			<p><?php _e('This plugin includes an OpenID Provider that allows authorized '
+			. 'users to use their <em>Author Posts URL</em> as an OpenID, either using their '
+			. 'local WordPress credentials, or by delegating to another OpenID Provider.', 'openid'); ?></p>
 
 			<table class="form-table optiontable editform" cellspacing="2" cellpadding="5" width="100%">
 				<tr valign="top">
 					<th scope="row"><?php _e('OpenID Capability', 'openid') ?></th>
 					<td>
 
-						<p>Choose which user roles are allowed to use the local OpenID Provider:</p>
+						<p><?php _e('Choose which user roles are allowed to use the local OpenID Provider:', 'openid'); ?></p>
 
 						<p>
 							<?php 
@@ -244,21 +243,23 @@ function openid_options_page() {
 					<th scope="row"><?php _e('Blog Owner', 'openid') ?></th>
 					<td>
 
-						<p>Authorized Users on this blog can use their author URL (ie. 
-						<em><?php printf('<a href="%1$s">%1$s</a>', $current_user_url); ?></em>) as an 
-						OpenID.  The user designated as the "Blog Owner" will also be able to use
-						the blog home (<?php printf('<a href="%1$s">%1$s</a>', trailingslashit(get_option('home'))); ?>), 
-						as their OpenID.  If this is a single-user blog, you should set this to your main account.</p>
+						<p><?php printf(__('Authorized Users on this blog can use their author URL (ie. <em>%1$s</em>) as an OpenID. '
+								. 'The user designated as the "Blog Owner" will also be able to use the blog home (%2$s), as their '
+								. 'OpenID.  If this is a single-user blog, you should set this to your main account.', 'openid'),
+							sprintf('<a href="%1$s">%1$s</a>', $current_user_url), sprintf('<a href="%1$s">%1$s</a>', trailingslashit(get_option('home')))
+						); ?>
+						</p>
 
-						<p>If no blog owner is selected, then any user may use the blog home to initiate OpenID 
-						authentication and OP-driven identity selection will be used.</p>
+
+						<p><?php _e('If no blog owner is selected, then any user may use the blog home to initiate OpenID '
+						. 'authentication and OP-driven identity selection will be used.', 'openid'); ?></p>
 
 			<?php 
 				if (defined('OPENID_DISALLOW_OWNER') && OPENID_DISALLOW_OWNER) {
 					echo '
-						<p class="error">
-							A blog owner cannot be set for this WordPress blog.  To enable setting a blog owner, remove the follwoing line from your <code>wp-config.php</code>:<br />
-							<code style="margin:1em;">define("OPENID_DISALLOW_OWNER", 1);</code>
+						<p class="error">' . __('A blog owner cannot be set for this WordPress blog.  To enable setting a blog owner, '
+							. 'remove the following line from your <code>wp-config.php</code>:', 'openid') 
+							. '<br /><code style="margin:1em;">define("OPENID_DISALLOW_OWNER", 1);</code>
 						</p>';
 				} else {
 					$blog_owner = get_option('openid_blog_owner');
@@ -274,7 +275,7 @@ function openid_options_page() {
 						echo '</select>';
 
 					} else {
-						echo '<p class="error">Only the current blog owner ('.$blog_owner.') can set another user as the owner.</p>';
+						echo '<p class="error">' . sprintf(__('Only the current blog owner (%s) can set another user as the owner.', 'openid'), $blog_owner) . '</p>';
 					}
 				} 
 

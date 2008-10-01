@@ -826,11 +826,14 @@ function openid_add_identity($user_id, $url) {
 	return $wpdb->query( wpdb_prepare('INSERT INTO '.openid_identity_table().' (user_id,url,hash) VALUES ( %s, %s, MD5(%s) )', $user_id, $url, $url) );
 }
 
+
 /**
- * Get OpenID identities for the specified user.
+ * Get OpenIDs for the specified user.
+ *
  * @param int $user_id user id
+ * @return array OpenIDs for the user
  */
-function openid_get_identities($user_id) {
+function _get_user_openids($user_id) {
 	global $wpdb;
 	return $wpdb->get_col( wpdb_prepare('SELECT url FROM '.openid_identity_table().' WHERE user_id = %s', $user_id) );
 }
@@ -857,6 +860,7 @@ function openid_drop_identity($user_id, $identity_url) {
 	return $wpdb->query( wpdb_prepare('DELETE FROM '.openid_identity_table().' WHERE user_id = %s AND url = %s', $user_id, $identity_url) );
 }
 
+
 /**
  * Remove all identity urls from user.
  *
@@ -871,6 +875,7 @@ function openid_drop_all_identities($user_id) {
 function openid_error($msg) {
 	error_log('[OpenID] ' . $msg);
 }
+
 
 function openid_debug($msg) {
 	if (defined('WP_DEBUG') && WP_DEBUG) {
