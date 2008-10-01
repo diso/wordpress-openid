@@ -769,7 +769,7 @@ function openid_page($message, $title = '') {
 function openid_js_setup() {
 	if (is_single() || is_comments_popup() || is_admin()) {
 		wp_enqueue_script( 'jquery' );
-		wp_enqueue_script( 'jquery-ui-sortable' );
+		//wp_enqueue_script( 'jquery-ui-sortable' );
 		wp_enqueue_script('jquery.textnode', openid_plugin_url() . '/f/jquery.textnode.min.js', 
 			array('jquery'), OPENID_PLUGIN_REVISION);
 		wp_enqueue_script('jquery.xpath', openid_plugin_url() . '/f/jquery.xpath.min.js', 

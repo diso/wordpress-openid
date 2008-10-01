@@ -6,7 +6,7 @@
 
 
 // add OpenID input field to wp-login.php
-add_action( 'login_head', 'openid_style');
+add_action( 'login_head', 'openid_wp_login_head');
 add_action( 'login_form', 'openid_wp_login_form');
 add_action( 'register_form', 'openid_wp_register_form');
 add_action( 'wp_authenticate', 'openid_wp_authenticate' );
@@ -55,6 +55,13 @@ function openid_login_errors() {
 	}
 }
 
+function openid_wp_login_head() {
+	openid_style();
+	wp_enqueue_script('jquery.xpath', openid_plugin_url() . '/f/jquery.xpath.min.js', 
+		array('jquery'), OPENID_PLUGIN_REVISION);
+	wp_print_scripts(array('jquery.xpath'));
+}
+
 /**
  * Add OpenID input field to wp-login.php
  *
@@ -82,13 +89,34 @@ function openid_wp_login_form() {
  * @action: register_form
  **/
 function openid_wp_register_form() {
-	echo '<p>';
+	global $wp_version;
+
+	$link_class = 'openid_link';
+	if ($wp_version < '2.5') { $link_class .= ' legacy'; }
+
 	if (get_option('openid_required_for_registration')) {
-		printf(__('New users must use %s.', 'openid'), '<a class="openid_link" href="'.get_option('siteurl').'/wp-login.php">OpenID</a>');
+		$label = __('Register using your %s url.', 'openid');
+
+		echo '
+		<script type="text/javascript">
+			jQuery(function() {
+				jQuery("#user_login/..").hide();
+				jQuery("#user_email/..").hide();
+				jQuery("#reg_passmail").hide();
+			});
+		</script>';
+
 	} else {
-		printf(__('For faster registration, just %s login with %s.', 'openid'), '<a href="'.get_option('siteurl').'/wp-login.php">', '<span class="openid_link">'.__('OpenID', 'openid').'</span></a>');
+		echo '<hr />';
+		$label = __('Or register using your %s url.', 'openid');
+		$style = 'margin-top: 1em;';
 	}
-	echo '</p>';
+
+	echo '
+	<p style="'.$style.'">
+		<label>'.sprintf($label, '<a class="'.$link_class.'" href="http://openid.net/">'.__('OpenID', 'openid').'</a>').'<br/>
+		<input type="text" name="openid_identifier" id="openid_identifier" class="input openid_identifier" value="" size="20" tabindex="25" /></label>
+	</p>';
 }
 
 
