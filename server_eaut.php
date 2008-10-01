@@ -12,7 +12,9 @@ function openid_eaut_mapper($email) {
 	if ($user) $user = new WP_User($user->ID);
 
 	if ($user && $user->has_cap('use_openid_provider')) {
-		if (get_usermeta($user->ID, 'openid_enable_delegation')) {
+		if ($user->user_login == get_option('openid_blog_owner')) {
+			$openid = get_option('home');
+		} elseif (get_usermeta($user->ID, 'openid_enable_delegation')) {
 			$openid = get_usermeta($user->ID, 'openid_delegate');
 		} else {
 			$openid = get_author_posts_url($user->ID);
