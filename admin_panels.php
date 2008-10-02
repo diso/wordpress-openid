@@ -592,7 +592,7 @@ function openid_printSystemStatus() {
 	if (function_exists('xrds_meta')) {
 		$status[] = array( 'XRDS-Simple', 'info', 'XRDS-Simple plugin is installed.');
 	} else {
-		$status[] = array( 'XRDS-Simple', false, '<a href="http://diso.googlecode.com/svn/wordpress/wp-xrds-simple/branches/refactoring/">XRDS-Simple</a> plugin is not installed.  Some features may not work properly (including providing OpenIDs).');
+		$status[] = array( 'XRDS-Simple', false, '<a href="http://wordpress.org/extend/plugins/xrds-simple/">XRDS-Simple</a> plugin is not installed.  Some features may not work properly (including providing OpenIDs).');
 	}
 	
 	$openid_enabled = openid_enabled();

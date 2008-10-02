@@ -3,7 +3,7 @@ Contributors: wnorris, factoryjoe
 Tags: openid, authentication
 Requires at least: 2.2
 Tested up to: 2.6.2
-Stable tag: 2.2.2
+Stable tag: 3.0
 
 Allows WordPress to provide and consumer OpenIDs for authentication of users and comments.
 
@@ -64,14 +64,14 @@ The easiest way to display the fact that your blog accepts OpenIDs is to enable
 the "Comment Form" option for the plugin.  This will allow the normal website
 field to be used for OpenIDs as well.  If this doesn't display properly for
 your particular theme or you simply prefer to have a separate OpenID field, you
-can modify your comments.php template to include an "openid_identifier" text field as
+can modify your comments.php template to include an "openid\_identifier" text field as
 part of your comment form.  For the default theme, this might look like:
 
 	<p><input type="text" name="openid_identifier" id="openid_identifier" />
 	<label for="openid_identifier"><small>OpenID URL</small></label></p>
 
-The input element MUST have the name "openid\_url".  Additionally, using
-"openid\_url" for the id causes the field to be styled with an OpenID logo.  To
+The input element MUST have the name "openid\_identifier".  Additionally, using
+"openid\_identifier" for the id causes the field to be styled with an OpenID logo.  To
 remove this, you can override the stylesheet or simply change the element id.
 
 = How do I get help if I have a problem? =

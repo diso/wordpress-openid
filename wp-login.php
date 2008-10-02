@@ -70,16 +70,17 @@ function openid_wp_login_head() {
 function openid_wp_login_form() {
 	global $wp_version;
 
-	$link_class = 'openid_link';
-	if ($wp_version < '2.5') { $link_class .= ' legacy'; }
+	echo '<hr id="openid_split" style="clear: both; margin-bottom: 1.5em; border: 0; border-top: 1px solid #999; height: 1px;" />';
 
-	?>
-	<hr />
-	<p style="margin-top: 1em;">
-		<label><?php printf(__('Or login using your %s url:', 'openid'), '<a class="'.$link_class.'" href="http://openid.net/">'.__('OpenID', 'openid').'</a>') ?><br/>
+	echo '
+	<p>
+		<label style="display: block; margin-bottom: 5px;">' . __('Or login using an OpenID:', 'openid') . '</label>
 		<input type="text" name="openid_identifier" id="openid_identifier" class="input openid_identifier" value="" size="20" tabindex="25" /></label>
 	</p>
-	<?php
+
+	<p style="font-size: 0.8em;" id="what_is_openid">
+		<a href="http://openid.net/what/" target="_blank">'.__('What is OpenID?', 'openid').'</a>
+	</p>';
 }
 
 
@@ -90,9 +91,6 @@ function openid_wp_login_form() {
  **/
 function openid_wp_register_form() {
 	global $wp_version;
-
-	$link_class = 'openid_link';
-	if ($wp_version < '2.5') { $link_class .= ' legacy'; }
 
 	if (get_option('openid_required_for_registration')) {
 		$label = __('Register using an OpenID:', 'openid');
@@ -129,11 +127,6 @@ function openid_wp_register_form() {
 		<a href="http://openid.net/what/" target="_blank">'.__('What is OpenID?', 'openid').'</a>
 	</p>';
 
-	/*
-	if (!get_option('openid_required_for_registration')) {
-		echo '<br style="clear: left;" />';
-	}
-	 */
 }
 
 
