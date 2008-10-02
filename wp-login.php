@@ -95,28 +95,45 @@ function openid_wp_register_form() {
 	if ($wp_version < '2.5') { $link_class .= ' legacy'; }
 
 	if (get_option('openid_required_for_registration')) {
-		$label = __('Register using your %s url.', 'openid');
-
+		$label = __('Register using an OpenID:', 'openid');
 		echo '
 		<script type="text/javascript">
 			jQuery(function() {
 				jQuery("#user_login/..").hide();
 				jQuery("#user_email/..").hide();
 				jQuery("#reg_passmail").hide();
+				jQuery("#nav a:not(:first)").hide();
 			});
 		</script>';
-
 	} else {
-		echo '<hr />';
-		$label = __('Or register using your %s url.', 'openid');
-		$style = 'margin-top: 1em;';
+		$label = __('Or register using an OpenID:', 'openid');
+
+		echo '<hr id="openid_split" style="clear: both; margin-bottom: 1.5em; border: 0; border-top: 1px solid #999; height: 1px;" />';
+
+		echo '
+		<script type="text/javascript">
+			jQuery(function() {
+				jQuery("#reg_passmail").insertBefore("#openid_split");
+				jQuery("p.submit").clone().insertBefore("#openid_split");
+			});
+		</script>';
 	}
 
 	echo '
-	<p style="'.$style.'">
-		<label>'.sprintf($label, '<a class="'.$link_class.'" href="http://openid.net/">'.__('OpenID', 'openid').'</a>').'<br/>
+	<p>
+		<label style="display: block; margin-bottom: 5px;">' . $label . '</label>
 		<input type="text" name="openid_identifier" id="openid_identifier" class="input openid_identifier" value="" size="20" tabindex="25" /></label>
+	</p>
+
+	<p style="float: left; font-size: 0.8em;" id="what_is_openid">
+		<a href="http://openid.net/what/" target="_blank">'.__('What is OpenID?', 'openid').'</a>
 	</p>';
+
+	/*
+	if (!get_option('openid_required_for_registration')) {
+		echo '<br style="clear: left;" />';
+	}
+	 */
 }
 
 

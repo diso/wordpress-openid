@@ -172,8 +172,10 @@ function openid_server_auth_request($request) {
 				ob_start();
 
 				echo '<h1>'.__('OpenID Login Error', 'openid').'</h1>';
-				echo '<p>' . __('You cannot use Identifier Select if you are delegating your OpenID.  Instead, you will need to use your full OpenID when logging in.', 'openid') . '</p>';
-				echo '<p>' . sprintf(__('Your OpenID is: %s', 'openid'), '<strong>'.$author_url.'</strong>') . '</p>';
+				echo '<p>'; 
+				printf(__('Because you have delegated your OpenID, you cannot login with the URL <strong>%s</strong>. Instead, you must use your full OpenID when logging in.', 'openid'), trailingslashit(get_option('home')));  
+				echo'</p>';
+				echo '<p>' . sprintf(__('Your full OpenID is: %s', 'openid'), '<strong>'.$author_url.'</strong>') . '</p>';
 
 				echo '
 					<form method="post">

@@ -1,26 +1,28 @@
-=== WP-OpenID ===
-Contributors: wnorris, alanjcastonguay, factoryjoe
+=== OpenID ===
+Contributors: wnorris, factoryjoe
 Tags: openid, authentication
 Requires at least: 2.2
-Tested up to: 2.6.0
+Tested up to: 2.6.2
 Stable tag: 2.2.2
 
-Allow the use of OpenID for authentication of users and commenters.
-
+Allows WordPress to provide and consumer OpenIDs for authentication of users and comments.
 
 == Description ==
 
-OpenID is an [open standard][] that lets you sign in to other sites on the Web
-using little more than your blog URL. This means less usernames and passwords
-to remember and less time spent signing up for new sites.  This plugin allows
-verified OpenIDs to be linked to existing user accounts for use as an
-alternative means of authentication.  Additionally, commenters may use their
-OpenID to assure their identity as the author of the comment and provide a
-framework for future OpenID-based services (reputation and trust, for
-example).
+OpenID is an [open standard][] that allows users to authenticate to websites
+without having to create a new password.  This plugin allows users to login to
+their local WordPress account using an OpenID, as well as enabling commenters
+to leave authenticated comments with OpenID.  Version 3.0 includes an OpenID
+provider as well, enabling users to login to OpenID-enabled sites using their
+own personal WordPress account. [XRDS-Simple][] is required for the OpenID
+Provider.
+
+Developer documention, which includes all of the public methods and hooks for
+integrating with and extending the plugin, can be found [here][dev-doc].
 
 [open standard]: http://openid.net/
-
+[XRDS-Simple]: http://wordpress.org/extend/plugins/xrds-simple/
+[dev-doc]: http://wiki.diso-project.org/WordPress-OpenID
 
 == Installation ==
 
@@ -28,7 +30,7 @@ This plugin follows the [standard WordPress installation method][]:
 
 1. Upload the `openid` folder to the `/wp-content/plugins/` directory
 1. Activate the plugin through the 'Plugins' menu in WordPress
-1. Configure the plugin through the 'WP-OpenID' section of the 'Options' menu
+1. Configure the plugin through the 'OpenID' section of the 'Options' menu
 
 [standard WordPress installation method]: http://codex.wordpress.org/Managing_Plugins#Installing_Plugins
 
@@ -84,6 +86,13 @@ report at <http://code.google.com/p/diso/issues/list>.
 
 
 == Changelog ==
+
+= version 3.0 =
+ - includes OpenID Provider
+ - supports OpenID delegation
+ - add experimental support for Email Address to URL Transformation
+ - many new hooks for extension and integration
+ - major code refactoring
 
 = version 2.2.2 =
  - fix bug with "unauthorized return_to URL" (only known problem with [openid.pl][])

@@ -39,8 +39,8 @@ function openid_admin_panels() {
 	add_action("admin_head-$hookname", 'openid_style' );
 	
 	// all users can setup external OpenIDs
-	$hookname =	add_users_page(__('Your Accounts', 'openid'), __('Your Accounts', 'openid'), 
-		'read', 'openid_accounts', 'openid_profile_panel' );
+	$hookname =	add_users_page(__('Your OpenIDs', 'openid'), __('Your OpenIDs', 'openid'), 
+		'read', 'your_openids', 'openid_profile_panel' );
 	add_action("admin_head-$hookname", 'openid_style' );
 	add_action("load-$hookname", create_function('', 'wp_enqueue_script("admin-forms");'));
 	add_action("load-$hookname", 'openid_profile_management' );
@@ -76,7 +76,7 @@ function openid_options_page() {
 				check_admin_referer('openid-rebuild_tables');
 				$store = openid_getStore();
 				$store->reset();
-				echo '<div class="updated"><p><strong>'.__('OpenID tables rebuilt.', 'openid').'</strong></p></div>';
+				echo '<div class="updated"><p><strong>'.__('OpenID cache refreshed.', 'openid').'</strong></p></div>';
 				break;
 		}
 	}
@@ -135,18 +135,10 @@ function openid_options_page() {
 					<td>
 						<p><input type="checkbox" name="enable_approval" id="enable_approval" <?php 
 							echo get_option('openid_enable_approval') ? 'checked="checked"' : ''; ?> />
-							<label for="enable_approval"><?php _e('Enable OpenID comment auto-approval', 'openid') ?></label>
+							<label for="enable_approval"><?php _e('Automatically approve comments left with verified OpenIDs.', 'openid') ?></label>
 
-						<p><?php _e('For now this option will cause comments made with OpenIDs '
-						. 'to be automatically approved.  Since most spammers haven\'t started '
-						. 'using OpenID yet, this is probably pretty safe.  More importantly '
-						. 'however, this could be a foundation on which to build more advanced '
-						. 'automatic approval such as whitelists or a third-party trust service.', 'openid') ?>
-						</p>
-
-						<p><?php _e('Note that this option will cause OpenID authenticated comments '
-						. 'to appear, even if you have enabled the option, "An administrator must '
-						. 'always approve the comment".', 'openid') ?></p>
+						<p><?php _e('OpenID-verified comments will bypass comment moderation even if you have '
+							. 'enabled the option "An administrator must always approve the comment".', 'openid') ?></p>
 						
 					</td>
 				</tr>
@@ -157,7 +149,7 @@ function openid_options_page() {
 						<p><input type="checkbox" name="enable_commentform" id="enable_commentform" <?php
 						if( get_option('openid_enable_commentform') ) echo 'checked="checked"'
 						?> />
-							<label for="enable_commentform"><?php _e('Add OpenID text to the WordPress post comment form.', 'openid') ?></label></p>
+							<label for="enable_commentform"><?php _e('Add OpenID help text to the comment form.', 'openid') ?></label></p>
 
 						<p><?php printf(__('This will work for most themes derived from Kubrick or Sandbox.  '
 						. 'Template authors can tweak the comment form as described in the %sreadme%s.', 'openid'), 
@@ -168,12 +160,12 @@ function openid_options_page() {
 
 				<?php if (get_option('users_can_register')): ?>
 				<tr valign="top">
-					<th scope="row"><?php _e('Force OpenID Registration', 'openid') ?></th>
+					<th scope="row"><?php _e('Require OpenID', 'openid') ?></th>
 					<td>
 						<p><input type="checkbox" name="openid_required_for_registration" id="openid_required_for_registration" <?php
 						if( get_option('openid_required_for_registration') ) echo 'checked="checked"'
 						?> />
-							<label for="openid_required_for_registration"><?php _e('Force use of OpenID for new account registration.', 'openid') ?></label></p>
+							<label for="openid_required_for_registration"><?php _e('New accounts can only be created with verified OpenIDs.', 'openid') ?></label></p>
 					</td>
 				</tr>
 				<?php endif; ?>
@@ -196,12 +188,20 @@ function openid_options_page() {
 				</tr>
 				*/ ?>
 
+				<tr valign="top">
+					<th scope="row"><?php _e('Troubleshooting', 'openid') ?></th>
+					<td>
+						<p>
+
+						<p><?php printf(__('If users are experiencing problems logging in with OpenID, it may help to %1$srefresh the cache%2$s.', 'openid'),
+						'<a href="' . wp_nonce_url(add_query_arg('action', 'rebuild_tables'), 'openid-rebuild_tables') . '">', '</a>'); ?></p>
+					</td>
+				</tr>
+
 			</table>
 
-			<p><?php printf(__('Occasionally, the WordPress OpenID tables don\'t get setup properly, and it may help '
-				. 'to %srebuild the tables%s.  Don\'t worry, this won\'t cause you to lose any data... it just '
-				. 'rebuilds a couple of tables that hold only temporary data.', 'openid'), 
-			'<a href="' . wp_nonce_url(add_query_arg('action', 'rebuild_tables'), 'openid-rebuild_tables') . '">', '</a>') ?></p>
+			<br class="clear" />
+
 
 			<h2><?php _e('OpenID Provider Options', 'openid') ?></h2>
 			<?php 
@@ -209,16 +209,16 @@ function openid_options_page() {
 				$current_user_url = get_author_posts_url($current_user->ID);
 			?>
 
-			<p><?php _e('This plugin includes an OpenID Provider that allows authorized '
-			. 'users to use their <em>Author Posts URL</em> as an OpenID, either using their '
-			. 'local WordPress credentials, or by delegating to another OpenID Provider.', 'openid'); ?></p>
+			<p><?php _e('The OpenID Provider allows authorized '
+			. 'users to use their author URL as an OpenID, either using their '
+			. 'local WordPress username and password, or by delegating to another OpenID Provider.', 'openid'); ?></p>
 
 			<table class="form-table optiontable editform" cellspacing="2" cellpadding="5" width="100%">
 				<tr valign="top">
-					<th scope="row"><?php _e('OpenID Capability', 'openid') ?></th>
+					<th scope="row"><?php _e('Enable OpenID', 'openid') ?></th>
 					<td>
 
-						<p><?php _e('Choose which user roles are allowed to use the local OpenID Provider:', 'openid'); ?></p>
+						<p><?php _e('Enable the local OpenID Provider for these roles:', 'openid'); ?></p>
 
 						<p>
 							<?php 
@@ -243,22 +243,18 @@ function openid_options_page() {
 					<th scope="row"><?php _e('Blog Owner', 'openid') ?></th>
 					<td>
 
-						<p><?php printf(__('Authorized Users on this blog can use their author URL (ie. <em>%1$s</em>) as an OpenID. '
-								. 'The user designated as the "Blog Owner" will also be able to use the blog home (%2$s), as their '
-								. 'OpenID.  If this is a single-user blog, you should set this to your main account.', 'openid'),
+						<p><?php printf(__('Authorized accounts on this blog can use their author URL (i.e. <em>%1$s</em>) as an OpenID. '
+							. 'The Blog Owner will be able to use the blog address (%2$s) as their OpenID.  If this is a '
+							. 'single-user blog, you should set this to your account.', 'openid'),
 							sprintf('<a href="%1$s">%1$s</a>', $current_user_url), sprintf('<a href="%1$s">%1$s</a>', trailingslashit(get_option('home')))
 						); ?>
 						</p>
 
-
-						<p><?php _e('If no blog owner is selected, then any user may use the blog home to initiate OpenID '
-						. 'authentication and OP-driven identity selection will be used.', 'openid'); ?></p>
-
 			<?php 
 				if (defined('OPENID_DISALLOW_OWNER') && OPENID_DISALLOW_OWNER) {
 					echo '
-						<p class="error">' . __('A blog owner cannot be set for this WordPress blog.  To enable setting a blog owner, '
-							. 'remove the following line from your <code>wp-config.php</code>:', 'openid') 
+						<p class="error">' . __('A Blog Owner cannot be set for this blog.  To set a Blog Owner, '
+							. 'first remove the following line from your <code>wp-config.php</code>:', 'openid') 
 							. '<br /><code style="margin:1em;">define("OPENID_DISALLOW_OWNER", 1);</code>
 						</p>';
 				} else {
@@ -275,7 +271,7 @@ function openid_options_page() {
 						echo '</select>';
 
 					} else {
-						echo '<p class="error">' . sprintf(__('Only the current blog owner (%s) can set another user as the owner.', 'openid'), $blog_owner) . '</p>';
+						echo '<p class="error">' . sprintf(__('Only the current Blog Owner (%s) can change this setting.', 'openid'), $blog_owner) . '</p>';
 					}
 				} 
 
@@ -324,9 +320,9 @@ function openid_profile_panel() {
 
 	<div class="wrap">
 		<form action="<?php printf('%s?page=%s', $_SERVER['PHP_SELF'], $_REQUEST['page']); ?>" method="post">
-			<h2><?php _e('Your Verified Accounts', 'openid') ?></h2>
+			<h2><?php _e('Your Verified OpenIDs', 'openid') ?></h2>
 
-			<p><?php _e('You may setup one or more OpenIDs to be used with this account.  This will '
+			<p><?php _e('You may associate one or more OpenIDs with your account.  This will '
 			. 'allow you to login to WordPress with your OpenID instead of a username and password.  '
 			. '<a href="http://openid.net/what/" target="_blank">Learn more...</a>', 'openid')?></p>
 
@@ -372,13 +368,13 @@ function openid_profile_panel() {
 		<form method="post">
 		<table class="form-table">
 			<tr>
-				<th scope="row"><label for="openid_identifier"><?php _e('Add Account', 'openid') ?></label></th>
+				<th scope="row"><label for="openid_identifier"><?php _e('Add OpenID', 'openid') ?></label></th>
 				<td><input id="openid_identifier" name="openid_identifier" /></td>
 			</tr>
 		</table>
 		<?php wp_nonce_field('openid-add_openid'); ?>
 		<p class="submit">
-			<input type="submit" value="<?php _e('Add', 'openid') ?>" />
+			<input type="submit" value="<?php _e('Add OpenID', 'openid') ?>" />
 			<input type="hidden" name="action" value="add" >
 		</p>
 		</form>
@@ -439,20 +435,21 @@ function openid_manage_trusted_sites() {
 		update_usermeta($user->ID, 'openid_trusted_sites', array_filter($trusted_sites));
 
 		if ($count) {
-			echo '<div class="updated"><p>'.__('Revoked access for '.$count.' trusted site' . ($count>1 ? 's' : '') . '.').'</p></div>';
+			echo '<div class="updated"><p>'.__('Deleted '.$count.' trusted site' . ($count>1 ? 's' : '') . '.').'</p></div>';
 		}
 		break;
 	}
 ?>
 
 	<div class="wrap">
-		<h2>Your Trusted Sites</h2>
+		<h2><?php _e('Your Trusted Sites', 'openid'); ?></h2>
 
-		<p><?php _e('You will not be asked to approve login requests for your trusted sites.' , 'openid'); ?></p>
+		<p><?php _e('This is a list of sites that you can automatically login to using your OpenID account.  '
+			. 'You will not be asked to approve OpenID login requests for your trusted sites.' , 'openid'); ?></p>
 
 		<form method="post">
 			<div class="tablenav">
-				<input type="submit" value="<?php _e('Revoke Access', 'openid'); ?>" name="deleteit" class="button-secondary delete" />
+				<input type="submit" value="<?php _e('Delete', 'openid'); ?>" name="deleteit" class="button-secondary delete" />
 				<input type="hidden" name="action" value="delete" />
 				<?php wp_nonce_field('openid-delete_trusted_sites'); ?>
 			</div>
@@ -493,20 +490,36 @@ function openid_manage_trusted_sites() {
 
 			</tbody>
 			</table>
+
+			<div class="tablenav">
+				<br class="clear" />
+			</div>
 		</form>
 
+		<br class="clear" />
+
 		<form method="post">
-		<table class="form-table">
-			<tr>
-				<th scope="row"><label for="sites"><?php _e('Add Sites', 'openid') ?></label></th>
-				<td><textarea id="sites" name="sites" cols="60" rows="5"></textarea><br />(One per line)</td>
-			</tr>
-		</table>
-		<?php wp_nonce_field('openid-add_trusted_sites'); ?>
-		<p class="submit">
-			<input type="submit" value="<?php _e('Add Sites', 'openid') ?>" />
-			<input type="hidden" name="action" value="add" >
-		</p>
+
+			<h3><?php _e('Import Trusted Sites', 'openid'); ?></h3>
+
+			<p>Enter a list of URLs to be added to your Trusted Sites.</p>
+
+			<table class="form-table" style="margin-top: 0">
+				<tr>
+					<th scope="row"><label for="sites"><?php _e('Add Sites', 'openid') ?></label></th>
+					<td>
+						<textarea id="sites" name="sites" cols="60" rows="5"></textarea><br />(One URL per line)
+					</td>
+				</tr>
+			</table>
+
+			<?php wp_nonce_field('openid-add_trusted_sites'); ?>
+
+			<p class="submit">
+				<input type="submit" value="<?php _e('Add Sites', 'openid') ?>" />
+				<input type="hidden" name="action" value="add" >
+			</p>
+
 		</form>
 	</div>
 <?php
@@ -640,7 +653,7 @@ function openid_profile_management() {
 				if ($user->ID == $userid) {
 					$error = __('You already have this OpenID!', 'openid');
 				} else {
-					$error = __('This OpenID is already connected to another user.', 'openid');
+					$error = __('This OpenID is already associated with another user.', 'openid');
 				}
 				return;
 			}
@@ -673,7 +686,7 @@ function openid_profile_delete_openids($delete) {
 		$html = '
 			<h1>'.__('OpenID Warning', 'openid').'</h1>
 			<form action='.sprintf('%s?page=%s', $_SERVER['PHP_SELF'], $_REQUEST['page']).' method="post">
-			<p>'.__('Are you sure you want to delete all of your verified accounts? Doing so may interfere with your ability to login.', 'openid').'</p>
+			<p>'.__('Are you sure you want to delete all of your OpenID associations? Doing so may prevent you from logging in.', 'openid').'</p>
 			<div class="submit">
 				<input type="submit" name="confirm" value="'.__("Yes I'm sure. Delete.", 'openid').'" />
 				<input type="submit" name="cancel" value="'.__("No, don't delete.", 'openid').'" />
@@ -703,7 +716,7 @@ function openid_profile_delete_openids($delete) {
 	}
 
 	if ($count) {
-		openid_message(sprintf(__('Successfully removed %1$s account%2$s.', 'openid'), $count, ($count>1 ? 's' : '')));
+		openid_message(sprintf(__('Deleted %1$s OpenID association%2$s.', 'openid'), $count, ($count>1 ? 's' : '')));
 		openid_status('success');
 
 		// ensure that profile URL is still a verified OpenID
@@ -721,7 +734,7 @@ function openid_profile_delete_openids($delete) {
 		return;
 	}
 		
-	openid_message(__('OpenID delete failed: Unknown reason.', 'openid'));
+	openid_message(__('OpenID association delete failed: Unknown reason.', 'openid'));
 	openid_status('error');
 }
 
@@ -741,10 +754,10 @@ function openid_finish_verify($identity_url) {
 		if (empty($message)) openid_message('Unable to authenticate OpenID.');
 	} else {
 		if( !openid_add_identity($user->ID, $identity_url) ) {
-			openid_message(__('OpenID assertion successful, but this URL is already claimed by '
-			. 'another user on this blog. This is probably a bug.', 'openid') . ' ' . $identity_url);
+			openid_message(__('OpenID assertion successful, but this URL is already associated with '
+			. 'another user on this blog. This is probably a bug.', 'openid'));
 		} else {
-			openid_message(sprintf(__('Successfully added OpenID: %s', 'openid'), openid_display_identity($identity_url) ));
+			openid_message(sprintf(__('Added association with OpenID: %s', 'openid'), openid_display_identity($identity_url) ));
 			openid_status('success');
 			
 			// ensure that profile URL is a verified OpenID
@@ -849,7 +862,7 @@ function openid_profile_update($user_id) {
 		$delegate = Auth_OpenID::normalizeUrl($_POST['openid_delegate']);
 
 		if(openid_server_update_delegation_info($user_id, $delegate)) {
-			openid_message(sprintf(__('Successfully gathered OpenID information for delegate URL %s', 'openid'), '<strong>'.$delegate.'</strong>'));
+			openid_message(sprintf(__('Gathered OpenID information for delegate URL %s', 'openid'), '<strong>'.$delegate.'</strong>'));
 			openid_status('success');
 		} else {
 			openid_message(sprintf(__('Unable to find any OpenID information for delegate URL %s', 'openid'), '<strong>'.$delegate.'</strong>'));
