@@ -860,13 +860,6 @@ function openid_profile_update($user_id) {
 	} else {
 		$old_delegate = get_usermeta($user_id, 'openid_delegate');
 		$delegate = Auth_OpenID::normalizeUrl($_POST['openid_delegate']);
-		$home = trailingslashit(get_option('home'));
-
-		if (strpos($delegate, $home) !== FALSE && strpos($delegate, $home) == 0) {
-			openid_message(sprintf(__('Cannot delegate to an OpenID on this same blog (%s).', 'openid'), '<strong>'.$delegate.'</strong>'));
-			openid_status('error');
-			return;
-		}
 
 		if(openid_server_update_delegation_info($user_id, $delegate)) {
 			openid_message(sprintf(__('Gathered OpenID information for delegate URL %s', 'openid'), '<strong>'.$delegate.'</strong>'));
