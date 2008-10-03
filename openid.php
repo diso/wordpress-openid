@@ -27,7 +27,7 @@ require_once 'common.php';
 require_once 'compatibility.php';
 require_once 'admin_panels.php';
 require_once 'comments.php';
-require_once 'wp-login.php';
+require_once 'login.php';
 require_once 'server.php';
 require_once 'store.php';
 restore_include_path();
