@@ -96,6 +96,8 @@ report at <http://code.google.com/p/diso/issues/list>.
 = version 3.1 =
  - added hidden constant to set custom comments post page (OPENID_COMMENTS_POST_PAGE)
  - additional option to skip name and email check for OpenID comments
+ - use preferred username (from SREG) if possible when creating new account
+ - numerous bug fixes, including bug with registration form
 
 = version 3.0 =
  - includes OpenID Provider

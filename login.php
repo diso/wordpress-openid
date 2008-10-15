@@ -17,7 +17,7 @@ add_action( 'init', 'openid_login_errors' );
 add_filter( 'openid_consumer_return_urls', 'openid_wp_login_return_url' );
 
 // WordPress 2.5 has wp_authenticate in the wrong place
-if (strpos($wp_version, '2.5') !== false && strpos($wp_version, '2.5') == 0) {
+if (strpos($wp_version, '2.5') === 0) {
 	add_action( 'init', 'wp25_login_openid' );
 }
 
