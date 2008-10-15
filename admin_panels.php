@@ -541,7 +541,8 @@ function openid_printSystemStatus() {
 
 	$paths = explode(PATH_SEPARATOR, get_include_path());
 	for($i=0; $i<sizeof($paths); $i++ ) { 
-		$paths[$i] = realpath($paths[$i]); 
+		$paths[$i] = @realpath($paths[$i]); 
+		if (empty($paths[$i])) unset($paths[$i]);
 	}
 	
 	$status = array();
