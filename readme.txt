@@ -93,6 +93,10 @@ report at <http://code.google.com/p/diso/issues/list>.
 
 == Changelog ==
 
+= version 3.1 =
+ - added hidden constant to set custom comments post page (OPENID_COMMENTS_POST_PAGE)
+ - additional option to skip name and email check for OpenID comments
+
 = version 3.0 =
  - includes OpenID Provider
  - supports OpenID delegation
