@@ -100,7 +100,8 @@ function openid_wp_register_form() {
 				jQuery("#user_login/..").hide();
 				jQuery("#user_email/..").hide();
 				jQuery("#reg_passmail").hide();
-				jQuery("#nav a:not(:first)").hide();
+				var link = jQuery("#nav a:first");
+				jQuery("#nav").text("").append(link);
 			});
 		</script>';
 	} else {
