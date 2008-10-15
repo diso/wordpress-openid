@@ -9,11 +9,10 @@
 add_action( 'login_head', 'openid_wp_login_head');
 add_action( 'login_form', 'openid_wp_login_form');
 add_action( 'register_form', 'openid_wp_register_form');
+add_action( 'register_post', 'openid_register_post');
 add_action( 'wp_authenticate', 'openid_wp_authenticate' );
 add_action( 'openid_finish_auth', 'openid_finish_login' );
-if (get_option('openid_required_for_registration')) {
-	add_filter('registration_errors', 'openid_registration_errors');
-}
+add_filter( 'registration_errors', 'openid_registration_errors');
 add_action( 'init', 'openid_login_errors' );
 add_filter( 'openid_consumer_return_urls', 'openid_wp_login_return_url' );
 
@@ -197,8 +196,25 @@ function wp25_login_openid() {
 }
 
 function openid_registration_errors($errors) {
-	$errors->add('openid_only', __('New users must register using OpenID.', 'openid'));
+	if (get_option('openid_required_for_registration')) {
+		$errors = new WP_Error();
+
+		if (empty($_POST['openid_identifier'])) {
+			$errors->add('openid_only', __('<strong>ERROR</strong>: ', 'openid') . __('New users must register using OpenID.', 'openid'));
+		}
+	}
+
+	if (!empty($_POST['openid_identifier'])) {
+		$errors->add('invalid_openid', __('<strong>ERROR</strong>: ', 'openid') . openid_message());
+	}
+
 	return $errors;
+}
+
+function openid_register_post($errors) {
+	if (!empty($_POST['openid_identifier'])) {
+		wp_signon(array('user_login'=>'openid', 'user_password'=>'openid'));
+	}
 }
 
 function openid_wp_login_return_url($urls) {
