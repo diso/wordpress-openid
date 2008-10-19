@@ -148,7 +148,7 @@ function openid_activate_plugin() {
 	add_option( 'openid_xrds_returnto', true );
 	add_option( 'openid_xrds_idib', true );
 	add_option( 'openid_xrds_eaut', true );
-	add_option( 'openid_comment_display_length', 12 );
+	add_option( 'openid_comment_displayname_length', 12 );
 
 	openid_create_tables();
 	openid_migrate_old_data();
@@ -571,7 +571,7 @@ function openid_get_user_data($identity_url) {
 	if ($data['display_name'] == $identity_url) {
 		$parts = parse_url($identity_url);
 		if ($parts !== false) {
-			$data['display_name'] = preg_replace('/^www./', '', $parts['host']) . substr($parts['path'], 0, get_option('openid_comment_display_length'));
+			$data['display_name'] = preg_replace('/^www./', '', $parts['host']) . substr($parts['path'], 0, get_option('openid_comment_displayname_length'));
 		}
 	}
 
