@@ -143,7 +143,7 @@ function openid_options_page() {
 						<?php if (get_option('require_name_email')) { ?>
 						<p><input type="checkbox" name="no_require_name" id="no_require_name" <?php 
 							echo get_option('openid_no_require_name') ? 'checked="checked"' : ''; ?> />
-							<label for="no_require_name"><?php _e('Bypass check for name and email address for comments left with verified OpenIDs.', 'openid') ?></label>
+							<label for="no_require_name"><?php _e('Don\'t require name and e-mail for comments left with verified OpenIDs.', 'openid') ?></label>
 						</p>
 						<?php } ?>
 						
