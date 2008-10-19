@@ -9,7 +9,7 @@
  License: Dual GPL (http://www.fsf.org/licensing/licenses/info/GPLv2.html) and Modified BSD (http://www.fsf.org/licensing/licenses/index_html#ModifiedBSD)
  */
 
-define ( 'OPENID_PLUGIN_REVISION', preg_replace( '/\$Rev: (.+) \$/', 'svn-\\1',
+define ( 'OPENID_PLUGIN_REVISION', preg_replace( '/\$Rev: (.+) \$/', '\\1',
 	'$Rev: 518 $') ); // this needs to be on a separate line so that svn:keywords can work its magic
 
 // last plugin revision that required database schema changes
@@ -32,6 +32,10 @@ require_once 'server.php';
 require_once 'store.php';
 restore_include_path();
 
+// run activation function if new revision of plugin
+if (get_option('openid_plugin_revision') !== false && OPENID_PLUGIN_REVISION != get_option('openid_plugin_revision')) {
+	openid_activate_plugin();
+}
 
 // -- public functions
 

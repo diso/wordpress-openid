@@ -155,6 +155,8 @@ function openid_activate_plugin() {
 
 	wp_schedule_event(time(), 'hourly', 'cleanup_openid');
 
+	// set current revision
+	update_option( 'openid_plugin_revision', OPENID_PLUGIN_REVISION );
 
 
 	// cleanup old option names
