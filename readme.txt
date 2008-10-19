@@ -46,7 +46,7 @@ This plugin follows the [standard WordPress installation method][]:
 = Why do I get blank screens when I activate the plugin? =
 
 In some cases the plugin may have problems if not enough memory has been
-allocated to PHP.  Try ensuring that the PHP memory_limit is at least 8MB
+allocated to PHP.  Try ensuring that the PHP memory\_limit is at least 8MB
 (limits of 64MB are not uncommon).
 
 = Why don't `https` OpenIDs work? =
@@ -94,10 +94,10 @@ report at <http://code.google.com/p/diso/issues/list>.
 == Changelog ==
 
 = version 3.1 =
- - added hidden constant to set custom comments post page (OPENID_COMMENTS_POST_PAGE)
+ - added hidden constant to set custom comments post page (OPENID\_COMMENTS\_POST\_PAGE)
  - additional option to skip name and email check for OpenID comments
  - use preferred username (from SREG) if possible when creating new account
- - truncate long URLs when used as display_name for comments
+ - truncate long URLs when used as display\_name for comments
  - numerous bug fixes, including bug with registration form
 
 = version 3.0 =
@@ -108,9 +108,9 @@ report at <http://code.google.com/p/diso/issues/list>.
  - major code refactoring
 
 = version 2.2.2 =
- - fix bug with "unauthorized return_to URL" (only known problem with [openid.pl][])
+ - fix bug with "unauthorized return\_to URL" (only known problem with [openid.pl][])
  - fix bug with comments containing non-latin characters
- - respect CUSTOM_USER_META_TABLE constant if present (also added CUSTOM_OPENID_IDENTITY_TABLE constant)
+ - respect CUSTOM\_USER\_META\_TABLE constant if present (also added CUSTOM\_OPENID\_IDENTITY\_TABLE constant)
  - add experimental support for Identity in the Browser
 
 = version 2.2.1 =
