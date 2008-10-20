@@ -16,6 +16,8 @@ add_action( 'wp_head', 'openid_provider_link_tags');
 function openid_provider_xrds_simple($xrds) {
 	global $wp_roles;
 
+	if (!$wp_roles) $wp_roles = new WP_Roles();
+
 	$provider_enabled = false;
 	foreach ($wp_roles->role_names as $key => $name) {
 		$role = $wp_roles->get_role($key);
@@ -32,8 +34,9 @@ function openid_provider_xrds_simple($xrds) {
 	
 	if (!$user && get_option('openid_blog_owner')) {
 		$url_parts = parse_url(get_option('home'));
+		$script = '/' . preg_replace('/index.php$/', '', $url_parts['path']);
 
-		if ('/' . $url_parts['path'] != $_SERVER['REQUEST_URI'] && !is_admin()) {
+		if ($script != $_SERVER['SCRIPT_NAME'] && !is_admin()) {
 			return $xrds;
 		}
 
