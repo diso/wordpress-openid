@@ -34,9 +34,9 @@ function openid_provider_xrds_simple($xrds) {
 	
 	if (!$user && get_option('openid_blog_owner')) {
 		$url_parts = parse_url(get_option('home'));
-		$script = '/' . preg_replace('/index.php$/', '', $url_parts['path']);
+		$script = preg_replace('/index.php$/', '', $_SERVER['SCRIPT_NAME']);
 
-		if ($script != $_SERVER['SCRIPT_NAME'] && !is_admin()) {
+		if ('/' . $url_parts['path'] != $script && !is_admin()) {
 			return $xrds;
 		}
 
