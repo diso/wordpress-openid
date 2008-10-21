@@ -3,7 +3,7 @@ Contributors: wnorris, factoryjoe
 Tags: openid, authentication
 Requires at least: 2.2
 Tested up to: 2.6.2
-Stable tag: 3.1
+Stable tag: 3.1.1
 
 Allows WordPress to provide and consumer OpenIDs for authentication of users and comments.
 
@@ -92,6 +92,9 @@ report at <http://code.google.com/p/diso/issues/list>.
 
 
 == Changelog ==
+
+= version 3.1.1 =
+ - fix bug with OpenID Provider XRDS code that prevents ability to login to some sites (like plaxo.com)
 
 = version 3.1 =
  - added hidden constant to set custom comments post page (OPENID\_COMMENTS\_POST\_PAGE)
