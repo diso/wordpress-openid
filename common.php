@@ -398,7 +398,8 @@ function openid_start_login( $claimed_url, $action, $arguments = null, $return_t
 		$trust_root = preg_replace('/^http\:/', 'https:', $trust_root);
 	}  
 		
-	$_SESSION['openid_return_to'] = $return_to;
+	$_SESSION['openid_return_to'] = Auth_OpenID::appendArgs($return_to, $auth_request->return_to_args);
+
 	openid_doRedirect($auth_request, $trust_root, $return_to);
 	exit(0);
 }
