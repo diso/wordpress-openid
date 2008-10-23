@@ -92,12 +92,6 @@ function openid_getConsumer() {
 	static $consumer;
 
 	if (!$consumer) {
-		// setup source of randomness
-		$f = @fopen( '/dev/urandom', 'r');
-		if ($f === false) {
-			define( 'Auth_OpenID_RAND_SOURCE', null );
-		}
-
 		set_include_path( dirname(__FILE__) . PATH_SEPARATOR . get_include_path() );
 		require_once 'Auth/OpenID/Consumer.php';
 		restore_include_path();
