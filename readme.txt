@@ -21,7 +21,7 @@ their local WordPress account using an OpenID, as well as enabling commenters
 to leave authenticated comments with OpenID.  Version 3.0 includes an OpenID
 provider as well, enabling users to login to OpenID-enabled sites using their
 own personal WordPress account. [XRDS-Simple][] is required for the OpenID
-Provider.
+Provider and some features of the OpenID Consumer.
 
 Developer documention, which includes all of the public methods and hooks for
 integrating with and extending the plugin, can be found [here][dev-doc].
