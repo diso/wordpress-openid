@@ -211,24 +211,20 @@ function openid_customer_error_handler($errno, $errmsg, $filename, $linenum, $va
  * @param string $return_to URL where the OpenID provider should return the user
  */
 function openid_doRedirect($auth_request, $trust_root, $return_to) {
+	$message = $auth_request->getMessage($trust_root, $return_to, false);
+
+	if (Auth_OpenID::isFailure($message)) {
+		return openid_error('Could not redirect to server: '.$message->message);
+	}
+
+	$_SESSION['openid_return_to'] = $message->getArg(Auth_OpenID_OPENID_NS, 'return_to');
+
+	// send 302 redirect or POST
 	if ($auth_request->shouldSendRedirect()) {
-		$trust_root = trailingslashit($trust_root);
 		$redirect_url = $auth_request->redirectURL($trust_root, $return_to);
-
-		if (Auth_OpenID::isFailure($redirect_url)) {
-			openid_error('Could not redirect to server: '.$redirect_url->message);
-		} else {
-			wp_redirect( $redirect_url );
-		}
+		wp_redirect( $redirect_url );
 	} else {
-		// Generate form markup and render it
-		$request_message = $auth_request->getMessage($trust_root, $return_to, false);
-
-		if (Auth_OpenID::isFailure($request_message)) {
-			openid_error('Could not redirect to server: '.$request_message->message);
-		} else {
-			openid_repost($auth_request->endpoint->server_url, $request_message->toPostArgs());
-		}
+		openid_repost($auth_request->endpoint->server_url, $message->toPostArgs());
 	}
 }
 
@@ -394,8 +390,6 @@ function openid_start_login( $claimed_url, $action, $arguments = null, $return_t
 		$trust_root = preg_replace('/^http\:/', 'https:', $trust_root);
 	}  
 		
-	$_SESSION['openid_return_to'] = Auth_OpenID::appendArgs($return_to, $auth_request->return_to_args);
-
 	openid_doRedirect($auth_request, $trust_root, $return_to);
 	exit(0);
 }
