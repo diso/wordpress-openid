@@ -276,28 +276,31 @@ function openid_migrate_old_data() {
 	$wpdb->query('DROP TABLE IF EXISTS ' . openid_table_prefix(true) . 'openid_nonces');
 	$wpdb->query('DROP TABLE IF EXISTS ' . openid_table_prefix(true) . 'openid_associations');
 	
-	// update old style of marking openid comments.  For performance reason, we 
-	// migrate them en masse rather than using set_comment_openid()
-	$comments_table = openid_table_prefix(true) . 'comments';
-	$comment_data = $wpdb->get_results(wpdb_prepare('SELECT comment_ID, comment_post_ID from ' . $comments_table . ' WHERE openid=%s OR comment_type=%s', 1, 'openid'));
-	if (!empty($comment_data)) {
-		$openid_comments = array();
-		foreach ($comment_data as $comment) {
-			if (!array_key_exists($comment->comment_post_ID, $openid_comments)) {
-				$openid_comments[$comment->comment_post_ID] = array();
+	$openid_column = $wpdb->get_row('SHOW COLUMNS FROM ' . openid_table_prefix(true) . 'comments LIKE "openid"');
+	if ($openid_column) {
+		// update old style of marking openid comments.  For performance reason, we 
+		// migrate them en masse rather than using set_comment_openid()
+		$comments_table = openid_table_prefix(true) . 'comments';
+		$comment_data = $wpdb->get_results(wpdb_prepare('SELECT comment_ID, comment_post_ID from ' . $comments_table . ' WHERE openid=%s OR comment_type=%s', 1, 'openid'));
+		if (!empty($comment_data)) {
+			$openid_comments = array();
+			foreach ($comment_data as $comment) {
+				if (!array_key_exists($comment->comment_post_ID, $openid_comments)) {
+					$openid_comments[$comment->comment_post_ID] = array();
+				}
+				$openid_comments[$comment->comment_post_ID][] = $comment->comment_ID;
 			}
-			$openid_comments[$comment->comment_post_ID][] = $comment->comment_ID;
+
+			foreach ($openid_comments as $post_id => $comments) {
+				$current = get_post_meta($comment->comment_post_ID, 'openid_comments', true);
+				if (!empty($current)) $comments = array_merge($comments, $current);
+				update_post_meta($post_id, 'openid_comments', array_unique($comments));
+			}
 		}
 
-		foreach ($openid_comments as $post_id => $comments) {
-			$current = get_post_meta($comment->comment_post_ID, 'openid_comments', true);
-			if (!empty($current)) $comments = array_merge($comments, $current);
-			update_post_meta($post_id, 'openid_comments', array_unique($comments));
-		}
+		@$wpdb->query('ALTER table ' . $comments_table . ' DROP COLUMN openid');
+		$wpdb->query(wpdb_prepare('UPDATE ' . $comments_table . ' SET comment_type=%s WHERE comment_type=%s', '', 'openid'));
 	}
-
-	@$wpdb->query('ALTER table ' . $comments_table . ' DROP COLUMN openid');
-	$wpdb->query(wpdb_prepare('UPDATE ' . $comments_table . ' SET comment_type=%s WHERE comment_type=%s', '', 'openid'));
 
 
 	// remove old style of marking openid users
