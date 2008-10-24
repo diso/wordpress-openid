@@ -147,6 +147,7 @@ function openid_activate_plugin() {
 	openid_create_tables();
 	openid_migrate_old_data();
 
+	wp_clear_scheduled_hook('cleanup_openid');
 	wp_schedule_event(time(), 'hourly', 'cleanup_openid');
 
 	// set current revision

@@ -93,6 +93,12 @@ report at <http://code.google.com/p/diso/issues/list>.
 
 == Changelog ==
 
+= version 3.1.2 =
+ - fix bug with return_to URL
+ - ensure source of randomness is set properly
+ - prevent duplicate cleanup_openid cron jobs
+ - prevent SQL errors on activation
+
 = version 3.1.1 =
  - fix bug with OpenID Provider XRDS code that prevents ability to login to some sites (like plaxo.com)
 
