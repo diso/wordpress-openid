@@ -187,6 +187,7 @@ function openid_cleanup() {
  * @see register_deactivation_hook
  */
 function openid_deactivate_plugin() {
+	wp_clear_scheduled_hook('cleanup_openid');
 	delete_option('openid_server_associations');
 	delete_option('openid_server_nonces');
 }
