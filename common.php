@@ -239,6 +239,7 @@ function finish_openid_auth() {
 
 	$consumer = openid_getConsumer();
 	$response = $consumer->complete($_SESSION['openid_return_to']);
+	unset($_SESSION['openid_return_to']);
 	openid_response($response);
 		
 	switch( $response->status ) {
