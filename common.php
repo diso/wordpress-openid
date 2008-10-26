@@ -199,6 +199,7 @@ function openid_deactivate_plugin() {
  */
 function openid_customer_error_handler($errno, $errmsg, $filename, $linenum, $vars) {
 	if( (2048 & $errno) == 2048 ) return;
+	if (strpos($errmsg, 'DOMDocument::loadXML') === 0) return;
 	openid_error( "Library Error $errno: $errmsg in $filename :$linenum");
 }
 
