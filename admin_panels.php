@@ -35,7 +35,7 @@ function openid_admin_notices_plugin_problem_warning() {
 function openid_admin_panels() {
 	// global options page
 	$hookname = add_options_page(__('OpenID options', 'openid'), __('OpenID', 'openid'), 8, 'global-openid-options', 'openid_options_page' );
-	add_action("load-$hookname", create_function('', 'add_thickbox();'));
+	add_action("load-$hookname", 'openid_js_setup' );
 	add_action("admin_head-$hookname", 'openid_style' );
 	
 	// all users can setup external OpenIDs
@@ -200,8 +200,6 @@ function openid_options_page() {
 					<td>
 						<p>
 
-						<p><?php printf(__('%1$sShow System Status%2$s that may be helpful when troubleshooting.', 'openid'), 
-							'<a id="status_thickbox" href="#TB_inline?height=600&width=800&inlineId=system_status" title="System Status" class="thickbox">', '</a>'); ?></p>
 						<p><?php printf(__('If users are experiencing problems logging in with OpenID, it may help to %1$srefresh the cache%2$s.', 'openid'),
 						'<a href="' . wp_nonce_url(add_query_arg('action', 'rebuild_tables'), 'openid-rebuild_tables') . '">', '</a>'); ?></p>
 					</td>
@@ -553,7 +551,6 @@ function openid_printSystemStatus() {
 	$status[] = array( 'Include Path', 'info', $paths );
 	
 	$status[] = array( 'WordPress version', 'info', $wp_version );
-	$status[] = array( 'PHP OpenID Library version', 'info', Auth_OpenID_VERSION );
 	$status[] = array( 'MySQL version', 'info', function_exists('mysql_get_client_info') ? mysql_get_client_info() : 'Mysql client information not available. Very strange, as WordPress requires MySQL.' );
 
 	$status[] = array('WordPress\' table prefix', 'info', isset($wpdb->base_prefix) ? $wpdb->base_prefix : $wpdb->prefix );
@@ -610,12 +607,15 @@ function openid_printSystemStatus() {
 	$status[] = array( '<strong>Overall Plugin Status</strong>', ($openid_enabled), 
 		($openid_enabled ? '' : 'There are problems above that must be dealt with before the plugin can be used.') );
 
-	if(!$openid_enabled ) {	// Display status information
+	if( $openid_enabled ) {	// Display status information
+		echo'<div id="openid_rollup" class="updated">
+		<p><strong>' . __('Status information:', 'openid') . '</strong> ' . __('All Systems Nominal', 'openid') 
+		. '<small> (<a href="#" id="openid_rollup_link">' . __('Toggle More/Less', 'openid') . '</a>)</small> </p>';
+	} else {
 		echo '<div class="error"><p><strong>' . __('Plugin is currently disabled. Fix the problem, then Deactivate/Reactivate the plugin.', 'openid') 
-		. '</strong></p></div>';
+		. '</strong></p>';
 	}
-
-	echo '<div id="system_status" style="display: none;">';
+	echo '<div>';
 	foreach( $status as $s ) {
 		list ($name, $state, $message) = $s;
 		echo '<div><strong>';
@@ -630,7 +630,7 @@ function openid_printSystemStatus() {
 		echo (is_array($message) ? '<ul><li>' . implode('</li><li>', $message) . '</li></ul>' : $message);
 		echo '</div>';
 	}
-	echo '</div>';
+	echo '</div></div>';
 }
 
 

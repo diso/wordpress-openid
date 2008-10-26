@@ -99,7 +99,6 @@ report at <http://code.google.com/p/diso/issues/list>.
  - prevent duplicate cleanup_openid cron jobs
  - prevent SQL errors on activation
  - suppress verbose error logging with XML parsing
- - use thickbox to display system status on admin page
 
 = version 3.1.1 =
  - fix bug with OpenID Provider XRDS code that prevents ability to login to some sites (like plaxo.com)
