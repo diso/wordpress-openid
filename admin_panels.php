@@ -551,6 +551,7 @@ function openid_printSystemStatus() {
 	$status[] = array( 'Include Path', 'info', $paths );
 	
 	$status[] = array( 'WordPress version', 'info', $wp_version );
+	$status[] = array( 'PHP OpenID Library Version', 'info', Auth_OpenID_VERSION );
 	$status[] = array( 'MySQL version', 'info', function_exists('mysql_get_client_info') ? mysql_get_client_info() : 'Mysql client information not available. Very strange, as WordPress requires MySQL.' );
 
 	$status[] = array('WordPress\' table prefix', 'info', isset($wpdb->base_prefix) ? $wpdb->base_prefix : $wpdb->prefix );
