@@ -93,6 +93,9 @@ report at <http://code.google.com/p/diso/issues/list>.
 
 == Changelog ==
 
+= version 3.1.3 =
+ - fix error message if /dev/urandom is not readable
+
 = version 3.1.2 =
  - ensure source of randomness is set properly
  - prevent duplicate cleanup_openid cron jobs

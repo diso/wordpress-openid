@@ -23,7 +23,7 @@ if (file_exists(dirname(__FILE__) . '/openid')) {
 }
 
 // check source of randomness
-if (!is_readable('/dev/urandom')) define( 'Auth_OpenID_RAND_SOURCE', null );
+if (!@is_readable('/dev/urandom')) define( 'Auth_OpenID_RAND_SOURCE', null );
 
 set_include_path( $openid_include_path . PATH_SEPARATOR . get_include_path() );
 require_once 'common.php';
