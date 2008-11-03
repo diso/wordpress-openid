@@ -93,6 +93,9 @@ report at <http://code.google.com/p/diso/issues/list>.
 
 == Changelog ==
 
+= version 3.1.4 = 
+ - allow OP extensions to include XRDS Types in login service
+
 = version 3.1.3 =
  - fix error message if /dev/urandom is not readable
 

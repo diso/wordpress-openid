@@ -2,8 +2,14 @@
 
 require_once 'Auth/OpenID/SReg.php';
 
+add_filter('openid_server_xrds_types', 'openid_server_sreg_xrds_types');
 add_action('openid_server_post_auth', 'openid_server_sreg_post_auth');
 
+function openid_server_sreg_xrds_types($types) {
+	$types[] = 'http://openid.net/extensions/sreg/1.1';
+	$types[] = 'http://openid.net/sreg/1.0';
+	return $types;
+}
 /**
  * See if the OpenID authentication request includes SReg and add additional hooks if so.
  */
