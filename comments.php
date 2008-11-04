@@ -7,7 +7,13 @@
 
 // -- WordPress Hooks
 add_action( 'parse_request', 'openid_parse_comment_request');
-add_action( 'preprocess_comment', 'openid_process_comment', -99 );
+add_action( 'preprocess_comment', 'openid_process_comment', -98);
+if (has_action('preprocess_comment', 'akismet_auto_check_comment')) {
+	// enseure akismet runs before OpenID
+	remove_action('preprocess_comment', 'akismet_auto_check_comment', 1);
+	add_action('preprocess_comment', 'akismet_auto_check_comment', -99);
+}
+add_action( 'akismet_spam_caught', 'openid_akismet_spam_caught');
 add_action( 'comment_post', 'update_comment_openid', 5 );
 add_filter( 'option_require_name_email', 'openid_option_require_name_email' );
 add_action( 'sanitize_comment_cookies', 'openid_sanitize_comment_cookies', 15);
@@ -25,6 +31,13 @@ add_filter( 'openid_user_data', 'openid_get_user_data_form', 10, 2);
 add_filter( 'openid_consumer_return_urls', 'openid_comment_return_url' );
 add_action( 'delete_comment', 'unset_comment_openid' );
 
+
+/**
+ * Akismet caught this comment as spam, so no need to do OpenID discovery on the URL.
+ */
+function openid_akismet_spam_caught() {
+	remove_action( 'preprocess_comment', 'openid_process_comment', -98);
+}
 
 /**
  * Intercept comment submission and check if it includes a valid OpenID.  If it does, save the entire POST
