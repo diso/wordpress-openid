@@ -12,6 +12,8 @@ add_action( 'wp_head', 'openid_provider_link_tags');
 /**
  * Add XRDS entries for OpenID Server.  Entries added will be highly 
  * dependant on the requested URL and plugin configuration.
+ *
+ * @uses apply_filters() Calls 'openid_server_xrds_types' before returning XRDS Types for OpenID authentication services.
  */
 function openid_provider_xrds_simple($xrds) {
 	global $wp_roles;
