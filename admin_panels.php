@@ -10,6 +10,7 @@ add_action( 'admin_menu', 'openid_admin_panels' );
 add_action( 'personal_options_update', 'openid_personal_options_update' );
 add_action( 'openid_finish_auth', 'openid_finish_verify' );
 add_filter( 'openid_consumer_return_urls', 'openid_admin_return_url' );
+add_filter( 'pre_update_option_openid_cap', 'openid_set_cap', 10, 2);
 
 if ($wp_version < '2.5') {
 	add_filter('pre_user_url', 'openid_compat_pre_user_url');
@@ -62,6 +63,27 @@ function openid_admin_panels() {
 }
 
 
+/**
+ * Intercept the call to set the openid_cap option.  Instead of storing 
+ * this in the options table, set the capability on the appropriate roles.
+ */
+function openid_set_cap($newvalue, $oldvalue) {
+	global $wp_roles;
+
+	foreach ($wp_roles->role_names as $key => $name) {
+		$role = $wp_roles->get_role($key);
+		$option_set = $newvalue[htmlentities($key)] == 'on' ? true : false;
+		if ($role->has_cap('use_openid_provider')) {
+			if (!$option_set) $role->remove_cap('use_openid_provider');
+		} else {
+			if ($option_set) $role->add_cap('use_openid_provider');
+		}
+	}
+
+	return $oldvalue;
+}
+
+
 /*
  * Display and handle updates from the Admin screen options page.
  *
@@ -73,7 +95,7 @@ function openid_options_page() {
 	if ( isset($_REQUEST['action']) ) {
 		switch($_REQUEST['action']) {
 			case 'rebuild_tables' :
-				check_admin_referer('openid-rebuild_tables');
+				check_admin_referer('rebuild_tables');
 				$store = openid_getStore();
 				$store->reset();
 				echo '<div class="updated"><p><strong>'.__('OpenID cache refreshed.', 'openid').'</strong></p></div>';
@@ -81,46 +103,20 @@ function openid_options_page() {
 		}
 	}
 
-	// if we're posted back an update, let's set the values here
-	if ( isset($_POST['info_update']) ) {
-	
-		check_admin_referer('openid-info_update');
-
-		$error = '';
-		
-		update_option( 'openid_enable_commentform', isset($_POST['enable_commentform']) ? true : false );
-		update_option( 'openid_enable_approval', isset($_POST['enable_approval']) ? true : false );
-		update_option( 'openid_no_require_name', isset($_POST['no_require_name']) ? true : false );
-		update_option( 'openid_enable_email_mapping', isset($_POST['enable_email_mapping']) ? true : false );
-		update_option( 'openid_required_for_registration', isset($_POST['openid_required_for_registration']) ? true : false );
-		update_option( 'openid_blog_owner', $_POST['openid_blog_owner']);
-
-		// set OpenID Capability
-		foreach ($wp_roles->role_names as $key => $name) {
-			$role = $wp_roles->get_role($key);
-			$option_set = $_POST['openid_cap_' . htmlentities($key)] == 'on' ? true : false;
-			if ($role->has_cap('use_openid_provider')) {
-			   	if (!$option_set) $role->remove_cap('use_openid_provider');
-			} else {
-			   	if ($option_set) $role->add_cap('use_openid_provider');
-			}
-		}
-
-		if ($error !== '') {
-			echo '<div class="error"><p><strong>'.__('At least one of OpenID options was NOT updated', 'openid').'</strong>'.$error.'</p></div>';
-		} else {
-			echo '<div class="updated"><p><strong>'.__('OpenID options updated', 'openid').'</strong></p></div>';
-		}
-		
-	}
-
+	$openid_options = array(
+		'openid_enable_commentform', 
+		'openid_enable_approval', 
+		'openid_no_require_name', 
+		'openid_enable_email_mapping', 
+		'openid_required_for_registration', 
+		'openid_blog_owner',
+		'openid_cap',
+	);
 	
 	// Display the options page form
-	$siteurl = get_option('home');
-	if( substr( $siteurl, -1, 1 ) !== '/' ) $siteurl .= '/';
 	?>
 	<div class="wrap">
-		<form method="post">
+		<form method="post" action="options.php">
 
 			<h2><?php _e('OpenID Consumer Options', 'openid') ?></h2>
 
@@ -134,16 +130,16 @@ function openid_options_page() {
 				<tr valign="top">
 					<th scope="row"><?php _e('Comment Approval', 'openid') ?></th>
 					<td>
-						<p><input type="checkbox" name="enable_approval" id="enable_approval" <?php 
+						<p><input type="checkbox" name="openid_enable_approval" id="openid_enable_approval" <?php 
 							echo get_option('openid_enable_approval') ? 'checked="checked"' : ''; ?> />
-							<label for="enable_approval"><?php _e('Automatically approve comments left with verified OpenIDs.  '
+							<label for="openid_enable_approval"><?php _e('Automatically approve comments left with verified OpenIDs.  '
 								. 'These comments will bypass all comment moderation.', 'openid'); ?></label>
 						</p>
 
 						<?php if (get_option('require_name_email')) { ?>
-						<p><input type="checkbox" name="no_require_name" id="no_require_name" <?php 
+						<p><input type="checkbox" name="openid_no_require_name" id="openid_no_require_name" <?php 
 							echo get_option('openid_no_require_name') ? 'checked="checked"' : ''; ?> />
-							<label for="no_require_name"><?php _e('Don\'t require name and e-mail for comments left with verified OpenIDs.', 'openid') ?></label>
+							<label for="openid_no_require_name"><?php _e('Don\'t require name and e-mail for comments left with verified OpenIDs.', 'openid') ?></label>
 						</p>
 						<?php } ?>
 						
@@ -153,10 +149,10 @@ function openid_options_page() {
 				<tr valign="top">
 					<th scope="row"><?php _e('Comment Form', 'openid') ?></th>
 					<td>
-						<p><input type="checkbox" name="enable_commentform" id="enable_commentform" <?php
+						<p><input type="checkbox" name="openid_enable_commentform" id="openid_enable_commentform" <?php
 						if( get_option('openid_enable_commentform') ) echo 'checked="checked"'
 						?> />
-							<label for="enable_commentform"><?php _e('Add OpenID help text to the comment form.', 'openid') ?></label></p>
+							<label for="openid_enable_commentform"><?php _e('Add OpenID help text to the comment form.', 'openid') ?></label></p>
 
 						<p><?php printf(__('This will work for most themes derived from Kubrick or Sandbox.  '
 						. 'Template authors can tweak the comment form as described in the %sreadme%s.', 'openid'), 
@@ -198,10 +194,8 @@ function openid_options_page() {
 				<tr valign="top">
 					<th scope="row"><?php _e('Troubleshooting', 'openid') ?></th>
 					<td>
-						<p>
-
 						<p><?php printf(__('If users are experiencing problems logging in with OpenID, it may help to %1$srefresh the cache%2$s.', 'openid'),
-						'<a href="' . wp_nonce_url(add_query_arg('action', 'rebuild_tables'), 'openid-rebuild_tables') . '">', '</a>'); ?></p>
+						'<a href="' . wp_nonce_url(add_query_arg('action', 'rebuild_tables'), 'rebuild_tables') . '">', '</a>'); ?></p>
 					</td>
 				</tr>
 
@@ -232,7 +226,7 @@ function openid_options_page() {
 				foreach ($wp_roles->role_names as $key => $name) {
 					$role = $wp_roles->get_role($key);
 					$checked = $role->has_cap('use_openid_provider') ? ' checked="checked"' : '';
-					$option_name = 'openid_cap_' . htmlentities($key);
+					$option_name = 'openid_cap[' . htmlentities($key) . ']';
 					echo '<input type="checkbox" id="'.$option_name.'" name="'.$option_name.'"'.$checked.' /><label for="'.$option_name.'"> '.$name.'</label><br />' . "\n";
 				}
 							?>
@@ -288,7 +282,9 @@ function openid_options_page() {
 			<?php endif; //!empty($users) ?>
 				</table>
 
-			<?php wp_nonce_field('openid-info_update'); ?>
+			<?php wp_nonce_field('update-options'); ?>
+			<input type="hidden" name="action" value="update" />
+			<input type="hidden" name="page_options" value="<?php echo join(',', $openid_options); ?>" />
 			<p class="submit"><input type="submit" name="info_update" value="<?php _e('Update Options') ?> &raquo;" /></p>
 		</form>
 	</div>
