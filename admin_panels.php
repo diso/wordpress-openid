@@ -23,7 +23,7 @@ if ($wp_version < '2.5') {
  **/
 function openid_admin_notices_plugin_problem_warning() {
 	echo'<div class="error"><p><strong>'.__('The WordPress OpenID plugin is not active.', 'openid').'</strong>';
-	printf(_('Check %sOpenID Options%s for a full diagnositic report.', 'openid'), '<a href="options-general.php?page=global-openid-options">', '</a>');
+	printf(_('Check %sOpenID Options%s for a full diagnositic report.', 'openid'), '<a href="options-general.php?page=openid">', '</a>');
 	echo '</p></div>';
 }
 
@@ -35,7 +35,7 @@ function openid_admin_notices_plugin_problem_warning() {
  **/
 function openid_admin_panels() {
 	// global options page
-	$hookname = add_options_page(__('OpenID options', 'openid'), __('OpenID', 'openid'), 8, 'global-openid-options', 'openid_options_page' );
+	$hookname = add_options_page(__('OpenID options', 'openid'), __('OpenID', 'openid'), 8, 'openid', 'openid_options_page' );
 	add_action("load-$hookname", 'openid_js_setup' );
 	add_action("admin_head-$hookname", 'openid_style' );
 	
