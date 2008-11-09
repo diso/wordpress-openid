@@ -4,10 +4,6 @@
  */
 
 // -- WP Hooks
-register_activation_hook('openid/openid.php', 'openid_activate_plugin');
-register_deactivation_hook('openid/openid.php', 'openid_deactivate_plugin');
-add_action( 'init', 'openid_activate_wpmu' ); // wpmu activation
-
 // Add hooks to handle actions in WordPress
 add_action( 'init', 'openid_textdomain' ); // load textdomain
 	
@@ -131,7 +127,6 @@ function openid_activate_plugin() {
 		if ($role) $role->add_cap('use_openid_provider');
 	}
 
-
 	// Add custom OpenID options
 	add_option( 'openid_enable_commentform', true );
 	add_option( 'openid_plugin_enabled', true );
@@ -153,32 +148,30 @@ function openid_activate_plugin() {
 	// set current revision
 	update_option( 'openid_plugin_revision', OPENID_PLUGIN_REVISION );
 
-
-	// cleanup old option names
-	delete_option( 'oid_db_revision' );
-	delete_option( 'oid_db_version' );
-	delete_option( 'oid_enable_approval' );
-	delete_option( 'oid_enable_commentform' );
-	delete_option( 'oid_enable_email_mapping' );
-	delete_option( 'oid_enable_foaf' );
-	delete_option( 'oid_enable_localaccounts' );
-	delete_option( 'oid_enable_loginform' );
-	delete_option( 'oid_enable_selfstyle' );
-	delete_option( 'oid_enable_unobtrusive' );
-	delete_option( 'oid_plugin_enabled' );
-	delete_option( 'oid_plugin_revision' );
-	delete_option( 'oid_plugin_version' );
-	delete_option( 'oid_trust_root' );
+	openid_remove_historical_options();
 }
 
 
 /**
- * Cleanup expired nonces and associations from the OpenID store.
+ * Remove options that were used by previous versions of the plugin.
  */
-function openid_cleanup() {
-	$store =& openid_getStore();
-	$store->cleanupNonces();
-	$store->cleanupAssociations();
+function openid_remove_historical_options() {
+	delete_option('oid_db_revision');
+	delete_option('oid_db_version');
+	delete_option('oid_enable_approval');
+	delete_option('oid_enable_commentform');
+	delete_option('oid_enable_email_mapping');
+	delete_option('oid_enable_foaf');
+	delete_option('oid_enable_localaccounts');
+	delete_option('oid_enable_loginform');
+	delete_option('oid_enable_selfstyle');
+	delete_option('oid_enable_unobtrusive');
+	delete_option('oid_plugin_enabled');
+	delete_option('oid_plugin_revision');
+	delete_option('oid_plugin_version');
+	delete_option('oid_trust_root');
+	delete_option('force_openid_registration');
+	delete_option('openid_skip_require_name');
 }
 
 
@@ -189,8 +182,52 @@ function openid_cleanup() {
  */
 function openid_deactivate_plugin() {
 	wp_clear_scheduled_hook('cleanup_openid');
+	delete_option('openid_associations');
+	delete_option('openid_nonces');
 	delete_option('openid_server_associations');
 	delete_option('openid_server_nonces');
+}
+
+ 
+/**
+ * Delete options in database
+ */
+function openid_uninstall_plugin() {
+	error_log('uninstalling openid plugin');
+	openid_delete_tables();
+	wp_clear_scheduled_hook('cleanup_openid');
+
+	// current options
+	delete_option('openid_enable_commentform');
+	delete_option('openid_plugin_enabled');
+	delete_option('openid_plugin_revision');
+	delete_option('openid_db_revision');
+	delete_option('openid_enable_approval');
+	delete_option('openid_enable_email_mapping');
+	delete_option('openid_xrds_returnto');
+	delete_option('openid_xrds_idib');
+	delete_option('openid_xrds_eaut');
+	delete_option('openid_comment_displayname_length');
+	delete_option('openid_associations');
+	delete_option('openid_nonces');
+	delete_option('openid_server_associations');
+	delete_option('openid_server_nonces');
+	delete_option('openid_blog_owner');
+	delete_option('openid_no_require_name');
+	delete_option('openid_required_for_registration');
+
+	// historical options
+	openid_remove_historical_options();
+}
+
+
+/**
+ * Cleanup expired nonces and associations from the OpenID store.
+ */
+function openid_cleanup() {
+	$store =& openid_getStore();
+	$store->cleanupNonces();
+	$store->cleanupAssociations();
 }
 
 

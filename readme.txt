@@ -93,6 +93,9 @@ report at <http://code.google.com/p/diso/issues/list>.
 
 == Changelog ==
 
+= version 3.1.5 =
+ - add uninstall hook for WordPress 2.7 -- this will remove all traces of the plugin from the database
+
 = version 3.1.4 = 
  - allow OP extensions to include XRDS Types in login service
  - run OpenID comment processor after Akismet, and skip if Akismet marks comment as spam

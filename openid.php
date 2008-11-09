@@ -35,10 +35,19 @@ require_once 'server.php';
 require_once 'store.php';
 restore_include_path();
 
+// register activation (and similar) hooks
+register_activation_hook('openid/openid.php', 'openid_activate_plugin');
+register_deactivation_hook('openid/openid.php', 'openid_deactivate_plugin');
+if ( function_exists('register_uninstall_hook') ) {
+	register_uninstall_hook('openid/openid.php', 'openid_uninstall_plugin');
+}
+add_action( 'init', 'openid_activate_wpmu' ); // wpmu activation
+
 // run activation function if new revision of plugin
 if (get_option('openid_plugin_revision') !== false && OPENID_PLUGIN_REVISION != get_option('openid_plugin_revision')) {
 	openid_activate_plugin();
 }
+
 
 // -- public functions
 
