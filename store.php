@@ -312,7 +312,7 @@ function openid_migrate_old_data() {
 			}
 
 			foreach ($openid_comments as $post_id => $comments) {
-				$current = get_post_meta($comment->comment_post_ID, 'openid_comments', true);
+				$current = get_post_meta($post_id, 'openid_comments', true);
 				if (!empty($current)) $comments = array_merge($comments, $current);
 				update_post_meta($post_id, 'openid_comments', array_unique($comments));
 			}
