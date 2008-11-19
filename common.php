@@ -444,15 +444,14 @@ function openid_add_ax_extension($extensions, $auth_request) {
 		require_once('Auth/OpenID/AX.php');
 		restore_include_path();
 
-		// TODO: check to ensure provider supports AX before adding it to the request
-		//       $auth_request->endpoint->usesExtension(Auth_OpenID_AX_NS_URI)
+		if ($auth_request->endpoint->usesExtension(Auth_OpenID_AX_NS_URI)) {
+			$ax_request = new Auth_OpenID_AX_FetchRequest();
+			$ax_request->add(Auth_OpenID_AX_AttrInfo::make('http://axschema.org/namePerson/friendly', 1, true));
+			$ax_request->add(Auth_OpenID_AX_AttrInfo::make('http://axschema.org/contact/email', 1, true));
+			$ax_request->add(Auth_OpenID_AX_AttrInfo::make('http://axschema.org/namePerson', 1, true));
 
-		$ax_request = new Auth_OpenID_AX_FetchRequest();
-		$ax_request->add(Auth_OpenID_AX_AttrInfo::make('http://axschema.org/namePerson/friendly', 1, true));
-		$ax_request->add(Auth_OpenID_AX_AttrInfo::make('http://axschema.org/contact/email', 1, true));
-		$ax_request->add(Auth_OpenID_AX_AttrInfo::make('http://axschema.org/namePerson', 1, true));
-
-		$extensions[] = $ax_request;
+			$extensions[] = $ax_request;
+		}
 	}
 
 	return $extensions;
@@ -468,10 +467,9 @@ function openid_add_sreg_extension($extensions, $auth_request) {
 		require_once('Auth/OpenID/SReg.php');
 		restore_include_path();
 
-		// TODO: check to ensure provider supports SREG before adding it to the request
-		//       $auth_request->endpoint->usesExtension(Auth_OpenID_SREG_NS_URI_1_0)
-
-		$extensions[] = Auth_OpenID_SRegRequest::build(array(),array('nickname','email','fullname'));
+		if ($auth_request->endpoint->usesExtension(Auth_OpenID_SREG_NS_URI_1_0) || $auth_request->endpoint->usesExtension(Auth_OpenID_SREG_NS_URI_1_1)) {
+			$extensions[] = Auth_OpenID_SRegRequest::build(array(),array('nickname','email','fullname'));
+		}
 	}
 
 	return $extensions;
