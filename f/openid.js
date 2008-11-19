@@ -1,10 +1,10 @@
 // use yuicompress (http://developer.yahoo.com/yui/compressor/) to generate openid.min.js
 
 jQuery(function() {
-	jQuery('#openid_rollup > div').hide();
+	jQuery('#openid_system_status').hide();
 
-	jQuery('#openid_rollup_link').click( function() {
-		jQuery('#openid_rollup > div').toggle();
+	jQuery('#openid_status_link').click( function() {
+		jQuery('#openid_system_status').toggle();
 		return false;
 	});
 });

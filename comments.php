@@ -27,7 +27,7 @@ if( get_option('openid_enable_commentform') ) {
 	add_action( 'wp_footer', 'openid_comment_profilelink', 10);
 	add_action( 'wp_footer', 'openid_comment_form', 10);
 }
-add_filter( 'openid_user_data', 'openid_get_user_data_form', 10, 2);
+add_filter( 'openid_user_data', 'openid_get_user_data_form', 6, 2);
 add_filter( 'openid_consumer_return_urls', 'openid_comment_return_url' );
 add_action( 'delete_comment', 'unset_comment_openid' );
 

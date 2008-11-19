@@ -19,8 +19,10 @@ add_action( 'cleanup_openid', 'openid_cleanup' );
 
 // hooks for getting user data
 add_filter('openid_auth_request_extensions', 'openid_add_sreg_extension', 10, 2);
+add_filter('openid_auth_request_extensions', 'openid_add_ax_extension', 10, 2);
 
-add_filter( 'openid_user_data', 'openid_get_user_data_sreg', 10, 2);
+add_filter( 'openid_user_data', 'openid_get_user_data_sreg', 8, 2);
+add_filter( 'openid_user_data', 'openid_get_user_data_ax', 10, 2);
 
 add_filter( 'xrds_simple', 'openid_consumer_xrds_simple');
 
@@ -193,7 +195,6 @@ function openid_deactivate_plugin() {
  * Delete options in database
  */
 function openid_uninstall_plugin() {
-	error_log('uninstalling openid plugin');
 	openid_delete_tables();
 	wp_clear_scheduled_hook('cleanup_openid');
 
@@ -435,6 +436,30 @@ function openid_start_login( $claimed_url, $action, $arguments = null, $return_t
 
 
 /**
+ * Build an Attribute Exchange attribute query extension if we've never seen this OpenID before.
+ */
+function openid_add_ax_extension($extensions, $auth_request) {
+	if(!get_user_by_openid($auth_request->endpoint->claimed_id)) {
+		set_include_path( dirname(__FILE__) . PATH_SEPARATOR . get_include_path() );
+		require_once('Auth/OpenID/AX.php');
+		restore_include_path();
+
+		// TODO: check to ensure provider supports AX before adding it to the request
+		//       $auth_request->endpoint->usesExtension(Auth_OpenID_AX_NS_URI)
+
+		$ax_request = new Auth_OpenID_AX_FetchRequest();
+		$ax_request->add(Auth_OpenID_AX_AttrInfo::make('http://axschema.org/namePerson/friendly', 1, true));
+		$ax_request->add(Auth_OpenID_AX_AttrInfo::make('http://axschema.org/contact/email', 1, true));
+		$ax_request->add(Auth_OpenID_AX_AttrInfo::make('http://axschema.org/namePerson', 1, true));
+
+		$extensions[] = $ax_request;
+	}
+
+	return $extensions;
+}
+
+
+/**
  * Build an SReg attribute query extension if we've never seen this OpenID before.
  */
 function openid_add_sreg_extension($extensions, $auth_request) {
@@ -442,6 +467,9 @@ function openid_add_sreg_extension($extensions, $auth_request) {
 		set_include_path( dirname(__FILE__) . PATH_SEPARATOR . get_include_path() );
 		require_once('Auth/OpenID/SReg.php');
 		restore_include_path();
+
+		// TODO: check to ensure provider supports SREG before adding it to the request
+		//       $auth_request->endpoint->usesExtension(Auth_OpenID_SREG_NS_URI_1_0)
 
 		$extensions[] = Auth_OpenID_SRegRequest::build(array(),array('nickname','email','fullname'));
 	}
@@ -617,7 +645,35 @@ function openid_get_user_data($identity_url) {
  * @see get_user_data
  */
 function openid_get_user_data_ax($data, $identity_url) {
-	// TODO implement attribute exchange
+	set_include_path( dirname(__FILE__) . PATH_SEPARATOR . get_include_path() );
+	require_once('Auth/OpenID/AX.php');
+	restore_include_path();
+
+	$response = openid_response();
+	$ax = Auth_OpenID_AX_FetchResponse::fromSuccessResponse($response);
+
+	if (!$ax) return $data;
+
+	$email = $ax->getSingle('http://axschema.org/contact/email');
+	if ($email && !is_a($email, 'Auth_OpenID_AX_Error')) {
+		$data['user_email'] = $email;
+	}
+
+	$nickname = $ax->getSingle('http://axschema.org/namePerson/friendly');
+	if ($nickname && !is_a($nickname, 'Auth_OpenID_AX_Error')) {
+		$data['nickname'] = $ax->get('http://axschema.org/namePerson/friendly');
+		$data['user_nicename'] = $ax->get('http://axschema.org/namePerson/friendly');
+		$data['display_name'] = $ax->get('http://axschema.org/namePerson/friendly');
+	}
+
+	$fullname = $ax->getSingle('http://axschema.org/namePerson');
+	if ($fullname && !is_a($fullname, 'Auth_OpenID_AX_Error')) {
+		$namechunks = explode( ' ', $fullname, 2 );
+		if( isset($namechunks[0]) ) $data['first_name'] = $namechunks[0];
+		if( isset($namechunks[1]) ) $data['last_name'] = $namechunks[1];
+		$data['display_name'] = $fullname;
+	}
+
 	return $data;
 }
 
@@ -654,7 +710,7 @@ function openid_get_user_data_sreg($data, $identity_url) {
 		$data['display_name'] = $sreg['fullname'];
 	}
 
-	return $data;;
+	return $data;
 }
 
 
