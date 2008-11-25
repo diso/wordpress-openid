@@ -91,6 +91,13 @@ report at <http://code.google.com/p/diso/issues/list>.
 3. Users can login with their OpenID in place of a traditional username and password.
 
 
+== Plugin History ==
+
+The original OpenID plugin for WordPress was a collaborative effort between Alan Castonguay and Hans Granqist.
+
+Will Norris forked the plugin and has since become the maintainer.
+
+
 == Changelog ==
 
 = version 3.1.5 =
