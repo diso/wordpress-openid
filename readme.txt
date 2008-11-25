@@ -97,6 +97,10 @@ The original OpenID plugin for WordPress was a collaborative effort between Alan
 
 Will Norris forked the plugin and has since become the maintainer.
 
+[Alan Castonguay]: http://verselogic.net/
+[Hans Granqvist]: http://commented.org/
+[Will Norris]: http://willnorris.com/
+
 
 == Changelog ==
 
