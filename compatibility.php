@@ -5,6 +5,15 @@
  * rest of the plugin code clean.
  */
 
+/* since 2.6 */
+if ( ! defined( 'WP_CONTENT_URL' ) )
+      define( 'WP_CONTENT_URL', get_option( 'siteurl' ) . '/wp-content' );
+if ( ! defined( 'WP_CONTENT_DIR' ) )
+      define( 'WP_CONTENT_DIR', ABSPATH . 'wp-content' );
+if ( ! defined( 'WP_PLUGIN_URL' ) )
+      define( 'WP_PLUGIN_URL', WP_CONTENT_URL . '/plugins' );
+if ( ! defined( 'WP_PLUGIN_DIR' ) )
+      define( 'WP_PLUGIN_DIR', WP_CONTENT_DIR . '/plugins' );
 
 /* since 2.6 */
 if (!function_exists('site_url')):
@@ -32,7 +41,7 @@ endif;
 /* since 2.6 */
 if (!function_exists('plugins_url')):
 function plugins_url($path = '') {
-	$url = site_url(PLUGINDIR);
+	$url = WP_PLUGIN_URL;
 	if ( !empty($path) && is_string($path) && strpos($path, '..') === false ) {
 		$url .= '/' . ltrim($path, '/');
 	}
