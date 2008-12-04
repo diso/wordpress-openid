@@ -38,6 +38,7 @@ function openid_admin_panels() {
 	$hookname = add_options_page(__('OpenID options', 'openid'), __('OpenID', 'openid'), 8, 'openid', 'openid_options_page' );
 	add_action("load-$hookname", 'openid_js_setup' );
 	add_action("admin_head-$hookname", 'openid_style' );
+	add_filter('plugin_action_links', 'openid_plugin_actions', 10, 2);
 	
 	// all users can setup external OpenIDs
 	$hookname =	add_users_page(__('Your OpenIDs', 'openid'), __('Your OpenIDs', 'openid'), 
@@ -83,6 +84,18 @@ function openid_set_cap($newvalue, $oldvalue) {
 	return $oldvalue;
 }
 
+/*
+ * Add settings link to plugin console.
+ */
+function openid_plugin_actions($links, $file) {
+	static $this_plugin;
+	if(!$this_plugin) $this_plugin = plugin_basename(dirname(__FILE__).'/openid.php');
+	if($file == $this_plugin) {
+		$settings_link = '<a href="options-general.php?page=openid" style="font-weight:bold;">Settings</a>';
+		$links[] = $settings_link;
+	}//end if this_plugin
+	return $links;
+}
 
 /*
  * Display and handle updates from the Admin screen options page.
