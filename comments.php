@@ -192,6 +192,11 @@ function update_comment_openid($comment_ID) {
  **/
 function openid_comment_profilelink() {
 	global $wp_scripts;
+
+	if ( !is_a($wp_scripts, 'WP_Scripts') ) {
+		$wp_scripts = new WP_Scripts();
+	}
+
 	if ((is_single() || is_comments_popup()) && is_user_openid() && $wp_scripts->query('openid')) {
 		echo '<script type="text/javascript">stylize_profilelink()</script>';
 	}
@@ -205,6 +210,11 @@ function openid_comment_profilelink() {
  **/
 function openid_comment_form() {
 	global $wp_scripts;
+
+	if ( !is_a($wp_scripts, 'WP_Scripts') ) {
+		$wp_scripts = new WP_Scripts();
+	}
+
 	if (!is_user_logged_in() && (is_single() || is_comments_popup()) && isset($wp_scripts) && $wp_scripts->query('openid')) {
 		echo '<script type="text/javascript">add_openid_to_comment_form()</script>';
 	}
