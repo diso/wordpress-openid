@@ -8,7 +8,7 @@
 // -- WordPress Hooks
 add_action( 'parse_request', 'openid_parse_comment_request');
 add_action( 'preprocess_comment', 'openid_process_comment', -98);
-if (has_action('preprocess_comment', 'akismet_auto_check_comment')) {
+if (function_exists('has_action') && has_action('preprocess_comment', 'akismet_auto_check_comment')) {
 	// enseure akismet runs before OpenID
 	remove_action('preprocess_comment', 'akismet_auto_check_comment', 1);
 	add_action('preprocess_comment', 'akismet_auto_check_comment', -99);

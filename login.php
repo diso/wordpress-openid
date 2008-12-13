@@ -69,16 +69,16 @@ function openid_wp_login_head() {
 function openid_wp_login_form() {
 	global $wp_version;
 
-	echo '<hr id="openid_split" style="clear: both; margin-bottom: 1.5em; border: 0; border-top: 1px solid #999; height: 1px;" />';
+	echo '<hr id="openid_split" style="clear: both; margin-bottom: 1.0em; border: 0; border-top: 1px solid #999; height: 1px;" />';
 
 	echo '
-	<p>
-		<label style="display: block; margin-bottom: 5px;">' . __('Or login using an OpenID:', 'openid') . '</label>
+	<p style="margin-bottom: 8px;">
+		<label style="display: block; margin-bottom: 5px;">' . __('Or login using an OpenID', 'openid') . '</label>
 		<input type="text" name="openid_identifier" id="openid_identifier" class="input openid_identifier" value="" size="20" tabindex="25" /></label>
 	</p>
 
-	<p style="font-size: 0.8em;" id="what_is_openid">
-		<a href="http://openid.net/what/" target="_blank">'.__('What is OpenID?', 'openid').'</a>
+	<p style="font-size: 0.9em; margin: 8px 0 24px 0;" id="what_is_openid">
+		<a href="http://openid.net/what/" target="_blank">'.__('Learn about OpenID', 'openid').'</a>
 	</p>';
 }
 

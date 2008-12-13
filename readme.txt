@@ -106,6 +106,8 @@ Will Norris forked the plugin and has since become the maintainer.
 
 = version 3.1.5 =
  - add uninstall hook for WordPress 2.7 -- this will remove all traces of the plugin from the database
+ - UI fixes for WordPress 2.7
+ - add settings link to plugins page
 
 = version 3.1.4 = 
  - allow OP extensions to include XRDS Types in login service

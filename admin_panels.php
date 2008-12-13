@@ -36,7 +36,11 @@ function openid_admin_notices_plugin_problem_warning() {
 function openid_admin_panels() {
 	// global options page
 	$hookname = add_options_page(__('OpenID options', 'openid'), __('OpenID', 'openid'), 8, 'openid', 'openid_options_page' );
-	add_action("load-$hookname", 'openid_js_setup' );
+	if (function_exists('add_thickbox')) {
+		add_action("load-$hookname", create_function('', 'add_thickbox();'));
+	} else {
+		add_action("load-$hookname", 'openid_js_setup' );
+	}
 	add_action("admin_head-$hookname", 'openid_style' );
 	add_filter('plugin_action_links', 'openid_plugin_actions', 10, 2);
 	
@@ -127,19 +131,25 @@ function openid_options_page() {
 	);
 	
 	// Display the options page form
+
+	if (function_exists('screen_icon')):
+		screen_icon('openid');
 	?>
+	<style type="text/css">
+		#icon-openid { background-image: url("<?php echo plugins_url('openid/f/icon.png'); ?>"); }
+	</style>
+	<?php endif; ?>
+
 	<div class="wrap">
 		<form method="post" action="options.php">
 
 			<h2><?php _e('OpenID Consumer Options', 'openid') ?></h2>
 
-			<?php openid_printSystemStatus(); ?>
-
 			<?php if ($wp_version < '2.3') { ?>
 			<p class="submit"><input type="submit" name="info_update" value="<?php _e('Update Options') ?> &raquo;" /></p>
 			<?php } ?>
 
-			<table class="form-table optiontable editform" cellspacing="2" cellpadding="5" width="100%">
+			<table class="form-table optiontable editform">
 				<tr valign="top">
 					<th scope="row"><?php _e('Comment Approval', 'openid') ?></th>
 					<td>
@@ -170,7 +180,6 @@ function openid_options_page() {
 						<p><?php printf(__('This will work for most themes derived from Kubrick or Sandbox.  '
 						. 'Template authors can tweak the comment form as described in the %sreadme%s.', 'openid'), 
 						'<a href="'.clean_url(openid_plugin_url().'/readme.txt').'">', '</a>') ?></p>
-						<br />
 					</td>
 				</tr>
 
@@ -207,6 +216,8 @@ function openid_options_page() {
 				<tr valign="top">
 					<th scope="row"><?php _e('Troubleshooting', 'openid') ?></th>
 					<td>
+						<?php openid_printSystemStatus(); ?>
+
 						<p><?php printf(__('If users are experiencing problems logging in with OpenID, it may help to %1$srefresh the cache%2$s.', 'openid'),
 						'<a href="' . wp_nonce_url(add_query_arg('action', 'rebuild_tables'), 'rebuild_tables') . '">', '</a>'); ?></p>
 					</td>
@@ -227,7 +238,7 @@ function openid_options_page() {
 			. 'users to use their author URL as an OpenID, either using their '
 			. 'local WordPress username and password, or by delegating to another OpenID Provider.', 'openid'); ?></p>
 
-			<table class="form-table optiontable editform" cellspacing="2" cellpadding="5" width="100%">
+			<table class="form-table optiontable editform">
 				<tr valign="top">
 					<th scope="row"><?php _e('Enable OpenID', 'openid') ?></th>
 					<td>
@@ -332,7 +343,13 @@ function openid_profile_panel() {
 		unset($error);
 	}
 
+	if (function_exists('screen_icon')):
+		screen_icon('openid');
 	?>
+	<style type="text/css">
+		#icon-openid { background-image: url("<?php echo plugins_url('openid/f/icon.png'); ?>"); }
+	</style>
+	<?php endif; ?>
 
 	<div class="wrap">
 		<form action="<?php printf('%s?page=%s', $_SERVER['PHP_SELF'], $_REQUEST['page']); ?>" method="post">
@@ -407,6 +424,7 @@ function openid_manage_trusted_sites() {
 		check_admin_referer('openid-add_trusted_sites');
 
 		$trusted_sites = get_usermeta($user->ID, 'openid_trusted_sites');
+		if (!is_array($trusted_sites)) $trusted_sites = array();
 		$sites = split("\n", $_REQUEST['sites']);
 
 		$count = 0;
@@ -455,7 +473,14 @@ function openid_manage_trusted_sites() {
 		}
 		break;
 	}
-?>
+
+	if (function_exists('screen_icon')):
+		screen_icon('openid');
+	?>
+	<style type="text/css">
+		#icon-openid { background-image: url("<?php echo plugins_url('openid/f/icon.png'); ?>"); }
+	</style>
+	<?php endif; ?>
 
 	<div class="wrap">
 		<h2><?php _e('Your Trusted Sites', 'openid'); ?></h2>
@@ -618,14 +643,13 @@ function openid_printSystemStatus() {
 		($openid_enabled ? '' : 'There are problems above that must be dealt with before the plugin can be used.') );
 
 	if( $openid_enabled ) {	// Display status information
-		echo'<div id="openid_rollup" class="updated">
-		<p><strong>' . __('Status information:', 'openid') . '</strong> ' . __('All Systems Nominal', 'openid') 
-		. '<small> (<a href="#" id="openid_rollup_link">' . __('Toggle More/Less', 'openid') . '</a>)</small> </p>';
+		echo'<p><strong>' . __('Status information:', 'openid') . '</strong> ' . __('All Systems Nominal', 'openid') 
+		. '<small> (<a href="#TB_inline?height=600&width=800&inlineId=openid_system_status" id="openid_status_link" class="thickbox" title="System Status">' . __('Toggle More/Less', 'openid') . '</a>)</small> </p>';
 	} else {
-		echo '<div class="error"><p><strong>' . __('Plugin is currently disabled. Fix the problem, then Deactivate/Reactivate the plugin.', 'openid') 
+		echo '<p><strong>' . __('Plugin is currently disabled. Fix the problem, then Deactivate/Reactivate the plugin.', 'openid') 
 		. '</strong></p>';
 	}
-	echo '<div>';
+	echo '<div id="openid_system_status" class="updated">';
 	foreach( $status as $s ) {
 		list ($name, $state, $message) = $s;
 		echo '<div><strong>';
@@ -640,7 +664,21 @@ function openid_printSystemStatus() {
 		echo (is_array($message) ? '<ul><li>' . implode('</li><li>', $message) . '</li></ul>' : $message);
 		echo '</div>';
 	}
-	echo '</div></div>';
+	echo '</div>';
+	echo '
+	<script type="text/javascript">
+		jQuery("#openid_system_status").hide();';
+
+	if (!function_exists('add_thickbox')) {
+		echo '
+		jQuery("#openid_status_link").click( function() {
+			jQuery("#openid_system_status").toggle();
+			return false;
+		});';
+	}
+
+	echo '
+	</script>';
 }
 
 
