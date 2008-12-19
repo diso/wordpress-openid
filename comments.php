@@ -31,6 +31,7 @@ add_filter( 'openid_user_data', 'openid_get_user_data_form', 6, 2);
 add_filter( 'openid_consumer_return_urls', 'openid_comment_return_url' );
 add_action( 'delete_comment', 'unset_comment_openid' );
 
+add_action( 'init', 'openid_recent_comments');
 
 /**
  * Akismet caught this comment as spam, so no need to do OpenID discovery on the URL.
@@ -372,5 +373,12 @@ function openid_comment_return_url($urls) {
 	return $urls;
 }
 
+function openid_recent_comments() {
+	if (is_active_widget('wp_widget_recent_comments')) {
+		remove_action('wp_head', 'wp_widget_recent_comments_style');
+		// most themes seem to handle the recent comments widget okay, so I don't think the following style addition is necessary.  We'll leave it here just in case it's needed later.
+		//add_action('wp_head', create_function('', 'echo \'<style type="text/css">.recentcomments a{display:inline !important;padding: 0;margin: 0 !important;}</style>\';' ));
+	}
+}
 
 ?>
