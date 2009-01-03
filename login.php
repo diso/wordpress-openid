@@ -48,9 +48,7 @@ function openid_login_errors() {
 
 	if ($_REQUEST['registration_closed']) {
 		global $error;
-		$error = __('OpenID authentication valid, but unable to find a WordPress account associated with this OpenID.', 'openid')
-			. '<br /><br />'
-			. __('Enable "Anyone can register" to allow creation of new accounts via OpenID.', 'openid');
+		$error = __('Your have entered a valid OpenID, but this site is not currently accepting new accounts.', 'openid');
 	}
 }
 
