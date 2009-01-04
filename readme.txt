@@ -110,6 +110,7 @@ Will Norris forked the plugin and has since become the maintainer.
  - add settings link to plugins page
  - silence XML parsing errors with PHP4
  - ensure wp_scripts is set
+ - ensure openid comment processing occurs after akismet
 
 = version 3.1.4 = 
  - allow OP extensions to include XRDS Types in login service

@@ -12,7 +12,7 @@ add_action( 'openid_finish_auth', 'openid_finish_verify' );
 add_filter( 'openid_consumer_return_urls', 'openid_admin_return_url' );
 add_filter( 'pre_update_option_openid_cap', 'openid_set_cap', 10, 2);
 
-if ($wp_version < '2.5') {
+if (version_compare($wp_version, '2.5', '<')) {
 	add_filter('pre_user_url', 'openid_compat_pre_user_url');
 }
 
@@ -42,7 +42,7 @@ function openid_admin_panels() {
 		add_action("load-$hookname", 'openid_js_setup' );
 	}
 	add_action("admin_head-$hookname", 'openid_style' );
-	add_filter('plugin_action_links', 'openid_plugin_actions', 10, 2);
+	add_filter('plugin_action_links', 'openid_plugin_action_links', 10, 2);
 	
 	// all users can setup external OpenIDs
 	$hookname =	add_users_page(__('Your OpenIDs', 'openid'), __('Your OpenIDs', 'openid'), 
@@ -88,18 +88,20 @@ function openid_set_cap($newvalue, $oldvalue) {
 	return $oldvalue;
 }
 
-/*
- * Add settings link to plugin console.
+
+/**
+ * Add settings link to plugin page.
  */
-function openid_plugin_actions($links, $file) {
-	static $this_plugin;
-	if(!$this_plugin) $this_plugin = plugin_basename(dirname(__FILE__).'/openid.php');
+function openid_plugin_action_links($links, $file) {
+	$this_plugin = openid_plugin_file();
+
 	if($file == $this_plugin) {
-		$settings_link = '<a href="options-general.php?page=openid" style="font-weight:bold;">Settings</a>';
-		$links[] = $settings_link;
-	}//end if this_plugin
+		$links[] = '<a href="options-general.php?page=openid">' . __('Settings') . '</a>';
+	}
+
 	return $links;
 }
+
 
 /*
  * Display and handle updates from the Admin screen options page.

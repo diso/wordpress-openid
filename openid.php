@@ -147,4 +147,31 @@ function get_userdata_by_various($id_or_name = null) {
 }
 endif;
 
+// -- end of public functions
+
+/**
+ * Get the file for the plugin, including the path.  This method will handle the case where the 
+ * actual plugin files do not reside within the WordPress directory on the filesystem (such as 
+ * a symlink).  The standard value should be 'openid/openid.php' unless files or folders have
+ * been renamed.
+ *
+ * @return string plugin file
+ */
+function openid_plugin_file() {
+	static $file;
+
+	if (empty($file)) {
+		$path = 'openid';
+
+		$base = plugin_basename(__FILE__);
+		if ($base != __FILE__) {
+			$path = basename(dirname($base));
+		}
+
+		$file = $path . '/' . basename(__FILE__);
+	}
+
+	return $file;
+}
+
 ?>
