@@ -239,11 +239,18 @@ function openid_customer_error_handler($errno, $errmsg, $filename, $linenum, $va
 	if( (2048 & $errno) == 2048 ) return;
 
 	if (!defined('WP_DEBUG') || !(WP_DEBUG)) {
+		// XML errors
 		if (strpos($errmsg, 'DOMDocument::loadXML') === 0) return;
 		if (strpos($errmsg, 'domxml') === 0) return;
-		if (strpos($errmsg, 'Successfully fetched') === 0) return;
-		if (strpos($errmsg, 'Got no response code when fetching') === 0) return;
-		if (strpos($errmsg, 'Fetching URL not allowed') === 0) return;
+
+		// php-openid errors
+		//if (strpos($errmsg, 'Successfully fetched') === 0) return;
+		//if (strpos($errmsg, 'Got no response code when fetching') === 0) return;
+		//if (strpos($errmsg, 'Fetching URL not allowed') === 0) return;
+
+		// curl errors
+		//if (strpos($errmsg, 'CURL error (6)') === 0) return; // couldn't resolve host
+		//if (strpos($errmsg, 'CURL error (7)') === 0) return; // couldn't connect to host
 	}
 
 	openid_error( "Library Error $errno: $errmsg in $filename :$linenum");

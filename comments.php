@@ -9,7 +9,7 @@
 add_action( 'parse_request', 'openid_parse_comment_request');
 add_action( 'preprocess_comment', 'openid_process_comment', -98);
 if (function_exists('has_action') && has_action('preprocess_comment', 'akismet_auto_check_comment')) {
-	// enseure akismet runs before OpenID
+	// ensure akismet runs before OpenID
 	remove_action('preprocess_comment', 'akismet_auto_check_comment', 1);
 	add_action('preprocess_comment', 'akismet_auto_check_comment', -99);
 }
@@ -72,7 +72,28 @@ function openid_process_comment( $comment ) {
 		}
 	}
 
+	// duplicate name and email check from wp-comments-post.php
+	openid_require_name_email();
+
 	return $comment;
+}
+
+
+/**
+ * Duplicated code from wp-comments-post.php to check for presence of comment author name and email 
+ * address.
+ */
+function openid_require_name_email() {
+	$user = wp_get_current_user();
+	global $comment_author, $comment_author_email;
+	
+	if ( get_option('require_name_email') && !$user->ID ) { 
+		if ( 6 > strlen($comment_author_email) || '' == $comment_author ) {
+			wp_die( __('Error: please fill the required fields (name, email).') );
+		} elseif ( !is_email($comment_author_email)) {
+			wp_die( __('Error: please enter a valid email address.') );
+		}
+	}
 }
 
 
@@ -99,7 +120,7 @@ function openid_comment_approval($approved) {
  * @see get_user_data
  */
 function openid_option_require_name_email( $value ) {
-		
+	
 	$comment_page = (defined('OPENID_COMMENTS_POST_PAGE') ? OPENID_COMMENTS_POST_PAGE : 'wp-comments-post.php');
 
 	if ($GLOBALS['pagenow'] != $comment_page) {
@@ -109,19 +130,24 @@ function openid_option_require_name_email( $value ) {
 	if ($_REQUEST['openid_skip']) {
 		return get_option('openid_no_require_name') ? false : $value;
 	}
+	
+	// make sure we only process this once per request
+	static $bypass;
+	if ($bypass) {
+		return $value;
+	} else {
+		$bypass = true;
+	}
+
 
 	if (array_key_exists('openid_identifier', $_POST)) {
 		if( !empty( $_POST['openid_identifier'] ) ) {
 			return false;
 		}
 	} else {
-		if (!empty($_POST['url'])) {
-			// check if url is valid OpenID by forming an auth request
-			$auth_request = openid_begin_consumer($_POST['url']);
-
-			if (null !== $auth_request) {
-				return false;
-			}
+		global $comment_author_url;
+		if ( !empty($comment_author_url) ) {
+			return false;
 		}
 	}
 
@@ -235,8 +261,7 @@ function openid_repost_comment_anonymously($post) {
 		<p>Email: <input name="email" value="'.$post['email'].'" /></p>
 		<p>URL: <input name="url" value="'.$post['url'].'" /></p>
 		<textarea name="comment" cols="80%" rows="10">'.stripslashes($post['comment']).'</textarea>
-		<input type="submit" name="submit" value="'.__('Submit Comment').'" />
-		<input type="hidden" name="openid_skip" value="1" />';
+		<input type="submit" name="submit" value="'.__('Submit Comment').'" />';
 	foreach ($post as $name => $value) {
 		if (!in_array($name, array('author', 'email', 'url', 'comment', 'submit'))) {
 			$html .= '
