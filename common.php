@@ -242,6 +242,8 @@ function openid_customer_error_handler($errno, $errmsg, $filename, $linenum, $va
 		if (strpos($errmsg, 'DOMDocument::loadXML') === 0) return;
 		if (strpos($errmsg, 'domxml') === 0) return;
 		if (strpos($errmsg, 'Successfully fetched') === 0) return;
+		if (strpos($errmsg, 'Got no response code when fetching') === 0) return;
+		if (strpos($errmsg, 'Fetching URL not allowed') === 0) return;
 	}
 
 	openid_error( "Library Error $errno: $errmsg in $filename :$linenum");
