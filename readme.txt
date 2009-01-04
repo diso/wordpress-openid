@@ -74,6 +74,15 @@ The input element MUST have the name "openid\_identifier".  Additionally, using
 "openid\_identifier" for the id causes the field to be styled with an OpenID logo.  To
 remove this, you can override the stylesheet or simply change the element id.
 
+= Why do I get the error "OpenID login failed: return_to does not match return URL" =
+
+Often times, this is due to webdav being enabled for a website.  The
+mod_encoding Apache module causes problems that cannot easily be addressed.
+The only solution is to disable webdav for you domain.  More information can be
+found in [Shaun Inman's post][] about the topic.
+
+[Shaun Inman's post]: http://www.shauninman.com/archive/2005/05/11/unexpected_get_contents
+
 = How do I get help if I have a problem? =
 
 Please direct support questions to the "Plugins and Hacks" section of the
@@ -112,6 +121,7 @@ Will Norris forked the plugin and has since become the maintainer.
  - ensure wp_scripts is set
  - ensure openid comment processing occurs after akismet
  - add ellipses to truncated OpenIDs (fixes #94)
+ - fix bug where Yahoo! OpenIDs weren't matching profile URL (fixes #98)
 
 = version 3.1.4 = 
  - allow OP extensions to include XRDS Types in login service
