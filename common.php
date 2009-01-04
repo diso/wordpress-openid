@@ -237,8 +237,13 @@ function openid_cleanup() {
  */
 function openid_customer_error_handler($errno, $errmsg, $filename, $linenum, $vars) {
 	if( (2048 & $errno) == 2048 ) return;
-	if (strpos($errmsg, 'DOMDocument::loadXML') === 0) return;
-	if (strpos($errmsg, 'domxml') === 0) return;
+
+	if (!defined('WP_DEBUG') || !(WP_DEBUG)) {
+		if (strpos($errmsg, 'DOMDocument::loadXML') === 0) return;
+		if (strpos($errmsg, 'domxml') === 0) return;
+		if (strpos($errmsg, 'Successfully fetched') === 0) return;
+	}
+
 	openid_error( "Library Error $errno: $errmsg in $filename :$linenum");
 }
 
