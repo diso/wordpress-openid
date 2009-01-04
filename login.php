@@ -17,7 +17,7 @@ add_action( 'init', 'openid_login_errors' );
 add_filter( 'openid_consumer_return_urls', 'openid_wp_login_return_url' );
 
 // WordPress 2.5 has wp_authenticate in the wrong place
-if (strpos($wp_version, '2.5') === 0) {
+if (version_compare($wp_version, '2.5', '>=') && version_compare($wp_version, '2.6', '<')) {
 	add_action( 'init', 'wp25_login_openid' );
 }
 
@@ -33,9 +33,17 @@ function openid_wp_authenticate(&$credentials) {
 		finish_openid('login');
 	} else if (!empty($_POST['openid_identifier'])) {
 		openid_start_login( $_POST['openid_identifier'], 'login', array('redirect_to' => $_REQUEST['redirect_to']), site_url('/wp-login.php', 'login_post'));
+
+		// if we got this far, something is wrong
+		global $error;
+		$error = openid_message();
 	}
 }
 
+
+/**
+ * Setup OpenID errors to be displayed to the user.
+ */
 function openid_login_errors() {
 	$self = basename( $GLOBALS['pagenow'] );
 		
@@ -52,12 +60,17 @@ function openid_login_errors() {
 	}
 }
 
+
+/**
+ * Add style and script to login page.
+ */
 function openid_wp_login_head() {
 	openid_style();
 	wp_enqueue_script('jquery.xpath', openid_plugin_url() . '/f/jquery.xpath.min.js', 
 		array('jquery'), OPENID_PLUGIN_REVISION);
 	wp_print_scripts(array('jquery.xpath'));
 }
+
 
 /**
  * Add OpenID input field to wp-login.php
@@ -193,6 +206,10 @@ function wp25_login_openid() {
 	}
 }
 
+
+/**
+ * Handle WordPress registration errors.
+ */
 function openid_registration_errors($errors) {
 	if (get_option('openid_required_for_registration')) {
 		$errors = new WP_Error();
@@ -209,12 +226,20 @@ function openid_registration_errors($errors) {
 	return $errors;
 }
 
+
+/**
+ * Handle WordPress registrations.
+ */
 function openid_register_post($errors) {
 	if (!empty($_POST['openid_identifier'])) {
 		wp_signon(array('user_login'=>'openid', 'user_password'=>'openid'));
 	}
 }
 
+
+/**
+ * Contribute the WordPress login page to the valid return_to URLs for OpenID.
+ */
 function openid_wp_login_return_url($urls) {
 	$url = site_url('/wp-login.php', 'login_post');
 	$urls[] = $url;
