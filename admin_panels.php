@@ -879,6 +879,7 @@ function openid_ensure_url_match($user, $url = null) {
 	$url = Auth_OpenID::normalizeUrl($url);
 
 	foreach ($identities as $id) {
+		$id = Auth_OpenID::normalizeUrl($id);
 		if ($id == $url) return true; 
 	}
 
