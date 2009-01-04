@@ -111,6 +111,7 @@ Will Norris forked the plugin and has since become the maintainer.
  - silence XML parsing errors with PHP4
  - ensure wp_scripts is set
  - ensure openid comment processing occurs after akismet
+ - add ellipses to truncated OpenIDs (fixes #94)
 
 = version 3.1.4 = 
  - allow OP extensions to include XRDS Types in login service

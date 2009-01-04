@@ -642,7 +642,12 @@ function openid_get_user_data($identity_url) {
 	if ($data['display_name'] == $identity_url) {
 		$parts = parse_url($identity_url);
 		if ($parts !== false) {
-			$data['display_name'] = preg_replace('/^www./', '', $parts['host']) . substr($parts['path'], 0, get_option('openid_comment_displayname_length'));
+			$host = preg_replace('/^www./', '', $parts['host']);
+
+			$path = substr($parts['path'], 0, get_option('openid_comment_displayname_length'));
+			if (strlen($path) < strlen($parts['path'])) $path .= '&hellip;';
+
+			$data['display_name'] = $host . $path;
 		}
 	}
 
