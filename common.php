@@ -264,7 +264,7 @@ function openid_customer_error_handler($errno, $errmsg, $filename, $linenum, $va
  * @param string $trust_root OpenID trust root
  * @param string $return_to URL where the OpenID provider should return the user
  */
-function openid_doRedirect($auth_request, $trust_root, $return_to) {
+function openid_redirect($auth_request, $trust_root, $return_to) {
 	$message = $auth_request->getMessage($trust_root, $return_to, false);
 
 	if (Auth_OpenID::isFailure($message)) {
@@ -445,7 +445,7 @@ function openid_start_login( $claimed_url, $action, $arguments = null, $return_t
 		$trust_root = preg_replace('/^http\:/', 'https:', $trust_root);
 	}  
 		
-	openid_doRedirect($auth_request, $trust_root, $return_to);
+	openid_redirect($auth_request, $trust_root, $return_to);
 	exit(0);
 }
 
