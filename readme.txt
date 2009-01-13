@@ -122,6 +122,7 @@ Will Norris forked the plugin and has since become the maintainer.
  - ensure openid comment processing occurs after akismet
  - add ellipses to truncated OpenIDs (fixes #94)
  - fix bug where Yahoo! OpenIDs weren't matching profile URL (fixes #98)
+ - don't return empty SREG values
 
 = version 3.1.4 = 
  - allow OP extensions to include XRDS Types in login service
