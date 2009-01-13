@@ -115,11 +115,14 @@ function openid_server_sreg_auth_response($response) {
 	if ($include_sreg) {
 		$sreg_data = array();
 		foreach ($GLOBALS['Auth_OpenID_sreg_data_fields'] as $field => $name) {
-			$sreg_data[$field] = openid_server_sreg_from_profile($field);
+			$value = openid_server_sreg_from_profile($field);
+			if (!empty($value)) {
+				$sreg_data[$field] = $value;
+			}
 		}
 
 		$sreg_response = Auth_OpenID_SRegResponse::extractResponse($GLOBALS['openid_server_sreg_request'], $sreg_data);
-		$response->addExtension($sreg_response);
+		if (!empty($sreg_response)) $response->addExtension($sreg_response);
 	}
 
 	return $response;
