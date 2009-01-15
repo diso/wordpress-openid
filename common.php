@@ -679,9 +679,9 @@ function openid_get_user_data_ax($data, $identity_url) {
 
 	$nickname = $ax->getSingle('http://axschema.org/namePerson/friendly');
 	if ($nickname && !is_a($nickname, 'Auth_OpenID_AX_Error')) {
-		$data['nickname'] = $ax->get('http://axschema.org/namePerson/friendly');
-		$data['user_nicename'] = $ax->get('http://axschema.org/namePerson/friendly');
-		$data['display_name'] = $ax->get('http://axschema.org/namePerson/friendly');
+		$data['nickname'] = $ax->getSingle('http://axschema.org/namePerson/friendly');
+		$data['user_nicename'] = $ax->getSingle('http://axschema.org/namePerson/friendly');
+		$data['display_name'] = $ax->getSingle('http://axschema.org/namePerson/friendly');
 	}
 
 	$fullname = $ax->getSingle('http://axschema.org/namePerson');
