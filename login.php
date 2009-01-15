@@ -226,6 +226,10 @@ function openid_clean_registration_errors($errors) {
 		$errors = $new;
 	}
 
+	if (get_option('openid_required_for_registration') && empty($_POST['openid_identifier'])) {
+		$errors->add('openid_only', __('<strong>ERROR</strong>: ', 'openid') . __('New users must register using OpenID.', 'openid'));
+	}
+
 	return $errors;
 }
 
@@ -233,14 +237,6 @@ function openid_clean_registration_errors($errors) {
  * Handle WordPress registration errors.
  */
 function openid_registration_errors($errors) {
-	if (get_option('openid_required_for_registration')) {
-		$errors = new WP_Error();
-
-		if (empty($_POST['openid_identifier'])) {
-			$errors->add('openid_only', __('<strong>ERROR</strong>: ', 'openid') . __('New users must register using OpenID.', 'openid'));
-		}
-	}
-
 	if (!empty($_POST['openid_identifier'])) {
 		$errors->add('invalid_openid', __('<strong>ERROR</strong>: ', 'openid') . openid_message());
 	}
