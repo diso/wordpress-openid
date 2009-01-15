@@ -8,10 +8,11 @@
 // add OpenID input field to wp-login.php
 add_action( 'login_head', 'openid_wp_login_head');
 add_action( 'login_form', 'openid_wp_login_form');
-add_action( 'register_form', 'openid_wp_register_form');
-add_action( 'register_post', 'openid_register_post');
+add_action( 'register_form', 'openid_wp_register_form', 9);
+add_action( 'register_post', 'openid_register_post', 10, 3);
 add_action( 'wp_authenticate', 'openid_wp_authenticate' );
 add_action( 'openid_finish_auth', 'openid_finish_login' );
+add_filter( 'registration_errors', 'openid_clean_registration_errors', -99);
 add_filter( 'registration_errors', 'openid_registration_errors');
 add_action( 'init', 'openid_login_errors' );
 add_filter( 'openid_consumer_return_urls', 'openid_wp_login_return_url' );
@@ -110,6 +111,7 @@ function openid_wp_register_form() {
 				jQuery("#user_login/..").hide();
 				jQuery("#user_email/..").hide();
 				jQuery("#reg_passmail").hide();
+				jQuery("p.submit").css("margin", "1em 0");
 				var link = jQuery("#nav a:first");
 				jQuery("#nav").text("").append(link);
 			});
@@ -123,7 +125,7 @@ function openid_wp_register_form() {
 		<script type="text/javascript">
 			jQuery(function() {
 				jQuery("#reg_passmail").insertBefore("#openid_split");
-				jQuery("p.submit").clone().insertBefore("#openid_split");
+				jQuery("p.submit").css("margin", "1em 0").clone().insertBefore("#openid_split");
 			});
 		</script>';
 	}
@@ -134,7 +136,7 @@ function openid_wp_register_form() {
 		<input type="text" name="openid_identifier" id="openid_identifier" class="input openid_identifier" value="" size="20" tabindex="25" /></label>
 	</p>
 
-	<p style="float: left; font-size: 0.8em;" id="what_is_openid">
+	<p style="float: left; font-size: 0.8em; margin: 0.8em 0;" id="what_is_openid">
 		<a href="http://openid.net/what/" target="_blank">'.__('What is OpenID?', 'openid').'</a>
 	</p>';
 
@@ -208,6 +210,26 @@ function wp25_login_openid() {
 
 
 /**
+ * Clean out registration errors that don't apply.
+ */
+function openid_clean_registration_errors($errors) {
+	if (get_option('openid_required_for_registration') || !empty($_POST['openid_identifier'])) {
+		$new = new WP_Error();
+		foreach ($errors->get_error_codes() as $code) {
+			if (in_array($code, array('empty_username', 'empty_email'))) continue;
+
+			$message = $errors->get_error_message($code);
+			$data = $errors->get_error_data($code);
+			$new->add($code, $message, $data);
+		}
+
+		$errors = $new;
+	}
+
+	return $errors;
+}
+
+/**
  * Handle WordPress registration errors.
  */
 function openid_registration_errors($errors) {
@@ -230,7 +252,7 @@ function openid_registration_errors($errors) {
 /**
  * Handle WordPress registrations.
  */
-function openid_register_post($errors) {
+function openid_register_post($username, $password, $errors) {
 	if (!empty($_POST['openid_identifier'])) {
 		wp_signon(array('user_login'=>'openid', 'user_password'=>'openid'));
 	}
