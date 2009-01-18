@@ -29,9 +29,7 @@ if (version_compare($wp_version, '2.5', '>=') && version_compare($wp_version, '2
  * @param string $credentials username and password provided in login form
  */
 function openid_wp_authenticate(&$credentials) {
-	if (array_key_exists('openid_consumer', $_REQUEST)) {
-		finish_openid('login');
-	} else if (!empty($_POST['openid_identifier'])) {
+	if (!empty($_POST['openid_identifier'])) {
 		$finish_url = $_REQUEST['redirect_to'];
 		openid_start_login($_POST['openid_identifier'], 'login', $finish_url);
 

@@ -437,7 +437,7 @@ function openid_start_login( $claimed_url, $action, $finish_url = null) {
 	}
 
 	$trust_root = openid_trust_root();
-	$return_to = site_url('openid_consumer');
+	$return_to = site_url('openid/consumer');
 		
 	openid_redirect($auth_request, $trust_root, $return_to);
 	exit(0);
@@ -755,7 +755,7 @@ function openid_consumer_xrds_simple($xrds) {
 
 	if (get_option('openid_xrds_returnto')) {
 		// OpenID Consumer Service
-		$return_urls = array_unique(apply_filters('openid_consumer_return_urls', array(site_url('openid_consumer'))));
+		$return_urls = array_unique(apply_filters('openid_consumer_return_urls', array(site_url('openid/consumer'))));
 		if (!empty($return_urls)) {
 			$xrds = xrds_add_simple_service($xrds, 'OpenID Consumer Service', 'http://specs.openid.net/auth/2.0/return_to', $return_urls);
 		}
@@ -777,7 +777,7 @@ function openid_consumer_xrds_simple($xrds) {
 
 		// Identity in the Browser Indicator Service
 		$xrds = xrds_add_simple_service($xrds, 'Identity in the Browser Indicator Service', 
-			'http://specs.openid.net/idib/1.0/indicator', site_url('/openid_check_login'));
+			'http://specs.openid.net/idib/1.0/indicator', site_url('/openid/check_login'));
 	}
 
 	return $xrds;
@@ -785,25 +785,32 @@ function openid_consumer_xrds_simple($xrds) {
 
 
 /**
- * Parse the WordPress request.  If the pagename is 'openid_consumer', then the request
- * is an OpenID response and should be handled accordingly.
+ * Parse the WordPress request.  If the query var 'openid' is present, then 
+ * handle the request accordingly.
  *
  * @param WP $wp WP instance for the current request
  */
 function openid_parse_request($wp) {
-	// OpenID Consumer Request
-	if (array_key_exists('openid_consumer', $wp->query_vars)) {
-		@session_start();
+	if (array_key_exists('openid', $wp->query_vars)) {
 
-		$action = $_SESSION['openid_action'];
-		// TODO: defalut value for $action
-		finish_openid($action);
-	}
+		switch ($wp->query_vars['openid']) {
+			case 'consumer': 
+				@session_start();
 
-	// IDIB Request
-	if (array_key_exists('openid_check_login', $wp->query_vars)) {
-		echo is_user_logged_in() ? 'true' : 'false';
-		exit;
+				$action = $_SESSION['openid_action'];
+				// TODO: defalut value for $action
+				finish_openid($action);
+				break;
+
+			case 'server':
+				openid_server_request($_REQUEST['action']);
+				break;
+
+			case 'check_login':
+				// IDIB Request
+				echo is_user_logged_in() ? 'true' : 'false';
+				exit;
+		}
 	}
 }
 
@@ -813,9 +820,7 @@ function openid_rewrite_rules($wp_rewrite) {
 	$site_root = substr(trailingslashit($url_parts['path']), 1);
 
 	$openid_rules = array( 
-		$site_root . 'openid_consumer' => 'index.php?openid_consumer=1',
-		$site_root . 'openid_server' => 'index.php?openid_server=1',
-		$site_root . 'openid_check_login' => 'index.php?openid_check_login=1',
+		$site_root . 'openid/(.+)' => 'index.php?openid=$matches[1]',
 		$site_root . 'eaut_mapper' => 'index.php?eaut_mapper=1',
 	);
 
@@ -824,9 +829,7 @@ function openid_rewrite_rules($wp_rewrite) {
 
 
 function openid_query_vars($vars) {
-	$vars[] = 'openid_consumer';
-	$vars[] = 'openid_server';
-	$vars[] = 'openid_check_login';
+	$vars[] = 'openid';
 	$vars[] = 'eaut_mapper';
 	return $vars;
 }

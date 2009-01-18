@@ -4,7 +4,6 @@ require_once 'Auth/OpenID/Server.php';
 require_once 'server_ext.php';
 require_once 'server_eaut.php';
 
-add_action( 'parse_request', 'openid_server_parse_request');
 add_filter( 'xrds_simple', 'openid_provider_xrds_simple');
 add_action( 'wp_head', 'openid_provider_link_tags');
 
@@ -64,7 +63,7 @@ function openid_provider_xrds_simple($xrds) {
 			}
 			$services[] = array(
 							'Type' => $types,
-							'URI' => trailingslashit(get_option('siteurl')) . '?openid_server=1',
+							'URI' => site_url('/openid/server'),
 							'LocalID' => get_author_posts_url($user->ID),
 						);
 
@@ -75,7 +74,7 @@ function openid_provider_xrds_simple($xrds) {
 			}
 			$services[] = array(
 							'Type' => $types,
-							'URI' => trailingslashit(get_option('siteurl')) . '?openid_server=1',
+							'URI' => site_url('/openid/server'),
 							'openid:Delegate' => get_author_posts_url($user->ID),
 						);
 		}
@@ -83,7 +82,7 @@ function openid_provider_xrds_simple($xrds) {
 		$services = array(
 			array(
 				'Type' => array(array('content' => 'http://specs.openid.net/auth/2.0/server')),
-				'URI' => trailingslashit(get_option('siteurl')) . '?openid_server=1',
+				'URI' => site_url('/openid/server'),
 				'LocalID' => 'http://specs.openid.net/auth/2.0/identifier_select',
 			)
 		);
@@ -556,18 +555,5 @@ function openid_server_update_delegation_info($userid, $url = null) {
 	update_usermeta($userid, 'openid_delegate_services', $services);
 	return true;
 }
-
-
-/**
- * Parse the WordPress request.  
- *
- * @param WP $wp WP instance for the current request
- */
-function openid_server_parse_request($wp) {
-	if (array_key_exists('openid_server', $_REQUEST)) {
-		openid_server_request($_REQUEST['action']);
-	}
-}
-
 
 ?>

@@ -29,8 +29,8 @@ function openid_eaut_mapper($email) {
 }
 
 /**
- * Parse the WordPress request.  If the pagename is 'openid_consumer', then the request
- * is an OpenID response and should be handled accordingly.
+ * Parse the WordPress request.  If the query var 'eaut_mapper' is present, then 
+ * handle the request accordingly.
  *
  * @param WP $wp WP instance for the current request
  */
