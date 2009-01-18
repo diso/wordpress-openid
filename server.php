@@ -118,7 +118,7 @@ function openid_server_requested_user() {
 			return get_userdatabylogin($_REQUEST['author']);
 		}
 	} else {
-		$regex = preg_replace('/%author%/?', '(.+)', $wp_rewrite->get_author_permastruct());
+		$regex = preg_replace('/%author%/', '(.+)', $wp_rewrite->get_author_permastruct());
 		preg_match('|'.$regex.'|', $_SERVER['REQUEST_URI'], $matches);
 		$username = sanitize_user($matches[1], true);
 		return get_userdatabylogin($username);
