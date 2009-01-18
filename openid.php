@@ -10,7 +10,7 @@
  */
 
 define ( 'OPENID_PLUGIN_REVISION', preg_replace( '/\$Rev: (.+) \$/', '\\1',
-	'$Rev: 518 $') ); // this needs to be on a separate line so that svn:keywords can work its magic
+	'$Rev: 519 $') ); // this needs to be on a separate line so that svn:keywords can work its magic
 
 // last plugin revision that required database schema changes
 define ( 'OPENID_DB_REVISION', 24426);
@@ -44,7 +44,7 @@ if ( function_exists('register_uninstall_hook') ) {
 add_action( 'init', 'openid_activate_wpmu' ); // wpmu activation
 
 // run activation function if new revision of plugin
-if (get_option('openid_plugin_revision') !== false && OPENID_PLUGIN_REVISION != get_option('openid_plugin_revision')) {
+if (get_option('openid_plugin_revision') === false || OPENID_PLUGIN_REVISION != get_option('openid_plugin_revision')) {
 	openid_activate_plugin();
 }
 

@@ -151,6 +151,7 @@ function openid_activate_plugin() {
 	wp_clear_scheduled_hook('cleanup_openid');
 	wp_schedule_event(time(), 'hourly', 'cleanup_openid');
 
+	if (!isset($wp_rewrite)) { $wp_rewrite = new WP_Rewrite(); }
 	$wp_rewrite->flush_rules();
 
 	// set current revision
@@ -437,7 +438,7 @@ function openid_start_login( $claimed_url, $action, $finish_url = null) {
 	}
 
 	$trust_root = openid_trust_root();
-	$return_to = site_url('openid/consumer');
+	$return_to = openid_service_url('openid', 'consumer');
 		
 	openid_redirect($auth_request, $trust_root, $return_to);
 	exit(0);
@@ -755,7 +756,7 @@ function openid_consumer_xrds_simple($xrds) {
 
 	if (get_option('openid_xrds_returnto')) {
 		// OpenID Consumer Service
-		$return_urls = array_unique(apply_filters('openid_consumer_return_urls', array(site_url('openid/consumer'))));
+		$return_urls = array_unique(apply_filters('openid_consumer_return_urls', array(openid_service_url('openid', 'consumer'))));
 		if (!empty($return_urls)) {
 			$xrds = xrds_add_simple_service($xrds, 'OpenID Consumer Service', 'http://specs.openid.net/auth/2.0/return_to', $return_urls);
 		}
@@ -777,7 +778,7 @@ function openid_consumer_xrds_simple($xrds) {
 
 		// Identity in the Browser Indicator Service
 		$xrds = xrds_add_simple_service($xrds, 'Identity in the Browser Indicator Service', 
-			'http://specs.openid.net/idib/1.0/indicator', site_url('/openid/check_login'));
+			'http://specs.openid.net/idib/1.0/indicator', openid_service_url('openid', 'check_login'));
 	}
 
 	return $xrds;
@@ -815,18 +816,38 @@ function openid_parse_request($wp) {
 }
 
 
-function openid_rewrite_rules($wp_rewrite) {
+function openid_service_url($name, $value, $absolute = true) {
+	global $wp_rewrite;
+	if (!$wp_rewrite) $wp_rewrite = new WP_Rewrite();
+
 	$site_url = get_option('siteurl');
 	$home_url = get_option('home');
 
 	if ($site_url != $home_url) {
-		$base = substr($site_url, strlen($home_url));
-		$base = substr(trailingslashit($base), 1);
+		$url = substr($site_url, strlen($home_url));
+		$url = substr(trailingslashit($url), 1);
 	}
 
+	if ($wp_rewrite->using_permalinks()) {
+		if ($wp_rewrite->using_index_permalinks()) {
+			$url .= 'index.php/';
+		}
+		$url .= $name . '/' . $value;
+	} else {
+		$url .= '?' . $name . '=' . $value;
+	}
+
+	if ($absolute) {
+		$url = trailingslashit(get_option('home')) . $url;
+	}
+
+	return $url;
+}
+
+function openid_rewrite_rules($wp_rewrite) {
 	$openid_rules = array( 
-		$base . 'openid/(.+)' => 'index.php?openid=$matches[1]',
-		$base . 'eaut_mapper' => 'index.php?eaut_mapper=1',
+		openid_service_url('openid', '(.+)', false) => 'index.php?openid=$matches[1]',
+		openid_service_url('eaut', '(.+)', false) => 'index.php?eaut=$matches[1]',
 	);
 
 	$wp_rewrite->rules = $openid_rules + $wp_rewrite->rules;
@@ -835,7 +856,7 @@ function openid_rewrite_rules($wp_rewrite) {
 
 function openid_query_vars($vars) {
 	$vars[] = 'openid';
-	$vars[] = 'eaut_mapper';
+	$vars[] = 'eaut';
 	return $vars;
 }
 

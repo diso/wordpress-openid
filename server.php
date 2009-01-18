@@ -33,6 +33,8 @@ function openid_provider_xrds_simple($xrds) {
 
 	$user = openid_server_requested_user();
 	
+	error_log('service_url = ' . openid_service_url('openid', 'consumer', true));
+	error_log('service_url = ' . openid_service_url('openid', 'server', false));
 	if (!$user && get_option('openid_blog_owner')) {
 		$url_parts = parse_url(get_option('home'));
 		$path = trailingslashit($url_parts['path']);
@@ -66,7 +68,7 @@ function openid_provider_xrds_simple($xrds) {
 			}
 			$services[] = array(
 							'Type' => $types,
-							'URI' => site_url('/openid/server'),
+							'URI' => openid_service_url('openid', 'server'),
 							'LocalID' => get_author_posts_url($user->ID),
 						);
 
@@ -77,7 +79,7 @@ function openid_provider_xrds_simple($xrds) {
 			}
 			$services[] = array(
 							'Type' => $types,
-							'URI' => site_url('/openid/server'),
+							'URI' => openid_service_url('openid', 'server'),
 							'openid:Delegate' => get_author_posts_url($user->ID),
 						);
 		}
@@ -85,7 +87,7 @@ function openid_provider_xrds_simple($xrds) {
 		$services = array(
 			array(
 				'Type' => array(array('content' => 'http://specs.openid.net/auth/2.0/server')),
-				'URI' => site_url('/openid/server'),
+				'URI' => openid_service_url('openid', 'server'),
 				'LocalID' => 'http://specs.openid.net/auth/2.0/identifier_select',
 			)
 		);
