@@ -35,7 +35,7 @@ function openid_eaut_mapper($email) {
  * @param WP $wp WP instance for the current request
  */
 function openid_parse_eaut_request($wp) {
-	if (array_key_exists('eaut_mapper', $_REQUEST) && $_REQUEST['email']) {
+	if (array_key_exists('eaut_mapper', $wp->query_vars) && $_REQUEST['email']) {
 		openid_eaut_mapper($_REQUEST['email']);
 	}
 }
@@ -46,7 +46,7 @@ function openid_parse_eaut_request($wp) {
 function openid_eaut_xrds_simple($xrds) {
 	if (get_option('openid_xrds_eaut')) {
 		$xrds = xrds_add_simple_service($xrds, 'Email Address to URL Transformation Mapper', 
-			'http://specs.eaut.org/1.0/mapping', site_url('/'). '?eaut_mapper=1');
+			'http://specs.eaut.org/1.0/mapping', site_url('/eaut_mapper'));
 	}
 
 	return $xrds;

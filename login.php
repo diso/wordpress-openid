@@ -11,11 +11,10 @@ add_action( 'login_form', 'openid_wp_login_form');
 add_action( 'register_form', 'openid_wp_register_form', 9);
 add_action( 'register_post', 'openid_register_post', 10, 3);
 add_action( 'wp_authenticate', 'openid_wp_authenticate' );
-add_action( 'openid_finish_auth', 'openid_finish_login' );
+add_action( 'openid_finish_auth', 'openid_finish_login', 10, 2);
 add_filter( 'registration_errors', 'openid_clean_registration_errors', -99);
 add_filter( 'registration_errors', 'openid_registration_errors');
 add_action( 'init', 'openid_login_errors' );
-add_filter( 'openid_consumer_return_urls', 'openid_wp_login_return_url' );
 
 // WordPress 2.5 has wp_authenticate in the wrong place
 if (version_compare($wp_version, '2.5', '>=') && version_compare($wp_version, '2.6', '<')) {
@@ -33,7 +32,8 @@ function openid_wp_authenticate(&$credentials) {
 	if (array_key_exists('openid_consumer', $_REQUEST)) {
 		finish_openid('login');
 	} else if (!empty($_POST['openid_identifier'])) {
-		openid_start_login( $_POST['openid_identifier'], 'login', array('redirect_to' => $_REQUEST['redirect_to']), site_url('/wp-login.php', 'login_post'));
+		$finish_url = $_REQUEST['redirect_to'];
+		openid_start_login($_POST['openid_identifier'], 'login', $finish_url);
 
 		// if we got this far, something is wrong
 		global $error;
@@ -149,10 +149,10 @@ function openid_wp_register_form() {
  *
  * @param string $identity_url verified OpenID URL
  */
-function openid_finish_login($identity_url) {
-	if ($_REQUEST['action'] != 'login') return;
+function openid_finish_login($identity_url, $action) {
+	if ($action != 'login') return;
 
-	$redirect_to = urldecode($_REQUEST['redirect_to']);
+	$redirect_to = $_SESSION['openid_finish_url'];
 		
 	if (empty($identity_url)) {
 		$url = get_option('siteurl') . '/wp-login.php?openid_error=' . urlencode(openid_message());
@@ -252,15 +252,5 @@ function openid_register_post($username, $password, $errors) {
 	if (!empty($_POST['openid_identifier'])) {
 		wp_signon(array('user_login'=>'openid', 'user_password'=>'openid'));
 	}
-}
-
-
-/**
- * Contribute the WordPress login page to the valid return_to URLs for OpenID.
- */
-function openid_wp_login_return_url($urls) {
-	$url = site_url('/wp-login.php', 'login_post');
-	$urls[] = $url;
-	return $urls;
 }
 ?>

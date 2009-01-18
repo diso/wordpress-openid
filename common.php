@@ -11,7 +11,9 @@ add_action( 'init', 'openid_textdomain' ); // load textdomain
 add_action( 'wp_head', 'openid_style');
 
 // parse request
-add_action('parse_request', 'openid_parse_idib_request');
+add_action('parse_request', 'openid_parse_request');
+add_action('query_vars', 'openid_query_vars');
+add_action('generate_rewrite_rules', 'openid_rewrite_rules');
 
 add_action( 'delete_user', 'delete_user_openids' );
 add_action( 'cleanup_openid', 'openid_cleanup' );
@@ -122,6 +124,8 @@ function openid_activate_wpmu() {
  * @see register_activation_hook
  */
 function openid_activate_plugin() {
+	global $wp_rewrite;
+
 	// if first time activation, set OpenID capability for administrators
 	if (get_option('openid_plugin_revision') === false) {
 		global $wp_roles;
@@ -146,6 +150,8 @@ function openid_activate_plugin() {
 
 	wp_clear_scheduled_hook('cleanup_openid');
 	wp_schedule_event(time(), 'hourly', 'cleanup_openid');
+
+	$wp_rewrite->flush_rules();
 
 	// set current revision
 	update_option( 'openid_plugin_revision', OPENID_PLUGIN_REVISION );
@@ -397,11 +403,11 @@ function openid_begin_consumer($url) {
  * Start the OpenID authentication process.
  *
  * @param string $claimed_url claimed OpenID URL
- * @param action $action OpenID action being performed
- * @param array $arguments array of additional arguments to be included in the 'return_to' URL
+ * @param string $action OpenID action being performed
+ * @param string $finish_url stored in user session for later redirect
  * @uses apply_filters() Calls 'openid_auth_request_extensions' to gather extensions to be attached to auth request
  */
-function openid_start_login( $claimed_url, $action, $arguments = null, $return_to = null) {
+function openid_start_login( $claimed_url, $action, $finish_url = null) {
 	if ( empty($claimed_url) ) return; // do nothing.
 		
 	$auth_request = openid_begin_consumer( $claimed_url );
@@ -419,20 +425,10 @@ function openid_start_login( $claimed_url, $action, $arguments = null, $return_t
 		return;
 	}
 		
-	// build return_to URL
-	if (empty($return_to)) {
-		$return_to = trailingslashit(get_option('home'));
-	}
-	$auth_request->return_to_args['openid_consumer'] = '1';
-	$auth_request->return_to_args['action'] = $action;
-	if (is_array($arguments) && !empty($arguments)) {
-		foreach ($arguments as $k => $v) {
-			if ($k && $v) {
-				$auth_request->return_to_args[urlencode($k)] = urlencode($v);
-			}
-		}
-	}
-		
+	@session_start();
+	$_SESSION['openid_action'] = $action;
+	$_SESSION['openid_finish_url'] = $finish_url;
+
 	$extensions = apply_filters('openid_auth_request_extensions', array(), $auth_request);
 	foreach ($extensions as $e) {
 		if (is_a($e, 'Auth_OpenID_Extension')) {
@@ -440,13 +436,22 @@ function openid_start_login( $claimed_url, $action, $arguments = null, $return_t
 		}
 	}
 
-	$trust_root = get_option('home');
-	if (preg_match('/^https/', $return_to)) {
-		$trust_root = preg_replace('/^http\:/', 'https:', $trust_root);
-	}  
+	$trust_root = openid_trust_root();
+	$return_to = site_url('openid_consumer');
 		
 	openid_redirect($auth_request, $trust_root, $return_to);
 	exit(0);
+}
+
+function openid_trust_root($return_to = null) {
+	$trust_root = trailingslashit(get_option('home'));
+
+	// TODO: when should trust_root and return_to be https
+	//if (!empty($return_to) && preg_match('/^https/', $return_to)) {
+	//$trust_root = preg_replace('/^http\:/', 'https:', $trust_root);
+	//}
+
+	return $trust_root;
 }
 
 
@@ -528,10 +533,7 @@ function openid_set_current_user($identity, $remember = true) {
  */
 function finish_openid($action) {
 	$identity_url = finish_openid_auth();
-	do_action('openid_finish_auth', $identity_url);
-		
-	global $action;
-	$action = openid_status();
+	do_action('openid_finish_auth', $identity_url, $action);
 }
 
 
@@ -753,7 +755,7 @@ function openid_consumer_xrds_simple($xrds) {
 
 	if (get_option('openid_xrds_returnto')) {
 		// OpenID Consumer Service
-		$return_urls = array_unique(apply_filters('openid_consumer_return_urls', array()));
+		$return_urls = array_unique(apply_filters('openid_consumer_return_urls', array(site_url('openid_consumer'))));
 		if (!empty($return_urls)) {
 			$xrds = xrds_add_simple_service($xrds, 'OpenID Consumer Service', 'http://specs.openid.net/auth/2.0/return_to', $return_urls);
 		}
@@ -775,7 +777,7 @@ function openid_consumer_xrds_simple($xrds) {
 
 		// Identity in the Browser Indicator Service
 		$xrds = xrds_add_simple_service($xrds, 'Identity in the Browser Indicator Service', 
-			'http://specs.openid.net/idib/1.0/indicator', site_url('/') . '?openid_check_login');
+			'http://specs.openid.net/idib/1.0/indicator', site_url('/openid_check_login'));
 	}
 
 	return $xrds;
@@ -788,11 +790,45 @@ function openid_consumer_xrds_simple($xrds) {
  *
  * @param WP $wp WP instance for the current request
  */
-function openid_parse_idib_request($wp) {
-	if (array_key_exists('openid_check_login', $_REQUEST)) {
+function openid_parse_request($wp) {
+	// OpenID Consumer Request
+	if (array_key_exists('openid_consumer', $wp->query_vars)) {
+		@session_start();
+
+		$action = $_SESSION['openid_action'];
+		// TODO: defalut value for $action
+		finish_openid($action);
+	}
+
+	// IDIB Request
+	if (array_key_exists('openid_check_login', $wp->query_vars)) {
 		echo is_user_logged_in() ? 'true' : 'false';
 		exit;
 	}
+}
+
+
+function openid_rewrite_rules($wp_rewrite) {
+	$url_parts = parse_url(get_option('siteurl'));
+	$site_root = substr(trailingslashit($url_parts['path']), 1);
+
+	$openid_rules = array( 
+		$site_root . 'openid_consumer' => 'index.php?openid_consumer=1',
+		$site_root . 'openid_server' => 'index.php?openid_server=1',
+		$site_root . 'openid_check_login' => 'index.php?openid_check_login=1',
+		$site_root . 'eaut_mapper' => 'index.php?eaut_mapper=1',
+	);
+
+	$wp_rewrite->rules = $openid_rules + $wp_rewrite->rules;
+}
+
+
+function openid_query_vars($vars) {
+	$vars[] = 'openid_consumer';
+	$vars[] = 'openid_server';
+	$vars[] = 'openid_check_login';
+	$vars[] = 'eaut_mapper';
+	return $vars;
 }
 
 

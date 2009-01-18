@@ -6,8 +6,7 @@
 
 
 // -- WordPress Hooks
-add_action( 'parse_request', 'openid_parse_comment_request');
-add_action( 'preprocess_comment', 'openid_process_comment', -98);
+add_action( 'preprocess_comment', 'openid_process_comment', -90);
 if (function_exists('has_action') && has_action('preprocess_comment', 'akismet_auto_check_comment')) {
 	// ensure akismet runs before OpenID
 	remove_action('preprocess_comment', 'akismet_auto_check_comment', 1);
@@ -17,7 +16,7 @@ add_action( 'akismet_spam_caught', 'openid_akismet_spam_caught');
 add_action( 'comment_post', 'update_comment_openid', 5 );
 add_filter( 'option_require_name_email', 'openid_option_require_name_email' );
 add_action( 'sanitize_comment_cookies', 'openid_sanitize_comment_cookies', 15);
-add_action( 'openid_finish_auth', 'openid_finish_comment' );
+add_action( 'openid_finish_auth', 'openid_finish_comment', 10, 2 );
 if( get_option('openid_enable_approval') ) {
 	add_filter('pre_comment_approved', 'openid_comment_approval');
 }
@@ -28,7 +27,6 @@ if( get_option('openid_enable_commentform') ) {
 	add_action( 'wp_footer', 'openid_comment_form', 10);
 }
 add_filter( 'openid_user_data', 'openid_get_user_data_form', 6, 2);
-add_filter( 'openid_consumer_return_urls', 'openid_comment_return_url' );
 add_action( 'delete_comment', 'unset_comment_openid' );
 
 add_action( 'init', 'openid_recent_comments');
@@ -61,7 +59,7 @@ function openid_process_comment( $comment ) {
 		$_SESSION['openid_comment_post']['comment_author_openid'] = $openid_url;
 		$_SESSION['openid_comment_post']['openid_skip'] = 1;
 
-		openid_start_login( $openid_url, 'comment');
+		openid_start_login($openid_url, 'comment');
 
 		// Failure to redirect at all, the URL is malformed or unreachable.
 
@@ -279,8 +277,8 @@ function openid_repost_comment_anonymously($post) {
  *
  * @param string $identity_url verified OpenID URL
  */
-function openid_finish_comment($identity_url) {
-	if ($_REQUEST['action'] != 'comment') return;
+function openid_finish_comment($identity_url, $action) {
+	if ($action != 'comment') return;
 
 	if (empty($identity_url)) {
 		openid_repost_comment_anonymously($_SESSION['openid_comment_post']);
@@ -379,24 +377,6 @@ function openid_get_user_data_form($data, $identity_url) {
 	return $data;
 }
 
-
-/**
- * Parse the WordPress request.  If the pagename is 'openid_consumer', then the request
- * is an OpenID response and should be handled accordingly.
- *
- * @param WP $wp WP instance for the current request
- */
-function openid_parse_comment_request($wp) {
-	if (array_key_exists('openid_consumer', $_REQUEST) && $_REQUEST['action']) {
-		finish_openid($_REQUEST['action']);
-	}
-}
-
-
-function openid_comment_return_url($urls) {
-	$urls[] = get_option('home');
-	return $urls;
-}
 
 function openid_recent_comments() {
 	if (is_active_widget('wp_widget_recent_comments')) {

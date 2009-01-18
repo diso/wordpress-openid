@@ -8,8 +8,7 @@
 // -- WordPress Hooks
 add_action( 'admin_menu', 'openid_admin_panels' );
 add_action( 'personal_options_update', 'openid_personal_options_update' );
-add_action( 'openid_finish_auth', 'openid_finish_verify' );
-add_filter( 'openid_consumer_return_urls', 'openid_admin_return_url' );
+add_action( 'openid_finish_auth', 'openid_finish_verify', 10, 2 );
 add_filter( 'pre_update_option_openid_cap', 'openid_set_cap', 10, 2);
 
 if (version_compare($wp_version, '2.5', '<')) {
@@ -690,13 +689,7 @@ function openid_printSystemStatus() {
 function openid_profile_management() {
 	global $wp_version;
 	
-	if( !isset( $_REQUEST['action'] )) return;
-		
 	switch( $_REQUEST['action'] ) {
-		case 'verify':
-			finish_openid($_REQUEST['action']);
-			break;
-
 		case 'add':
 			check_admin_referer('openid-add_openid');
 
@@ -716,12 +709,39 @@ function openid_profile_management() {
 				return;
 			}
 
-			$return_to = admin_url(current_user_can('edit_users') ? 'users.php' : 'profile.php');
-			openid_start_login($_POST['openid_identifier'], 'verify', array('page' => $_REQUEST['page']), $return_to);
+			$finish_url = admin_url(current_user_can('edit_users') ? 'users.php' : 'profile.php');
+			$finish_url = add_query_arg('page', $_REQUEST['page'], $finish_url);
+
+			openid_start_login($_POST['openid_identifier'], 'verify', $finish_url);
 			break;
 
 		case 'delete':
 			openid_profile_delete_openids($_REQUEST['delete']);
+			break;
+
+		default:
+			if ($message = $_REQUEST['message']) {
+
+				$messages = array(
+					'',
+					'Unable to authenticate OpenID.',
+					'OpenID assertion successful, but this URL is already associated with another user on this blog. This is probably a bug.',
+					'Added association with OpenID.',
+				);
+
+				if (is_numeric($message)) {
+					$message = $messages[$message];
+				}
+
+				$message = __($message, 'openid');
+
+				if ($_REQUEST['update_url']) {
+					$message .= '<br />' .  __('<strong>Note:</strong> For security reasons, your profile URL has been updated to match your OpenID.', 'openid');
+				}
+
+				openid_message($message);
+				openid_status($_REQUEST['status']);
+			}
 			break;
 	}
 }
@@ -803,20 +823,19 @@ function openid_profile_delete_openids($delete) {
  *
  * @param string $identity_url verified OpenID URL
  */
-function openid_finish_verify($identity_url) {
-	if ($_REQUEST['action'] != 'verify') return;
+function openid_finish_verify($identity_url, $action) {
+	if ($action != 'verify') return;
 
+	$message;
 	$user = wp_get_current_user();
 	if (empty($identity_url)) {
 		$message = openid_message();
-		if (empty($message)) openid_message('Unable to authenticate OpenID.');
+		if (empty($message)) $message = 1;
 	} else {
 		if( !openid_add_identity($user->ID, $identity_url) ) {
-			openid_message(__('OpenID assertion successful, but this URL is already associated with '
-			. 'another user on this blog. This is probably a bug.', 'openid'));
+			$message = 2;
 		} else {
-			openid_message(sprintf(__('Added association with OpenID: %s', 'openid'), openid_display_identity($identity_url) ));
-			openid_status('success');
+			$message = 3;
 			
 			// ensure that profile URL is a verified OpenID
 			set_include_path( dirname(__FILE__) . PATH_SEPARATOR . get_include_path() );
@@ -829,12 +848,20 @@ function openid_finish_verify($identity_url) {
 
 			if (!openid_ensure_url_match($user)) {
 				wp_update_user( array('ID' => $user->ID, 'user_url' => $identity_url) );
-				openid_message(openid_message() . '<br />'.__('<strong>Note:</strong> For security reasons, your profile URL has been updated to match your OpenID.', 'openid'));
+				$update_url = 1;
 			}
 		}
 	}
 
-	return;
+	$finish_url = $_SESSION['openid_finish_url'];
+	$finish_url = add_query_arg('status', openid_status(), $finish_url);
+	$finish_url = add_query_arg('message', $message, $finish_url);
+	if ($update_url) {
+		$finish_url = add_query_arg('update_url', $update_url, $finish_url);
+	}
+
+	wp_safe_redirect($finish_url);
+	exit;
 }
 
 
@@ -885,13 +912,6 @@ function openid_ensure_url_match($user, $url = null) {
 
 	return false;
 }
-
-function openid_admin_return_url($urls) {
-	$urls[] = admin_url('users.php');
-	$urls[] = admin_url('profile.php');
-	return $urls;
-}
-
 
 
 function openid_extend_profile() {
