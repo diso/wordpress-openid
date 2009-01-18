@@ -816,12 +816,17 @@ function openid_parse_request($wp) {
 
 
 function openid_rewrite_rules($wp_rewrite) {
-	$url_parts = parse_url(get_option('siteurl'));
-	$site_root = substr(trailingslashit($url_parts['path']), 1);
+	$site_url = get_option('siteurl');
+	$home_url = get_option('home');
+
+	if ($site_url != $home_url) {
+		$base = substr($site_url, strlen($home_url));
+		$base = substr(trailingslashit($base), 1);
+	}
 
 	$openid_rules = array( 
-		$site_root . 'openid/(.+)' => 'index.php?openid=$matches[1]',
-		$site_root . 'eaut_mapper' => 'index.php?eaut_mapper=1',
+		$base . 'openid/(.+)' => 'index.php?openid=$matches[1]',
+		$base . 'eaut_mapper' => 'index.php?eaut_mapper=1',
 	);
 
 	$wp_rewrite->rules = $openid_rules + $wp_rewrite->rules;
