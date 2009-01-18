@@ -141,6 +141,11 @@ function openid_server_request() {
 		}
 	}
 
+	if (!$request) {
+		echo "This is an OpenID Server.";
+		exit;
+	}
+
 	// process request
 	if (in_array($request->mode, array('checkid_immediate', 'checkid_setup'))) {
 		$response = openid_server_auth_request($request);
