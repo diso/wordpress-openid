@@ -33,8 +33,6 @@ function openid_provider_xrds_simple($xrds) {
 
 	$user = openid_server_requested_user();
 	
-	error_log('service_url = ' . openid_service_url('openid', 'consumer', true));
-	error_log('service_url = ' . openid_service_url('openid', 'server', false));
 	if (!$user && get_option('openid_blog_owner')) {
 		$url_parts = parse_url(get_option('home'));
 		$path = trailingslashit($url_parts['path']);
