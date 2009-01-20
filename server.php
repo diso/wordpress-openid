@@ -312,7 +312,7 @@ function openid_server() {
 	static $server;
 
 	if (!$server || !is_a($server, 'Auth_OpenID_Server')) {
-		$server = new Auth_OpenID_Server(openid_getStore(), site_url('openid/server'));
+		$server = new Auth_OpenID_Server(openid_getStore(), openid_service_url('openid', 'server'));
 	}
 
 	return $server;
@@ -359,7 +359,7 @@ function openid_provider_link_tags() {
 				}
 			}
 		} else  {
-			$server = site_url('openid/server');
+			$server = openid_service_url('openid', 'server');
 			$identifier = get_author_posts_url($user->ID);
 
 			echo '
@@ -440,7 +440,7 @@ function openid_server_user_trust($request) {
 
 		if (is_user_logged_in()) {
 			$user = wp_get_current_user();
-			$logout_url = site_url('wp-login.php?action=logout&redirect_to=' . urlencode(site_url('openid/server')), 'login');
+			$logout_url = site_url('wp-login.php?action=logout&redirect_to=' . urlencode(openid_service_url('openid', 'server')), 'login');
 			echo '
 				<div id="loggedin">' . sprintf(__('Logged in as %1$s (%2$s). <a href="%3$s">Use a different account?</a>', 'openid'), $user->display_name, $user->user_login, $logout_url ) . '</div>';
 		}
@@ -448,7 +448,7 @@ function openid_server_user_trust($request) {
 		echo '
 			</div>
 
-			<form action="' . get_option('openid/server') . '" method="post">
+			<form action="' . openid_service_url('openid', 'server') . '" method="post">
 			<h1>'.__('Verify Your Identity', 'openid').'</h1>
 			<p style="margin: 1.5em 0 1em 0;">'
 				. sprintf(__('%s has asked to verify your identity.', 'openid'), '<strong>'.$request->trust_root.'</strong>')
@@ -462,7 +462,7 @@ function openid_server_user_trust($request) {
 
 		echo '
 			<p class="submit" style="text-align: center; margin-top: 2.4em;">
-				<a href="' . add_query_arg('openid_trust', 'cancel', site_url('openid/server')) . '">'.__('Cancel and go back', 'openid').'</a>
+				<a href="' . add_query_arg('openid_trust', 'cancel', openid_service_url('openid', 'server')) . '">'.__('Cancel and go back', 'openid').'</a>
 				<input type="submit" id="submit" name="openid_trust" value="'.__('Continue', 'openid').'" />
 			</p>
 
