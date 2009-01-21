@@ -373,6 +373,12 @@ function openid_normalize_username($username) {
 }
 
 
+/**
+ * Begin login by activating the OpenID consumer.
+ *
+ * @param string $url claimed ID
+ * @return Auth_OpenID_Request OpenID Request
+ */
 function openid_begin_consumer($url) {
 	static $request;
 
@@ -437,20 +443,27 @@ function openid_start_login( $claimed_url, $action, $finish_url = null) {
 		}
 	}
 
-	$trust_root = openid_trust_root();
-	$return_to = openid_service_url('openid', 'consumer');
+	$return_to = openid_service_url('openid', 'consumer', 'login_post');
+	$trust_root = openid_trust_root($return_to);
 		
 	openid_redirect($auth_request, $trust_root, $return_to);
 	exit(0);
 }
 
+
+/**
+ * Get the OpenID trust root for the given return_to URL.
+ *
+ * @param string $return_to OpenID return_to URL
+ * @return string OpenID trust root
+ */
 function openid_trust_root($return_to = null) {
 	$trust_root = trailingslashit(get_option('home'));
 
-	// TODO: when should trust_root and return_to be https
-	//if (!empty($return_to) && preg_match('/^https/', $return_to)) {
-	//$trust_root = preg_replace('/^http\:/', 'https:', $trust_root);
-	//}
+	// If return_to is HTTPS, trust_root must be as well
+	if (!empty($return_to) && preg_match('/^https/', $return_to)) {
+		$trust_root = preg_replace('/^http\:/', 'https:', $trust_root);
+	}
 
 	return $trust_root;
 }
@@ -756,7 +769,7 @@ function openid_consumer_xrds_simple($xrds) {
 
 	if (get_option('openid_xrds_returnto')) {
 		// OpenID Consumer Service
-		$return_urls = array_unique(apply_filters('openid_consumer_return_urls', array(openid_service_url('openid', 'consumer'))));
+		$return_urls = array_unique(apply_filters('openid_consumer_return_urls', array(openid_service_url('openid', 'consumer', 'login_post'))));
 		if (!empty($return_urls)) {
 			$xrds = xrds_add_simple_service($xrds, 'OpenID Consumer Service', 'http://specs.openid.net/auth/2.0/return_to', $return_urls);
 		}
@@ -816,16 +829,32 @@ function openid_parse_request($wp) {
 }
 
 
-function openid_service_url($name, $value, $absolute = true) {
+/**
+ * Build an OpenID service URL.
+ *
+ * @param string $name service name to build URL for
+ * @param string $value service value to build URL for
+ * @param string $scheme URL scheme to use for URL (see site_url())
+ * @param boolean $absolute should we return an absolute URL
+ * @return string service URL
+ * @see site_url
+ */
+function openid_service_url($name, $value, $scheme = null, $absolute = true) {
 	global $wp_rewrite;
 	if (!$wp_rewrite) $wp_rewrite = new WP_Rewrite();
 
-	$site_url = get_option('siteurl');
-	$home_url = get_option('home');
+	if ($absolute) {
+		if (!defined('OPENID_SSL') || !OPENID_SSL) $scheme = null;
+		$url = site_url('/', $scheme);
+	} else {
+		$site_url = get_option('siteurl');
+		$home_url = get_option('home');
 
-	if ($site_url != $home_url) {
-		$url = substr($site_url, strlen($home_url));
-		$url = substr(trailingslashit($url), 1);
+		if ($site_url != $home_url) {
+			$url = substr(trailingslashit($site_url), strlen($home_url)+1);
+		} else {
+			$url = '';
+		}
 	}
 
 	if ($wp_rewrite->using_permalinks()) {
@@ -837,23 +866,25 @@ function openid_service_url($name, $value, $absolute = true) {
 		$url .= '?' . $name . '=' . $value;
 	}
 
-	if ($absolute) {
-		$url = trailingslashit(get_option('home')) . $url;
-	}
-
 	return $url;
 }
 
+/**
+ * Add rewrite rules to WP_Rewrite for the OpenID services.
+ */
 function openid_rewrite_rules($wp_rewrite) {
 	$openid_rules = array( 
-		openid_service_url('openid', '(.+)', false) => 'index.php?openid=$matches[1]',
-		openid_service_url('eaut', '(.+)', false) => 'index.php?eaut=$matches[1]',
+		openid_service_url('openid', '(.+)', null, false) => 'index.php?openid=$matches[1]',
+		openid_service_url('eaut', '(.+)', null, false) => 'index.php?eaut=$matches[1]',
 	);
 
 	$wp_rewrite->rules = $openid_rules + $wp_rewrite->rules;
 }
 
 
+/**
+ * Add valid query vars to WordPress for OpenID.
+ */
 function openid_query_vars($vars) {
 	$vars[] = 'openid';
 	$vars[] = 'eaut';
