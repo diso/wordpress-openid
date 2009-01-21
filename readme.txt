@@ -139,7 +139,7 @@ Will Norris forked the plugin and has since become the maintainer.
  - add ellipses to truncated OpenIDs (fixes #94)
  - fix bug where Yahoo! OpenIDs weren't matching profile URL (fixes #98)
  - don't return empty SREG values
- - fix bug with Attribute Exchange
+ - Add support for consuming Attribute Exchange
  - use a single return_to URL for all OpenID actions
  - cleaner OpenID service URLs when permalinks configured to do so (all path, no query string)
  - fixed issue where OpenID Server would sometimes break depending on a users permalink structure (fixed #101)
