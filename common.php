@@ -299,7 +299,13 @@ function finish_openid_auth() {
 	@session_start();
 
 	$consumer = openid_getConsumer();
-	$response = $consumer->complete($_SESSION['openid_return_to']);
+	$openid_return_to = $_SESSION['openid_return_to'];
+	if (empty($openid_return_to)) {
+		$openid_return_to = openid_service_url('openid', 'consumer');
+	}
+
+	$response = $consumer->complete($openid_return_to);
+
 	unset($_SESSION['openid_return_to']);
 	openid_response($response);
 
@@ -812,7 +818,16 @@ function openid_parse_request($wp) {
 				@session_start();
 
 				$action = $_SESSION['openid_action'];
-				// TODO: defalut value for $action
+
+				// no action, which probably means OP-initiated login.  Set
+				// action to 'login', and redirect to home page when finished
+				if (empty($action)) {
+					$action = 'login';
+					if (empty($_SESSION['openid_finish_url'])) {
+						$_SESSION['openid_finish_url'] = get_option('home');
+					}
+				}
+
 				finish_openid($action);
 				break;
 
