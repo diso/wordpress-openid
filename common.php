@@ -6,7 +6,7 @@
 // -- WP Hooks
 // Add hooks to handle actions in WordPress
 add_action( 'init', 'openid_textdomain' ); // load textdomain
-	
+
 // include internal stylesheet
 add_action( 'wp_head', 'openid_style');
 
@@ -197,7 +197,7 @@ function openid_deactivate_plugin() {
 	delete_option('openid_server_nonces');
 }
 
- 
+
 /**
  * Delete options in database
  */
@@ -302,7 +302,7 @@ function finish_openid_auth() {
 	$response = $consumer->complete($_SESSION['openid_return_to']);
 	unset($_SESSION['openid_return_to']);
 	openid_response($response);
-		
+
 	switch( $response->status ) {
 		case Auth_OpenID_CANCEL:
 			openid_message(__('OpenID login was cancelled.', 'openid'));
@@ -416,13 +416,13 @@ function openid_begin_consumer($url) {
  */
 function openid_start_login( $claimed_url, $action, $finish_url = null) {
 	if ( empty($claimed_url) ) return; // do nothing.
-		
+
 	$auth_request = openid_begin_consumer( $claimed_url );
 
 	if ( null === $auth_request ) {
 		openid_status('error');
 		openid_message(sprintf(
-			__('Could not discover an OpenID identity server endpoint at the url: %s', 'openid'), 
+			__('Could not discover an OpenID identity server endpoint at the url: %s', 'openid'),
 			htmlentities($claimed_url)
 		));
 		if( strpos( $claimed_url, '@' ) ) {
@@ -431,7 +431,7 @@ function openid_start_login( $claimed_url, $action, $finish_url = null) {
 		}
 		return;
 	}
-		
+
 	@session_start();
 	$_SESSION['openid_action'] = $action;
 	$_SESSION['openid_finish_url'] = $finish_url;
@@ -445,7 +445,7 @@ function openid_start_login( $claimed_url, $action, $finish_url = null) {
 
 	$return_to = openid_service_url('openid', 'consumer', 'login_post');
 	$trust_root = openid_trust_root($return_to);
-		
+
 	openid_redirect($auth_request, $trust_root, $return_to);
 	exit(0);
 }
@@ -528,7 +528,7 @@ function openid_set_current_user($identity, $remember = true) {
 	if (!$user_id) return;
 
 	$user = set_current_user($user_id);
-		
+
 	if (function_exists('wp_set_auth_cookie')) {
 		wp_set_auth_cookie($user->ID, $remember);
 	} else {
@@ -540,7 +540,7 @@ function openid_set_current_user($identity, $remember = true) {
 
 
 /**
- * Finish OpenID authentication. 
+ * Finish OpenID authentication.
  *
  * @param string $action login action that is being performed
  * @uses do_action() Calls 'openid_finish_auth' hook action after processing the authentication response.
@@ -587,7 +587,7 @@ function openid_create_new_user($identity_url, &$user_data) {
 	$user_data['user_login'] = $username;
 	$user_data['user_pass'] = substr( md5( uniqid( microtime() ) ), 0, 7);
 	$user_id = wp_insert_user( $user_data );
-		
+
 	if( $user_id ) { // created ok
 
 		$user_data['ID'] = $user_id;
@@ -644,7 +644,7 @@ function openid_get_user_data($identity_url) {
 			'ID' => null,
 			'user_url' => $identity_url,
 			'user_nicename' => $identity_url,
-			'display_name' => $identity_url 
+			'display_name' => $identity_url
 	);
 
 	// create proper website URL if OpenID is an i-name
@@ -777,7 +777,7 @@ function openid_consumer_xrds_simple($xrds) {
 
 	if (get_option('openid_xrds_idib')) {
 		// Identity in the Browser Login Service
-		$xrds = xrds_add_service($xrds, 'main', 'Identity in the Browser Login Service', 
+		$xrds = xrds_add_service($xrds, 'main', 'Identity in the Browser Login Service',
 			array(
 				'Type' => array(array('content' => 'http://specs.openid.net/idib/1.0/login') ),
 				'URI' => array(
@@ -790,7 +790,7 @@ function openid_consumer_xrds_simple($xrds) {
 		);
 
 		// Identity in the Browser Indicator Service
-		$xrds = xrds_add_simple_service($xrds, 'Identity in the Browser Indicator Service', 
+		$xrds = xrds_add_simple_service($xrds, 'Identity in the Browser Indicator Service',
 			'http://specs.openid.net/idib/1.0/indicator', openid_service_url('openid', 'check_login'));
 	}
 
@@ -799,7 +799,7 @@ function openid_consumer_xrds_simple($xrds) {
 
 
 /**
- * Parse the WordPress request.  If the query var 'openid' is present, then 
+ * Parse the WordPress request.  If the query var 'openid' is present, then
  * handle the request accordingly.
  *
  * @param WP $wp WP instance for the current request
@@ -808,7 +808,7 @@ function openid_parse_request($wp) {
 	if (array_key_exists('openid', $wp->query_vars)) {
 
 		switch ($wp->query_vars['openid']) {
-			case 'consumer': 
+			case 'consumer':
 				@session_start();
 
 				$action = $_SESSION['openid_action'];
@@ -873,7 +873,7 @@ function openid_service_url($name, $value, $scheme = null, $absolute = true) {
  * Add rewrite rules to WP_Rewrite for the OpenID services.
  */
 function openid_rewrite_rules($wp_rewrite) {
-	$openid_rules = array( 
+	$openid_rules = array(
 		openid_service_url('openid', '(.+)', null, false) => 'index.php?openid=$matches[1]',
 		openid_service_url('eaut', '(.+)', null, false) => 'index.php?eaut=$matches[1]',
 	);
@@ -927,7 +927,7 @@ function openid_enabled($new = null) {
 
 
 /**
- * Send HTTP post through the user-agent.  If javascript is not supported, the 
+ * Send HTTP post through the user-agent.  If javascript is not supported, the
  * user will need to click on a "continue" button.
  *
  * @param string $action form action (URL to POST form to)
@@ -946,9 +946,9 @@ function openid_repost($action, $parameters) {
 	$html .= '
 		<noscript><div><input type="submit" value="' . __('Continue') . '" /></div></noscript>
 	</form>
-	
+
 	<script type="text/javascript">
-		document.write("<h2>'.__('Please Wait...', 'openid').'</h2>"); 
+		document.write("<h2>'.__('Please Wait...', 'openid').'</h2>");
 		document.forms[0].submit()
 	</script>';
 
@@ -992,13 +992,13 @@ function openid_js_setup() {
 	if (is_single() || is_comments_popup() || is_admin()) {
 		wp_enqueue_script( 'jquery' );
 		//wp_enqueue_script( 'jquery-ui-sortable' );
-		wp_enqueue_script('jquery.textnode', openid_plugin_url() . '/f/jquery.textnode.min.js', 
+		wp_enqueue_script('jquery.textnode', openid_plugin_url() . '/f/jquery.textnode.min.js',
 			array('jquery'), OPENID_PLUGIN_REVISION);
-		wp_enqueue_script('jquery.xpath', openid_plugin_url() . '/f/jquery.xpath.min.js', 
+		wp_enqueue_script('jquery.xpath', openid_plugin_url() . '/f/jquery.xpath.min.js',
 			array('jquery'), OPENID_PLUGIN_REVISION);
 
 		$js_file = (defined('WP_DEBUG') && WP_DEBUG) ? 'openid.js' : 'openid.min.js';
-		wp_enqueue_script('openid', openid_plugin_url() . '/f/' . $js_file, 
+		wp_enqueue_script('openid', openid_plugin_url() . '/f/' . $js_file,
 			array('jquery','jquery.textnode'), OPENID_PLUGIN_REVISION);
 	}
 }
