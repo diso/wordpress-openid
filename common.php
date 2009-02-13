@@ -471,6 +471,7 @@ function openid_trust_root($return_to = null) {
 		$trust_root = preg_replace('/^http\:/', 'https:', $trust_root);
 	}
 
+	$trust_root = apply_filters('openid_trust_root', $trust_root, $return_to);
 	return $trust_root;
 }
 
