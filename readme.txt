@@ -3,7 +3,7 @@ Contributors: wnorris, factoryjoe
 Tags: openid, authentication, login, comments
 Requires at least: 2.3
 Tested up to: 2.7
-Stable tag: 3.2
+Stable tag: 3.2.1
 
 Allows WordPress to provide and consumer OpenIDs for authentication of users and comments.
 
@@ -133,6 +133,7 @@ Will Norris forked the plugin and has since become the maintainer.
  - patch php-openid library to fix XRDS handling (thanks Mike Jones for helping find this)
  - add default values for some openid vars -- necessary for OP-initiated login
  - fix bug with OpenID server where OpenID request was sometimes lost
+ - add filter for openid_trust_root
 
 = version 3.2 =
  - add uninstall hook for WordPress 2.7 -- this will remove all traces of the plugin from the database
