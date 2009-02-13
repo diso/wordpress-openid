@@ -136,7 +136,7 @@ function openid_server_request() {
 
 	// get OpenID request, either from session or HTTP request
 	$request = $server->decodeRequest();
-	if (Auth_OpenID_isError($request)) {
+	if (!$request || Auth_OpenID_isError($request)) {
 		@session_start();
 		if ($_SESSION['openid_server_request']) {
 			$request = $_SESSION['openid_server_request'];
