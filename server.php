@@ -144,9 +144,16 @@ function openid_server_request() {
 		}
 	}
 
-	if (!$request) {
-		echo "This is an OpenID Server.";
-		exit;
+	if (!$request || Auth_OpenID_isError($request)) {
+		$html = '<h1>This is an OpenID Server.</h1>';
+
+		if (Auth_OpenID_isError($request)) {
+			$html .= '<p><strong>Request Error:</strong> ' . $request->toString() . '</p>';
+		} else {
+			$html .= '<p>Nothing to see here&#8230; move along.</p>';
+		}
+
+		wp_die($html);
 	}
 
 	// process request

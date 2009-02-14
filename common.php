@@ -814,6 +814,8 @@ function openid_consumer_xrds_simple($xrds) {
 function openid_parse_request($wp) {
 	if (array_key_exists('openid', $wp->query_vars)) {
 
+		openid_clean_request();
+
 		switch ($wp->query_vars['openid']) {
 			case 'consumer':
 				@session_start();
@@ -841,6 +843,35 @@ function openid_parse_request($wp) {
 				echo is_user_logged_in() ? 'true' : 'false';
 				exit;
 		}
+	}
+}
+
+
+/**
+ * Clean HTTP request parameters for OpenID.
+ *
+ * Apache's rewrite module is often used to produce "pretty URLs" in WordPress.  
+ * Other webservers, such as lighttpd, nginx, and Microsoft IIS each have ways 
+ * (read: hacks) for simulating this kind of functionality.  Most commonly, 
+ * this involves passing the requested path as a query parameter named "q".
+ *
+ * This function removes this "q" parameter if it is present from 
+ * $_SERVER['QUERY_STRING'], which is used by the OpenID library to build the 
+ * OpenID request.
+ */
+function openid_clean_request() {
+	if (array_key_exists('q', $_GET)) {
+		unset($_GET['q']);
+
+		$query = parse_str($_SERVER['QUERY_STRING']);
+		unset($query['q']);
+
+		$vars = array();
+		foreach ($query as $key => $value) {
+			$vars[] = urlencode($key) . '=' . urlencode($value);
+		}
+
+		$_SERVER['QUERY_STRING'] = implode('&', $vars);
 	}
 }
 
