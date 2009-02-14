@@ -129,6 +129,9 @@ Will Norris forked the plugin and has since become the maintainer.
 
 == Changelog ==
 
+= version 3.2.2 =
+ - fix problems when using non-index.php permalinks with non-apache web servers
+
 = version 3.2.1 =
  - patch php-openid library to fix XRDS handling (thanks Mike Jones for helping find this)
  - add default values for some openid vars -- necessary for OP-initiated login
