@@ -860,18 +860,20 @@ function openid_parse_request($wp) {
  * OpenID request.
  */
 function openid_clean_request() {
+
 	if (array_key_exists('q', $_GET)) {
 		unset($_GET['q']);
 
-		$query = parse_str($_SERVER['QUERY_STRING']);
-		unset($query['q']);
+		$vars = explode('&', $_SERVER['QUERY_STRING']);
+		$clean = array();
 
-		$vars = array();
-		foreach ($query as $key => $value) {
-			$vars[] = urlencode($key) . '=' . urlencode($value);
+		foreach ($vars as $v) {
+			if (strpos($v, 'q=') !== 0) {
+				$clean[] = $v;
+			}
 		}
-
-		$_SERVER['QUERY_STRING'] = implode('&', $vars);
+		
+		$_SERVER['QUERY_STRING'] = implode('&', $clean);
 	}
 }
 
