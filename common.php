@@ -612,7 +612,7 @@ function openid_create_new_user($identity_url, &$user_data) {
 
 		if( ! wp_login( $user->user_login, $user_data['user_pass'] ) ) {
 			openid_message(__('User was created fine, but wp_login() for the new user failed. This is probably a bug.', 'openid'));
-			openid_action('error');
+			openid_status('error');
 			openid_error(openid_message());
 			return;
 		}
