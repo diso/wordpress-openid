@@ -131,6 +131,7 @@ Will Norris forked the plugin and has since become the maintainer.
 
 = version 3.2.2 =
  - fix problems when using non-index.php permalinks with non-apache web servers
+ - ensure that show_on_front option is not empty
 
 = version 3.2.1 =
  - patch php-openid library to fix XRDS handling (thanks Mike Jones for helping find this)

@@ -133,6 +133,11 @@ function openid_activate_plugin() {
 		if ($role) $role->add_cap('use_openid_provider');
 	}
 
+	// for some reason, show_on_front is not always set, causing is_front_page() to fail
+	if ( empty(get_option('show_on_front')) ) {
+		update_option('show_on_front', 'posts');
+	}
+
 	// Add custom OpenID options
 	add_option( 'openid_enable_commentform', true );
 	add_option( 'openid_plugin_enabled', true );
@@ -148,9 +153,11 @@ function openid_activate_plugin() {
 	openid_create_tables();
 	openid_migrate_old_data();
 
+	// setup schedule cleanup
 	wp_clear_scheduled_hook('cleanup_openid');
 	wp_schedule_event(time(), 'hourly', 'cleanup_openid');
 
+	// flush rewrite rules
 	if (!isset($wp_rewrite)) { $wp_rewrite = new WP_Rewrite(); }
 	$wp_rewrite->flush_rules();
 
