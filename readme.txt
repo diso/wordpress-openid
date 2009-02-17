@@ -9,12 +9,6 @@ Allows WordPress to provide and consumer OpenIDs for authentication of users and
 
 == Description ==
 
-**Upgrade Notes:** If you are upgrading to version 3.0 from a previous version,
-it is extremely important that you backup your blog before doing so.  This
-release includes database changes that, though they have been thoroughly
-tested, may cause problems.  You will also need to deactivate and reactivate
-the plugin after upgrading.
-
 OpenID is an [open standard][] that allows users to authenticate to websites
 without having to create a new password.  This plugin allows users to login to
 their local WordPress account using an OpenID, as well as enabling commenters
