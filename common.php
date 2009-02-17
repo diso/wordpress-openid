@@ -134,7 +134,8 @@ function openid_activate_plugin() {
 	}
 
 	// for some reason, show_on_front is not always set, causing is_front_page() to fail
-	if ( empty(get_option('show_on_front')) ) {
+	$show_on_front = get_option('show_on_front');
+	if ( empty($show_on_front) ) {
 		update_option('show_on_front', 'posts');
 	}
 
