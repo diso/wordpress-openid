@@ -12,8 +12,8 @@ Allows WordPress to provide and consumer OpenIDs for authentication of users and
 OpenID is an [open standard][] that allows users to authenticate to websites
 without having to create a new password.  This plugin allows users to login to
 their local WordPress account using an OpenID, as well as enabling commenters
-to leave authenticated comments with OpenID.  Version 3.0 includes an OpenID
-provider as well, enabling users to login to OpenID-enabled sites using their
+to leave authenticated comments with OpenID.  The plugin also includes an OpenID
+provider, enabling users to login to OpenID-enabled sites using their
 own personal WordPress account. [XRDS-Simple][] is required for the OpenID
 Provider and some features of the OpenID Consumer.
 
