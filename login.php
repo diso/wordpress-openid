@@ -106,8 +106,8 @@ function openid_wp_register_form() {
 		echo '
 		<script type="text/javascript">
 			jQuery(function() {
-				jQuery("#user_login/..").hide();
-				jQuery("#user_email/..").hide();
+				jQuery("#registerform > p:first").hide();
+				jQuery("#registerform > p:first + p").hide();
 				jQuery("#reg_passmail").hide();
 				jQuery("p.submit").css("margin", "1em 0");
 				var link = jQuery("#nav a:first");
