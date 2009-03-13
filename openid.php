@@ -45,7 +45,7 @@ add_action( 'init', 'openid_activate_wpmu' ); // wpmu activation
 
 // run activation function if new revision of plugin
 if (get_option('openid_plugin_revision') === false || OPENID_PLUGIN_REVISION != get_option('openid_plugin_revision')) {
-	openid_activate_plugin();
+	add_action('admin_init', 'openid_activate_plugin');
 }
 
 
