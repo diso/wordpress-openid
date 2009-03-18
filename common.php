@@ -864,16 +864,16 @@ function openid_parse_request($wp) {
  *
  * Apache's rewrite module is often used to produce "pretty URLs" in WordPress.  
  * Other webservers, such as lighttpd, nginx, and Microsoft IIS each have ways 
- * (read: hacks) for simulating this kind of functionality.  Most commonly, 
- * this involves passing the requested path as a query parameter named "q".
- *
- * This function removes this "q" parameter if it is present from 
- * $_SERVER['QUERY_STRING'], which is used by the OpenID library to build the 
- * OpenID request.
+ * (read: hacks) for simulating this kind of functionality. This function 
+ * reverses the side-effects of these hacks so that the OpenID request 
+ * variables are in the form that the OpenID library expects.
  */
 function openid_clean_request() {
 
 	if (array_key_exists('q', $_GET)) {
+
+		// handle nginx web server, which adds an additional query string parameter named "q"
+
 		unset($_GET['q']);
 
 		$vars = explode('&', $_SERVER['QUERY_STRING']);
@@ -886,6 +886,15 @@ function openid_clean_request() {
 		}
 		
 		$_SERVER['QUERY_STRING'] = implode('&', $clean);
+
+	} else if ($_SERVER['argc'] >= 1 && $_SERVER['argv'][0] == 'error=404') {
+
+		// handle lighttpd hack which uses a custom error-handler, passing 404 errors to WordPress.  
+		// This results in the QUERY_STRING not having the correct information, but fortunately we 
+		// can pull it out of REQUEST_URI
+
+		list($path, $query) = explode('?', $_SERVER['REQUEST_URI'], 2);
+		$_SERVER['QUERY_STRING'] = $query;
 	}
 }
 
