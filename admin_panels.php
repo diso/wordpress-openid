@@ -147,7 +147,7 @@ function openid_options_page() {
 			<h2><?php _e('OpenID Consumer Options', 'openid') ?></h2>
 
 			<?php if ($wp_version < '2.3') { ?>
-			<p class="submit"><input type="submit" name="info_update" value="<?php _e('Update Options') ?> &raquo;" /></p>
+			<p class="submit"><input type="submit" class="button-primary" name="info_update" value="<?php _e('Save Changes') ?>" /></p>
 			<?php } ?>
 
 			<table class="form-table optiontable editform">
@@ -310,7 +310,7 @@ function openid_options_page() {
 			<?php wp_nonce_field('update-options'); ?>
 			<input type="hidden" name="action" value="update" />
 			<input type="hidden" name="page_options" value="<?php echo join(',', $openid_options); ?>" />
-			<p class="submit"><input type="submit" name="info_update" value="<?php _e('Update Options') ?> &raquo;" /></p>
+			<p class="submit"><input type="submit" class="button-primary" name="info_update" value="<?php _e('Save Changes') ?>" /></p>
 		</form>
 	</div>
 		<?php
@@ -361,14 +361,18 @@ function openid_profile_panel() {
 			. '<a href="http://openid.net/what/" target="_blank">Learn more...</a>', 'openid')?></p>
 
 		<div class="tablenav">
-			<div class="alignleft">
-				<input type="submit" value="<?php _e('Delete'); ?>" name="deleteit" class="button-secondary delete" />
-				<input type="hidden" name="action" value="delete" />
+			<div class="alignleft actions">
+				<select name="action">
+					<option value="-1" selected="selected">Bulk Actions</option>
+					<option value="delete">Delete</option>
+				</select>
+				<input type="submit" value="Apply" name="doaction" id="doaction" class="button-secondary action" />
 				<?php wp_nonce_field('openid-delete_openids'); ?>
 			</div>
+			<div class="clear"></div>
 		</div>
 
-		<br class="clear" />
+		<div class="clear"></div>
 
 		<table class="widefat">
 			<thead>
@@ -408,7 +412,7 @@ function openid_profile_panel() {
 		</table>
 		<?php wp_nonce_field('openid-add_openid'); ?>
 		<p class="submit">
-			<input type="submit" value="<?php _e('Add OpenID', 'openid') ?>" />
+			<input type="submit" class="button-primary" value="<?php _e('Add OpenID', 'openid') ?>" />
 			<input type="hidden" name="action" value="add" >
 		</p>
 		</form>
@@ -491,12 +495,18 @@ function openid_manage_trusted_sites() {
 
 		<form method="post">
 			<div class="tablenav">
-				<input type="submit" value="<?php _e('Delete', 'openid'); ?>" name="deleteit" class="button-secondary delete" />
-				<input type="hidden" name="action" value="delete" />
-				<?php wp_nonce_field('openid-delete_trusted_sites'); ?>
+				<div class="alignleft actions">
+					<select name="action">
+						<option value="-1" selected="selected">Bulk Actions</option>
+						<option value="delete">Delete</option>
+					</select>
+					<input type="submit" value="Apply" name="doaction" id="doaction" class="button-secondary action" />
+					<?php wp_nonce_field('openid-delete_trusted_sites'); ?>
+				</div>
+				<div class="clear"></div>
 			</div>
 
-			<br class="clear" />
+			<div class="clear"></div>
 
 			<table class="widefat">
 			<thead>
@@ -558,7 +568,7 @@ function openid_manage_trusted_sites() {
 			<?php wp_nonce_field('openid-add_trusted_sites'); ?>
 
 			<p class="submit">
-				<input type="submit" value="<?php _e('Add Sites', 'openid') ?>" />
+				<input type="submit" class="button-primary" value="<?php _e('Add Sites', 'openid') ?>" />
 				<input type="hidden" name="action" value="add" >
 			</p>
 
