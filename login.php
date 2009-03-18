@@ -101,6 +101,9 @@ function openid_wp_login_form() {
 function openid_wp_register_form() {
 	global $wp_version;
 
+	echo '
+	<div style="width:100%;">'; //Added to fix IE problem
+
 	if (get_option('openid_required_for_registration')) {
 		$label = __('Register using an OpenID:', 'openid');
 		echo '
@@ -129,14 +132,16 @@ function openid_wp_register_form() {
 	}
 
 	echo '
-	<p>
-		<label style="display: block; margin-bottom: 5px;">' . $label . '</label>
-		<input type="text" name="openid_identifier" id="openid_identifier" class="input openid_identifier" value="" size="20" tabindex="25" /></label>
-	</p>
+		<p>
+			<label style="display: block; margin-bottom: 5px;">' . $label . '</label>
+			<input type="text" name="openid_identifier" id="openid_identifier" class="input openid_identifier" value="" size="20" tabindex="25" /></label>
+		</p>
 
-	<p style="float: left; font-size: 0.8em; margin: 0.8em 0;" id="what_is_openid">
-		<a href="http://openid.net/what/" target="_blank">'.__('What is OpenID?', 'openid').'</a>
-	</p>';
+		<p style="float: left; font-size: 0.8em; margin: 0.8em 0;" id="what_is_openid">
+			<a href="http://openid.net/what/" target="_blank">'.__('What is OpenID?', 'openid').'</a>
+		</p>
+
+	</div>';
 
 }
 

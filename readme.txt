@@ -128,6 +128,7 @@ Will Norris forked the plugin and has since become the maintainer.
  - ensure that show_on_front option is not empty
  - function name typo (props: gunemalli)
  - fix deprecated pass-by-reference call in php-openid library (props: jschuur)
+ - fix UI bug on registration form with IE browsers (props: oledole)
 
 = version 3.2.1 =
  - patch php-openid library to fix XRDS handling (thanks Mike Jones for helping find this)
