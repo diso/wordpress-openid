@@ -133,6 +133,8 @@ Will Norris forked the plugin and has since become the maintainer.
  - function name typo (props: gunemalli)
  - fix deprecated pass-by-reference call in php-openid library (props: jschuur)
  - fix UI bug on registration form with IE browsers (props: oledole)
+ - UI tweaks to better match WP 2.7
+ - update a few strings for localization and POT file
 
 = version 3.2.1 =
  - patch php-openid library to fix XRDS handling (thanks Mike Jones for helping find this)

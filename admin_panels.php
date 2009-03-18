@@ -287,7 +287,7 @@ function openid_options_page() {
 					$blog_owner = get_option('openid_blog_owner');
 
 					if (empty($blog_owner) || $blog_owner == $current_user->user_login) {
-						echo '<select id="openid_blog_owner" name="openid_blog_owner"><option value="">(none)</option>';
+						echo '<select id="openid_blog_owner" name="openid_blog_owner"><option value="">' . __('(none)', 'openid') . '</option>';
 
 
 						foreach ($users as $user) {
@@ -363,10 +363,10 @@ function openid_profile_panel() {
 		<div class="tablenav">
 			<div class="alignleft actions">
 				<select name="action">
-					<option value="-1" selected="selected">Bulk Actions</option>
-					<option value="delete">Delete</option>
+					<option value="-1" selected="selected"><?php _e('Bulk Actions'); ?></option>
+					<option value="delete"><?php _e('Delete'); ?></option>
 				</select>
-				<input type="submit" value="Apply" name="doaction" id="doaction" class="button-secondary action" />
+				<input type="submit" value="<?php _e('Apply'); ?>" name="doaction" id="doaction" class="button-secondary action" />
 				<?php wp_nonce_field('openid-delete_openids'); ?>
 			</div>
 			<div class="clear"></div>
@@ -452,8 +452,9 @@ function openid_manage_trusted_sites() {
 
 		if ($count) {
 			update_usermeta($user->ID, 'openid_trusted_sites', $trusted_sites);
-			echo '<div class="updated"><p>' . __('Added '.$count.' trusted site' . 
-				($count>1 ? 's' : '') . '.').'</p></div>';
+			echo '<div class="updated"><p>';
+			printf( __ngettext('Added %d trusted site.', 'Added %d trusted sites.', $count, 'openid'), $count);
+			echo '</p></div>';
 		}
 		break;
 
@@ -474,7 +475,9 @@ function openid_manage_trusted_sites() {
 		update_usermeta($user->ID, 'openid_trusted_sites', array_filter($trusted_sites));
 
 		if ($count) {
-			echo '<div class="updated"><p>'.__('Deleted '.$count.' trusted site' . ($count>1 ? 's' : '') . '.').'</p></div>';
+			echo '<div class="updated"><p>';
+			printf( __ngettext('Deleted %d trusted site.', 'Deleted %d trusted sites.', $count, 'openid'), $count);
+			echo '</p></div>';
 		}
 		break;
 	}
@@ -497,10 +500,10 @@ function openid_manage_trusted_sites() {
 			<div class="tablenav">
 				<div class="alignleft actions">
 					<select name="action">
-						<option value="-1" selected="selected">Bulk Actions</option>
-						<option value="delete">Delete</option>
+						<option value="-1" selected="selected"><?php _e('Bulk Actions'); ?></option>
+						<option value="delete"><?php _e('Delete'); ?></option>
 					</select>
-					<input type="submit" value="Apply" name="doaction" id="doaction" class="button-secondary action" />
+					<input type="submit" value="<?php _e('Apply'); ?>" name="doaction" id="doaction" class="button-secondary action" />
 					<?php wp_nonce_field('openid-delete_trusted_sites'); ?>
 				</div>
 				<div class="clear"></div>
@@ -512,8 +515,8 @@ function openid_manage_trusted_sites() {
 			<thead>
 				<tr>
 					<th scope="col" class="check-column"><input type="checkbox" /></th>
-					<th scope="col">URL</th>
-					<th scope="col">Last Login</th>
+					<th scope="col"><?php _e('URL'); ?></th>
+					<th scope="col"><?php _e('Last Login', 'openid'); ?></th>
 				</tr>
 			</thead>
 			<tbody>
@@ -554,13 +557,13 @@ function openid_manage_trusted_sites() {
 
 			<h3><?php _e('Import Trusted Sites', 'openid'); ?></h3>
 
-			<p>Enter a list of URLs to be added to your Trusted Sites.</p>
+			<p><?php _e('Enter a list of URLs to be added to your Trusted Sites.', 'openid'); ?></p>
 
 			<table class="form-table" style="margin-top: 0">
 				<tr>
 					<th scope="row"><label for="sites"><?php _e('Add Sites', 'openid') ?></label></th>
 					<td>
-						<textarea id="sites" name="sites" cols="60" rows="5"></textarea><br />(One URL per line)
+						<textarea id="sites" name="sites" cols="60" rows="5"></textarea><br /><?php _e('(One URL per line)', 'openid'); ?>
 					</td>
 				</tr>
 			</table>
@@ -804,7 +807,7 @@ function openid_profile_delete_openids($delete) {
 	}
 
 	if ($count) {
-		openid_message(sprintf(__('Deleted %1$s OpenID association%2$s.', 'openid'), $count, ($count>1 ? 's' : '')));
+		openid_message( sprintf(__ngettext('Deleted %d OpenID association.', 'Deleted %d OpenID associations.', $count, 'openid'), $count) );
 		openid_status('success');
 
 		// ensure that profile URL is still a verified OpenID
@@ -896,7 +899,7 @@ function openid_personal_options_update() {
 	$user = wp_get_current_user();
 
 	if (!openid_ensure_url_match($user, $_POST['url'])) {
-		wp_die(sprintf(__('For security reasons, your profile URL must be one of your claimed OpenIDs: %s'),
+		wp_die(sprintf(__('For security reasons, your profile URL must be one of your claimed OpenIDs: %s', 'openid'),
 			'<ul><li>' . join('</li><li>', get_user_openids($user->ID)) . '</li></ul>'));
 	}
 }

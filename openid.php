@@ -7,6 +7,7 @@
  Author URI: http://diso-project.org/
  Version: 3.2.1
  License: Dual GPL (http://www.fsf.org/licensing/licenses/info/GPLv2.html) and Modified BSD (http://www.fsf.org/licensing/licenses/index_html#ModifiedBSD)
+ Text Domain: openid
  */
 
 define ( 'OPENID_PLUGIN_REVISION', preg_replace( '/\$Rev: (.+) \$/', '\\1',

@@ -87,9 +87,9 @@ function openid_require_name_email() {
 	
 	if ( get_option('require_name_email') && !$user->ID ) { 
 		if ( 6 > strlen($comment_author_email) || '' == $comment_author ) {
-			wp_die( __('Error: please fill the required fields (name, email).') );
+			wp_die( __('Error: please fill the required fields (name, email).', 'openid') );
 		} elseif ( !is_email($comment_author_email)) {
-			wp_die( __('Error: please enter a valid email address.') );
+			wp_die( __('Error: please enter a valid email address.', 'openid') );
 		}
 	}
 }
