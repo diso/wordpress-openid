@@ -48,9 +48,9 @@ function openid_akismet_spam_caught() {
  * @return array comment data
  */
 function openid_process_comment( $comment ) {
-	@session_start();
+	if ($_REQUEST['openid_skip'] || $comment['comment_type'] != '') return $comment;
 
-	if ($_REQUEST['openid_skip']) return $comment;
+	@session_start();
 		
 	$openid_url = (array_key_exists('openid_identifier', $_POST) ? $_POST['openid_identifier'] : $_POST['url']);
 
@@ -71,7 +71,9 @@ function openid_process_comment( $comment ) {
 	}
 
 	// duplicate name and email check from wp-comments-post.php
-	openid_require_name_email();
+	if ( $comment['comment_type'] == '') {
+		openid_require_name_email();
+	}
 
 	return $comment;
 }
