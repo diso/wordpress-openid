@@ -379,10 +379,17 @@ function openid_get_user_data_form($data, $identity_url) {
 
 
 function openid_recent_comments() {
-	if (is_active_widget('wp_widget_recent_comments')) {
+	if ( is_active_widget('wp_widget_recent_comments') ) {
 		remove_action('wp_head', 'wp_widget_recent_comments_style');
+
 		// most themes seem to handle the recent comments widget okay, so I don't think the following style addition is necessary.  We'll leave it here just in case it's needed later.
-		//add_action('wp_head', create_function('', 'echo \'<style type="text/css">.recentcomments a{display:inline !important;padding: 0;margin: 0 !important;}</style>\';' ));
+		//add_action('wp_head', create_function('', 'echo \'<style type="text/css">.recentcomments a{padding: 0;margin: 0 !important;}</style>\';' ));
+	} else {
+		// WP 2.8 +
+		global $wp_widget_factory;
+		if ( $wp_widget_factory && array_key_exists('WP_Widget_Recent_Comments', $wp_widget_factory->widgets) ) {
+			remove_action('wp_head', array($wp_widget_factory->widgets['WP_Widget_Recent_Comments'], 'recent_comments_style'));
+		}
 	}
 }
 
