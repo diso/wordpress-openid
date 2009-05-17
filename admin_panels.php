@@ -65,19 +65,13 @@ function openid_admin_panels() {
 		}
 	}
 
-	if ( get_option('users_can_register') ) {
-		register_setting('general', 'openid_required_for_registration');
-		add_settings_field('openid_required_for_registration', '', 'openid_settings_required_for_reg', 'general', 'default');
-	}
-	if ( get_option('require_name_email') ) {
-		register_setting('discussion', 'openid_no_require_name');
-		add_settings_field('openid_no_require_name', '', 'openid_settings_no_require_name', 'discussion', 'default');
-	}
-	register_setting('discussion', 'openid_enable_approval');
-	add_settings_field('openid_enable_approval', '', 'openid_settings_enable_approval', 'discussion', 'default');
+	add_settings_field('openid_general_settings', 'OpenID Settings', 'openid_general_settings', 'general', 'default');
+	register_setting('general', 'openid_required_for_registration');
 
+	add_settings_field('openid_disucssion_settings', 'OpenID Settings', 'openid_discussion_settings', 'discussion', 'default');
+	register_setting('discussion', 'openid_no_require_name');
+	register_setting('discussion', 'openid_enable_approval');
 	register_setting('discussion', 'openid_enable_commentform');
-	add_settings_field('openid_enable_commentform', '', 'openid_settings_enable_commentform', 'discussion', 'default');
 }
 
 
@@ -908,75 +902,62 @@ function openid_profile_update($user_id) {
 	}
 }
 
-function openid_settings_required_for_reg() {
-?>
+function openid_general_settings() {
+	if ( get_option('users_can_register') ): ?>
 	<label for="openid_required_for_registration">
-		<br />
 		<input type="checkbox" name="openid_required_for_registration" id="openid_required_for_registration" 
-			<?php checked(true, get_option('openid_required_for_registration')) ?> style="margin-left: 2em;" />
+			<?php checked(true, get_option('openid_required_for_registration')) ?> />
 		<?php _e('New accounts can only be created with verified OpenIDs.', 'openid') ?>
 	</label>
+	<?php endif; ?>
+
 	<script type="text/javascript">
 		jQuery(function() {
 			jQuery('tr:has(#openid_required_for_registration)').hide();
-			jQuery('label:has(#openid_required_for_registration)').
-				insertAfter('label:has(#users_can_register)');
+			jQuery('#openid_required_for_registration').css('margin-left', '2em')
+				.parent().prepend('<br />').insertAfter('label:has(#users_can_register)');
 		});
 	</script>
 <?php
 }
 
-function openid_settings_no_require_name() {
-?>
+function openid_discussion_settings() {
+	if ( get_option('require_name_email') ): ?>
 	<label for="openid_no_require_name">
-		<br />
 		<input type="checkbox" name="openid_no_require_name" id="openid_no_require_name" <?php 
-			echo checked(true, get_option('openid_no_require_name')) ; ?> style="margin-left: 2em;" />
+			echo checked(true, get_option('openid_no_require_name')) ; ?> />
 		<?php _e('Don\'t require name and e-mail for comments left with a verified OpenID.', 'openid') ?>
 	</label>
-	<script type="text/javascript">
-		jQuery(function() {
-			jQuery('tr:has(#openid_no_require_name)').hide();
-			jQuery('label:has(#openid_no_require_name)').
-				insertAfter('label:has(#require_name_email)');
-		});
-	</script>
-<?php
-}
+	<br />
+	<?php endif; ?>
 
-function openid_settings_enable_approval() {
-?>
 	<label for="openid_enable_approval">
-		<br />
 		<input type="checkbox" name="openid_enable_approval" id="openid_enable_approval" <?php 
 			echo checked(true, get_option('openid_enable_approval'));  ?> />
 		<?php _e('Always approve comments left with a verified OpenID', 'openid'); ?>
 	</label>
-	<script type="text/javascript">
-		jQuery(function() {
-			jQuery('tr:has(#openid_enable_approval)').hide();
-			jQuery('label:has(#openid_enable_approval)').
-				insertAfter('label:has(#comment_whitelist)');
-		});
-	</script>
-<?php
-}
+	<br />
 
-function openid_settings_enable_commentform() {
-?>
 	<label for="openid_enable_commentform">
-		<br />
 		<input type="checkbox" name="openid_enable_commentform" id="openid_enable_commentform" <?php 
 			echo checked(true, get_option('openid_enable_commentform'));  ?> />
 		<?php printf(__('Add OpenID help text to the comment form. <em>(This will work for most themes derived from Kubrick or Sandbox.  '
 			. 'Template authors can tweak the comment form as described %shere%s)</em>.', 'openid'), 
 			'<a href="'.clean_url(openid_plugin_url().'/readme.txt').'">', '</a>') ?>
 	</label>
+
 	<script type="text/javascript">
 		jQuery(function() {
-			jQuery('tr:has(#openid_enable_commentform)').hide();
-			jQuery('label:has(#openid_enable_commentform)').
-				insertAfter('label:has(#comment_order)');
+			jQuery('tr:has(#openid_enable_approval)').hide();
+
+			jQuery('#openid_no_require_name').css('margin-left', '2em')
+				.parent().prepend('<br />').insertAfter('label:has(#require_name_email)');
+
+			jQuery('label:has(#openid_enable_approval)').prepend('<br />')
+				.insertAfter('label:has(#comment_whitelist)');
+
+			jQuery('label:has(#openid_enable_commentform)').prepend('<br />')
+				.insertAfter('label:has(#comment_order)');
 		});
 	</script>
 <?php
