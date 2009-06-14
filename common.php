@@ -854,8 +854,27 @@ function openid_parse_request($wp) {
 				// IDIB Request
 				echo is_user_logged_in() ? 'true' : 'false';
 				exit;
+
+			case 'ajax':
+				if ( check_admin_referer('openid_ajax') ) {
+					header('Content-Type: application/json');
+					echo '{ valid:' . ( is_url_openid( $_REQUEST['url'] ) ? 'true' : 'false' ) . ', nonce:"' . wp_create_nonce('openid_ajax') . '" }';
+					exit;
+				}
 		}
 	}
+}
+
+
+/**
+ * Check if the provided URL is a valid OpenID.
+ *
+ * @param string $url URL to check
+ * @return boolean true if the URL is a valid OpenID
+ */
+function is_url_openid( $url ) {
+	$auth_request = openid_begin_consumer( $url );
+	return ( $auth_request != null );
 }
 
 
@@ -1060,16 +1079,8 @@ function openid_page($message, $title = '') {
  **/
 function openid_js_setup() {
 	if (is_single() || is_comments_popup() || is_admin()) {
-		wp_enqueue_script( 'jquery' );
-		//wp_enqueue_script( 'jquery-ui-sortable' );
-		wp_enqueue_script('jquery.textnode', openid_plugin_url() . '/f/jquery.textnode.min.js',
-			array('jquery'), OPENID_PLUGIN_REVISION);
-		wp_enqueue_script('jquery.xpath', openid_plugin_url() . '/f/jquery.xpath.min.js',
-			array('jquery'), OPENID_PLUGIN_REVISION);
-
-		$js_file = (defined('WP_DEBUG') && WP_DEBUG) ? 'openid.js' : 'openid.min.js';
-		wp_enqueue_script('openid', openid_plugin_url() . '/f/' . $js_file,
-			array('jquery','jquery.textnode'), OPENID_PLUGIN_REVISION);
+		$js_file = openid_plugin_url() . '/f/' . ( (defined('WP_DEBUG') && WP_DEBUG) ? 'openid.js' : 'openid.min.js' ) ;
+		wp_enqueue_script('openid', $js_file, array('jquery'), OPENID_PLUGIN_REVISION);
 	}
 }
 

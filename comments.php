@@ -22,9 +22,9 @@ if( get_option('openid_enable_approval') ) {
 }
 add_filter( 'get_comment_author_link', 'openid_comment_author_link');
 if( get_option('openid_enable_commentform') ) {
-	add_action( 'wp_head', 'openid_js_setup', 9);
+	add_action( 'wp', 'openid_js_setup', 9);
 	add_action( 'wp_footer', 'openid_comment_profilelink', 10);
-	add_action( 'wp_footer', 'openid_comment_form', 10);
+	add_action( 'comment_form', 'openid_comment_form', 10);
 }
 add_filter( 'openid_user_data', 'openid_get_user_data_form', 6, 2);
 add_action( 'delete_comment', 'unset_comment_openid' );
@@ -50,11 +50,14 @@ function openid_akismet_spam_caught() {
 function openid_process_comment( $comment ) {
 	if ($_REQUEST['openid_skip'] || $comment['comment_type'] != '') return $comment;
 
-	@session_start();
-		
-	$openid_url = (array_key_exists('openid_identifier', $_POST) ? $_POST['openid_identifier'] : $_POST['url']);
+	if ( array_key_exists('openid_identifier', $_POST) ) {
+		$openid_url = $_POST['openid_identifier'];
+	} elseif ( $_REQUEST['login_with_openid'] ) {
+		$openid_url = $_POST['url'];
+	}
 
-	if( !empty($openid_url) ) {  // Comment form's OpenID url is filled in.
+	if ( !empty($openid_url) ) {  // Comment form's OpenID url is filled in.
+		@session_start();
 		$_SESSION['openid_comment_post'] = $_POST;
 		$_SESSION['openid_comment_post']['comment_author_openid'] = $openid_url;
 		$_SESSION['openid_comment_post']['openid_skip'] = 1;
@@ -243,7 +246,15 @@ function openid_comment_form() {
 	}
 
 	if (!is_user_logged_in() && (is_single() || is_comments_popup()) && isset($wp_scripts) && $wp_scripts->query('openid')) {
-		echo '<script type="text/javascript">add_openid_to_comment_form()</script>';
+?>
+		<div id="openid_comment">
+			<label>
+				<input type="checkbox" id="login_with_openid" name="login_with_openid" checked="checked" />
+				<?php _e('Authenticate this comment using <span class="openid_link">OpenID</span>.'); ?>
+			</label>
+		</div>
+		<script type="text/javascript">add_openid_to_comment_form('<?php echo wp_create_nonce('openid_ajax') ?>')</script>
+<?php
 	}
 }
 

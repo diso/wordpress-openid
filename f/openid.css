@@ -18,6 +18,10 @@ body.login #openid_identifier {
 	margin-right: 6px;
 }
 
+#openid_comment {
+	margin: 0.8em 1em;
+}
+
 /* fix link color on wp-login.php */
 body.login form#loginform a.legacy, 
 body.login form#registerform a.legacy {
