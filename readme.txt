@@ -114,17 +114,6 @@ report at <http://code.google.com/p/diso/issues/list>.
 7. Users authorized to use the OpenID Provider can monitor which sites they've logged in to
 
 
-== Plugin History ==
-
-The original OpenID plugin for WordPress was a collaborative effort between Alan Castonguay and Hans Granqvist.
-
-Will Norris forked the plugin and has since become the maintainer.
-
-[Alan Castonguay]: http://verselogic.net/
-[Hans Granqvist]: http://commented.org/
-[Will Norris]: http://willnorris.com/
-
-
 == Changelog ==
 
 = version 3.2.2 =
@@ -269,3 +258,11 @@ Full SVN logs are available at <http://dev.wp-plugins.org/log/openid/>.
 
 [729]: http://dev.wp-plugins.org/ticket/729
 [openid.pl]: http://openid.pl/
+
+The original OpenID plugin for WordPress was a collaborative effort between Alan Castonguay and Hans Granqvist.
+
+Will Norris forked the plugin and has since become the maintainer.
+
+[Alan Castonguay]: http://verselogic.net/
+[Hans Granqvist]: http://commented.org/
+[Will Norris]: http://willnorris.com/
