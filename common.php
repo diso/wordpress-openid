@@ -145,10 +145,7 @@ function openid_activate_plugin() {
 	add_option( 'openid_plugin_revision', 0 );
 	add_option( 'openid_db_revision', 0 );
 	add_option( 'openid_enable_approval', false );
-	add_option( 'openid_enable_email_mapping', false );
 	add_option( 'openid_xrds_returnto', true );
-	add_option( 'openid_xrds_idib', true );
-	add_option( 'openid_xrds_eaut', true );
 	add_option( 'openid_comment_displayname_length', 12 );
 
 	openid_create_tables();
@@ -189,6 +186,10 @@ function openid_remove_historical_options() {
 	delete_option('oid_trust_root');
 	delete_option('force_openid_registration');
 	delete_option('openid_skip_require_name');
+
+	delete_option('openid_enable_email_mapping');
+	delete_option('openid_xrds_idib');
+	delete_option('openid_xrds_eaut');
 }
 
 
@@ -219,10 +220,7 @@ function openid_uninstall_plugin() {
 	delete_option('openid_plugin_revision');
 	delete_option('openid_db_revision');
 	delete_option('openid_enable_approval');
-	delete_option('openid_enable_email_mapping');
 	delete_option('openid_xrds_returnto');
-	delete_option('openid_xrds_idib');
-	delete_option('openid_xrds_eaut');
 	delete_option('openid_comment_displayname_length');
 	delete_option('openid_associations');
 	delete_option('openid_nonces');
@@ -794,25 +792,6 @@ function openid_consumer_xrds_simple($xrds) {
 		}
 	}
 
-	if (get_option('openid_xrds_idib')) {
-		// Identity in the Browser Login Service
-		$xrds = xrds_add_service($xrds, 'main', 'Identity in the Browser Login Service',
-			array(
-				'Type' => array(array('content' => 'http://specs.openid.net/idib/1.0/login') ),
-				'URI' => array(
-					array(
-						'simple:httpMethod' => 'POST',
-						'content' => site_url('/wp-login.php', 'login_post'),
-					),
-				),
-			)
-		);
-
-		// Identity in the Browser Indicator Service
-		$xrds = xrds_add_simple_service($xrds, 'Identity in the Browser Indicator Service',
-			'http://specs.openid.net/idib/1.0/indicator', openid_service_url('openid', 'check_login'));
-	}
-
 	return $xrds;
 }
 
@@ -849,11 +828,6 @@ function openid_parse_request($wp) {
 			case 'server':
 				openid_server_request($_REQUEST['action']);
 				break;
-
-			case 'check_login':
-				// IDIB Request
-				echo is_user_logged_in() ? 'true' : 'false';
-				exit;
 
 			case 'ajax':
 				if ( check_admin_referer('openid_ajax') ) {
@@ -947,10 +921,7 @@ function openid_service_url($name, $value, $scheme = null, $absolute = true) {
 	}
 
 	if ($wp_rewrite->using_permalinks()) {
-		if ($wp_rewrite->using_index_permalinks()) {
-			$url .= 'index.php/';
-		}
-		$url .= $name . '/' . $value;
+		$url .= 'index.php/' . $name . '/' . $value;
 	} else {
 		$url .= '?' . $name . '=' . $value;
 	}
@@ -958,13 +929,13 @@ function openid_service_url($name, $value, $scheme = null, $absolute = true) {
 	return $url;
 }
 
+
 /**
  * Add rewrite rules to WP_Rewrite for the OpenID services.
  */
 function openid_rewrite_rules($wp_rewrite) {
 	$openid_rules = array(
-		openid_service_url('openid', '(.+)', null, false) => 'index.php?openid=$matches[1]',
-		openid_service_url('eaut', '(.+)', null, false) => 'index.php?eaut=$matches[1]',
+		'openid/(.+)' => 'index.php?openid=$matches[1]',
 	);
 
 	$wp_rewrite->rules = $openid_rules + $wp_rewrite->rules;
@@ -976,7 +947,6 @@ function openid_rewrite_rules($wp_rewrite) {
  */
 function openid_query_vars($vars) {
 	$vars[] = 'openid';
-	$vars[] = 'eaut';
 	return $vars;
 }
 
