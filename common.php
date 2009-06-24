@@ -309,7 +309,7 @@ function finish_openid_auth() {
 	$consumer = openid_getConsumer();
 	$openid_return_to = $_SESSION['openid_return_to'];
 	if (empty($openid_return_to)) {
-		$openid_return_to = openid_service_url('openid', 'consumer');
+		$openid_return_to = openid_service_url('consumer');
 	}
 
 	$response = $consumer->complete($openid_return_to);
@@ -400,16 +400,6 @@ function openid_begin_consumer($url) {
 	if ($request == NULL) {
 		set_error_handler( 'openid_customer_error_handler');
 
-		if (is_email($url)) {
-			$_SESSION['openid_login_email'] = $url;
-			set_include_path( dirname(__FILE__) . PATH_SEPARATOR . get_include_path() );
-			require_once 'Auth/Yadis/Email.php';
-			$mapped_url = Auth_Yadis_Email_getID($url, trailingslashit(get_option('home')));
-			if ($mapped_url) {
-				$url = $mapped_url;
-			}
-		}
-
 		$consumer = openid_getConsumer();
 		$request = $consumer->begin($url);
 
@@ -439,10 +429,7 @@ function openid_start_login( $claimed_url, $action, $finish_url = null) {
 			__('Could not discover an OpenID identity server endpoint at the url: %s', 'openid'),
 			htmlentities($claimed_url)
 		));
-		if( strpos( $claimed_url, '@' ) ) {
-			openid_message(openid_message() . '<br />' . __('It looks like you entered an email address, but it '
-				. 'was not able to be transformed into a valid OpenID.', 'openid'));
-		}
+
 		return;
 	}
 
@@ -457,7 +444,7 @@ function openid_start_login( $claimed_url, $action, $finish_url = null) {
 		}
 	}
 
-	$return_to = openid_service_url('openid', 'consumer', 'login_post');
+	$return_to = openid_service_url('consumer', 'login_post');
 	$return_to = apply_filters('openid_return_to', $return_to);
 
 	$trust_root = openid_trust_root($return_to);
@@ -581,15 +568,6 @@ function openid_create_new_user($identity_url, &$user_data) {
 	// Identity URL is new, so create a user
 	@include_once( ABSPATH . 'wp-admin/upgrade-functions.php');	// 2.1
 	@include_once( ABSPATH . WPINC . '/registration-functions.php'); // 2.0.4
-
-	// use email address for username if URL is from emailtoid.net
-	if (null != $_SESSION['openid_login_email'] and strpos($identity_url, 'http://emailtoid.net/') === 0) {
-		if (empty($user_data['user_email'])) {
-			$user_data['user_email'] = $_SESSION['openid_login_email'];
-		}
-		$username = openid_generate_new_username($_SESSION['openid_login_email']);
-		unset($_SESSION['openid_login_email']);
-	}
 
 	// otherwise, try to use preferred username
 	if (empty($username) && $user_data['nickname']) {
@@ -786,7 +764,7 @@ function openid_consumer_xrds_simple($xrds) {
 
 	if (get_option('openid_xrds_returnto')) {
 		// OpenID Consumer Service
-		$return_urls = array_unique(apply_filters('openid_consumer_return_urls', array(openid_service_url('openid', 'consumer', 'login_post'))));
+		$return_urls = array_unique(apply_filters('openid_consumer_return_urls', array(openid_service_url('consumer', 'login_post'))));
 		if (!empty($return_urls)) {
 			$xrds = xrds_add_simple_service($xrds, 'OpenID Consumer Service', 'http://specs.openid.net/auth/2.0/return_to', $return_urls);
 		}
@@ -895,35 +873,22 @@ function openid_clean_request() {
 /**
  * Build an OpenID service URL.
  *
- * @param string $name service name to build URL for
- * @param string $value service value to build URL for
+ * @param string $service service to build URL for
  * @param string $scheme URL scheme to use for URL (see site_url())
- * @param boolean $absolute should we return an absolute URL
  * @return string service URL
  * @see site_url
  */
-function openid_service_url($name, $value, $scheme = null, $absolute = true) {
+function openid_service_url($service, $scheme = null) {
 	global $wp_rewrite;
 	if (!$wp_rewrite) $wp_rewrite = new WP_Rewrite();
 
-	if ($absolute) {
-		if (!defined('OPENID_SSL') || !OPENID_SSL) $scheme = null;
-		$url = site_url('/', $scheme);
-	} else {
-		$site_url = get_option('siteurl');
-		$home_url = get_option('home');
-
-		if ($site_url != $home_url) {
-			$url = substr(trailingslashit($site_url), strlen($home_url)+1);
-		} else {
-			$url = '';
-		}
-	}
+	if (!defined('OPENID_SSL') || !OPENID_SSL) $scheme = null;
+	$url = site_url('/', $scheme);
 
 	if ($wp_rewrite->using_permalinks()) {
-		$url .= 'index.php/' . $name . '/' . $value;
+		$url .= 'index.php/openid/' . $service;
 	} else {
-		$url .= '?' . $name . '=' . $value;
+		$url .= '?openid=' . $service;
 	}
 
 	return $url;
