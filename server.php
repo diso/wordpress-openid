@@ -104,7 +104,22 @@ function openid_provider_xrds_simple($xrds) {
 	if (!empty($services)) {
 		foreach ($services as $index => $service) {
 			$name = 'OpenID Provider Service (' . $index . ')';
-			$xrds = xrds_add_service($xrds, 'main', $name, $service, $index);
+			$types = array();
+			foreach($service['Type'] as $type) {
+				$types[] = $type['content'];
+			}
+			$uris = array();
+			if(!is_array($services['URI'])) $services['URI'] = array($services['URI']);
+			foreach($services['URI'] as $uri) {
+				$uris[] = new XRDS_URI($uri); 
+			}
+			$ids = array();
+			if(!is_array($services['LocalID'])) $services['LocalID'] = array($services['LocalID']);
+			foreach($services['LocalID'] as $id) {
+				$ids[] = new XRDS_LocalID($id); 
+			}
+			$service = new XRDS_Service($types, null, $uris, $ids);
+			xrds_add_service($xrds, 'main', $service);
 		}
 	}
 
