@@ -766,7 +766,7 @@ function openid_consumer_xrds_simple($xrds) {
 		// OpenID Consumer Service
 		$return_urls = array_unique(apply_filters('openid_consumer_return_urls', array(openid_service_url('consumer', 'login_post'))));
 		if (!empty($return_urls)) {
-			xrds_add_simple_service($xrds, 'OpenID Consumer Service', 'http://specs.openid.net/auth/2.0/return_to', $return_urls);
+			$xrds = xrds_add_simple_service($xrds, 'OpenID Consumer Service', 'http://specs.openid.net/auth/2.0/return_to', $return_urls);
 		}
 	}
 
