@@ -50,7 +50,7 @@ function openid_login_errors() {
 
 	if ($_REQUEST['openid_error']) {
 		global $error;
-		$error = $_REQUEST['openid_error'];
+		$error = htmlentities2($_REQUEST['openid_error']);
 	}
 
 	if ($_REQUEST['registration_closed']) {
