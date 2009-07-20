@@ -65,9 +65,6 @@ function openid_login_errors() {
  */
 function openid_wp_login_head() {
 	openid_style();
-	wp_enqueue_script('jquery.xpath', openid_plugin_url() . '/f/jquery.xpath.min.js', 
-		array('jquery'), OPENID_PLUGIN_REVISION);
-	wp_print_scripts(array('jquery.xpath'));
 }
 
 

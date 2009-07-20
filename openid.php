@@ -18,10 +18,6 @@ define ( 'OPENID_DB_REVISION', 24426);
 
 
 $openid_include_path = dirname(__FILE__);
-if (file_exists(dirname(__FILE__) . '/openid')) {
-	// for WPMU mu-plugins folder
-	$openid_include_path .= PATH_SEPARATOR . dirname(__FILE__) . '/openid';
-}
 
 // check source of randomness
 if (!@is_readable('/dev/urandom')) define( 'Auth_OpenID_RAND_SOURCE', null );
