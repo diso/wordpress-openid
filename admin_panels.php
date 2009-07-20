@@ -639,9 +639,11 @@ function openid_printSystemStatus() {
  * Handle OpenID profile management.
  */
 function openid_profile_management() {
-	global $wp_version;
+	global $action;
 	
-	switch( $_REQUEST['action'] ) {
+	wp_reset_vars( array('action') );
+
+	switch( $action ) {
 		case 'add':
 			check_admin_referer('openid-add_openid');
 
@@ -672,7 +674,8 @@ function openid_profile_management() {
 			break;
 
 		default:
-			if ($message = $_REQUEST['message']) {
+			if ( array_key_exists('message', $_REQUEST) ) {
+				$message = $_REQUEST['message'];
 
 				$messages = array(
 					'',
@@ -683,6 +686,8 @@ function openid_profile_management() {
 
 				if (is_numeric($message)) {
 					$message = $messages[$message];
+				} else {
+					$message = htmlentities2( $message );
 				}
 
 				$message = __($message, 'openid');
