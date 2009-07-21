@@ -253,7 +253,7 @@ function openid_comment_form() {
 				<?php _e('Authenticate this comment using <span class="openid_link">OpenID</span>.'); ?>
 			</label>
 		</div>
-		<script type="text/javascript">add_openid_to_comment_form('<?php echo wp_create_nonce('openid_ajax') ?>')</script>
+		<script type="text/javascript">add_openid_to_comment_form('<?php echo site_url('index.php') ?>', '<?php echo wp_create_nonce('openid_ajax') ?>')</script>
 <?php
 	}
 }

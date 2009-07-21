@@ -15,7 +15,7 @@ function stylize_profilelink() {
 	jQuery("#commentform a[href$='profile.php']").addClass('openid_link');
 }
 
-function add_openid_to_comment_form(nonce) {
+function add_openid_to_comment_form(wp_url, nonce) {
 	var openid_nonce = nonce;
 
 	openid_comment = jQuery('#openid_comment');
@@ -28,7 +28,7 @@ function add_openid_to_comment_form(nonce) {
 	url.blur( function() { check_openid(jQuery(this)); } );
 
 	function check_openid( url ) {
-		jQuery.getJSON('/wordpress/openid/ajax', {url: url.val(), _wpnonce: openid_nonce}, function(data, textStatus) {
+		jQuery.getJSON(wp_url + '/openid/ajax', {url: url.val(), _wpnonce: openid_nonce}, function(data, textStatus) {
 			if ( data.valid ) {
 				openid_checkbox.attr('checked', 'checked');
 				openid_comment.slideDown();
