@@ -5,38 +5,89 @@
  */
 
 
-// add OpenID input field to wp-login.php
 add_action( 'login_head', 'openid_wp_login_head');
 add_action( 'login_form', 'openid_wp_login_form');
 add_action( 'register_form', 'openid_wp_register_form', 9);
 add_action( 'register_post', 'openid_register_post', 10, 3);
-add_action( 'wp_authenticate', 'openid_wp_authenticate' );
 add_action( 'openid_finish_auth', 'openid_finish_login', 10, 2);
 add_filter( 'registration_errors', 'openid_clean_registration_errors', -99);
 add_filter( 'registration_errors', 'openid_registration_errors');
 add_action( 'init', 'openid_login_errors' );
 
-// WordPress 2.5 has wp_authenticate in the wrong place
-if (version_compare($wp_version, '2.5', '>=') && version_compare($wp_version, '2.6', '<')) {
-	add_action( 'init', 'wp25_login_openid' );
-}
-
 
 /**
- * If we're doing openid authentication ($_POST['openid_identifier'] is set), start the consumer & redirect
- * Otherwise, return and let WordPress handle the login and/or draw the form.
+ * Authenticate user to WordPress using OpenID.
  *
- * @param string $credentials username and password provided in login form
+ * @param mixed $user authenticated user object, or WP_Error or null
  */
-function openid_wp_authenticate(&$credentials) {
-	if (!empty($_POST['openid_identifier'])) {
-		$finish_url = $_REQUEST['redirect_to'];
-		openid_start_login($_POST['openid_identifier'], 'login', $finish_url);
+function openid_authenticate($user) {
+	if ( array_key_exists('openid_identifier', $_POST) && $_POST['openid_identifier'] ) {
+
+		$redirect_to = array_key_exists('redirect_to', $_REQUEST) ? $_REQUEST['redirect_to'] : null;
+		openid_start_login($_POST['openid_identifier'], 'login', $redirect_to);
 
 		// if we got this far, something is wrong
 		global $error;
 		$error = openid_message();
+		$user = new WP_Error( 'openid_login_error', $error );
+
+	} else if ( array_key_exists('finish_openid', $_REQUEST) ) {
+
+		$identity_url= $_REQUEST['identity_url'];
+
+		if ( !wp_verify_nonce($_REQUEST['_wpnonce'], 'openid_login_' . md5($identity_url)) ) {
+			$user = new WP_Error('openid_login_error', 'Error during OpenID authentication.  Please try again. (invalid nonce)');
+		}
+
+		if ( $identity_url ) {
+			$user_id = get_user_by_openid($identity_url);
+			if ( $user_id ) {
+				$user = new WP_User($user_id);
+			} else {
+				$user = new WP_Error('openid_registration_closed', __('Your have entered a valid OpenID, but this site is not currently accepting new accounts.', 'openid'));
+			}
+		} else if ( array_key_exists('openid_error', $_REQUEST) ) {
+			$user = new WP_Error('openid_login_error', htmlentities2($_REQUEST['openid_error']));
+		}
+
 	}
+
+	return $user;
+}
+add_action( 'authenticate', 'openid_authenticate' );
+
+
+/**
+ * Action method for completing the 'login' action.  This action is used when a user is logging in from
+ * wp-login.php.
+ *
+ * @param string $identity_url verified OpenID URL
+ */
+function openid_finish_login($identity_url, $action) {
+	if ($action != 'login') return;
+		
+	// create new user account if appropriate
+	$user_id = get_user_by_openid($identity_url);
+	if ( $identity_url && !$user_id && get_option('users_can_register') ) {
+		$user_data =& openid_get_user_data($identity_url);
+		openid_create_new_user($identity_url, $user_data);
+	}
+	
+	// return to wp-login page
+	$url = get_option('siteurl') . '/wp-login.php';
+	if (empty($identity_url)) {
+		$url = add_query_arg('openid_error', openid_message(), $url);
+	}
+
+	$url = add_query_arg( array( 
+		'finish_openid' => 1, 
+		'identity_url' => urlencode($identity_url), 
+		'redirect_to' => $_SESSION['openid_finish_url'],
+		'_wpnonce' => wp_create_nonce('openid_login_' . md5($identity_url)), 
+	), $url);
+		
+	wp_safe_redirect($url);
+	exit;
 }
 
 
@@ -45,17 +96,11 @@ function openid_wp_authenticate(&$credentials) {
  */
 function openid_login_errors() {
 	$self = basename( $GLOBALS['pagenow'] );
-		
 	if ($self != 'wp-login.php') return;
 
-	if ($_REQUEST['openid_error']) {
+	if ( array_key_exists('openid_error', $_REQUEST) ) {
 		global $error;
 		$error = htmlentities2($_REQUEST['openid_error']);
-	}
-
-	if ($_REQUEST['registration_closed']) {
-		global $error;
-		$error = __('Your have entered a valid OpenID, but this site is not currently accepting new accounts.', 'openid');
 	}
 }
 
@@ -74,8 +119,6 @@ function openid_wp_login_head() {
  * @action: login_form
  **/
 function openid_wp_login_form() {
-	global $wp_version;
-
 	echo '<hr id="openid_split" style="clear: both; margin-bottom: 1.0em; border: 0; border-top: 1px solid #999; height: 1px;" />';
 
 	echo '
@@ -96,8 +139,6 @@ function openid_wp_login_form() {
  * @action: register_form
  **/
 function openid_wp_register_form() {
-	global $wp_version;
-
 	echo '
 	<div style="width:100%;">'; //Added to fix IE problem
 
@@ -144,72 +185,6 @@ function openid_wp_register_form() {
 
 
 /**
- * Action method for completing the 'login' action.  This action is used when a user is logging in from
- * wp-login.php.
- *
- * @param string $identity_url verified OpenID URL
- */
-function openid_finish_login($identity_url, $action) {
-	if ($action != 'login') return;
-
-	$redirect_to = $_SESSION['openid_finish_url'];
-		
-	if (empty($identity_url)) {
-		$url = get_option('siteurl') . '/wp-login.php?openid_error=' . urlencode(openid_message());
-		wp_safe_redirect($url);
-		exit;
-	}
-		
-	openid_set_current_user($identity_url);
-
-	if (!is_user_logged_in()) {
-		if ( get_option('users_can_register') ) {
-			$user_data =& openid_get_user_data($identity_url);
-			$user = openid_create_new_user($identity_url, $user_data);
-			openid_set_current_user($user->ID);
-		} else {
-			// TODO - Start a registration loop in WPMU.
-			$url = get_option('siteurl') . '/wp-login.php?registration_closed=1';
-			wp_safe_redirect($url);
-			exit;
-		}
-
-	}
-		
-	if (empty($redirect_to)) {
-		$redirect_to = 'wp-admin/';
-	}
-	if ($redirect_to == 'wp-admin/') {
-		if (!current_user_can('edit_posts')) {
-			$redirect_to .= 'profile.php';
-		}
-	}
-	if (!preg_match('#^(http|\/)#', $redirect_to)) {
-		$wpp = parse_url(get_option('siteurl'));
-		$redirect_to = $wpp['path'] . '/' . $redirect_to;
-	}
-
-	wp_safe_redirect( $redirect_to );
-	exit;
-}
-
-
-/**
- * Intercept login requests on wp-login.php if they include an 'openid_identifier' 
- * value and start OpenID authentication.  This hook is only necessary in 
- * WordPress 2.5.x because it has the 'wp_authenticate' action call in the 
- * wrong place.
- */
-function wp25_login_openid() {
-	$self = basename( $GLOBALS['pagenow'] );
-		
-	if ($self == 'wp-login.php' && !empty($_POST['openid_identifier'])) {
-		wp_signon(array('user_login'=>'openid', 'user_password'=>'openid'));
-	}
-}
-
-
-/**
  * Clean out registration errors that don't apply.
  */
 function openid_clean_registration_errors($errors) {
@@ -249,8 +224,8 @@ function openid_registration_errors($errors) {
  * Handle WordPress registrations.
  */
 function openid_register_post($username, $password, $errors) {
-	if (!empty($_POST['openid_identifier'])) {
-		wp_signon(array('user_login'=>'openid', 'user_password'=>'openid'));
+	if ( !empty($_POST['openid_identifier']) ) {
+		wp_signon();
 	}
 }
 ?>
