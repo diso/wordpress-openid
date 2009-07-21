@@ -307,8 +307,10 @@ function finish_openid_auth() {
 	@session_start();
 
 	$consumer = openid_getConsumer();
-	$openid_return_to = $_SESSION['openid_return_to'];
-	if (empty($openid_return_to)) {
+	if ( array_key_exists('openid_return_to', $_SESSION) ) {
+		$openid_return_to = $_SESSION['openid_return_to'];
+	}
+	if ( empty($openid_return_to) ) {
 		$openid_return_to = openid_service_url('consumer');
 	}
 
@@ -570,7 +572,7 @@ function openid_create_new_user($identity_url, &$user_data) {
 	@include_once( ABSPATH . WPINC . '/registration-functions.php'); // 2.0.4
 
 	// otherwise, try to use preferred username
-	if (empty($username) && $user_data['nickname']) {
+	if ( empty($username) && array_key_exists('nickname', $user_data) ) {
 		$username = openid_generate_new_username($user_data['nickname'], false);
 	}
 
@@ -796,7 +798,7 @@ function openid_parse_request($wp) {
 				if (empty($action)) {
 					$action = 'login';
 					if (empty($_SESSION['openid_finish_url'])) {
-						$_SESSION['openid_finish_url'] = get_option('home');
+						//$_SESSION['openid_finish_url'] = get_option('home');
 					}
 				}
 
