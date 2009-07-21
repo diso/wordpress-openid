@@ -371,9 +371,11 @@ function unset_comment_openid($id) {
  * @see get_user_data
  */
 function openid_get_user_data_form($data, $identity_url) {
-	$comment = $_SESSION['openid_comment_post'];
+	if ( array_key_exists('openid_comment_post', $_SESSION) ) {
+		$comment = $_SESSION['openid_comment_post'];
+	}
 
-	if (!$comment) {
+	if ( !isset($comment) || !$comment) {
 		return $data;
 	}
 
