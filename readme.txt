@@ -127,6 +127,7 @@ report at <http://code.google.com/p/diso/issues/list>.
  - drop support for installing the plugin in mu-plugins folder
  - always include 'index.php' on OpenID endpoint URLs.  Without that, some deployments were having problems.
  - fix bug relating to trackbacks and pingbacks
+ - fix bug (#121) relating to unregistered options (props: tom.tdw for the patch)
 
 = version 3.2.3 (Jul 20, 2009) =
  - fix XSS vulnerability. (props: Stuart Metcalfe)
