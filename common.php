@@ -1015,7 +1015,7 @@ function openid_page($message, $title = '') {
  * @action: init
  **/
 function openid_js_setup() {
-	if (is_single() || is_comments_popup() || is_admin()) {
+	if (have_comments() || comments_open() || is_admin()) {
 		wp_enqueue_script('openid', plugins_url('openid/f/openid.js'), array('jquery'), OPENID_PLUGIN_REVISION);
 	}
 }
