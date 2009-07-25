@@ -148,11 +148,6 @@ function openid_options_page() {
 		}
 	}
 
-	$openid_options = array(
-		'openid_blog_owner',
-		'openid_cap',
-	);
-	
 	// Display the options page form
 
 	if (function_exists('screen_icon')):
@@ -267,8 +262,6 @@ function openid_options_page() {
 			</table>
 
 			<?php settings_fields('openid'); ?>
-			<input type="hidden" name="action" value="update" />
-			<input type="hidden" name="page_options" value="<?php echo join(',', $openid_options); ?>" />
 			<p class="submit"><input type="submit" class="button-primary" name="info_update" value="<?php _e('Save Changes') ?>" /></p>
 		</form>
 	</div>
