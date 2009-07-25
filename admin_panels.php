@@ -6,6 +6,7 @@
 
 
 // -- WordPress Hooks
+add_action( 'admin_init', 'openid_admin_register_settings' );
 add_action( 'admin_menu', 'openid_admin_panels' );
 add_action( 'personal_options_update', 'openid_personal_options_update' );
 add_action( 'openid_finish_auth', 'openid_finish_verify', 10, 2 );
@@ -14,7 +15,6 @@ add_filter( 'pre_update_option_openid_cap', 'openid_set_cap', 10, 2);
 if (version_compare($wp_version, '2.5', '<')) {
 	add_filter('pre_user_url', 'openid_compat_pre_user_url');
 }
-
 
 
 /**
@@ -68,14 +68,25 @@ function openid_admin_panels() {
 	} else {
 		// add OpenID options to General Settings page
 		add_settings_field('openid_general_settings', 'OpenID Settings', 'openid_general_settings', 'general', 'default');
-		register_setting('general', 'openid_required_for_registration');
 	}
 
 	// add OpenID options to Discussion Settings page
 	add_settings_field('openid_disucssion_settings', 'OpenID Settings', 'openid_discussion_settings', 'discussion', 'default');
+}
+
+
+/**
+ * Register OpenID admin settings.
+ */
+function openid_admin_register_settings() {
+	register_setting('general', 'openid_required_for_registration');
+
 	register_setting('discussion', 'openid_no_require_name');
 	register_setting('discussion', 'openid_enable_approval');
 	register_setting('discussion', 'openid_enable_commentform');
+
+	register_setting('openid', 'openid_blog_owner');
+	register_setting('openid', 'openid_cap');
 }
 
 
@@ -88,7 +99,11 @@ function openid_set_cap($newvalue, $oldvalue) {
 
 	foreach ($wp_roles->role_names as $key => $name) {
 		$role = $wp_roles->get_role($key);
-		$option_set = $newvalue[htmlentities($key)] == 'on' ? true : false;
+		if (array_key_exists($key, $newvalue) && $newvalue[$key] == 'on') {
+			$option_set = true;
+		} else {
+			$option_set = false;
+		}
 		if ($role->has_cap('use_openid_provider')) {
 			if (!$option_set) $role->remove_cap('use_openid_provider');
 		} else {
@@ -180,6 +195,7 @@ function openid_options_page() {
 						<p>
 							<?php 
 				foreach ($wp_roles->role_names as $key => $name) {
+					$name = _c($name);
 					$role = $wp_roles->get_role($key);
 					$checked = $role->has_cap('use_openid_provider') ? ' checked="checked"' : '';
 					$option_name = 'openid_cap[' . htmlentities($key) . ']';
@@ -250,7 +266,7 @@ function openid_options_page() {
 				</tr>
 			</table>
 
-			<?php wp_nonce_field('update-options'); ?>
+			<?php settings_fields('openid'); ?>
 			<input type="hidden" name="action" value="update" />
 			<input type="hidden" name="page_options" value="<?php echo join(',', $openid_options); ?>" />
 			<p class="submit"><input type="submit" class="button-primary" name="info_update" value="<?php _e('Save Changes') ?>" /></p>
