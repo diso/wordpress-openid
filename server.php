@@ -347,7 +347,7 @@ function openid_provider_link_tags() {
 		$user = $wp_query->get_queried_object();
 	}
 
-	if ($user) {
+	if ( isset($user) && $user) {
 		// if user doesn't have capability, bail
 		$user_object = new WP_User($user->ID);
 		if (!$user_object->has_cap('use_openid_provider')) return;

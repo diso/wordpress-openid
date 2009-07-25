@@ -93,7 +93,11 @@ function is_comment_openid($id = null) {
  */
 function get_user_openids($id_or_name = null) {
 	$user = get_userdata_by_various($id_or_name);
-	return _get_user_openids($user->ID);
+	if ($user) {
+		return _get_user_openids($user->ID);
+	} else {
+		return array();
+	}
 }
 
 

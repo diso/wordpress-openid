@@ -120,6 +120,7 @@ report at <http://code.google.com/p/diso/issues/list>.
 
 = version 3.3 (TBD) =
  - minimum required version has been bumped to WordPress 2.8
+ - fix support for WordPress MU
  - new, less obtrusive UI for comment form.  Should also work with all themes in some form (with or without js).
  - many administrative options have been moved to their respective locations on core WordPress Settings pages
  - drop support for experimental EAUT and IDIB protocols

@@ -33,22 +33,18 @@ function openid_admin_notices_plugin_problem_warning() {
  * @action: admin_menu
  **/
 function openid_admin_panels() {
+	add_filter('plugin_action_links', 'openid_plugin_action_links', 10, 2);
+
 	// global options page
 	$hookname = add_options_page(__('OpenID options', 'openid'), __('OpenID', 'openid'), 8, 'openid', 'openid_options_page' );
-	if (function_exists('add_thickbox')) {
-		add_action("load-$hookname", create_function('', 'add_thickbox();'));
-	} else {
-		add_action("load-$hookname", 'openid_js_setup' );
-	}
+	add_action("load-$hookname", create_function('', 'add_thickbox();'));
 	add_action("admin_head-$hookname", 'openid_style' );
-	add_filter('plugin_action_links', 'openid_plugin_action_links', 10, 2);
 	
 	// all users can setup external OpenIDs
-	$hookname =	add_users_page(__('Your OpenIDs', 'openid'), __('Your OpenIDs', 'openid'), 
-		'read', 'your_openids', 'openid_profile_panel' );
-	add_action("admin_head-$hookname", 'openid_style' );
+	$hookname =	add_users_page(__('Your OpenIDs', 'openid'), __('Your OpenIDs', 'openid'), 'read', 'your_openids', 'openid_profile_panel' );
 	add_action("load-$hookname", create_function('', 'wp_enqueue_script("admin-forms");'));
 	add_action("load-$hookname", 'openid_profile_management' );
+	add_action("admin_head-$hookname", 'openid_style' );
 
 	// additional options for users authorized to use OpenID provider
 	$user = wp_get_current_user();
@@ -65,9 +61,17 @@ function openid_admin_panels() {
 		}
 	}
 
-	add_settings_field('openid_general_settings', 'OpenID Settings', 'openid_general_settings', 'general', 'default');
-	register_setting('general', 'openid_required_for_registration');
+	if ( function_exists('is_site_admin') ) {
+		// add OpenID options to WPMU Site Admin page
+		add_action('wpmu_options', 'openid_wpmu_options');
+		add_action('update_wpmu_options', 'openid_update_wpmu_options');
+	} else {
+		// add OpenID options to General Settings page
+		add_settings_field('openid_general_settings', 'OpenID Settings', 'openid_general_settings', 'general', 'default');
+		register_setting('general', 'openid_required_for_registration');
+	}
 
+	// add OpenID options to Discussion Settings page
 	add_settings_field('openid_disucssion_settings', 'OpenID Settings', 'openid_discussion_settings', 'discussion', 'default');
 	register_setting('discussion', 'openid_no_require_name');
 	register_setting('discussion', 'openid_enable_approval');
@@ -871,6 +875,9 @@ function openid_ensure_url_match($user, $url = null) {
 }
 
 
+/**
+ * Add OpenID options to the WordPress user profile page.
+ */
 function openid_extend_profile() {
 	$user = wp_get_current_user();
 
@@ -890,6 +897,10 @@ function openid_extend_profile() {
 ';
 }
 
+
+/**
+ * Update OpenID options set from the WordPress user profile page.
+ */
 function openid_profile_update($user_id) {
 	if (empty($_POST['openid_delegate'])) {
 		delete_usermeta($user_id, 'openid_delegate');
@@ -907,10 +918,59 @@ function openid_profile_update($user_id) {
 	}
 }
 
+
+/**
+ * Add OpenID options to the WordPress MU site options page.
+ */
+function openid_wpmu_options() {
+	$registration = get_site_option('registration');
+	if ( $registration == 'all' || $registration == 'user' ):
+?>
+		<table id="openid_options" class="form-table">
+			<tr valign="top">
+				<th scope="row"></th>
+				<td>
+					<label for="openid_required_for_registration">
+						<input type="checkbox" name="openid_required_for_registration" id="openid_required_for_registration" value="1"
+							<?php checked(true, get_site_option('openid_required_for_registration')) ?> />
+						<?php _e('New accounts can only be created with verified OpenIDs.', 'openid') ?>
+					</label>
+				</td>
+			</tr>
+		</table>
+
+		<script type="text/javascript">
+			jQuery(function() {
+				jQuery('#openid_options').hide();
+				var lastp = jQuery('td:has([name="registration"])').children("p:last");
+				jQuery('#openid_required_for_registration').parent().insertBefore(lastp).wrap('<p></p>');
+			});
+		</script>
+<?php
+	endif;
+}
+
+
+/**
+ * Update the OpenID options set from the WordPress MU site options page.
+ */
+function openid_update_wpmu_options() {
+	$openid_required = array_key_exists('openid_required_for_registration', $_POST);
+	if ($openid_required) {
+		update_site_option('openid_required_for_registration', '1');
+	} else {
+		update_site_option('openid_required_for_registration', '0');
+	}
+}
+
+
+/**
+ * Add OpenID options to the WordPress general settings page.
+ */
 function openid_general_settings() {
 	if ( get_option('users_can_register') ): ?>
 	<label for="openid_required_for_registration">
-		<input type="checkbox" name="openid_required_for_registration" id="openid_required_for_registration" 
+		<input type="checkbox" name="openid_required_for_registration" id="openid_required_for_registration" value="1"
 			<?php checked(true, get_option('openid_required_for_registration')) ?> />
 		<?php _e('New accounts can only be created with verified OpenIDs.', 'openid') ?>
 	</label>
@@ -926,10 +986,14 @@ function openid_general_settings() {
 <?php
 }
 
+
+/**
+ * Add OpenID optiosn to the WordPress discussion settings page.
+ */
 function openid_discussion_settings() {
 	if ( get_option('require_name_email') ): ?>
 	<label for="openid_no_require_name">
-		<input type="checkbox" name="openid_no_require_name" id="openid_no_require_name" <?php 
+		<input type="checkbox" name="openid_no_require_name" id="openid_no_require_name" value="1" <?php 
 			echo checked(true, get_option('openid_no_require_name')) ; ?> />
 		<?php _e('Don\'t require name and e-mail for comments left with a verified OpenID.', 'openid') ?>
 	</label>
@@ -937,14 +1001,14 @@ function openid_discussion_settings() {
 	<?php endif; ?>
 
 	<label for="openid_enable_approval">
-		<input type="checkbox" name="openid_enable_approval" id="openid_enable_approval" <?php 
+		<input type="checkbox" name="openid_enable_approval" id="openid_enable_approval" value="1" <?php 
 			echo checked(true, get_option('openid_enable_approval'));  ?> />
 		<?php _e('Always approve comments left with a verified OpenID', 'openid'); ?>
 	</label>
 	<br />
 
 	<label for="openid_enable_commentform">
-		<input type="checkbox" name="openid_enable_commentform" id="openid_enable_commentform" <?php 
+		<input type="checkbox" name="openid_enable_commentform" id="openid_enable_commentform" value="1" <?php 
 			echo checked(true, get_option('openid_enable_commentform'));  ?> />
 		<?php printf(__('Add OpenID help text to the comment form. <em>(This will work for most themes derived from Kubrick or Sandbox.  '
 			. 'Template authors can tweak the comment form as described %shere%s)</em>.', 'openid'), 
