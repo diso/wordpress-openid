@@ -534,12 +534,7 @@ function openid_set_current_user($identity, $remember = true) {
 	if (!$user_id) return;
 
 	$user = set_current_user($user_id);
-
-	if (function_exists('wp_set_auth_cookie')) {
-		wp_set_auth_cookie($user->ID, $remember);
-	} else {
-		wp_setcookie($user->user_login, md5($user->user_pass), true, '', '', $remember);
-	}
+	wp_set_auth_cookie($user->ID, $remember);
 
 	do_action('wp_login', $user->user_login);
 }
@@ -986,7 +981,7 @@ function openid_page($message, $title = '') {
 	global $wp_locale;
 ?>
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
-<html xmlns="http://www.w3.org/1999/xhtml" <?php if ( function_exists( 'language_attributes' ) ) language_attributes(); ?>>
+<html xmlns="http://www.w3.org/1999/xhtml" <?php language_attributes(); ?>>
 <head>
 	<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
 	<title><?php echo $title ?></title>

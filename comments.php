@@ -7,7 +7,7 @@
 
 // -- WordPress Hooks
 add_action( 'preprocess_comment', 'openid_process_comment', -90);
-if (function_exists('has_action') && has_action('preprocess_comment', 'akismet_auto_check_comment')) {
+if (has_action('preprocess_comment', 'akismet_auto_check_comment')) {
 	// ensure akismet runs before OpenID
 	remove_action('preprocess_comment', 'akismet_auto_check_comment', 1);
 	add_action('preprocess_comment', 'akismet_auto_check_comment', -99);
@@ -223,11 +223,7 @@ function update_comment_openid($comment_ID) {
 function openid_comment_profilelink() {
 	global $wp_scripts;
 
-	if ( !is_a($wp_scripts, 'WP_Scripts') ) {
-		$wp_scripts = new WP_Scripts();
-	}
-
-	if ((is_single() || is_comments_popup()) && is_user_openid() && $wp_scripts->query('openid')) {
+	if (comments_open() && is_user_openid() && $wp_scripts->query('openid')) {
 		echo '<script type="text/javascript">stylize_profilelink()</script>';
 	}
 }
@@ -241,11 +237,7 @@ function openid_comment_profilelink() {
 function openid_comment_form() {
 	global $wp_scripts;
 
-	if ( !is_a($wp_scripts, 'WP_Scripts') ) {
-		$wp_scripts = new WP_Scripts();
-	}
-
-	if (!is_user_logged_in() && (is_single() || is_comments_popup()) && isset($wp_scripts) && $wp_scripts->query('openid')) {
+	if (comments_open() && !is_user_logged_in() && isset($wp_scripts) && $wp_scripts->query('openid')) {
 ?>
 		<div id="openid_comment">
 			<label>
@@ -253,7 +245,7 @@ function openid_comment_form() {
 				<?php _e('Authenticate this comment using <span class="openid_link">OpenID</span>.'); ?>
 			</label>
 		</div>
-		<script type="text/javascript">add_openid_to_comment_form('<?php echo site_url('index.php') ?>', '<?php echo wp_create_nonce('openid_ajax') ?>')</script>
+		<script type="text/javascript">jQuery(function(){ add_openid_to_comment_form('<?php echo site_url('index.php') ?>', '<?php echo wp_create_nonce('openid_ajax') ?>') })</script>
 <?php
 	}
 }

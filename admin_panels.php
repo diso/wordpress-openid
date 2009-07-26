@@ -150,13 +150,11 @@ function openid_options_page() {
 
 	// Display the options page form
 
-	if (function_exists('screen_icon')):
-		screen_icon('openid');
+	screen_icon('openid');
 	?>
 	<style type="text/css">
 		#icon-openid { background-image: url("<?php echo plugins_url('openid/f/icon.png'); ?>"); }
 	</style>
-	<?php endif; ?>
 
 	<div class="wrap">
 		<form method="post" action="options.php">
@@ -296,13 +294,11 @@ function openid_profile_panel() {
 		unset($error);
 	}
 
-	if (function_exists('screen_icon')):
-		screen_icon('openid');
+	screen_icon('openid');
 	?>
 	<style type="text/css">
 		#icon-openid { background-image: url("<?php echo plugins_url('openid/f/icon.png'); ?>"); }
 	</style>
-	<?php endif; ?>
 
 	<div class="wrap">
 		<form action="<?php printf('%s?page=%s', $_SERVER['PHP_SELF'], $_REQUEST['page']); ?>" method="post">
@@ -434,13 +430,11 @@ function openid_manage_trusted_sites() {
 		break;
 	}
 
-	if (function_exists('screen_icon')):
-		screen_icon('openid');
+	screen_icon('openid');
 	?>
 	<style type="text/css">
 		#icon-openid { background-image: url("<?php echo plugins_url('openid/f/icon.png'); ?>"); }
 	</style>
-	<?php endif; ?>
 
 	<div class="wrap">
 		<h2><?php _e('Your Trusted Sites', 'openid'); ?></h2>
@@ -630,20 +624,9 @@ function openid_printSystemStatus() {
 		echo (is_array($message) ? '<ul><li>' . implode('</li><li>', $message) . '</li></ul>' : $message);
 		echo '</div>';
 	}
-	echo '</div>';
-	echo '
+	echo '</div>
 	<script type="text/javascript">
-		jQuery("#openid_system_status").hide();';
-
-	if (!function_exists('add_thickbox')) {
-		echo '
-		jQuery("#openid_status_link").click( function() {
-			jQuery("#openid_system_status").toggle();
-			return false;
-		});';
-	}
-
-	echo '
+		jQuery("#openid_system_status").hide();
 	</script>';
 }
 
