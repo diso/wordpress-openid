@@ -123,7 +123,7 @@ function openid_wp_login_form() {
 
 	echo '
 	<p style="margin-bottom: 8px;">
-		<label style="display: block; margin-bottom: 5px;">' . __('Or login using an OpenID', 'openid') . '</label>
+		<label style="display: block; margin-bottom: 5px;">' . __('Or login using an OpenID', 'openid') . '<br />
 		<input type="text" name="openid_identifier" id="openid_identifier" class="input openid_identifier" value="" size="20" tabindex="25" /></label>
 	</p>
 
@@ -171,7 +171,7 @@ function openid_wp_register_form() {
 
 	echo '
 		<p>
-			<label style="display: block; margin-bottom: 5px;">' . $label . '</label>
+			<label style="display: block; margin-bottom: 5px;">' . $label . '<br />
 			<input type="text" name="openid_identifier" id="openid_identifier" class="input openid_identifier" value="" size="20" tabindex="25" /></label>
 		</p>
 
