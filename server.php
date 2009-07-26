@@ -509,12 +509,13 @@ function openid_server_user_trust($request) {
  * @url string URL to discover.  If not provided, user's current delegate will be used
  * @return bool true if successful
  */
-function openid_server_update_delegation_info($userid, $url = null) {
+function openid_server_get_delegation_info($userid, $url = null) {
 	if (empty($url)) $url = get_usermeta($userid, 'openid_delegate');
 	if (empty($url)) return false;
 
 	$fetcher = Auth_Yadis_Yadis::getHTTPFetcher();
 	$discoveryResult = Auth_Yadis_Yadis::discover($url, $fetcher);
+	error_log('discovery result: ' . var_export($discoveryResult, true) );
 	$endpoints = Auth_OpenID_ServiceEndpoint::fromDiscoveryResult($discoveryResult);
 	$services = array();
 
@@ -575,9 +576,10 @@ function openid_server_update_delegation_info($userid, $url = null) {
 
 	if (empty($services)) return false;
 
-	update_usermeta($userid, 'openid_delegate', $url);
-	update_usermeta($userid, 'openid_delegate_services', $services);
-	return true;
+	return array(
+		'url' => $url,
+		'services' => $services
+	);
 }
 
 ?>

@@ -51,6 +51,7 @@ function openid_admin_panels() {
 	if ($user->has_cap('use_openid_provider')) {
 		add_action('show_user_profile', 'openid_extend_profile', 5);
 		add_action('profile_update', 'openid_profile_update');
+		add_action('user_profile_update_errors', 'openid_profile_update_errors', 10, 3);
 		add_action('admin_head-profile.php', 'openid_style');
 
 		if (!get_usermeta($user->ID, 'openid_delegate')) {
@@ -676,7 +677,7 @@ function openid_profile_management() {
 				$messages = array(
 					'',
 					'Unable to authenticate OpenID.',
-					'OpenID assertion successful, but this URL is already associated with another user on this blog. This is probably a bug.',
+					'OpenID assertion successful, but this URL is already associated with another user on this blog.',
 					'Added association with OpenID.',
 				);
 
@@ -894,22 +895,46 @@ function openid_extend_profile() {
  * Update OpenID options set from the WordPress user profile page.
  */
 function openid_profile_update($user_id) {
-	if (empty($_POST['openid_delegate'])) {
-		delete_usermeta($user_id, 'openid_delegate');
-	} else {
-		$old_delegate = get_usermeta($user_id, 'openid_delegate');
-		$delegate = Auth_OpenID::normalizeUrl($_POST['openid_delegate']);
+	global $openid_user_delegation_info;
 
-		if(openid_server_update_delegation_info($user_id, $delegate)) {
-			openid_message(sprintf(__('Gathered OpenID information for delegate URL %s', 'openid'), '<strong>'.$delegate.'</strong>'));
-			openid_status('success');
-		} else {
-			openid_message(sprintf(__('Unable to find any OpenID information for delegate URL %s', 'openid'), '<strong>'.$delegate.'</strong>'));
-			openid_status('error');
-		}
+	if ( empty($_POST['openid_delegate']) ) {
+		delete_usermeta($user_id, 'openid_delegate');
+		delete_usermeta($user_id, 'openid_delegate_services');
+	} else {
+		update_usermeta($user_id, 'openid_delegate', $openid_user_delegation_info['url']);
+		update_usermeta($user_id, 'openid_delegate_services', $openid_user_delegation_info['services']);
 	}
 }
 
+
+/**
+ * Report any OpenID errors during user profile updating.
+ */
+function openid_profile_update_errors($errors, $update, $user) {
+	global $openid_user_delegation_info;
+
+	$delegate = Auth_OpenID::normalizeUrl($_POST['openid_delegate']);
+	if ( empty($delegate) ) return $errors;
+
+	$openid_user_delegation_info = openid_server_get_delegation_info($user->ID, $delegate);
+
+	if (!$openid_user_delegation_info) {
+		$errors->add('openid_delegate', sprintf(__('Unable to find any OpenID information for delegate URL %s', 'openid'), '<strong>'.$delegate.'</strong>'));
+	} else {
+		$id_select_count = 0;
+		foreach ($openid_user_delegation_info['services'] as $service) {
+			if ( array_key_exists('LocalID', $service) && $service['LocalID'] == Auth_OpenID_IDENTIFIER_SELECT ) {
+				$id_select_count++;
+			}
+		}
+
+		if ( count($openid_user_delegation_info['services']) <= $id_select_count ) {
+			$errors->add('openid_delegate', sprintf(__('You cannot delegate to an OpenID provider which uses Identifier Select.', 'openid')));
+		}
+	}
+
+	return $errors;
+}
 
 /**
  * Add OpenID options to the WordPress MU site options page.
