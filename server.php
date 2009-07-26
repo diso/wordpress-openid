@@ -515,7 +515,6 @@ function openid_server_get_delegation_info($userid, $url = null) {
 
 	$fetcher = Auth_Yadis_Yadis::getHTTPFetcher();
 	$discoveryResult = Auth_Yadis_Yadis::discover($url, $fetcher);
-	error_log('discovery result: ' . var_export($discoveryResult, true) );
 	$endpoints = Auth_OpenID_ServiceEndpoint::fromDiscoveryResult($discoveryResult);
 	$services = array();
 
