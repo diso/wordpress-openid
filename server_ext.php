@@ -10,6 +10,8 @@ function openid_server_sreg_xrds_types($types) {
 	$types[] = 'http://openid.net/sreg/1.0';
 	return $types;
 }
+
+
 /**
  * See if the OpenID authentication request includes SReg and add additional hooks if so.
  */
@@ -17,7 +19,8 @@ function openid_server_sreg_post_auth($request) {
 	$sreg_request = Auth_OpenID_SRegRequest::fromOpenIDRequest($request);
 	if ($sreg_request) {
 		$GLOBALS['openid_server_sreg_request'] = $sreg_request;
-		add_action('openid_server_trust_form', 'openid_server_sreg_trust_form');
+		add_action('openid_server_trust_form', 'openid_server_attributes_trust_form');
+		add_filter('openid_server_trust_form_attributes', 'openid_server_sreg_trust_form');
 		add_action('openid_server_trust_submit', 'openid_server_sreg_trust_submit', 10, 2);
 		add_filter('openid_server_store_trusted_site', 'openid_server_sreg_store_trusted_site');
 		add_action('openid_server_auth_response', 'openid_server_sreg_auth_response' );
@@ -28,33 +31,45 @@ function openid_server_sreg_post_auth($request) {
 /**
  * Add SReg input fields to the OpenID Trust Form
  */
-function openid_server_sreg_trust_form() {
+function openid_server_sreg_trust_form( $attributes ) {
 	$sreg_request = $GLOBALS['openid_server_sreg_request'];
 	$sreg_fields = $sreg_request->allRequestedFields();
 
 	if (!empty($sreg_fields)) {
-		$display_fields = array();
 		foreach ($sreg_fields as $field) {
 			$value = openid_server_sreg_from_profile($field);
 			if (!empty($value)) {
-				$display_fields[] = strtolower($GLOBALS['Auth_OpenID_sreg_data_fields'][$field]);
+				$attributes[] = strtolower($GLOBALS['Auth_OpenID_sreg_data_fields'][$field]);
 			}
 		}
+	}
 
-		if (!empty($display_fields)) {
-			$fields = openid_server_sreg_field_string($display_fields);
+	return $attributes;
+}
 
-			echo '
-			<p class="trust_form_add" style="padding: 0">
-				<input type="checkbox" id="include_sreg" name="include_sreg" checked="checked" style="display: block; float: left; margin: 0.8em;" />
-				<label for="include_sreg" style="display: block; padding: 0.5em 2em;">'.sprintf(__('Also grant access to see my %s.', 'openid'), $fields) . '</label>
-			</p>';
-		}
 
+/**
+ * Add attribute input fields to the OpenID Trust Form
+ */
+function openid_server_attributes_trust_form() {
+	$attributes = apply_filters('openid_server_trust_form_attributes', array());
+
+	if (!empty($attributes)) {
+		$attr_string = openid_server_attributes_string($attributes);
+
+		echo '
+		<p class="trust_form_add" style="padding: 0">
+			<input type="checkbox" id="include_sreg" name="include_sreg" checked="checked" style="display: block; float: left; margin: 0.8em;" />
+			<label for="include_sreg" style="display: block; padding: 0.5em 2em;">'.sprintf(__('Also grant access to see my %s.', 'openid'), $attr_string) . '</label>
+		</p>';
 	}
 }
 
-function openid_server_sreg_field_string($fields, $string = '') {
+
+/**
+ * Convert list of attribute names to human readable string.
+ */
+function openid_server_attributes_string($fields, $string = '') {
 	if (empty($fields)) return $string;
 
 	if (empty($string)) {
@@ -67,7 +82,7 @@ function openid_server_sreg_field_string($fields, $string = '') {
 		$string .= ', ' . array_shift($fields);
 	}
 
-	return openid_server_sreg_field_string($fields, $string);
+	return openid_server_attributes_string($fields, $string);
 }
 
 
