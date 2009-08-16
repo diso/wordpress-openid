@@ -8,14 +8,13 @@
 add_action( 'init', 'openid_textdomain' ); // load textdomain
 
 // include internal stylesheet
-add_action( 'wp_head', 'openid_style');
+add_action( 'wp', 'openid_style');
 
 // parse request
 add_action('parse_request', 'openid_parse_request');
 add_action('query_vars', 'openid_query_vars');
 add_action('generate_rewrite_rules', 'openid_rewrite_rules');
 
-add_action( 'delete_user', 'delete_user_openids' );
 add_action( 'cleanup_openid', 'openid_cleanup' );
 
 
@@ -912,19 +911,6 @@ function openid_query_vars($vars) {
 	return $vars;
 }
 
-
-/**
- * Delete user.
- */
-function delete_user_openids($userid) {
-	openid_drop_all_identities($userid);
-}
-
-
-function openid_add_user_identity($user_id, $identity_url) {
-	openid_add_identity($user_id, $identity_url);
-}
-
 function openid_status($new = null) {
 	static $status;
 	return ($new == null) ? $status : $status = $new;
@@ -1005,7 +991,7 @@ function openid_page($message, $title = '') {
 
 
 /**
- * Enqueue required javascript libraries.
+ * Enqueue required javascript libraries on appropriate pages.
  *
  * @action: init
  **/
@@ -1022,8 +1008,33 @@ function openid_js_setup() {
  * @action: wp_head, login_head
  **/
 function openid_style() {
-	echo '
-		<link rel="stylesheet" type="text/css" href="' . plugins_url('openid/f/openid.css') . '" />';
+	wp_enqueue_style('openid', plugins_url('openid/f/openid.css'), array(), OPENID_PLUGIN_REVISION);
+}
+
+
+
+// ---------------------- //
+// OpenID User Management //
+// ---------------------- //
+
+
+/**
+ * When a WordPress user is deleted, make sure all associated OpenIDs are deleted as well.
+ */
+function delete_user_openids($userid) {
+	openid_drop_all_identities($userid);
+}
+add_action( 'delete_user', 'delete_user_openids' );
+
+
+/**
+ * Add the specified identity URL to the user.
+ *
+ * @param int $user_id user id
+ * @param string $identity_url identity url to add
+ */
+function openid_add_user_identity($user_id, $identity_url) {
+	openid_add_identity($user_id, $identity_url);
 }
 
 
@@ -1035,7 +1046,8 @@ function openid_style() {
  */
 function openid_add_identity($user_id, $url) {
 	global $wpdb;
-	return $wpdb->query( wpdb_prepare('INSERT INTO '.openid_identity_table().' (user_id,url,hash) VALUES ( %s, %s, MD5(%s) )', $user_id, $url, $url) );
+	$sql = $wpdb->prepare('INSERT INTO ' . openid_identity_table() . ' (user_id,url,hash) VALUES ( %s, %s, MD5(%s) )', $user_id, $url, $url);
+	return $wpdb->query( $sql );
 }
 
 
@@ -1048,16 +1060,6 @@ function openid_add_identity($user_id, $url) {
 function _get_user_openids($user_id) {
 	global $wpdb;
 	return $wpdb->get_col( wpdb_prepare('SELECT url FROM '.openid_identity_table().' WHERE user_id = %s', $user_id) );
-}
-
-
-/**
- * Format OpenID for display... namely, remove the fragment if present.
- * @param string $url url to display
- * @return url formatted for display
- */
-function openid_display_identity($url) {
-	return preg_replace('/#.+$/', '', $url);
 }
 
 
@@ -1081,6 +1083,21 @@ function openid_drop_identity($user_id, $identity_url) {
 function openid_drop_all_identities($user_id) {
 	global $wpdb;
 	return $wpdb->query( wpdb_prepare('DELETE FROM '.openid_identity_table().' WHERE user_id = %s', $user_id ) );
+}
+
+
+
+// -------------- //
+// Other Function //
+// -------------- //
+
+/**
+ * Format OpenID for display... namely, remove the fragment if present.
+ * @param string $url url to display
+ * @return url formatted for display
+ */
+function openid_display_identity($url) {
+	return preg_replace('/#.+$/', '', $url);
 }
 
 

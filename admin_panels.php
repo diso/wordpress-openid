@@ -1,6 +1,6 @@
 <?php
 /**
- * All the code required for handling OpenID comments.  These functions should not be considered public, 
+ * All the code required for handling OpenID administration.  These functions should not be considered public, 
  * and may change without notice.
  */
 
@@ -11,15 +11,6 @@ add_action( 'admin_menu', 'openid_admin_panels' );
 add_action( 'personal_options_update', 'openid_personal_options_update' );
 add_action( 'openid_finish_auth', 'openid_finish_verify', 10, 2 );
 add_filter( 'pre_update_option_openid_cap', 'openid_set_cap', 10, 2);
-
-/**
- * Spam up the admin interface with warnings.
- **/
-function openid_admin_notices_plugin_problem_warning() {
-	echo'<div class="error"><p><strong>'.__('The WordPress OpenID plugin is not active.', 'openid').'</strong>';
-	printf(_('Check %sOpenID Options%s for a full diagnositic report.', 'openid'), '<a href="options-general.php?page=openid">', '</a>');
-	echo '</p></div>';
-}
 
 
 /**
@@ -33,13 +24,13 @@ function openid_admin_panels() {
 	// global options page
 	$hookname = add_options_page(__('OpenID options', 'openid'), __('OpenID', 'openid'), 8, 'openid', 'openid_options_page' );
 	add_action("load-$hookname", create_function('', 'add_thickbox();'));
-	add_action("admin_head-$hookname", 'openid_style' );
+	add_action("load-$hookname", 'openid_style');
 	
 	// all users can setup external OpenIDs
 	$hookname =	add_users_page(__('Your OpenIDs', 'openid'), __('Your OpenIDs', 'openid'), 'read', 'your_openids', 'openid_profile_panel' );
 	add_action("load-$hookname", create_function('', 'wp_enqueue_script("admin-forms");'));
 	add_action("load-$hookname", 'openid_profile_management' );
-	add_action("admin_head-$hookname", 'openid_style' );
+	add_action("load-$hookname", 'openid_style' );
 
 	// additional options for users authorized to use OpenID provider
 	$user = wp_get_current_user();
@@ -47,12 +38,12 @@ function openid_admin_panels() {
 		add_action('show_user_profile', 'openid_extend_profile', 5);
 		add_action('profile_update', 'openid_profile_update');
 		add_action('user_profile_update_errors', 'openid_profile_update_errors', 10, 3);
-		add_action('admin_head-profile.php', 'openid_style');
+		add_action('load-profile.php', 'openid_style');
 
 		if (!get_usermeta($user->ID, 'openid_delegate')) {
 			$hookname =	add_submenu_page('profile.php', __('Your Trusted Sites', 'openid'), 
 				__('Your Trusted Sites', 'openid'), 'read', 'openid_trusted_sites', 'openid_manage_trusted_sites' );
-			add_action("admin_head-$hookname", 'openid_style' );
+			add_action("load-$hookname", 'openid_style' );
 			add_action("load-$hookname", create_function('', 'wp_enqueue_script("admin-forms");'));
 		}
 	}

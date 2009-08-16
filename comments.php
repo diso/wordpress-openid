@@ -130,7 +130,7 @@ function openid_option_require_name_email( $value ) {
 		return $value;
 	}
 
-	if ($_REQUEST['openid_skip']) {
+	if (array_key_exists('openid_skip', $_REQUEST) && $_REQUEST['openid_skip']) {
 		return get_option('openid_no_require_name') ? false : $value;
 	}
 	
