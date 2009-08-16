@@ -233,16 +233,11 @@ function openid_check_tables($retry=true) {
  */
 function openid_create_tables()
 {
-	global $wp_version, $wpdb;
+	global $wpdb;
 
 	$store = openid_getStore();
 
-	if ($wp_version >= '2.3') {
-		require_once(ABSPATH . 'wp-admin/includes/upgrade.php');
-	} else {
-		require_once(ABSPATH . 'wp-admin/admin-db.php');
-		require_once(ABSPATH . 'wp-admin/upgrade-functions.php');
-	}
+	require_once(ABSPATH . 'wp-admin/includes/upgrade.php');
 
 	// Create the SQL and call the WP schema upgrade function
 	$statements = array(

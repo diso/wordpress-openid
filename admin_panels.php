@@ -12,11 +12,6 @@ add_action( 'personal_options_update', 'openid_personal_options_update' );
 add_action( 'openid_finish_auth', 'openid_finish_verify', 10, 2 );
 add_filter( 'pre_update_option_openid_cap', 'openid_set_cap', 10, 2);
 
-if (version_compare($wp_version, '2.5', '<')) {
-	add_filter('pre_user_url', 'openid_compat_pre_user_url');
-}
-
-
 /**
  * Spam up the admin interface with warnings.
  **/
@@ -136,7 +131,7 @@ function openid_plugin_action_links($links, $file) {
  * @options_page
  */
 function openid_options_page() {
-	global $wp_version, $wpdb, $wp_roles;
+	global $wpdb, $wp_roles;
 
 	if ( isset($_REQUEST['action']) ) {
 		switch($_REQUEST['action']) {
@@ -164,10 +159,6 @@ function openid_options_page() {
 
 			<div class="updated fade"><p>Please note that all OpenID Consumer options have been moved to their respective sections of the 
 				<a href="options-general.php">General Settings</a> and <a href="options-discussion.php">Discussion Settings</a> pages.</p></div>
-
-			<?php if ($wp_version < '2.3') { ?>
-			<p class="submit"><input type="submit" class="button-primary" name="info_update" value="<?php _e('Save Changes') ?>" /></p>
-			<?php } ?>
 
 
 			<?php 
@@ -402,7 +393,7 @@ function openid_manage_trusted_sites() {
 		if ($count) {
 			update_usermeta($user->ID, 'openid_trusted_sites', $trusted_sites);
 			echo '<div class="updated"><p>';
-			printf( __ngettext('Added %d trusted site.', 'Added %d trusted sites.', $count, 'openid'), $count);
+			printf( _n('Added %d trusted site.', 'Added %d trusted sites.', $count, 'openid'), $count);
 			echo '</p></div>';
 		}
 		break;
@@ -425,7 +416,7 @@ function openid_manage_trusted_sites() {
 
 		if ($count) {
 			echo '<div class="updated"><p>';
-			printf( __ngettext('Deleted %d trusted site.', 'Deleted %d trusted sites.', $count, 'openid'), $count);
+			printf( _n('Deleted %d trusted site.', 'Deleted %d trusted sites.', $count, 'openid'), $count);
 			echo '</p></div>';
 		}
 		break;
@@ -689,7 +680,7 @@ function openid_profile_management() {
 
 				$message = __($message, 'openid');
 
-				if ($_REQUEST['update_url']) {
+				if (array_key_exists('update_url', $_REQUEST) && $_REQUEST['update_url']) {
 					$message .= '<br />' .  __('<strong>Note:</strong> For security reasons, your profile URL has been updated to match your OpenID.', 'openid');
 				}
 
@@ -708,7 +699,7 @@ function openid_profile_management() {
  */
 function openid_profile_delete_openids($delete) {
 
-	if (empty($delete) || $_REQUEST['cancel']) return;
+	if (empty($delete) || array_key_exists('cancel', $_REQUEST)) return;
 	check_admin_referer('openid-delete_openids');
 
 	$user = wp_get_current_user();
@@ -748,7 +739,7 @@ function openid_profile_delete_openids($delete) {
 	}
 
 	if ($count) {
-		openid_message( sprintf(__ngettext('Deleted %d OpenID association.', 'Deleted %d OpenID associations.', $count, 'openid'), $count) );
+		openid_message( sprintf(_n('Deleted %d OpenID association.', 'Deleted %d OpenID associations.', $count, 'openid'), $count) );
 		openid_status('success');
 
 		// ensure that profile URL is still a verified OpenID
@@ -794,11 +785,7 @@ function openid_finish_verify($identity_url, $action) {
 			// ensure that profile URL is a verified OpenID
 			set_include_path( dirname(__FILE__) . PATH_SEPARATOR . get_include_path() );
 			require_once 'Auth/OpenID.php';
-			if ($GLOBALS['wp_version'] >= '2.3') {
-				require_once(ABSPATH . 'wp-admin/includes/admin.php');
-			} else {
-				require_once(ABSPATH . WPINC . '/registration.php');
-			}
+			require_once(ABSPATH . 'wp-admin/includes/admin.php');
 
 			if (!openid_ensure_url_match($user)) {
 				wp_update_user( array('ID' => $user->ID, 'user_url' => $identity_url) );
@@ -810,26 +797,12 @@ function openid_finish_verify($identity_url, $action) {
 	$finish_url = $_SESSION['openid_finish_url'];
 	$finish_url = add_query_arg('status', openid_status(), $finish_url);
 	$finish_url = add_query_arg('message', $message, $finish_url);
-	if ($update_url) {
+	if ( isset($update_url) && $update_url ) {
 		$finish_url = add_query_arg('update_url', $update_url, $finish_url);
 	}
 
 	wp_safe_redirect($finish_url);
 	exit;
-}
-
-
-/**
- * Prior to WordPress 2.5, the 'personal_options_update' hook was called 
- * AFTER updating the user's profile.  We need to ensure the profile URL 
- * matches before then.
- */
-function openid_compat_pre_user_url($url) {
-	if ($_POST['from'] == 'profile') {
-		openid_personal_options_update();
-	}
-
-	return $url;
 }
 
 
@@ -1005,7 +978,7 @@ function openid_general_settings() {
 
 
 /**
- * Add OpenID optiosn to the WordPress discussion settings page.
+ * Add OpenID options to the WordPress discussion settings page.
  */
 function openid_discussion_settings() {
 	if ( get_option('require_name_email') ): ?>
