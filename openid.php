@@ -24,6 +24,7 @@ if (!@is_readable('/dev/urandom')) define( 'Auth_OpenID_RAND_SOURCE', null );
 
 set_include_path( $openid_include_path . PATH_SEPARATOR . get_include_path() );
 require_once 'common.php';
+require_once 'consumer.php';
 require_once 'compatibility.php';
 require_once 'admin_panels.php';
 require_once 'comments.php';
