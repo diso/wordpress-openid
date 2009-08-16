@@ -48,7 +48,8 @@ function openid_akismet_spam_caught() {
  * @return array comment data
  */
 function openid_process_comment( $comment ) {
-	if ($_REQUEST['openid_skip'] || $comment['comment_type'] != '') return $comment;
+	if ( array_key_exists('openid_skip', $_REQUEST) && $_REQUEST['openid_skip'] ) return $comment;
+	if ( $comment['comment_type'] != '' ) return $comment;
 
 	if ( array_key_exists('openid_identifier', $_POST) ) {
 		$openid_url = $_POST['openid_identifier'];
@@ -201,6 +202,8 @@ function openid_comment_author_link( $html ) {
  * @action post_comment
  */
 function update_comment_openid($comment_ID) {
+	session_start();
+
 	if ($_SESSION['openid_posted_comment']) {
 		set_comment_openid($comment_ID);
 		unset($_SESSION['openid_posted_comment']);
