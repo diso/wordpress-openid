@@ -40,6 +40,12 @@ function add_openid_to_comment_form(wp_url, nonce) {
 	 *   'nonce' - (string) new nonce to use for next AJAX call
 	 */
 	function check_openid( url ) {
+		if ( url.val() == '' ) {
+			openid_checkbox.attr('checked', '');
+			openid_comment.slideUp();
+			return;
+		} 
+
 		jQuery.getJSON(wp_url + '?openid=ajax', {url: url.val(), _wpnonce: openid_nonce}, function(data, textStatus) {
 			if ( data.valid ) {
 				openid_checkbox.attr('checked', 'checked');
