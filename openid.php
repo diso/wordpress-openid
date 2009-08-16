@@ -36,7 +36,6 @@ restore_include_path();
 register_activation_hook('openid/openid.php', 'openid_activate_plugin');
 register_deactivation_hook('openid/openid.php', 'openid_deactivate_plugin');
 register_uninstall_hook('openid/openid.php', 'openid_uninstall_plugin');
-add_action( 'init', 'openid_activate_wpmu' ); // wpmu activation
 
 // run activation function if new revision of plugin
 if (get_option('openid_plugin_revision') === false || OPENID_PLUGIN_REVISION != get_option('openid_plugin_revision')) {
@@ -44,7 +43,9 @@ if (get_option('openid_plugin_revision') === false || OPENID_PLUGIN_REVISION != 
 }
 
 
-// -- public functions
+// ---------------- //
+// Public Functions //
+// ---------------- //
 
 /**
  * Check if the user has any OpenIDs.
@@ -55,7 +56,7 @@ if (get_option('openid_plugin_revision') === false || OPENID_PLUGIN_REVISION != 
  */
 function is_user_openid($user = null) {
 	$urls = get_user_openids($user);
-	return (!empty($urls));
+	return ( !empty($urls) );
 }
 
 
@@ -76,8 +77,14 @@ function is_comment_openid($id = null) {
 	}
 
 	$openid_comments = get_post_meta($comment->comment_post_ID, 'openid_comments', true);
-	if (!is_array($openid_comments)) return false;
-	return (in_array($comment->comment_ID, $openid_comments));
+
+	if ( is_array($openid_comments) ) {
+		if ( in_array($comment->comment_ID, $openid_comments) ) {
+			return true;
+		}
+	}
+
+	return false;
 }
 
 
@@ -147,6 +154,7 @@ function get_userdata_by_various($id_or_name = null) {
 endif;
 
 // -- end of public functions
+
 
 /**
  * Get the file for the plugin, including the path.  This method will handle the case where the 

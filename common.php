@@ -47,24 +47,6 @@ function openid_textdomain() {
 	load_plugin_textdomain('openid', null, 'openid/lang');
 }
 
-/**
- * Soft verification of plugin activation
- *
- * @return boolean if the plugin is okay
- */
-function openid_uptodate() {
-
-	if( get_option('openid_db_revision') != OPENID_DB_REVISION ) {
-		openid_enabled(false);
-		openid_debug('Plugin database is out of date: ' . get_option('openid_db_revision') . ' != ' . OPENID_DB_REVISION);
-		update_option('openid_plugin_enabled', false);
-		return false;
-	}
-	openid_enabled(get_option('openid_plugin_enabled') == true);
-	return openid_enabled();
-}
-// XXX - figure out when to perform  uptodate() checks and such (since late_bind is no more)
-
 
 /**
  * Get the internal SQL Store.  If it is not already initialized, do so.
@@ -107,15 +89,6 @@ function openid_getConsumer() {
 	return $consumer;
 }
 
-
-function openid_activate_wpmu() {
-	global $wpmu_version;
-	if ($wpmu_version && is_admin()) {
-		if (get_option('openid_db_revision') != OPENID_DB_REVISION) {
-			openid_activate_plugin();
-		}
-	}
-}
 
 /**
  * Called on plugin activation.
