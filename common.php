@@ -730,12 +730,21 @@ function openid_js_setup() {
 
 
 /**
- * Include internal stylesheet.
+ * Include OpenID stylesheet.  
  *
- * @action: wp_head, login_head
+ * "Intelligently" decides whether to enqueue or print the CSS file, based on whether * the 'wp_print_styles' 
+ * action has been run.  (This logic taken from the core wp_admin_css function)
  **/
 function openid_style() {
-	wp_enqueue_style('openid', plugins_url('openid/f/openid.css'), array(), OPENID_PLUGIN_REVISION);
+	if ( !wp_style_is('openid', 'registered') ) {
+		wp_register_style('openid', plugins_url('openid/f/openid.css'), array(), OPENID_PLUGIN_REVISION);
+	}
+
+	if ( did_action('wp_print_styles') ) {
+		wp_print_styles('openid');
+	} else {
+		wp_enqueue_style('openid');
+	}
 }
 
 
