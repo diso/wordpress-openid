@@ -7,11 +7,7 @@
 
 // -- WordPress Hooks
 add_action( 'preprocess_comment', 'openid_process_comment', -90);
-if (has_action('preprocess_comment', 'akismet_auto_check_comment')) {
-	// ensure akismet runs before OpenID
-	remove_action('preprocess_comment', 'akismet_auto_check_comment', 1);
-	add_action('preprocess_comment', 'akismet_auto_check_comment', -99);
-}
+add_action( 'init', 'openid_setup_akismet');
 add_action( 'akismet_spam_caught', 'openid_akismet_spam_caught');
 add_action( 'comment_post', 'update_comment_openid', 5 );
 add_filter( 'option_require_name_email', 'openid_option_require_name_email' );
@@ -31,11 +27,23 @@ add_action( 'delete_comment', 'unset_comment_openid' );
 
 add_action( 'init', 'openid_recent_comments');
 
+
+/**
+ * Ensure akismet runs before OpenID.
+ */
+function openid_setup_akismet() {
+	if (has_filter('preprocess_comment', 'akismet_auto_check_comment')) {
+		remove_action('preprocess_comment', 'akismet_auto_check_comment', 1);
+		add_action('preprocess_comment', 'akismet_auto_check_comment', -99);
+	}
+}
+
+
 /**
  * Akismet caught this comment as spam, so no need to do OpenID discovery on the URL.
  */
 function openid_akismet_spam_caught() {
-	remove_action( 'preprocess_comment', 'openid_process_comment', -98);
+	remove_action( 'preprocess_comment', 'openid_process_comment', -90);
 }
 
 /**
