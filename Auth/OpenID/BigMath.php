@@ -374,7 +374,7 @@ function Auth_OpenID_detectMathLibrary($exts)
         }
 
         // Try to load dynamic modules.
-        if (!$loaded) {
+        if (!$loaded && function_exists('dl')) {
             foreach ($extension['modules'] as $module) {
                 if (@dl($module . "." . PHP_SHLIB_SUFFIX)) {
                     $loaded = true;
