@@ -65,8 +65,10 @@ function openid_process_comment( $comment ) {
 		$openid_url = $_POST['url'];
 	}
 
+	@session_start();
+	unset($_SESSION['openid_posted_comment']);
+
 	if ( !empty($openid_url) ) {  // Comment form's OpenID url is filled in.
-		@session_start();
 		$_SESSION['openid_comment_post'] = $_POST;
 		$_SESSION['openid_comment_post']['comment_author_openid'] = $openid_url;
 		$_SESSION['openid_comment_post']['openid_skip'] = 1;
