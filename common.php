@@ -60,7 +60,7 @@ function openid_getStore() {
 
 
 /**
- * Called on plugin activation.
+ * Called on plugin activation and upgrading.
  *
  * @see register_activation_hook
  */
@@ -97,7 +97,7 @@ function openid_activate_plugin() {
 	wp_schedule_event(time(), 'hourly', 'cleanup_openid');
 
 	// flush rewrite rules
-	if (!isset($wp_rewrite)) { $wp_rewrite = new WP_Rewrite(); }
+	if ( !isset($wp_rewrite) ) { $wp_rewrite = new WP_Rewrite(); }
 	$wp_rewrite->flush_rules();
 
 	// set current revision
@@ -229,6 +229,7 @@ function openid_generate_new_username($url, $append = true) {
 			$i++;
 			continue;
 		}
+		// TODO: add hook
 		return $username;
 	}
 }
@@ -242,14 +243,20 @@ function openid_generate_new_username($url, $append = true) {
  *
  * @param string $username username to be normalized
  * @return string normalized username
+ * @uses apply_filters() Calls 'openid_normalize_username' just before returning normalized username
  */
 function openid_normalize_username($username) {
-	$username = preg_replace('|^https?://(xri.net/([^@]!?)?)?|', '', $username);
-	$username = preg_replace('|^xri://([^@]!?)?|', '', $username);
-	$username = preg_replace('|/$|', '', $username);
-	$username = sanitize_user( $username );
-	$username = preg_replace('|[^a-z0-9 _.\-@]+|i', '-', $username);
-	return $username;
+	$normalized = $username;
+
+	$normalized = preg_replace('|^https?://(xri.net/([^@]!?)?)?|', '', $normalized);
+	$normalized = preg_replace('|^xri://([^@]!?)?|', '', $normalized);
+	$normalized = preg_replace('|/$|', '', $normalized);
+	$normalized = sanitize_user( $normalized );
+	$normalized = preg_replace('|[^a-z0-9 _.\-@]+|i', '-', $normalized);
+
+	$normalized = apply_filters('openid_normalize_username', $normalized, $username);
+
+	return $normalized;
 }
 
 
@@ -788,18 +795,6 @@ function openid_add_identity($user_id, $url) {
 
 
 /**
- * Get OpenIDs for the specified user.
- *
- * @param int $user_id user id
- * @return array OpenIDs for the user
- */
-function _get_user_openids($user_id) {
-	global $wpdb;
-	return $wpdb->get_col( wpdb_prepare('SELECT url FROM '.openid_identity_table().' WHERE user_id = %s', $user_id) );
-}
-
-
-/**
  * Remove identity url from user.
  *
  * @param int $user_id user id
@@ -807,7 +802,7 @@ function _get_user_openids($user_id) {
  */
 function openid_drop_identity($user_id, $identity_url) {
 	global $wpdb;
-	return $wpdb->query( wpdb_prepare('DELETE FROM '.openid_identity_table().' WHERE user_id = %s AND url = %s', $user_id, $identity_url) );
+	return $wpdb->query( $wpdb->prepare('DELETE FROM '.openid_identity_table().' WHERE user_id = %s AND url = %s', $user_id, $identity_url) );
 }
 
 
@@ -818,7 +813,7 @@ function openid_drop_identity($user_id, $identity_url) {
  */
 function openid_drop_all_identities($user_id) {
 	global $wpdb;
-	return $wpdb->query( wpdb_prepare('DELETE FROM '.openid_identity_table().' WHERE user_id = %s', $user_id ) );
+	return $wpdb->query( $wpdb->prepare('DELETE FROM '.openid_identity_table().' WHERE user_id = %s', $user_id ) );
 }
 
 

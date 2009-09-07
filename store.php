@@ -266,7 +266,7 @@ function openid_create_tables()
 function openid_delete_tables() {
 	global $wpdb;
 	$wpdb->query('DROP TABLE IF EXISTS ' . openid_identity_table());
-	$wpdb->query(wpdb_prepare('DELETE FROM ' . $wpdb->postmeta . ' WHERE meta_key=%s', 'openid_comments'));
+	$wpdb->query( $wpdb->prepare('DELETE FROM ' . $wpdb->postmeta . ' WHERE meta_key=%s', 'openid_comments') );
 	
 	// old database changes... just to make sure
 	$wpdb->query('DROP TABLE IF EXISTS ' . openid_table_prefix(true) . 'openid_nonces');
@@ -276,7 +276,7 @@ function openid_delete_tables() {
 	$openid_column = $wpdb->get_row('SHOW COLUMNS FROM ' . openid_table_prefix(true) . 'comments LIKE "openid"');
 	if ($openid_column) {
 		$wpdb->query('ALTER table ' . $comments_table . ' DROP COLUMN openid');
-		$wpdb->query(wpdb_prepare('UPDATE ' . $comments_table . ' SET comment_type=%s WHERE comment_type=%s', '', 'openid'));
+		$wpdb->query( $wpdb->prepare('UPDATE ' . $comments_table . ' SET comment_type=%s WHERE comment_type=%s', '', 'openid') );
 	}
 }
 
@@ -296,7 +296,7 @@ function openid_migrate_old_data() {
 		// update old style of marking openid comments.  For performance reason, we 
 		// migrate them en masse rather than using set_comment_openid()
 		$comments_table = openid_table_prefix(true) . 'comments';
-		$comment_data = $wpdb->get_results(wpdb_prepare('SELECT comment_ID, comment_post_ID from ' . $comments_table . ' WHERE openid=%s OR comment_type=%s', 1, 'openid'));
+		$comment_data = $wpdb->get_results( $wpdb->prepare('SELECT comment_ID, comment_post_ID from ' . $comments_table . ' WHERE openid=%s OR comment_type=%s', 1, 'openid') );
 		if (!empty($comment_data)) {
 			$openid_comments = array();
 			foreach ($comment_data as $comment) {
@@ -314,13 +314,13 @@ function openid_migrate_old_data() {
 		}
 
 		$wpdb->query('ALTER table ' . $comments_table . ' DROP COLUMN openid');
-		$wpdb->query(wpdb_prepare('UPDATE ' . $comments_table . ' SET comment_type=%s WHERE comment_type=%s', '', 'openid'));
+		$wpdb->query( $wpdb->prepare('UPDATE ' . $comments_table . ' SET comment_type=%s WHERE comment_type=%s', '', 'openid') );
 	}
 
 
 	// remove old style of marking openid users
 	$usermeta_table = defined('CUSTOM_USER_META_TABLE') ? CUSTOM_USER_META_TABLE : openid_table_prefix() . 'usermeta'; 
-	$wpdb->query(wpdb_prepare('DELETE FROM ' . $usermeta_table . ' WHERE meta_key=%s OR meta_key=%s', 'has_openid', 'registered_with_openid'));
+	$wpdb->query( $wpdb->prepare('DELETE FROM ' . $usermeta_table . ' WHERE meta_key=%s OR meta_key=%s', 'has_openid', 'registered_with_openid') );
 }
 
 function openid_table_prefix($blog_specific = false) {
