@@ -52,6 +52,14 @@ can be found [here][libcurl].
 
 [libcurl]: http://lists.openidenabled.com/pipermail/dev/2007-August/000784.html
 
+= Why do I get the error "Invalid openid.mode '<No mode set>'"? =
+
+There are actually a couple of reasons that can cause this, but it seems one of
+the more common causes is a conflict with certain mod_security rules.  See 
+[this blog post][ioni2] for instructions on how to resolve this issue.
+
+[ioni2]: http://ioni2.com/2009/wordpress-openid-login-failed-invalid-openid-mode-no-mode-set-solved-for-both-wordpress-and-drupal/
+
 = How do I add an OpenID field to my comment form? =
 
 The easiest way to display the fact that your blog accepts OpenIDs is to enable
