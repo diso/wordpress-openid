@@ -9,6 +9,9 @@
 	padding-left: 21px !important; 
 }
 
+.openid_loading {
+	background: url('ajax-loader.gif') right center no-repeat;
+}
 
 body.login #openid_identifier {
 	width: 92%;
