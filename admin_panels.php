@@ -953,14 +953,14 @@ function openid_general_settings() {
 	<label for="openid_required_for_registration">
 		<input type="checkbox" name="openid_required_for_registration" id="openid_required_for_registration" value="1"
 			<?php checked(true, get_option('openid_required_for_registration')) ?> />
-		<?php _e('New accounts can only be created with verified OpenIDs.', 'openid') ?>
+		<?php _e('New accounts can only be created with verified OpenIDs', 'openid') ?>
 	</label>
 	<?php endif; ?>
 
 	<script type="text/javascript">
 		jQuery(function() {
 			jQuery('tr:has(#openid_required_for_registration)').hide();
-			jQuery('#openid_required_for_registration').css('margin-left', '2em')
+			jQuery('#openid_required_for_registration')
 				.parent().prepend('<br />').insertAfter('label:has(#users_can_register)');
 		});
 	</script>
@@ -972,44 +972,33 @@ function openid_general_settings() {
  * Add OpenID options to the WordPress discussion settings page.
  */
 function openid_discussion_settings() {
-	if ( get_option('require_name_email') ): ?>
-	<label for="openid_no_require_name">
-		<input type="checkbox" name="openid_no_require_name" id="openid_no_require_name" value="1" <?php 
-			echo checked(true, get_option('openid_no_require_name')) ; ?> />
-		<?php _e('Don\'t require name and e-mail for comments left with a verified OpenID.', 'openid') ?>
-	</label>
-	<br />
-	<?php endif; ?>
-
-	<label for="openid_enable_approval">
-		<input type="checkbox" name="openid_enable_approval" id="openid_enable_approval" value="1" <?php 
-			echo checked(true, get_option('openid_enable_approval'));  ?> />
-		<?php _e('Always approve comments left with a verified OpenID', 'openid'); ?>
-	</label>
-	<br />
-
+?>
 	<label for="openid_enable_commentform">
 		<input type="checkbox" name="openid_enable_commentform" id="openid_enable_commentform" value="1" <?php 
 			echo checked(true, get_option('openid_enable_commentform'));  ?> />
-		<?php printf(__('Add OpenID help text to the comment form. <em>(This will work for most themes derived from Kubrick or Sandbox.  '
-			. 'Template authors can tweak the comment form as described %shere%s)</em>.', 'openid'), 
-			'<a href="' . plugins_url('openid/readme.txt') . '">', '</a>') ?>
+		<?php _e('Enable OpenID for comments', 'openid') ?>
 	</label>
+	<br />
 
-	<script type="text/javascript">
-		jQuery(function() {
-			jQuery('tr:has(#openid_enable_approval)').hide();
+	<?php if ( get_option('openid_enable_commentform') ): ?>
 
-			jQuery('#openid_no_require_name').css('margin-left', '2em')
-				.parent().prepend('<br />').insertAfter('label:has(#require_name_email)');
+		<?php if ( get_option('require_name_email') ): ?>
+		<label for="openid_no_require_name">
+			<input type="checkbox" name="openid_no_require_name" id="openid_no_require_name" value="1" <?php 
+				echo checked(true, get_option('openid_no_require_name')) ; ?> />
+			<?php _e('Don\'t require name and e-mail for comments left with a verified OpenID', 'openid') ?>
+		</label>
+		<br />
+		<?php endif; ?>
 
-			jQuery('label:has(#openid_enable_approval)').prepend('<br />')
-				.insertAfter('label:has(#comment_whitelist)');
+		<label for="openid_enable_approval">
+			<input type="checkbox" name="openid_enable_approval" id="openid_enable_approval" value="1" <?php 
+				echo checked(true, get_option('openid_enable_approval'));  ?> />
+			<?php _e('Always approve comments left with a verified OpenID', 'openid'); ?>
+		</label>
+		<br />
 
-			jQuery('label:has(#openid_enable_commentform)').prepend('<br />')
-				.insertAfter('label:has(#comment_order)');
-		});
-	</script>
+	<?php endif; ?>
 <?php
 }
 
