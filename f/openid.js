@@ -23,9 +23,9 @@ function stylize_profilelink() {
 function add_openid_to_comment_form(wp_url, nonce) {
 	var openid_nonce = nonce;
 
-	openid_comment = jQuery('#openid_comment');
-	openid_checkbox = jQuery('#login_with_openid');
-	url = jQuery('#url');
+	var openid_comment = jQuery('#openid_comment');
+	var openid_checkbox = jQuery('#login_with_openid');
+	var url = jQuery('#url');
 
 	jQuery('label[for="url"],#url').filter(':last').after(openid_comment.hide());
 
