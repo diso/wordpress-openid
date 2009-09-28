@@ -1,9 +1,9 @@
 === OpenID ===
 Contributors: wnorris, factoryjoe
 Tags: openid, authentication, login, comments
-Requires at least: 2.3
-Tested up to: 2.7
-Stable tag: 3.2.3
+Requires at least: 2.8
+Tested up to: 2.8.4
+Stable tag: 3.3
 
 Allows WordPress to provide and consumer OpenIDs for authentication of users and comments.
 
@@ -60,30 +60,6 @@ the more common causes is a conflict with certain mod_security rules.  See
 
 [ioni2]: http://ioni2.com/2009/wordpress-openid-login-failed-invalid-openid-mode-no-mode-set-solved-for-both-wordpress-and-drupal/
 
-= How do I add an OpenID field to my comment form? =
-
-The easiest way to display the fact that your blog accepts OpenIDs is to enable
-the "Comment Form" option for the plugin.  This will allow the normal website
-field to be used for OpenIDs as well.  If this doesn't display properly for
-your particular theme or you simply prefer to have a separate OpenID field, you
-can modify your comments.php template to include an "openid\_identifier" text field as
-part of your comment form.  For the default theme, this might look like:
-
-	<p><input type="text" name="openid_identifier" id="openid_identifier" />
-	<label for="openid_identifier"><small>OpenID URL</small></label></p>
-
-The input element MUST have the name "openid\_identifier".  Additionally, using
-"openid\_identifier" for the id causes the field to be styled with an OpenID logo.  To
-remove this, you can override the stylesheet or simply change the element id.
-
-= What version of WordPress does the OpenID plugin require? =
-
-While it should technically work with WordPress version 2.3 and up, the
-experience with the OpenID server is much better from 2.6 and up.  The OpenID
-plugin will always be optimized for the latest stable release of WordPress, so
-you should try and keep your blog up to date.  Future releases of the OpenID
-plugin can, and likely will, drop support for older versions of WordPress as
-necessary.
 
 = How do I use SSL for OpenID transactions? =
 
