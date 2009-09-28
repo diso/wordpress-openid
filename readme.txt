@@ -3,7 +3,7 @@ Contributors: wnorris, factoryjoe
 Tags: openid, authentication, login, comments
 Requires at least: 2.8
 Tested up to: 2.8.4
-Stable tag: 3.3
+Stable tag: 3.3.1
 
 Allows WordPress to provide and consumer OpenIDs for authentication of users and comments.
 
@@ -99,6 +99,9 @@ report at <http://code.google.com/p/diso/issues/list>.
 
 
 == Changelog ==
+
+= version 3.3.1 (Sep 28, 2009) =
+ - tiny bug in get_user_openids causing it to always return empty array
 
 = version 3.3 (Sep 28, 2009) =
  - minimum required version has been bumped to WordPress 2.8

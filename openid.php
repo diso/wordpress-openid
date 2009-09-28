@@ -5,7 +5,7 @@
  Description: Allows the use of OpenID for account registration, authentication, and commenting.  Also includes an OpenID provider which can turn WordPress author URLs into OpenIDs.
  Author: DiSo Development Team
  Author URI: http://diso-project.org/
- Version: 3.3
+ Version: 3.3.1
  License: Dual GPL (http://www.fsf.org/licensing/licenses/info/GPLv2.html) and Modified BSD (http://www.fsf.org/licensing/licenses/index_html#ModifiedBSD)
  Text Domain: openid
  */
@@ -103,7 +103,7 @@ function get_user_openids($id_or_name = null) {
 
 	if ( $user ) {
 		global $wpdb;
-		return $wpdb->get_col( $wpdb->prepare('SELECT url FROM '.openid_identity_table().' WHERE user_id = %s', $user_id) );
+		return $wpdb->get_col( $wpdb->prepare('SELECT url FROM '.openid_identity_table().' WHERE user_id = %s', $user->ID) );
 	} else {
 		return array();
 	}
