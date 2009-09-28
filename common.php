@@ -39,7 +39,7 @@ if (isset($wpmu_version)) {
  * Set the textdomain for this plugin so we can support localizations.
  */
 function openid_textdomain() {
-	load_plugin_textdomain('openid', null, 'openid/lang');
+	load_plugin_textdomain('openid', null, 'openid/localization');
 }
 
 

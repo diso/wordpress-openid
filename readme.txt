@@ -93,16 +93,14 @@ report at <http://code.google.com/p/diso/issues/list>.
 
 1. Commentors can use their OpenID when leaving a comment
 2. Users can login with their OpenID in place of a traditional username and password
-3. OpenID Consumer Options
-4. OpenID Provider Options
-5. Users authorized to use the OpenID Provider can delegate to a different provider
-6. Users can add additional OpenIDs which they can use to login to WordPress
-7. Users authorized to use the OpenID Provider can monitor which sites they've logged in to
+3. Users authorized to use the OpenID Provider can delegate to a different provider
+4. Users can add additional OpenIDs which they can use to login to WordPress
+5. Users authorized to use the OpenID Provider can monitor which sites they've logged in to
 
 
 == Changelog ==
 
-= version 3.3 (TBD) =
+= version 3.3 (Sep 28, 2009) =
  - minimum required version has been bumped to WordPress 2.8
  - fix support for WordPress MU
  - new, less obtrusive UI for comment form.  Should also work with all themes in some form (with or without js).
@@ -112,6 +110,7 @@ report at <http://code.google.com/p/diso/issues/list>.
  - always include 'index.php' on OpenID endpoint URLs.  Without that, some deployments were having problems.
  - fix bug relating to trackbacks and pingbacks
  - fix bug (#121) relating to unregistered options (props: tom.tdw for the patch)
+ - lots of minor bug fixes
 
 = version 3.2.3 (Jul 20, 2009) =
  - fix XSS vulnerability. (props: Stuart Metcalfe)
