@@ -255,7 +255,7 @@ function openid_comment_form() {
 		<span id="openid_comment">
 			<label>
 				<input type="checkbox" id="login_with_openid" name="login_with_openid" checked="checked" />
-				<?php _e('Authenticate this comment using <span class="openid_link">OpenID</span>.'); ?>
+				<?php _e('Authenticate this comment using <span class="openid_link">OpenID</span>.', 'openid'); ?>
 			</label>
 		</span>
 		<script type="text/javascript">jQuery(function(){ add_openid_to_comment_form('<?php echo site_url('index.php') ?>', '<?php echo wp_create_nonce('openid_ajax') ?>') })</script>

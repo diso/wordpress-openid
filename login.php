@@ -176,7 +176,7 @@ function openid_wp_register_form() {
 		</p>
 
 		<p style="float: left; font-size: 0.8em; margin: 0.8em 0;" id="what_is_openid">
-			<a href="http://openid.net/what/" target="_blank">'.__('What is OpenID?', 'openid').'</a>
+			<a href="http://openid.net/what/" target="_blank">'.__('Learn about OpenID', 'openid').'</a>
 		</p>
 
 	</div>';
