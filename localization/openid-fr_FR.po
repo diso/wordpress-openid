@@ -1,0 +1,201 @@
+msgid ""
+msgstr ""
+"Project-Id-Version: OpenID\n"
+"Report-Msgid-Bugs-To: http://wordpress.org/tag/wp-openid\n"
+"POT-Creation-Date: 2008-05-20 15:18-0700\n"
+"PO-Revision-Date: \n"
+"Last-Translator: Comme une image <cui@burp.fr>\n"
+"Language-Team: Jérôme in Paris <jeromeinparis@gmail.com>\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"X-Poedit-Language: French\n"
+"X-Poedit-Country: FRANCE\n"
+"X-Poedit-SourceCharset: utf-8\n"
+"Plural-Forms: nplurals=2; plural=n>1\n"
+
+#: interface.php:54
+#, php-format
+msgid "Or login using your %s url:"
+msgstr "Ou utiliser son url %s"
+
+#: interface.php:54
+#: interface.php:68
+msgid "OpenID"
+msgstr "OpenID"
+
+#: interface.php:68
+#, php-format
+msgid "For faster registration, just %s login with %s."
+msgstr "Pour une connexion plus rapide, %s connectez-vous simplement avec %s."
+
+#: interface.php:147
+msgid "The WordPress OpenID plugin is not active."
+msgstr "L'extension WordPress OpenID n'est pas activée."
+
+#: interface.php:148
+#, php-format
+msgid "Check %sOpenID Options%s for a full diagnositic report."
+msgstr "Vérifier les %soptions OpenID%s pour un diagnostic complet."
+
+#: interface.php:159
+msgid "OpenID options"
+msgstr "Options OpenID"
+
+#: interface.php:159
+msgid "WP-OpenID"
+msgstr "WP-OpenID"
+
+#: interface.php:164
+#: interface.php:305
+msgid "Your Identity URLs"
+msgstr "Vos identités OpenID"
+
+#: interface.php:188
+msgid "OpenID tables rebuilt."
+msgstr "Reconstruction des tables OpenID"
+
+#: interface.php:204
+msgid "At least one of OpenID options was NOT updated"
+msgstr "Au moins une des options OpenID n'a <strong>pas</strong> été mise à jour"
+
+#: interface.php:206
+msgid "Open ID options updated"
+msgstr "Options OpenID mises à jour"
+
+#: interface.php:218
+msgid "WP-OpenID Registration Options"
+msgstr "Options enregistrées de WP-OpenID"
+
+#: interface.php:220
+#: interface.php:272
+msgid "Update Options"
+msgstr "Mise à jour des options"
+
+#: interface.php:223
+msgid "Behavior"
+msgstr "Comportement"
+
+#: interface.php:227
+msgid "Automatic Approval:"
+msgstr "Approbation automatique&nbsp;"
+
+#: interface.php:231
+msgid "Enable OpenID comment auto-approval"
+msgstr "Approuver automatiquement les commentaires signés avec OpenID"
+
+#: interface.php:233
+msgid "For now this option will cause comments made with OpenIDs to be automatically approved.  Since most spammers haven't started using OpenID yet, this is probably pretty safe.  More importantly however, this could be a foundation on which to build more advanced automatic approval such as whitelists or a third-party trust service."
+msgstr "Cette option permet l'approbation automatique des commentaires signés avec OpenID. À l'heure qu'il est, les spammeurs n'utilisant pas OpenID, cette option paraît plutôt sûre. En outre, ce pourrait être une importante première pierre pour un système plus perfectionné d'approbation automatique, basé sur des listes blanches ou un service tiers de confiance."
+
+#: interface.php:245
+msgid "Look and Feel"
+msgstr "Apparence"
+
+#: interface.php:249
+msgid "Comment Form:"
+msgstr "Formulaire de commentaire&nbsp;"
+
+#: interface.php:254
+msgid "Add OpenID text to the WordPress post comment form."
+msgstr "Ajouter le texte de présentation OpenID au formulaire de commentaire."
+
+#: interface.php:256
+#, php-format
+msgid "This will work for most themes derived from Kubrick or Sandbox.  Template authors can tweak the comment form as described in the %sreadme%s."
+msgstr "Ceci fonctionne pour la plupart des thèmes dérivés de Kubrick ou de Sandbox. Les auteurs peuvent adapter leur thème en suivant les instructions du fichier %sreadme%s."
+
+#: interface.php:266
+#, php-format
+msgid "Occasionally, the WP-OpenID tables don't get setup properly, and it may help to %srebuild the tables%s.  Don't worry, this won't cause you to lose any data... it just rebuilds a couple of tables that hold only temprory data."
+msgstr "Il peut arriver occasionnellement que les tables de WP-OpenID ne s'installent pas correctement, et %srebâtir les tables%s peut résoudre quelques dysfonctionnements. Ne vous inquiétez pas, vous ne risquez pas de perdre de données, seules deux tables seront reconstruites, qui ne contiennent que des données temporaires."
+
+#: interface.php:293
+msgid "Success:"
+msgstr "Succès&nbsp;"
+
+#: interface.php:296
+msgid "Warning:"
+msgstr "Avertissement&nbsp;"
+
+#: interface.php:299
+msgid "Error:"
+msgstr "Erreur&nbsp;"
+
+#: interface.php:307
+#, php-format
+msgid "The following Identity URLs %s are tied to this user account. You can login with equivalent permissions using any of the following identities."
+msgstr "Les URLs d'identité %s suivantes sont reliées à ce compte utilisateur. Vous pouvez vous connecter avec des permissions identiques en utilisant n'importe laquelle des identités suivantes."
+
+#: interface.php:309
+msgid "What is OpenID?"
+msgstr "Qu'est que OpenID&nbsp;?"
+
+#: interface.php:309
+msgid "?"
+msgstr "?"
+
+#: interface.php:321
+msgid "ID"
+msgstr "ID"
+
+#: interface.php:322
+msgid "Identity Url"
+msgstr "URL d'identité"
+
+#: interface.php:323
+msgid "Action"
+msgstr "Action"
+
+#: interface.php:335
+msgid "Delete"
+msgstr "Supprimer"
+
+#: interface.php:345
+msgid "There are no OpenIDs associated with this WordPress user."
+msgstr "Il n'y a pas d'OpenID associé à cet utilisateur WordPress."
+
+#: interface.php:349
+msgid "Add identity:"
+msgstr "Ajouter une identité&nbsp;"
+
+#: interface.php:352
+msgid "Add"
+msgstr "Ajouter"
+
+#: interface.php:427
+msgid "Status information:"
+msgstr "Status de fonctionnement&nbsp;"
+
+#: interface.php:427
+msgid "All Systems Nominal"
+msgstr "Tous Systèmes Opérationnels"
+
+#: interface.php:428
+msgid "Toggle More/Less"
+msgstr "Basculer Plus/Moins"
+
+#: interface.php:430
+msgid "Plugin is currently disabled. Fix the problem, then Deactivate/Reactivate the plugin."
+msgstr "L'extension est actuellement désactivée. Corrigez le problème, puis désactivez/réactivez l'extension."
+
+#: interface.php:437
+msgid "FAIL"
+msgstr "ÉCHEC"
+
+#: interface.php:438
+msgid "OK"
+msgstr "OK"
+
+#: interface.php:439
+msgid "INFO"
+msgstr "INFO"
+
+#: logic.php:818
+msgid "Error: please type a comment."
+msgstr "Erreur : saisir un commentaire SVP."
+
+#: logic.php:835
+msgid "Sorry, comments are closed for this item."
+msgstr "Désolé, les commentaires sont fermés sur cet article."
+
