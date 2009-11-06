@@ -89,6 +89,8 @@ function openid_admin_register_settings() {
 function openid_set_cap($newvalue, $oldvalue) {
 	global $wp_roles;
 
+	$newvalue = (array) $newvalue;
+
 	foreach ($wp_roles->role_names as $key => $name) {
 		$role = $wp_roles->get_role($key);
 		if (array_key_exists($key, $newvalue) && $newvalue[$key] == 'on') {
