@@ -100,6 +100,11 @@ report at <http://code.google.com/p/diso/issues/list>.
 
 == Changelog ==
 
+= version 3.3.2 (Nov 06, 2009) =
+ - add localizations for czech, danish, french, spanish, and vietnamese.  Some are more up to date than others.  More are welcome, see http://code.google.com/p/diso/issues/detail?id=26
+ - remove stylesheet for recent comments widget, since it breaks the style for OpenID comments
+ - various fixes with administration panels
+
 = version 3.3.1 (Sep 28, 2009) =
  - tiny bug in get_user_openids causing it to always return empty array
 
