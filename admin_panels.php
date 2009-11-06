@@ -53,8 +53,13 @@ function openid_admin_panels() {
 		add_action('wpmu_options', 'openid_wpmu_options');
 		add_action('update_wpmu_options', 'openid_update_wpmu_options');
 	} else {
-		// add OpenID options to General Settings page
-		add_settings_field('openid_general_settings', __('OpenID Settings', 'openid'), 'openid_general_settings', 'general', 'default');
+		// add OpenID options to General Settings page.  For now, the only option on this page is dependent on the
+		// 'users_can_register' option, so only add the OpenID Settings if that is set.  If additional OpenID settings
+		// are added to the General Settings page, this check may no longer be necessary
+		if ( get_option('users_can_register') ) {
+			add_settings_field('openid_general_settings', __('OpenID Settings', 'openid'), 'openid_general_settings', 
+				'general', 'default');
+		}
 	}
 
 	// add OpenID options to Discussion Settings page
