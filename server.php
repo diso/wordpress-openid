@@ -63,8 +63,8 @@ function openid_provider_xrds_simple($xrds) {
 		$user_object = new WP_User($user->ID);
 		if (!$user_object->has_cap('use_openid_provider')) return $xrds;
 
-		if (get_usermeta($user->ID, 'openid_delegate')) {
-			$services = get_usermeta($user->ID, 'openid_delegate_services');
+		if (get_user_meta($user->ID, 'openid_delegate', true)) {
+			$services = get_user_meta($user->ID, 'openid_delegate_services', true);
 		} else {
 			$services = array();
 
@@ -214,7 +214,7 @@ function openid_server_auth_request($request) {
 	}
 
 	// if using id select but user is delegating, display error to user (unless checkid_immediate)
-	if ($id_select && get_usermeta($user->ID, 'openid_delegate')) {
+	if ($id_select && get_user_meta($user->ID, 'openid_delegate', true)) {
 		if ($request->mode != 'checkid_immediate') {
 			if ($_REQUEST['action'] == 'cancel') {
 				check_admin_referer('openid-server_cancel');
@@ -248,11 +248,11 @@ function openid_server_auth_request($request) {
 	}
 
 	// if user trusts site, we're done
-	$trusted_sites = get_usermeta($user->ID, 'openid_trusted_sites');
+	$trusted_sites = get_user_meta($user->ID, 'openid_trusted_sites', true);
 	$site_hash = md5($request->trust_root);
 	if (is_array($trusted_sites) && array_key_exists($site_hash, $trusted_sites)) {
 		$trusted_sites[$site_hash]['last_login'] = time();
-		update_usermeta($user->ID, 'openid_trusted_sites', $trusted_sites);
+		update_user_meta($user->ID, 'openid_trusted_sites', $trusted_sites);
 
 		if ($id_select) { 
 			return $request->answer(true, null, $author_url);
@@ -352,8 +352,8 @@ function openid_provider_link_tags() {
 		$user_object = new WP_User($user->ID);
 		if (!$user_object->has_cap('use_openid_provider')) return;
 
-		if (get_usermeta($user->ID, 'openid_delegate')) {
-			$services = get_usermeta($user->ID, 'openid_delegate_services');
+		if (get_user_meta($user->ID, 'openid_delegate', true)) {
+			$services = get_user_meta($user->ID, 'openid_delegate_services', true);
 			$openid_1 = false;
 			$openid_2 = false;
 
@@ -422,11 +422,11 @@ function openid_server_user_trust($request) {
 				$site = array( 'url' => $request->trust_root, 'last_login' => time());
 				$site = apply_filters('openid_server_store_trusted_site', $site);
 
-				$trusted_sites = get_usermeta($user->ID, 'openid_trusted_sites');
+				$trusted_sites = get_user_meta($user->ID, 'openid_trusted_sites', true);
 				$site_hash = md5($request->trust_root);
 				$trusted_sites[$site_hash] = $site;
 
-				update_usermeta($user->ID, 'openid_trusted_sites', $trusted_sites);
+				update_user_meta($user->ID, 'openid_trusted_sites', $trusted_sites);
 			}
 		}
 
@@ -510,7 +510,7 @@ function openid_server_user_trust($request) {
  * @return bool true if successful
  */
 function openid_server_get_delegation_info($userid, $url = null) {
-	if (empty($url)) $url = get_usermeta($userid, 'openid_delegate');
+	if (empty($url)) $url = get_user_meta($userid, 'openid_delegate', true);
 	if (empty($url)) return false;
 
 	$fetcher = Auth_Yadis_Yadis::getHTTPFetcher();

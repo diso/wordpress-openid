@@ -119,7 +119,7 @@ function openid_server_sreg_auth_response($response) {
 	if (isset($GLOBALS['openid_server_sreg_trust'])) {
 		$include_sreg = $GLOBALS['openid_server_sreg_trust'];
 	} else {
-		$trusted_sites = get_usermeta($user->ID, 'openid_trusted_sites');
+		$trusted_sites = get_user_meta($user->ID, 'openid_trusted_sites', true);
 		$request = $response->request;
 		$site_hash = md5($request->trust_root);
 		if (is_array($trusted_sites) && array_key_exists($site_hash, $trusted_sites)) {
@@ -159,7 +159,7 @@ function openid_server_sreg_from_profile($field) {
 
 	switch($field) {
 		case 'nickname':
-			$value = get_usermeta($user->ID, 'nickname');
+			$value = get_user_meta($user->ID, 'nickname', true);
 			break;
 
 		case 'email':
@@ -167,7 +167,7 @@ function openid_server_sreg_from_profile($field) {
 			break;
 
 		case 'fullname':
-			$value = get_usermeta($user->ID, 'display_name');
+			$value = get_user_meta($user->ID, 'display_name', true);
 			break;
 	}
 

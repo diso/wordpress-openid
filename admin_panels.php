@@ -22,7 +22,7 @@ function openid_admin_panels() {
 	add_filter('plugin_action_links', 'openid_plugin_action_links', 10, 2);
 
 	// global options page
-	$hookname = add_options_page(__('OpenID options', 'openid'), __('OpenID', 'openid'), 8, 'openid', 'openid_options_page' );
+	$hookname = add_options_page(__('OpenID options', 'openid'), __('OpenID', 'openid'), 'manage_options', 'openid', 'openid_options_page' );
 	add_action("load-$hookname", create_function('', 'add_thickbox();'));
 	add_action("load-$hookname", 'openid_style');
 	
@@ -40,7 +40,7 @@ function openid_admin_panels() {
 		add_action('user_profile_update_errors', 'openid_profile_update_errors', 10, 3);
 		add_action('load-profile.php', 'openid_style');
 
-		if (!get_usermeta($user->ID, 'openid_delegate')) {
+		if (!get_user_meta($user->ID, 'openid_delegate', true)) {
 			$hookname =	add_submenu_page('profile.php', __('Your Trusted Sites', 'openid'), 
 				__('Your Trusted Sites', 'openid'), 'read', 'openid_trusted_sites', 'openid_manage_trusted_sites' );
 			add_action("load-$hookname", 'openid_style' );
@@ -178,7 +178,7 @@ function openid_options_page() {
 						<p>
 							<?php 
 				foreach ($wp_roles->role_names as $key => $name) {
-					$name = _c($name);
+					$name = _x($name, null);
 					$role = $wp_roles->get_role($key);
 					$checked = $role->has_cap('use_openid_provider') ? ' checked="checked"' : '';
 					$option_name = 'openid_cap[' . htmlentities($key) . ']';
@@ -362,11 +362,11 @@ function openid_profile_panel() {
 function openid_manage_trusted_sites() {
 	$user = wp_get_current_user();
 
-	switch ($_REQUEST['action']) {
+	switch (@$_REQUEST['action']) {
 	case 'add':
 		check_admin_referer('openid-add_trusted_sites');
 
-		$trusted_sites = get_usermeta($user->ID, 'openid_trusted_sites');
+		$trusted_sites = get_user_meta($user->ID, 'openid_trusted_sites', true);
 		if (!is_array($trusted_sites)) $trusted_sites = array();
 		$sites = split("\n", $_REQUEST['sites']);
 
@@ -379,7 +379,7 @@ function openid_manage_trusted_sites() {
 				$site = 'http://' . $site;
 			}
 
-			$site = clean_url($site);
+			$site = esc_url($site);
 			$site_hash = md5($site);
 
 			if (array_key_exists($site_hash, $trusted_sites)) continue;
@@ -389,7 +389,7 @@ function openid_manage_trusted_sites() {
 		}
 
 		if ($count) {
-			update_usermeta($user->ID, 'openid_trusted_sites', $trusted_sites);
+			update_user_meta($user->ID, 'openid_trusted_sites', $trusted_sites);
 			echo '<div class="updated"><p>';
 			printf( _n('Added %d trusted site.', 'Added %d trusted sites.', $count, 'openid'), $count);
 			echo '</p></div>';
@@ -401,7 +401,7 @@ function openid_manage_trusted_sites() {
 
 		check_admin_referer('openid-delete_trusted_sites');
 
-		$trusted_sites = get_usermeta($user->ID, 'openid_trusted_sites');
+		$trusted_sites = get_user_meta($user->ID, 'openid_trusted_sites', true);
 		$count = 0;
 		foreach ($_REQUEST['delete'] as $site_hash) {
 			if (array_key_exists($site_hash, $trusted_sites)) {
@@ -410,7 +410,7 @@ function openid_manage_trusted_sites() {
 			}
 		}
 
-		update_usermeta($user->ID, 'openid_trusted_sites', array_filter($trusted_sites));
+		update_user_meta($user->ID, 'openid_trusted_sites', array_filter($trusted_sites));
 
 		if ($count) {
 			echo '<div class="updated"><p>';
@@ -458,12 +458,12 @@ function openid_manage_trusted_sites() {
 			<tbody>
 
 			<?php
-				$trusted_sites = get_usermeta($user->ID, 'openid_trusted_sites');
+				$trusted_sites = get_user_meta($user->ID, 'openid_trusted_sites', true);
 				if(empty($trusted_sites)) {
 					echo '<tr><td colspan="3">'.__('No Trusted Sites.', 'openid').'</td></tr>';
 				} else {
 					foreach( $trusted_sites as $site_hash => $site ) {
-						if ($site['last_login']) {
+						if (array_key_exists('last_login', $site) && $site['last_login']) {
 							$last_login = date(get_option('date_format') . ' - ' . get_option('time_format'), $site['last_login']);
 						} else {
 							$last_login = '-';
@@ -703,7 +703,7 @@ function openid_profile_delete_openids($delete) {
 	$user = wp_get_current_user();
 	$urls = get_user_openids($user->ID);
 
-	if (sizeof($urls) == sizeof($delete) && !$_REQUEST['confirm']) {
+	if (sizeof($urls) == sizeof($delete) && !@$_REQUEST['confirm']) {
 		$html = '
 			<h1>'.__('OpenID Warning', 'openid').'</h1>
 			<form action='.sprintf('%s?page=%s', $_SERVER['PHP_SELF'], $_REQUEST['page']).' method="post">
@@ -852,7 +852,7 @@ function openid_extend_profile() {
 	<td>
 		<p style="margin-top:0;">'.__('OpenID Delegation allows you to use an external OpenID provider of your choice.', 'openid').'</p>
 		<p>
-			<input type="text" id="openid_delegate" name="openid_delegate" class="openid_link" value="'.get_usermeta($user->ID, 'openid_delegate').'" /> '
+			<input type="text" id="openid_delegate" name="openid_delegate" class="openid_link" value="'.get_user_meta($user->ID, 'openid_delegate', true).'" /> '
 			. __('To delegate, enter a valid OpenID. Otherwise leave this blank.', 'openid')
 		. '</p>
 	</td>
@@ -869,11 +869,11 @@ function openid_profile_update($user_id) {
 	global $openid_user_delegation_info;
 
 	if ( empty($_POST['openid_delegate']) ) {
-		delete_usermeta($user_id, 'openid_delegate');
-		delete_usermeta($user_id, 'openid_delegate_services');
+		delete_user_meta($user_id, 'openid_delegate');
+		delete_user_meta($user_id, 'openid_delegate_services');
 	} else {
-		update_usermeta($user_id, 'openid_delegate', $openid_user_delegation_info['url']);
-		update_usermeta($user_id, 'openid_delegate_services', $openid_user_delegation_info['services']);
+		update_user_meta($user_id, 'openid_delegate', $openid_user_delegation_info['url']);
+		update_user_meta($user_id, 'openid_delegate_services', $openid_user_delegation_info['services']);
 	}
 }
 
