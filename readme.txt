@@ -3,7 +3,7 @@ Contributors: willnorris, factoryjoe
 Tags: openid, authentication, login, comments
 Requires at least: 2.8
 Tested up to: 2.8.5
-Stable tag: 3.3.2
+Stable tag: 3.3.3
 
 Allows WordPress to provide and consumer OpenIDs for authentication of users and comments.
 
@@ -99,6 +99,11 @@ report at <http://code.google.com/p/diso/issues/list>.
 
 
 == Changelog ==
+
+= version 3.3.3 (Aug 24, 2010) =
+ - add/update danish, japanese, and spanish translations
+ - update to latest version of php-openid library
+ - fix a few PHP and WordPress warnings and notices
 
 = version 3.3.2 (Nov 06, 2009) =
  - add localizations for czech, danish, french, spanish, and vietnamese.  Some are more up to date than others.  More are welcome, see http://code.google.com/p/diso/issues/detail?id=26
