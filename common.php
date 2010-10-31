@@ -540,7 +540,7 @@ function openid_parse_request($wp) {
 			case 'ajax':
 				if ( check_admin_referer('openid_ajax') ) {
 					header('Content-Type: application/json');
-					echo '{ valid:' . ( is_url_openid( $_REQUEST['url'] ) ? 'true' : 'false' ) . ', nonce:"' . wp_create_nonce('openid_ajax') . '" }';
+					echo '{ "valid":' . ( is_url_openid( $_REQUEST['url'] ) ? 'true' : 'false' ) . ', "nonce":"' . wp_create_nonce('openid_ajax') . '" }';
 					exit;
 				}
 		}
