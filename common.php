@@ -451,6 +451,15 @@ function openid_get_user_data_ax($data, $identity_url) {
 		$data['display_name'] = $fullname;
 	}
 
+	$firstname = $ax->getSingle('http://axschema.org/namePerson/first');
+	$lastname = $ax->getSingle('http://axschema.org/namePerson/last');
+	if ($firstname && !is_a($firstname, 'Auth_OpenID_AX_Error') &&
+	    $lastname && !is_a($lastname, 'Auth_OpenID_AX_Error')) {
+		$data['first_name'] = $firstname;
+		$data['last_name'] = $lastname;
+		$data['display_name'] = $firstname.' '.$lastname;
+	}
+
 	return $data;
 }
 
