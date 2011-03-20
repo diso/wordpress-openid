@@ -162,6 +162,7 @@ function openid_start_login( $claimed_url, $action, $finish_url = null) {
 	@session_start();
 	$_SESSION['openid_action'] = $action;
 	$_SESSION['openid_finish_url'] = $finish_url;
+	$_SESSION['rememberme'] = $_POST['rememberme'];
 
 	$extensions = apply_filters('openid_auth_request_extensions', array(), $auth_request);
 	foreach ($extensions as $e) {
