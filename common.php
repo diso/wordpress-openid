@@ -322,12 +322,18 @@ function openid_create_new_user($identity_url, &$user_data) {
 		$username = openid_generate_new_username($user_data['nickname'], false);
 	}
 
+	// try using email address before resorting to URL
+	if (empty($username) && array_key_exists('user_email', $user_data)) {
+		$username = openid_generate_new_username($user_data['user_email'], false);
+	}
+
 	// finally, build username from OpenID URL
 	if (empty($username)) {
 		$username = openid_generate_new_username($identity_url);
 	}
 
 	$user_data['user_login'] = $username;
+	$user_data['display_name'] = $username;
 	$user_data['user_pass'] = substr( md5( uniqid( microtime() ) ), 0, 7);
 	$user_id = wp_insert_user( $user_data );
 
