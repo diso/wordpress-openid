@@ -19,9 +19,7 @@ function openid_getConsumer() {
 	static $consumer;
 
 	if (!$consumer) {
-		set_include_path( dirname(__FILE__) . PATH_SEPARATOR . get_include_path() );
 		require_once 'Auth/OpenID/Consumer.php';
-		restore_include_path();
 
 		$store = openid_getStore();
 		$consumer = new Auth_OpenID_Consumer($store);
@@ -185,9 +183,7 @@ function openid_start_login( $claimed_url, $action, $finish_url = null) {
  */
 function openid_add_ax_extension($extensions, $auth_request) {
 	if(!get_user_by_openid($auth_request->endpoint->claimed_id)) {
-		set_include_path( dirname(__FILE__) . PATH_SEPARATOR . get_include_path() );
 		require_once('Auth/OpenID/AX.php');
-		restore_include_path();
 
 		if ($auth_request->endpoint->usesExtension(Auth_OpenID_AX_NS_URI)) {
 			$ax_request = new Auth_OpenID_AX_FetchRequest();
@@ -208,9 +204,7 @@ function openid_add_ax_extension($extensions, $auth_request) {
  */
 function openid_add_sreg_extension($extensions, $auth_request) {
 	if(!get_user_by_openid($auth_request->endpoint->claimed_id)) {
-		set_include_path( dirname(__FILE__) . PATH_SEPARATOR . get_include_path() );
 		require_once('Auth/OpenID/SReg.php');
-		restore_include_path();
 
 		if ($auth_request->endpoint->usesExtension(Auth_OpenID_SREG_NS_URI_1_0) || $auth_request->endpoint->usesExtension(Auth_OpenID_SREG_NS_URI_1_1)) {
 			$extensions[] = Auth_OpenID_SRegRequest::build(array(),array('nickname','email','fullname'));

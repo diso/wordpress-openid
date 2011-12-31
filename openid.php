@@ -16,8 +16,7 @@ define ( 'OPENID_PLUGIN_REVISION', preg_replace( '/\$Rev: (.+) \$/', '\\1',
 // last plugin revision that required database schema changes
 define ( 'OPENID_DB_REVISION', 24426);
 
-
-$openid_include_path = dirname(__FILE__);
+$openid_include_path = dirname(__FILE__) . '/lib';
 
 // check source of randomness
 if ( !@is_readable('/dev/urandom') ) { 
@@ -25,14 +24,14 @@ if ( !@is_readable('/dev/urandom') ) {
 }
 
 set_include_path( $openid_include_path . PATH_SEPARATOR . get_include_path() );
-require_once 'common.php';
-require_once 'consumer.php';
-require_once 'admin_panels.php';
-require_once 'comments.php';
-require_once 'login.php';
-require_once 'server.php';
-require_once 'store.php';
-restore_include_path();
+
+require_once dirname(__FILE__) . '/common.php';
+require_once dirname(__FILE__) . '/consumer.php';
+require_once dirname(__FILE__) . '/admin_panels.php';
+require_once dirname(__FILE__) . '/comments.php';
+require_once dirname(__FILE__) . '/login.php';
+require_once dirname(__FILE__) . '/server.php';
+require_once dirname(__FILE__) . '/store.php';
 
 // register activation (and similar) hooks
 register_activation_hook('openid/openid.php', 'openid_activate_plugin');

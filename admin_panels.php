@@ -741,7 +741,6 @@ function openid_profile_delete_openids($delete) {
 		openid_status('success');
 
 		// ensure that profile URL is still a verified OpenID
-		set_include_path( dirname(__FILE__) . PATH_SEPARATOR . get_include_path() );
 		require_once 'Auth/OpenID.php';
 		@include_once(ABSPATH . WPINC . '/registration.php');	// WP < 2.3
 		@include_once(ABSPATH . 'wp-admin/includes/admin.php');	// WP >= 2.3
@@ -781,7 +780,6 @@ function openid_finish_verify($identity_url, $action) {
 			$message = 3;
 			
 			// ensure that profile URL is a verified OpenID
-			set_include_path( dirname(__FILE__) . PATH_SEPARATOR . get_include_path() );
 			require_once 'Auth/OpenID.php';
 			require_once(ABSPATH . 'wp-admin/includes/admin.php');
 
@@ -824,7 +822,6 @@ function openid_ensure_url_match($user, $url = null) {
 	$identities = get_user_openids($user->ID);
 	if (empty($identities)) return true;
 
-	set_include_path( dirname(__FILE__) . PATH_SEPARATOR . get_include_path() );
 	require_once 'Auth/OpenID.php';
 
 	if ($url == null) $url = $user->user_url;

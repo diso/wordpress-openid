@@ -422,9 +422,7 @@ function openid_get_user_data($identity_url) {
  * @see get_user_data
  */
 function openid_get_user_data_ax($data, $identity_url) {
-	set_include_path( dirname(__FILE__) . PATH_SEPARATOR . get_include_path() );
 	require_once('Auth/OpenID/AX.php');
-	restore_include_path();
 
 	$response = openid_response();
 	$ax = Auth_OpenID_AX_FetchResponse::fromSuccessResponse($response);
