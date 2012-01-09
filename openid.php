@@ -149,9 +149,9 @@ function get_userdata_by_various($id_or_name = null) {
 		if ($user == null) return false;
 		return $user->data;
 	} else if ( is_numeric($id_or_name) ) {
-		return get_userdata($id_or_name);
+		return get_user_by('id', $id_or_name);
 	} else {
-		return get_userdatabylogin($id_or_name);
+		return get_user_by('login', $id_or_name);
 	}
 }
 endif;

@@ -54,7 +54,7 @@ function openid_provider_xrds_simple($xrds) {
 		}
 
 		if (!defined('OPENID_DISALLOW_OWNER') || !OPENID_DISALLOW_OWNER) {
-			$user = get_userdatabylogin(get_option('openid_blog_owner'));
+			$user = get_user_by('login', get_option('openid_blog_owner'));
 		}
 	}
 
@@ -122,15 +122,15 @@ function openid_server_requested_user() {
 
 	if ($_REQUEST['author']) {
 		if (is_numeric($_REQUEST['author'])) {
-			return get_userdata($_REQUEST['author']);
+			return get_user_by('id', $_REQUEST['author']);
 		} else {
-			return get_userdatabylogin($_REQUEST['author']);
+			return get_user_by('login', $_REQUEST['author']);
 		}
 	} else {
 		$regex = preg_replace('/%author%/', '(.+)', $wp_rewrite->get_author_permastruct());
 		preg_match('|'.$regex.'|', $_SERVER['REQUEST_URI'], $matches);
 		$username = sanitize_user($matches[1], true);
-		return get_userdatabylogin($username);
+		return get_user_by('login', $username);
 	}
 }
 
@@ -340,7 +340,7 @@ function openid_provider_link_tags() {
 
 	if (is_front_page()) {
 		if (!defined('OPENID_DISALLOW_OWNER') || !OPENID_DISALLOW_OWNER) {
-			$user = get_userdatabylogin(get_option('openid_blog_owner'));
+			$user = get_user_by('login', get_option('openid_blog_owner'));
 		}
 	} else if (is_author()) {
 		global $wp_query;

@@ -223,7 +223,7 @@ function openid_generate_new_username($url, $append = true) {
 	$i='';
 	while(true) {
 		$username = openid_normalize_username( $base . $i );
-		$user = get_userdatabylogin($username);
+		$user = get_user_by('login', $username);
 		if ( $user ) {
 			if (!$append) return null;
 			$i++;
