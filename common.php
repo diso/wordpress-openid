@@ -449,6 +449,15 @@ function openid_get_user_data_ax($data, $identity_url) {
 		$data['display_name'] = $fullname;
 	}
 
+	$firstname = $ax->getSingle('http://axschema.org/namePerson/first');
+	$lastname = $ax->getSingle('http://axschema.org/namePerson/last');
+	if ($firstname && !is_a($firstname, 'Auth_OpenID_AX_Error') &&
+	    $lastname && !is_a($lastname, 'Auth_OpenID_AX_Error')) {
+		$data['first_name'] = $firstname;
+		$data['last_name'] = $lastname;
+		$data['display_name'] = $firstname.' '.$lastname;
+	}
+
 	return $data;
 }
 
@@ -613,7 +622,7 @@ function openid_service_url($service, $scheme = null) {
 	if (!defined('OPENID_SSL') || !OPENID_SSL) $scheme = null;
 	$url = site_url('/', $scheme);
 
-	if ($wp_rewrite->using_permalinks()) {
+	if ($wp_rewrite->using_index_permalinks()) {
 		$url .= 'index.php/openid/' . $service;
 	} else {
 		$url .= '?openid=' . $service;
