@@ -461,7 +461,7 @@ function openid_get_user_data_ax($data, $identity_url) {
  * @see get_user_data
  */
 function openid_get_user_data_sreg($data, $identity_url) {
-	require_once(dirname(__FILE__) . '/Auth/OpenID/SReg.php');
+	require_once('Auth/OpenID/SReg.php');
 	$response = openid_response();
 	$sreg_resp = Auth_OpenID_SRegResponse::fromSuccessResponse($response);
 	$sreg = $sreg_resp->contents();
