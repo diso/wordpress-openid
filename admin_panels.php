@@ -957,7 +957,7 @@ function openid_general_settings() {
 	<label for="openid_required_for_registration">
 		<input type="checkbox" name="openid_required_for_registration" id="openid_required_for_registration" value="1"
 			<?php checked(true, get_option('openid_required_for_registration')) ?> />
-		<?php _e('New accounts can only be created with verified OpenIDs', 'openid') ?>
+		<?php _e('New accounts can only be created with verified OpenIDs.', 'openid') ?>
 	</label>
 	<?php endif; ?>
 

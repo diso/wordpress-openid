@@ -36,7 +36,7 @@ function openid_authenticate($user) {
 		$identity_url= $_REQUEST['identity_url'];
 
 		if ( !wp_verify_nonce($_REQUEST['_wpnonce'], 'openid_login_' . md5($identity_url)) ) {
-			$user = new WP_Error('openid_login_error', 'Error during OpenID authentication.  Please try again. (invalid nonce)');
+			$user = new WP_Error('openid_login_error', __('Error during OpenID authentication.  Please try again. (invalid nonce)', 'openid'));
 		}
 
 		if ( $identity_url ) {
