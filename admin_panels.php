@@ -190,8 +190,8 @@ function openid_options_page() {
 				</tr>
 
 			<?php
-				$users = get_users_of_blog();
-				$users = array_filter($users, create_function('$u', '$u = new WP_User($u->user_id); return $u->has_cap("use_openid_provider");'));
+				$users = get_users();
+				$users = array_filter($users, create_function('$u', '$u = new WP_User($u->ID); return $u->has_cap("use_openid_provider");'));
 
 				if (!empty($users)):
 			?>
