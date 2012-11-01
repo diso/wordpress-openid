@@ -154,18 +154,10 @@ function openid_wp_register_form() {
 	<div style="width:100%;">'; //Added to fix IE problem
 
 	if (get_option('openid_required_for_registration')) {
+	    wp_enqueue_script('jquery');
+	    wp_enqueue_script('openid-register', plugins_url('openid/f/register.js'), array('jquery'), OPENID_PLUGIN_REVISION);
+	    
 		$label = __('Register using an OpenID:', 'openid');
-		echo '
-		<script type="text/javascript">
-			jQuery(function() {
-				jQuery("#registerform > p:first").hide();
-				jQuery("#registerform > p:first + p").hide();
-				jQuery("#reg_passmail").hide();
-				jQuery("p.submit").css("margin", "1em 0");
-				var link = jQuery("#nav a:first");
-				jQuery("#nav").text("").append(link);
-			});
-		</script>';
 	} else {
 		$label = __('Or register using an OpenID:', 'openid');
 
