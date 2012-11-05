@@ -75,7 +75,11 @@ function openid_finish_login($identity_url, $action) {
 	
 	// return to wp-login page
 	$url = get_option('siteurl') . '/wp-login.php';
-	if (empty($identity_url)) {
+	
+	$status = openid_status();
+	$error = openid_message();
+	
+	if ($status == 'error' && !empty($error)) {
 		$url = add_query_arg('openid_error', openid_message(), $url);
 	}
 
