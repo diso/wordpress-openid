@@ -97,8 +97,7 @@ function openid_activate_plugin() {
 	wp_schedule_event(time(), 'hourly', 'cleanup_openid');
 
 	// flush rewrite rules
-	if ( !isset($wp_rewrite) ) { $wp_rewrite = new WP_Rewrite(); }
-	$wp_rewrite->flush_rules();
+	flush_rewrite_rules();
 
 	// set current revision
 	update_option( 'openid_plugin_revision', OPENID_PLUGIN_REVISION );
@@ -145,6 +144,8 @@ function openid_deactivate_plugin() {
 	delete_option('openid_nonces');
 	delete_option('openid_server_associations');
 	delete_option('openid_server_nonces');
+	
+	flush_rewrite_rules();
 }
 
 
@@ -173,6 +174,8 @@ function openid_uninstall_plugin() {
 
 	// historical options
 	openid_remove_historical_options();
+	
+	flush_rewrite_rules();
 }
 
 
