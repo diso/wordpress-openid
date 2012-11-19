@@ -186,10 +186,17 @@ function openid_add_ax_extension($extensions, $auth_request) {
 		require_once('Auth/OpenID/AX.php');
 
 		if ($auth_request->endpoint->usesExtension(Auth_OpenID_AX_NS_URI)) {
+			$default_fields = array(
+				Auth_OpenID_AX_AttrInfo::make('http://axschema.org/namePerson/friendly', 1, true),
+				Auth_OpenID_AX_AttrInfo::make('http://axschema.org/contact/email', 1, true),
+				Auth_OpenID_AX_AttrInfo::make('http://axschema.org/namePerson', 1, true)
+			);
+			$fields = apply_filters('openid_consumer_ax_fields', $default_fields);
+
 			$ax_request = new Auth_OpenID_AX_FetchRequest();
-			$ax_request->add(Auth_OpenID_AX_AttrInfo::make('http://axschema.org/namePerson/friendly', 1, true));
-			$ax_request->add(Auth_OpenID_AX_AttrInfo::make('http://axschema.org/contact/email', 1, true));
-			$ax_request->add(Auth_OpenID_AX_AttrInfo::make('http://axschema.org/namePerson', 1, true));
+			foreach ($fields as $field) {
+				$ax_request->add($field);
+			}
 
 			$extensions[] = $ax_request;
 		}
@@ -201,13 +208,18 @@ function openid_add_ax_extension($extensions, $auth_request) {
 
 /**
  * Build an SReg attribute query extension if we've never seen this OpenID before.
+ * 
+ * @uses apply_filters() Calls 'openid_consumer_sreg_required_fields' and
+ *     'openid_consumer_sreg_required_fields' to collect sreg fields.
  */
 function openid_add_sreg_extension($extensions, $auth_request) {
 	if(!get_user_by_openid($auth_request->endpoint->claimed_id)) {
 		require_once('Auth/OpenID/SReg.php');
 
 		if ($auth_request->endpoint->usesExtension(Auth_OpenID_SREG_NS_URI_1_0) || $auth_request->endpoint->usesExtension(Auth_OpenID_SREG_NS_URI_1_1)) {
-			$extensions[] = Auth_OpenID_SRegRequest::build(array(),array('nickname','email','fullname'));
+			$required = apply_filters('openid_consumer_sreg_required_fields', array());
+			$optional = apply_filters('openid_consumer_sreg_optional_fields', array('nickname','email','fullname'));
+			$extensions[] = Auth_OpenID_SRegRequest::build($required, $optional);
 		}
 	}
 
