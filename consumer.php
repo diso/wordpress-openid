@@ -201,13 +201,17 @@ function openid_add_ax_extension($extensions, $auth_request) {
 
 /**
  * Build an SReg attribute query extension if we've never seen this OpenID before.
+ * 
+ * @uses apply_filters() Calls 'openid_consumer_sreg_required_fields' and 'openid_consumer_sreg_required_fields' to collect sreg fields.
  */
 function openid_add_sreg_extension($extensions, $auth_request) {
 	if(!get_user_by_openid($auth_request->endpoint->claimed_id)) {
 		require_once('Auth/OpenID/SReg.php');
 
 		if ($auth_request->endpoint->usesExtension(Auth_OpenID_SREG_NS_URI_1_0) || $auth_request->endpoint->usesExtension(Auth_OpenID_SREG_NS_URI_1_1)) {
-			$extensions[] = Auth_OpenID_SRegRequest::build(array(),array('nickname','email','fullname'));
+			$required = apply_filters('openid_consumer_sreg_required_fields', array());
+			$optional = apply_filters('openid_consumer_sreg_optional_fields', array('nickname','email','fullname'));
+			$extensions[] = Auth_OpenID_SRegRequest::build($required, $optional);
 		}
 	}
 
