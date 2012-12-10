@@ -622,11 +622,7 @@ function openid_service_url($service, $scheme = null) {
 	if (!defined('OPENID_SSL') || !OPENID_SSL) $scheme = null;
 	$url = site_url('/', $scheme);
 
-	if ($wp_rewrite->using_permalinks()) {
-		$url .= 'index.php/openid/' . $service;
-	} else {
-		$url .= '?openid=' . $service;
-	}
+    $url .= '?openid=' . $service;
 
 	return $url;
 }
