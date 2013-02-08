@@ -695,7 +695,8 @@ function openid_profile_management() {
 
 				$message = __($message, 'openid');
 
-				if (array_key_exists('update_url', $_REQUEST) && $_REQUEST['update_url']) {
+				$opt_secure_profile_urls = get_option('openid_secure_profile_urls');
+				if (array_key_exists('update_url', $_REQUEST) && $_REQUEST['update_url'] && opt_secure_profile_urls === true) {
 					$message .= '<br />' .  __('<strong>Note:</strong> For security reasons, your profile URL has been updated to match your OpenID.', 'openid');
 				}
 
@@ -757,12 +758,13 @@ function openid_profile_delete_openids($delete) {
 		openid_message( sprintf(_n('Deleted %d OpenID association.', 'Deleted %d OpenID associations.', $count, 'openid'), $count) );
 		openid_status('success');
 
-		// ensure that profile URL is still a verified OpenID
+		// ensure that profile URL is still a verified OpenID if opt_secure_profile_urls is set to true
 		require_once 'Auth/OpenID.php';
 		@include_once(ABSPATH . WPINC . '/registration.php');	// WP < 2.3
 		@include_once(ABSPATH . 'wp-admin/includes/admin.php');	// WP >= 2.3
 
-		if (!openid_ensure_url_match($user)) {
+		$opt_secure_profile_urls = get_option('openid_secure_profile_urls');
+		if ($opt_secure_profile_urls === true && !openid_ensure_url_match($user)) {
 			$identities = get_user_openids($user->ID);
 			wp_update_user( array('ID' => $user->ID, 'user_url' => $identities[0]) );
 			openid_message(openid_message() . '<br />'.__('<strong>Note:</strong> For security reasons, your profile URL has been updated to match your OpenID.', 'openid'));
@@ -796,11 +798,12 @@ function openid_finish_verify($identity_url, $action) {
 		} else {
 			$message = 3;
 			
-			// ensure that profile URL is a verified OpenID
+			// ensure that profile URL is a verified OpenID if opt_secure_profile_urls is set to true
 			require_once 'Auth/OpenID.php';
 			require_once(ABSPATH . 'wp-admin/includes/admin.php');
 
-			if (!openid_ensure_url_match($user)) {
+			$opt_secure_profile_urls = get_option('openid_secure_profile_urls');
+			if ($opt_secure_profile_urls === true && !openid_ensure_url_match($user)) {
 				wp_update_user( array('ID' => $user->ID, 'user_url' => $identity_url) );
 				$update_url = 1;
 			}
@@ -834,7 +837,7 @@ function openid_personal_options_update() {
 
 
 /**
- * Ensure that the user's profile URL matches one of their OpenIDs
+ * Ensure that the user's profile URL matches one of their OpenIDs if opt_secure_profile_urls is set to true
  */
 function openid_ensure_url_match($user, $url = null) {
 	$identities = get_user_openids($user->ID);
