@@ -823,6 +823,7 @@ function openid_finish_verify($identity_url, $action) {
  * hook in and call when user is updating their profile URL... make sure it is an OpenID they control.
  */
 function openid_personal_options_update() {
+	if (!get_option('openid_secure_profile_urls') === true) return;
 	$user = wp_get_current_user();
 
 	if (!openid_ensure_url_match($user, $_POST['url'])) {
