@@ -36,7 +36,7 @@ function openid_authenticate($user) {
 		$identity_url= $_REQUEST['identity_url'];
 
 		if ( !wp_verify_nonce($_REQUEST['_wpnonce'], 'openid_login_' . md5($identity_url)) ) {
-			$user = new WP_Error('openid_login_error', 'Error during OpenID authentication.  Please try again. (invalid nonce)');
+			$user = new WP_Error('openid_login_error', __('Error during OpenID authentication.  Please try again. (invalid nonce)', 'openid'));
 		}
 
 		if ( $identity_url ) {
@@ -68,14 +68,25 @@ function openid_finish_login($identity_url, $action) {
 		
 	// create new user account if appropriate
 	$user_id = get_user_by_openid($identity_url);
-	if ( $identity_url && !$user_id && get_option('users_can_register') ) {
-		$user_data =& openid_get_user_data($identity_url);
-		openid_create_new_user($identity_url, $user_data);
+	if ($identity_url && !$user_id) {
+	    if (get_option('users_can_register')) {
+	        // registration is enabled so create a new user
+    		$user_data =& openid_get_user_data($identity_url);
+    		openid_create_new_user($identity_url, $user_data);
+	    } else {
+	        // generate a error because it is not possible to create a new user
+	        openid_message(__('Unable to create a new user.', 'openid'));
+	        openid_status('error');
+	    }
 	}
 	
 	// return to wp-login page
 	$url = get_option('siteurl') . '/wp-login.php';
-	if (empty($identity_url)) {
+	
+	$status = openid_status();
+	$error = openid_message();
+	
+	if ($status == 'error' && !empty($error)) {
 		$url = add_query_arg('openid_error', openid_message(), $url);
 	}
 
@@ -143,18 +154,10 @@ function openid_wp_register_form() {
 	<div style="width:100%;">'; //Added to fix IE problem
 
 	if (get_option('openid_required_for_registration')) {
+	    wp_enqueue_script('jquery');
+	    wp_enqueue_script('openid-register', plugins_url('openid/f/register.js'), array('jquery'), OPENID_PLUGIN_REVISION);
+	    
 		$label = __('Register using an OpenID:', 'openid');
-		echo '
-		<script type="text/javascript">
-			jQuery(function() {
-				jQuery("#registerform > p:first").hide();
-				jQuery("#registerform > p:first + p").hide();
-				jQuery("#reg_passmail").hide();
-				jQuery("p.submit").css("margin", "1em 0");
-				var link = jQuery("#nav a:first");
-				jQuery("#nav").text("").append(link);
-			});
-		</script>';
 	} else {
 		$label = __('Or register using an OpenID:', 'openid');
 

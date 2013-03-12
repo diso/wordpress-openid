@@ -190,8 +190,8 @@ function openid_options_page() {
 				</tr>
 
 			<?php
-				$users = get_users_of_blog();
-				$users = array_filter($users, create_function('$u', '$u = new WP_User($u->user_id); return $u->has_cap("use_openid_provider");'));
+				$users = get_users();
+				$users = array_filter($users, create_function('$u', '$u = new WP_User($u->ID); return $u->has_cap("use_openid_provider");'));
 
 				if (!empty($users)):
 			?>
@@ -957,7 +957,7 @@ function openid_general_settings() {
 	<label for="openid_required_for_registration">
 		<input type="checkbox" name="openid_required_for_registration" id="openid_required_for_registration" value="1"
 			<?php checked(true, get_option('openid_required_for_registration')) ?> />
-		<?php _e('New accounts can only be created with verified OpenIDs', 'openid') ?>
+		<?php _e('New accounts can only be created with verified OpenIDs.', 'openid') ?>
 	</label>
 	<?php endif; ?>
 
