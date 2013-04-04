@@ -351,7 +351,7 @@ function openid_create_new_user($identity_url, &$user_data) {
 		}
 
 		// notify of user creation
-		wp_new_user_notification( $user->user_login );
+		wp_new_user_notification( $user_id );
 
 		wp_clear_auth_cookie();
 		wp_set_auth_cookie($user_id, true);
