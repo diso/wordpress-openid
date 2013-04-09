@@ -342,9 +342,10 @@ function openid_create_new_user($identity_url, &$user_data) {
 		// XXX this all looks redundant, see openid_set_current_user
 
 		$user = new WP_User( $user_id );
+		$credentials = array('user_login' => $user->user_login, 'user_password' => $user_data['user_pass'], 'remember' => true);
 
-		if( ! wp_login( $user->user_login, $user_data['user_pass'] ) ) {
-			openid_message(__('User was created fine, but wp_login() for the new user failed. This is probably a bug.', 'openid'));
+		if( ! wp_signon( $credentials ) ) {
+			openid_message(__('User was created fine, but wp_signon() for the new user failed. This is probably a bug.', 'openid'));
 			openid_status('error');
 			openid_error(openid_message());
 			return;
@@ -353,8 +354,8 @@ function openid_create_new_user($identity_url, &$user_data) {
 		// notify of user creation
 		wp_new_user_notification( $user_id );
 
-		wp_clearcookie();
-		wp_setcookie( $user->user_login, md5($user->user_pass), true, '', '', true );
+		wp_clear_auth_cookie();
+		wp_set_auth_cookie($user_id, true);
 
 		// Bind the provided identity to the just-created user
 		openid_add_user_identity($user_id, $identity_url);
