@@ -167,7 +167,8 @@ function openid_server_sreg_from_profile($field) {
 			break;
 
 		case 'fullname':
-			$value = get_user_meta($user->ID, 'display_name', true);
+			$user_data = get_userdata($user->ID);
+			$value = $user_data->display_name;
 			break;
 	}
 
