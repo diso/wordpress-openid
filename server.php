@@ -150,7 +150,7 @@ function openid_server_request() {
 	$request = $server->decodeRequest();
 	if (!$request || Auth_OpenID_isError($request)) {
 		@session_start();
-		if ($_SESSION['openid_server_request']) {
+		if (isset($_SESSION['openid_server_request']) && $_SESSION['openid_server_request']) {
 			$request = $_SESSION['openid_server_request'];
 			unset($_SESSION['openid_server_request']);
 		}
@@ -407,7 +407,7 @@ function openid_server_remove_trust_site() {
 function openid_server_user_trust($request) {
 	$user = wp_get_current_user();
 
-	if ($_REQUEST['openid_trust']) {
+	if (isset($_REQUEST['openid_trust']) && $_REQUEST['openid_trust']) {
 		$trust = null;
 
 		if ($_REQUEST['openid_trust'] == 'cancel') {

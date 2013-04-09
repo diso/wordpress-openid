@@ -540,7 +540,8 @@ function openid_parse_request($wp) {
 				break;
 
 			case 'server':
-				openid_server_request($_REQUEST['action']);
+				$action = isset($_REQUEST['action']) ? $_REQUEST['action'] : null;
+				openid_server_request($action);
 				break;
 
 			case 'ajax':
@@ -594,7 +595,7 @@ function openid_clean_request() {
 		
 		$_SERVER['QUERY_STRING'] = implode('&', $clean);
 
-	} else if ($_SERVER['argc'] >= 1 && $_SERVER['argv'][0] == 'error=404') {
+	} else if (isset($_SERVER['argc']) && $_SERVER['argc'] >= 1 && $_SERVER['argv'][0] == 'error=404') {
 
 		// handle lighttpd hack which uses a custom error-handler, passing 404 errors to WordPress.  
 		// This results in the QUERY_STRING not having the correct information, but fortunately we 
