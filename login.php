@@ -68,14 +68,25 @@ function openid_finish_login($identity_url, $action) {
 		
 	// create new user account if appropriate
 	$user_id = get_user_by_openid($identity_url);
-	if ( $identity_url && !$user_id && get_option('users_can_register') ) {
-		$user_data =& openid_get_user_data($identity_url);
-		openid_create_new_user($identity_url, $user_data);
+	if ($identity_url && !$user_id) {
+	    if (get_option('users_can_register')) {
+	        // registration is enabled so create a new user
+    		$user_data =& openid_get_user_data($identity_url);
+    		openid_create_new_user($identity_url, $user_data);
+	    } else {
+	        // generate a error because it is not possible to create a new user
+	        openid_message(__('Unable to create a new user.', 'openid'));
+	        openid_status('error');
+	    }
 	}
 	
 	// return to wp-login page
 	$url = get_option('siteurl') . '/wp-login.php';
-	if (empty($identity_url)) {
+	
+	$status = openid_status();
+	$error = openid_message();
+	
+	if ($status == 'error' && !empty($error)) {
 		$url = add_query_arg('openid_error', openid_message(), $url);
 	}
 
