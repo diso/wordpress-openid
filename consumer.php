@@ -191,11 +191,9 @@ function openid_add_ax_extension($extensions, $auth_request) {
 				Auth_OpenID_AX_AttrInfo::make('http://axschema.org/contact/email', 1, true),
 				Auth_OpenID_AX_AttrInfo::make('http://axschema.org/namePerson', 1, true)
 			);
-			
 			$fields = apply_filters('openid_consumer_ax_fields', $default_fields);
-			
+
 			$ax_request = new Auth_OpenID_AX_FetchRequest();
-			
 			foreach ($fields as $field) {
 				$ax_request->add($field);
 			}
@@ -211,7 +209,8 @@ function openid_add_ax_extension($extensions, $auth_request) {
 /**
  * Build an SReg attribute query extension if we've never seen this OpenID before.
  * 
- * @uses apply_filters() Calls 'openid_consumer_sreg_required_fields' and 'openid_consumer_sreg_required_fields' to collect sreg fields.
+ * @uses apply_filters() Calls 'openid_consumer_sreg_required_fields' and
+ *     'openid_consumer_sreg_required_fields' to collect sreg fields.
  */
 function openid_add_sreg_extension($extensions, $auth_request) {
 	if(!get_user_by_openid($auth_request->endpoint->claimed_id)) {

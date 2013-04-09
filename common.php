@@ -333,9 +333,9 @@ function openid_create_new_user($identity_url, &$user_data) {
 	$user_id = wp_insert_user( $user_data );
 
 	if ($user_id instanceof WP_Error) {
-	    openid_message($user_id->get_error_message());
-	    openid_status('error');
-	    return;
+		openid_message($user_id->get_error_message());
+		openid_status('error');
+		return;
 	} else if ( is_integer($user_id) ) { // created ok
 
 		$user_data['ID'] = $user_id;
@@ -361,9 +361,9 @@ function openid_create_new_user($identity_url, &$user_data) {
 		openid_add_user_identity($user_id, $identity_url);
 
 		openid_status('redirect');
-        
+
 		do_action('openid_consumer_new_user_custom_data', $user_id, $user_data);
-        
+
 		if ( !$user->has_cap('edit_posts') ) $redirect_to = '/wp-admin/profile.php';
 
 	} else {
