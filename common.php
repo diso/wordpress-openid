@@ -332,7 +332,11 @@ function openid_create_new_user($identity_url, &$user_data) {
 	$user_data['user_pass'] = substr( md5( uniqid( microtime() ) ), 0, 7);
 	$user_id = wp_insert_user( $user_data );
 
-	if( $user_id ) { // created ok
+	if ($user_id instanceof WP_Error) {
+	    openid_message($user_id->get_error_message());
+	    openid_status('error');
+	    return;
+	} else if ( is_integer($user_id) ) { // created ok
 
 		$user_data['ID'] = $user_id;
 		// XXX this all looks redundant, see openid_set_current_user
