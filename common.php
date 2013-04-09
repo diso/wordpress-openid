@@ -309,6 +309,7 @@ function openid_set_current_user($identity, $remember = true) {
  * @param string $identity_url OpenID to associate with the newly
  * created account
  * @param array $user_data array of user data
+ * @uses do_action() Calls 'openid_consumer_new_user_custom_data' hook action after creating user
  */
 function openid_create_new_user($identity_url, &$user_data) {
 	global $wpdb;
@@ -360,7 +361,9 @@ function openid_create_new_user($identity_url, &$user_data) {
 		openid_add_user_identity($user_id, $identity_url);
 
 		openid_status('redirect');
-
+        
+		do_action('openid_consumer_new_user_custom_data', $user_id, $user_data);
+        
 		if ( !$user->has_cap('edit_posts') ) $redirect_to = '/wp-admin/profile.php';
 
 	} else {
