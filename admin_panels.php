@@ -147,7 +147,7 @@ function openid_options_page() {
 	screen_icon('openid');
 	?>
 	<style type="text/css">
-		#icon-openid { background-image: url("<?php echo plugins_url('openid/f/icon.png'); ?>"); }
+		#icon-openid { background-image: url("<?php echo plugin_dir_url(__FILE__) . 'f/icon.png'; ?>"); }
 	</style>
 
 	<div class="wrap">
@@ -287,7 +287,7 @@ function openid_profile_panel() {
 	screen_icon('openid');
 	?>
 	<style type="text/css">
-		#icon-openid { background-image: url("<?php echo plugins_url('openid/f/icon.png'); ?>"); }
+		#icon-openid { background-image: url("<?php echo plugin_dir_url(__FILE__) . 'f/icon.png'; ?>"); }
 	</style>
 
 	<div class="wrap">
@@ -423,7 +423,7 @@ function openid_manage_trusted_sites() {
 	screen_icon('openid');
 	?>
 	<style type="text/css">
-		#icon-openid { background-image: url("<?php echo plugins_url('openid/f/icon.png'); ?>"); }
+		#icon-openid { background-image: url("<?php echo plugin_dir_url(__FILE__) . 'f/icon.png'; ?>"); }
 	</style>
 
 	<div class="wrap">
