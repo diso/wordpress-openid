@@ -66,17 +66,22 @@ add_action( 'authenticate', 'openid_authenticate' );
 function openid_finish_login($identity_url, $action) {
 	if ($action != 'login') return;
 		
-	// create new user account if appropriate
-	$user_id = get_user_by_openid($identity_url);
-	if ($identity_url && !$user_id) {
-		if (get_option('users_can_register')) {
-			// registration is enabled so create a new user
-			$user_data =& openid_get_user_data($identity_url);
-			openid_create_new_user($identity_url, $user_data);
+	if ($identity_url) {
+		// create new user account if appropriate
+		$user_id = get_user_by_openid($identity_url);
+		$user_data =& openid_get_user_data($identity_url);
+		
+		if (!$user_id) {
+			if (get_option('users_can_register')) {
+				// registration is enabled so create a new user
+				openid_create_new_user($identity_url, $user_data);
+			} else {
+				// generate a error because it is not possible to create a new user
+				openid_message(__('Unable to create a new user.', 'openid'));
+				openid_status('error');
+			}
 		} else {
-			// generate a error because it is not possible to create a new user
-			openid_message(__('Unable to create a new user.', 'openid'));
-			openid_status('error');
+			do_action('openid_consumer_update_user_custom_data', $user_id, $user_data);
 		}
 	}
 	
