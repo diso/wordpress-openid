@@ -155,7 +155,7 @@ function openid_wp_register_form() {
 
 	if (get_option('openid_required_for_registration')) {
 	    wp_enqueue_script('jquery');
-	    wp_enqueue_script('openid-register', plugins_url('openid/f/register.js'), array('jquery'), OPENID_PLUGIN_REVISION);
+	    wp_enqueue_script('openid-register', plugin_dir_url(__FILE__) . 'f/register.js', array('jquery'), OPENID_PLUGIN_REVISION);
 	    
 		$label = __('Register using an OpenID:', 'openid');
 	} else {
