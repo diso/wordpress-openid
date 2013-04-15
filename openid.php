@@ -16,6 +16,21 @@ define ( 'OPENID_PLUGIN_REVISION', preg_replace( '/\$Rev: (.+) \$/', '\\1',
 // last plugin revision that required database schema changes
 define ( 'OPENID_DB_REVISION', 24426);
 
+// default values for which modules to activate
+if (!defined('OPENID_ENABLE_CONSUMER')) {
+	define('OPENID_ENABLE_CONSUMER', true);
+}
+if (!defined('OPENID_ENABLE_COMMENTS')) {
+	define('OPENID_ENABLE_COMMENTS', true);
+}
+if (!defined('OPENID_ENABLE_SERVER')) {
+	define('OPENID_ENABLE_SERVER', true);
+}
+if (!defined('OPENID_ENABLE_ADMIN_PANELS')) {
+	define('OPENID_ENABLE_ADMIN_PANELS', true);
+}
+
+
 $openid_include_path = dirname(__FILE__) . '/lib';
 
 // check source of randomness
@@ -26,12 +41,24 @@ if ( !@is_readable('/dev/urandom') ) {
 set_include_path( $openid_include_path . PATH_SEPARATOR . get_include_path() );
 
 require_once dirname(__FILE__) . '/common.php';
-require_once dirname(__FILE__) . '/consumer.php';
-require_once dirname(__FILE__) . '/admin_panels.php';
-require_once dirname(__FILE__) . '/comments.php';
-require_once dirname(__FILE__) . '/login.php';
-require_once dirname(__FILE__) . '/server.php';
 require_once dirname(__FILE__) . '/store.php';
+
+if (OPENID_ENABLE_CONSUMER) {
+	require_once dirname(__FILE__) . '/consumer.php';
+	require_once dirname(__FILE__) . '/login.php';
+}
+
+if (OPENID_ENABLE_ADMIN_PANELS) {
+	require_once dirname(__FILE__) . '/admin_panels.php';
+}
+
+if (OPENID_ENABLE_CONSUMER && OPENID_ENABLE_COMMENTS) {
+	require_once dirname(__FILE__) . '/comments.php';
+}
+
+if (OPENID_ENABLE_SERVER) {
+	require_once dirname(__FILE__) . '/server.php';
+}
 
 // register activation (and similar) hooks
 register_activation_hook('openid/openid.php', 'openid_activate_plugin');
