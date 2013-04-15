@@ -39,7 +39,7 @@ if (isset($wpmu_version)) {
  * Set the textdomain for this plugin so we can support localizations.
  */
 function openid_textdomain() {
-	load_plugin_textdomain('openid', null, 'openid/localization');
+	load_plugin_textdomain('openid', null, dirname(plugin_basename(__FILE__)) . '/localization/');
 }
 
 
@@ -734,7 +734,7 @@ function openid_page($message, $title = '') {
  **/
 function openid_js_setup() {
 	if (have_comments() || comments_open() || is_admin()) {
-		wp_enqueue_script('openid', plugins_url('openid/f/openid.js'), array('jquery'), OPENID_PLUGIN_REVISION);
+		wp_enqueue_script('openid', plugin_dir_url(__FILE__) . 'f/openid.js', array('jquery'), OPENID_PLUGIN_REVISION);
 	}
 }
 
@@ -747,7 +747,7 @@ function openid_js_setup() {
  **/
 function openid_style() {
 	if ( !wp_style_is('openid', 'registered') ) {
-		wp_register_style('openid', plugins_url('openid/f/openid.css'), array(), OPENID_PLUGIN_REVISION);
+		wp_register_style('openid', plugin_dir_url(__FILE__) . 'f/openid.css', array(), OPENID_PLUGIN_REVISION);
 	}
 
 	if ( did_action('wp_print_styles') ) {
