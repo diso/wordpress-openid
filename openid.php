@@ -28,20 +28,20 @@ set_include_path( $openid_include_path . PATH_SEPARATOR . get_include_path() );
 require_once dirname(__FILE__) . '/common.php';
 require_once dirname(__FILE__) . '/store.php';
 
-if (!defined('OPENID_DISABLE_CONSUMER')) {
+if (!defined('OPENID_DISABLE_CONSUMER') || !OPENID_DISABLE_CONSUMER) {
 	require_once dirname(__FILE__) . '/consumer.php';
 	require_once dirname(__FILE__) . '/login.php';
 }
 
-if (!defined('OPENID_DISABLE_ADMIN_PANELS')) {
+if (!defined('OPENID_DISABLE_ADMIN_PANELS') || !OPENID_DISABLE_ADMIN_PANELS) {
 	require_once dirname(__FILE__) . '/admin_panels.php';
 }
 
-if (!defined('OPENID_DISABLE_COMMENTS')) {
+if (!defined('OPENID_DISABLE_COMMENTS') || !OPENID_DISABLE_COMMENTS) {
 	require_once dirname(__FILE__) . '/comments.php';
 }
 
-if (!defined('OPENID_DISABLE_SERVER')) {
+if (!defined('OPENID_DISABLE_SERVER') || !OPENID_DISABLE_SERVER) {
 	require_once dirname(__FILE__) . '/server.php';
 }
 
