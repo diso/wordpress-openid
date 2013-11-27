@@ -8,7 +8,9 @@
 add_action( 'init', 'openid_textdomain' ); // load textdomain
 
 // include internal stylesheet
-add_action( 'wp', 'openid_style');
+if (OPENID_ENABLE_CONSUMER) {
+    add_action( 'wp', 'openid_style');
+}
 
 // parse request
 add_action('parse_request', 'openid_parse_request');
