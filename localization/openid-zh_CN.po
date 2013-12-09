@@ -1,0 +1,544 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) YEAR DiSo Development Team
+# This file is distributed under the same license as the PACKAGE package.
+# FIRST AUTHOR <EMAIL@ADDRESS>, YEAR.
+#
+#, fuzzy
+msgid ""
+msgstr ""
+"Project-Id-Version: OpenID 3.4-trunk\n"
+"Report-Msgid-Bugs-To: http://wordpress.org/tag/openid\n"
+"POT-Creation-Date: 2009-10-01 15:34-0700\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language-Team: LANGUAGE <LL@li.org>\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: \n"
+
+#: admin_panels.php:25
+msgid "OpenID options"
+msgstr "OpenID选项"
+
+#. #-#-#-#-#  openid.pot (OpenID 3.4-trunk)  #-#-#-#-#
+#. Plugin Name of an extension
+#: admin_panels.php:25
+msgid "OpenID"
+msgstr "OpenID"
+
+#: admin_panels.php:30
+msgid "Your OpenIDs"
+msgstr "你的OpenID"
+
+#: admin_panels.php:44 admin_panels.php:45 admin_panels.php:423
+msgid "Your Trusted Sites"
+msgstr "你的信任站点"
+
+#: admin_panels.php:57 admin_panels.php:61 admin_panels.php:149
+msgid "OpenID Settings"
+msgstr "OpenID设置"
+
+#: admin_panels.php:112
+msgid "Settings"
+msgstr "设置"
+
+#: admin_panels.php:133
+msgid "OpenID cache refreshed."
+msgstr "OpenID缓存已刷新"
+
+#: admin_panels.php:151
+msgid ""
+"Please note that all OpenID Consumer options have been moved to their "
+"respective sections of the <a href=\"options-general.php\">General Settings</"
+"a> and <a href=\"options-discussion.php\">Discussion Settings</a> pages."
+msgstr "请注意，所有OpenID消费者选项都已经被移动到他们各自的<a href=\"options-general.php\">常规设置</a>部分和<a href=\"options-discussion.php\">讨论设置</a>页面。"
+
+#: admin_panels.php:160
+msgid ""
+"The OpenID Provider allows authorized users to use their author URL as an "
+"OpenID, either using their local WordPress username and password, or by "
+"delegating to another OpenID Provider."
+msgstr "OpenID提供者允许已授权用户使用他们的作者URL作为一个OpenID，或者使用其本地WordPress的用户名和密码，或者通过委托给另一个OpenID提供者。"
+
+#: admin_panels.php:166
+msgid "Enable OpenID"
+msgstr "启用OpenID"
+
+#: admin_panels.php:169
+msgid "Enable the local OpenID Provider for these roles:"
+msgstr "为这些角色启用本地OpenID提供者："
+
+#: admin_panels.php:192
+msgid "Blog Owner"
+msgstr "博客主人"
+
+#: admin_panels.php:195
+#, php-format
+msgid ""
+"Authorized accounts on this blog can use their author URL (i.e. <em>%1$s</"
+"em>) as an OpenID. The Blog Owner will be able to use the blog address (%2"
+"$s) as their OpenID.  If this is a single-user blog, you should set this to "
+"your account."
+msgstr "这个博客的已认证账号能使用他们的作者URL(例如<em>%1$s</em>)作为一个OpenID。博客主人将能使用这个博客地址(%2$s)作为他们的OpenID。如果这是一个单用户博客，你应该将它设置到你的账号。"
+
+#: admin_panels.php:205
+msgid ""
+"A Blog Owner cannot be set for this blog.  To set a Blog Owner, first remove "
+"the following line from your <code>wp-config.php</code>:"
+msgstr "不能为这个博客设置一个博客主人。要设置一个博客主人，首先要从你的<code>wp-config.php</code>移除以下行："
+
+#: admin_panels.php:213
+msgid "(none)"
+msgstr "(none)"
+
+#: admin_panels.php:223
+#, php-format
+msgid "Only the current Blog Owner (%s) can change this setting."
+msgstr "仅当前博客主人(%s)能改变这个设置。"
+
+#: admin_panels.php:235
+msgid "Troubleshooting"
+msgstr "故障排除"
+
+#: admin_panels.php:239
+#, php-format
+msgid ""
+"If users are experiencing problems logging in with OpenID, it may help to %1"
+"$srefresh the cache%2$s."
+msgstr "如果用户在用OpenID登录时遇到问题，去%1$s刷新缓存%2$s可能会有帮助。"
+
+#: admin_panels.php:246
+msgid "Save Changes"
+msgstr "保存改变"
+
+#: admin_panels.php:266
+msgid "Success:"
+msgstr "成功："
+
+#: admin_panels.php:269
+msgid "Warning:"
+msgstr "警告："
+
+#: admin_panels.php:272 admin_panels.php:276
+msgid "Error:"
+msgstr "错误："
+
+#: admin_panels.php:288
+msgid "Your Verified OpenIDs"
+msgstr "你已验证的OpenID"
+
+#: admin_panels.php:290
+msgid ""
+"You may associate one or more OpenIDs with your account.  This will allow "
+"you to login to WordPress with your OpenID instead of a username and "
+"password.  <a href=\"http://openid.net/what/\" target=\"_blank\">Learn "
+"more...</a>"
+msgstr "你可以关联一个或多个OpenID到你的账号。这将允许你使用你的OpenID登录到WordPress，而不是一个用户名和密码。<a href=\"http://openid.net/what/\" target=\"_blank\">学习更多</a>"
+
+#: admin_panels.php:297 admin_panels.php:432
+msgid "Bulk Actions"
+msgstr "批量操作"
+
+#: admin_panels.php:298 admin_panels.php:433
+msgid "Delete"
+msgstr "删除"
+
+#: admin_panels.php:300 admin_panels.php:435
+msgid "Apply"
+msgstr "应用"
+
+#: admin_panels.php:312
+msgid "Account"
+msgstr "账号"
+
+#: admin_panels.php:321
+msgid "No Verified Accounts."
+msgstr "未验证账号"
+
+#: admin_panels.php:340 admin_panels.php:346
+msgid "Add OpenID"
+msgstr "添加OpenID"
+
+#: admin_panels.php:387
+#, php-format
+msgid "Added %d trusted site."
+msgid_plural "Added %d trusted sites."
+msgstr[0] "已添加%d被信任站点。"
+msgstr[1] "已添加%d被信任站点。"
+msgstr[2] "已添加%d被信任站点。"
+
+
+#: admin_panels.php:410
+#, php-format
+msgid "Deleted %d trusted site."
+msgid_plural "Deleted %d trusted sites."
+msgstr[0] "已删除%d被信任站点。"
+msgstr[1] "已删除%d被信任站点。"
+msgstr[2] "已删除%d被信任站点。"
+
+
+#: admin_panels.php:425
+msgid ""
+"This is a list of sites that you can automatically login to using your "
+"OpenID account.  You will not be asked to approve OpenID login requests for "
+"your trusted sites."
+msgstr "这是一个你能使用你的OpenID账号自动登录的站点列表。你将不会被要求为你的信任站点去批准OpenID登录请求。"
+
+#: admin_panels.php:447
+msgid "URL"
+msgstr "URL"
+
+#: admin_panels.php:448
+msgid "Last Login"
+msgstr "最后登录"
+
+#: admin_panels.php:456
+msgid "No Trusted Sites."
+msgstr "不信任站点"
+
+#: admin_panels.php:487
+msgid "Import Trusted Sites"
+msgstr "导入信任站点"
+
+#: admin_panels.php:489
+msgid "Enter a list of URLs to be added to your Trusted Sites."
+msgstr "输入一个被添加到你的信任站点的URL列表。"
+
+#: admin_panels.php:493 admin_panels.php:503
+msgid "Add Sites"
+msgstr "添加站点"
+
+#: admin_panels.php:495
+msgid "(One URL per line)"
+msgstr "(每行一个URL)"
+
+#: admin_panels.php:589
+msgid "Status information:"
+msgstr "状态信息："
+
+#: admin_panels.php:589
+msgid "All Systems Nominal"
+msgstr "所有系统标称"
+
+#: admin_panels.php:590
+msgid "System Status"
+msgstr "系统状态"
+
+#: admin_panels.php:590
+msgid "Toggle More/Less"
+msgstr "切换到更多/更少"
+
+#: admin_panels.php:592
+msgid ""
+"Plugin is currently disabled. Fix the problem, then Deactivate/Reactivate "
+"the plugin."
+msgstr "插件当前未启用。要修复这个问题请停用/重新激活这个插件。"
+
+#: admin_panels.php:600
+msgid "FAIL"
+msgstr "失败"
+
+#: admin_panels.php:602
+msgid "OK"
+msgstr "OK"
+
+#: admin_panels.php:604
+msgid "INFO"
+msgstr "信息"
+
+#: admin_panels.php:638
+msgid "You already have this OpenID!"
+msgstr "你已经拥有这个OpenID了！"
+
+#: admin_panels.php:640
+msgid "This OpenID is already associated with another user."
+msgstr "这个OpenID已经关联到其他用户。"
+
+#: admin_panels.php:661
+msgid "Unable to authenticate OpenID."
+msgstr "不能认证OpenID"
+
+#: admin_panels.php:662
+msgid ""
+"OpenID assertion successful, but this URL is already associated with another "
+"user on this blog."
+msgstr "OpenID断言(assertion)成功，但这个URL已经关联到这个博客的其他用户了。"
+
+#: admin_panels.php:663
+msgid "Added association with OpenID."
+msgstr "已为OpenID添加关联。"
+
+#: admin_panels.php:675 admin_panels.php:745
+msgid ""
+"<strong>Note:</strong> For security reasons, your profile URL has been "
+"updated to match your OpenID."
+msgstr "<strong>注意：</strong>为了安全起见，你的个人资料URL已被升级来匹配你的OpenID。"
+
+#: admin_panels.php:701 admin_panels.php:718
+msgid "OpenID Warning"
+msgstr "OpenID警告"
+
+#: admin_panels.php:703
+msgid ""
+"Are you sure you want to delete all of your OpenID associations? Doing so "
+"may prevent you from logging in."
+msgstr "你真的要删除你的所有OpenID关联吗？这样做你的登录可能会被阻止。"
+
+#: admin_panels.php:705
+msgid "Yes I'm sure. Delete."
+msgstr "是的，我确信删除。"
+
+#: admin_panels.php:706
+msgid "No, don't delete."
+msgstr "不，不删除。"
+
+#: admin_panels.php:733
+#, php-format
+msgid "Deleted %d OpenID association."
+msgid_plural "Deleted %d OpenID associations."
+msgstr[0] "已删除%d OpenID关联。"
+msgstr[1] "已删除%d OpenID关联。"
+msgstr[2] "已删除%d OpenID关联。"
+
+
+#: admin_panels.php:751
+msgid "OpenID association delete failed: Unknown reason."
+msgstr "OpenID关联删除失败。未知原因。"
+
+#: admin_panels.php:807
+#, php-format
+msgid ""
+"For security reasons, your profile URL must be one of your claimed OpenIDs: %"
+"s"
+msgstr "为了安全起见，你的个人资料必需是你已声明的OpenID之一：%s"
+
+#: admin_panels.php:844
+msgid "OpenID Delegation"
+msgstr "OpenID委托代理"
+
+#: admin_panels.php:846
+msgid ""
+"OpenID Delegation allows you to use an external OpenID provider of your "
+"choice."
+msgstr "OpenID委托代理允许你使用你所选择的一个OpenID提供者。"
+
+#: admin_panels.php:849
+msgid "To delegate, enter a valid OpenID. Otherwise leave this blank."
+msgstr "要委托代理，输入一个有效的OpenID。否则什么都不要填。"
+
+#: admin_panels.php:886
+#, php-format
+msgid "Unable to find any OpenID information for delegate URL %s"
+msgstr "不能发现代理URL %s 的任何OpenID信息"
+
+#: admin_panels.php:896
+msgid "You cannot delegate to an OpenID provider which uses Identifier Select."
+msgstr "你不能使用身份选择委托到一个OpenID提供者。"
+
+#: admin_panels.php:917
+msgid "New accounts can only be created with verified OpenIDs."
+msgstr "新账号仅能由已验证的OpenID创建。"
+
+#: admin_panels.php:956
+msgid "New accounts can only be created with verified OpenIDs"
+msgstr "新账号仅能由已验证的OpenID创建。"
+
+#: admin_panels.php:979
+msgid "Enable OpenID for comments"
+msgstr "为评论启用OpenID"
+
+#: admin_panels.php:989
+msgid "Do not require name and e-mail for comments left with a verified OpenID"
+msgstr "评论除了一个已验证的OpenID以外不需要名字和电子邮件"
+
+#: admin_panels.php:997
+msgid "Always approve comments left with a verified OpenID"
+msgstr "始终批准以一个已验证的OpenID发表评论"
+
+#: comments.php:106
+msgid "Error: please fill the required fields (name, email)."
+msgstr "错误：请填写必填字段(名字,电子邮箱)。"
+
+#: comments.php:108
+msgid "Error: please enter a valid email address."
+msgstr "错误：请输入一个有效的电子邮箱地址。"
+
+#: comments.php:258
+msgid ""
+"Authenticate this comment using <span class=\"openid_link\">OpenID</span>."
+msgstr "使用<span class=\"oopenid_link\">OpenID</span>验证这个评论。"
+
+#: comments.php:271 comments.php:289
+msgid "OpenID Authentication Error"
+msgstr "OpenID认验证错误"
+
+#: comments.php:272
+msgid ""
+"We were unable to authenticate your claimed OpenID, however you can continue "
+"to post your comment without OpenID:"
+msgstr "我们不能验证你声明的OpenID，但你可以继续不用OpenID来发表你的评论："
+
+#: comments.php:280
+msgid "Submit Comment"
+msgstr "提交评论"
+
+#: common.php:342
+msgid ""
+"User was created fine, but wp_login() for the new user failed. This is "
+"probably a bug."
+msgstr "用户已经创建好了，但新用户的wp_login()失败了。这可能是一个程序错误。"
+
+#: common.php:363
+msgid ""
+"OpenID authentication successful, but failed to create WordPress user. This "
+"is probably a bug."
+msgstr "OpenID验证成功，但创建WordPress用户失败。这可能是一个程序错误。"
+
+#: common.php:680
+msgid ""
+"Since your browser does not support JavaScript, you must press the Continue "
+"button once to proceed."
+msgstr "因为你的浏览器不支持JavaScript，你必需按继续按钮继续。"
+
+#: common.php:688 server.php:236 server.php:480
+msgid "Continue"
+msgstr "继续"
+
+#: common.php:692
+msgid "Please Wait..."
+msgstr "请稍等……"
+
+#: common.php:696
+msgid "OpenID Authentication Redirect"
+msgstr "OpenID验证重定向"
+
+#: consumer.php:90
+msgid "OpenID login was cancelled."
+msgstr "OpenID登录已取消"
+
+#: consumer.php:95
+#, php-format
+msgid "OpenID login failed: %s"
+msgstr "OpenID登录失败：%s"
+
+#: consumer.php:100
+msgid "OpenID login successful"
+msgstr "OpenID登录成功"
+
+#: consumer.php:108
+msgid "Unknown Status. Bind not successful. This is probably a bug."
+msgstr "未知状态。绑定不成功。这可能是一个程序错误。"
+
+#: consumer.php:155
+#, php-format
+msgid "Could not discover an OpenID identity server endpoint at the url: %s"
+msgstr "不能在url %s 发现一个OpenID身份服务器端点"
+
+#: login.php:47
+msgid ""
+"Your have entered a valid OpenID, but this site is not currently accepting "
+"new accounts."
+msgstr "你已经输入了一个有效的OpenID，但这个站点当前不接受新账号。"
+
+#: login.php:126
+msgid "Or login using an OpenID"
+msgstr "或使用一个OpenID登录"
+
+#: login.php:131 login.php:179
+msgid "Learn about OpenID"
+msgstr "学习OpenID相关信息"
+
+#: login.php:146
+msgid "Register using an OpenID:"
+msgstr "使用一个OpenID注册："
+
+#: login.php:159
+msgid "Or register using an OpenID:"
+msgstr "或使用一个OpenID注册："
+
+#: login.php:205 login.php:216
+msgid "<strong>ERROR</strong>: "
+msgstr "<strong>错误</strong>"
+
+#: login.php:205
+msgid "New users must register using OpenID."
+msgstr "新用户必需使用OpenID注册。"
+
+#: server.php:227
+msgid "OpenID Login Error"
+msgstr "OpenID登录错误"
+
+#: server.php:229
+#, php-format
+msgid ""
+"Because you have delegated your OpenID, you cannot login with the URL "
+"<strong>%s</strong>. Instead, you must use your full OpenID when logging in."
+msgstr "因为你已经委托了你的OpenID，因此不能以URL<strong>%s</strong>登录。相反，你在登录时必需使用你的完整的OpenID。"
+
+#: server.php:231
+#, php-format
+msgid "Your full OpenID is: %s"
+msgstr "你的完整的OpenID是：%s"
+
+#: server.php:459
+#, php-format
+msgid "Logged in as %1$s (%2$s). <a href=\"%3$s\">Use a different account?</a>"
+msgstr "已经以%1$s(%2$s)登录。<a href=\"%3$s\">使用一个不同的账号？</a>"
+
+#: server.php:466 server.php:500
+msgid "Verify Your Identity"
+msgstr "验证你的身份"
+
+#: server.php:468
+#, php-format
+msgid "%s has asked to verify your identity."
+msgstr "%s 要求验证你的身份。"
+
+#: server.php:472
+msgid ""
+"Click <strong>Continue</strong> to verify your identity and login without "
+"creating a new password."
+msgstr "点击<strong>继续</strong>验证你的身份并登录，不需要创建一个新密码。"
+
+#: server.php:479
+msgid "Cancel and go back"
+msgstr "放弃并返回"
+
+#: server.php:484
+#, php-format
+msgid ""
+"Manage or remove access on the <a href=\"%s\" target=\"_blank\">Trusted "
+"Sites</a> page."
+msgstr "管理或移除<a href=\"%s\" target=\"_blank\">信任的站点</a>页面访问。"
+
+#: server.php:488
+#, php-format
+msgid ""
+"<a href=\"%s\" target=\"_blank\">Edit your profile</a> to change the "
+"information that gets shared with Trusted Sites."
+msgstr "<a href=\"%s\" target=\"_blank\">编辑你的个人资料</a> 去更改获取已共享信任站点的信息。"
+
+#: server_ext.php:63
+#, php-format
+msgid "Also grant access to see my %s."
+msgstr "同时授权访问查看我的 %s。"
+
+#. Plugin URI of an extension
+msgid "http://wordpress.org/extend/plugins/openid"
+msgstr "http://wordpress.org/extend/plugins/openid"
+
+#. Description of an extension
+msgid ""
+"Allows the use of OpenID for account registration, authentication, and "
+"commenting.  Also includes an OpenID provider which can turn WordPress "
+"author URLs into OpenIDs."
+msgstr "允许使用OpenID进行账号注册、验证和评论。此外包括一个OpenID提供者，可以转换WordPress作者的URL为OpenID。"
+
+#. Author of an extension
+msgid "DiSo Development Team"
+msgstr "DiSo开发小组"
+
+#. Author URI of an extension
+msgid "http://diso-project.org/"
+msgstr "http://diso-project.org/"
