@@ -7,11 +7,36 @@
 
 // -- WordPress Hooks
 add_action( 'admin_init', 'openid_admin_register_settings' );
+if (OPENID_NETWORK_WIDE_CONFIG) {
+	add_action( 'network_admin_menu', 'openid_network_admin_panels' );
+}
 add_action( 'admin_menu', 'openid_admin_panels' );
 add_action( 'personal_options_update', 'openid_personal_options_update' );
 add_action( 'openid_finish_auth', 'openid_finish_verify', 10, 2 );
 add_filter( 'pre_update_option_openid_cap', 'openid_set_cap', 10, 2);
 
+/**
+ * Setup network admin menus for OpenID options and ID management.
+ *
+ * @action: network_admin_menu
+ **/
+function openid_network_admin_panels() {
+	$hookname = add_submenu_page('settings.php', __('OpenID options', 'openid'), __('OpenID', 'openid'), 'manage_network_options', 'openid', 'openid_options_page' );
+	add_action("load-$hookname", create_function('', 'add_thickbox();'));
+	add_action("load-$hookname", 'openid_style');
+	add_action("load-$hookname", 'openid_save_network_options');
+}
+
+/**
+ * Intercept POST, pre_update_option doesn't work network wide
+ *
+ * @action: load-openid_network_settings
+ **/
+function openid_save_network_options() {
+	if (array_key_exists('openid_cap', $_POST)) {
+		openid_set_cap($_POST['openid_cap'], null);
+	}
+}
 
 /**
  * Setup admin menus for OpenID options and ID management.
@@ -22,9 +47,11 @@ function openid_admin_panels() {
 	add_filter('plugin_action_links', 'openid_plugin_action_links', 10, 2);
 
 	// global options page
-	$hookname = add_options_page(__('OpenID options', 'openid'), __('OpenID', 'openid'), 'manage_options', 'openid', 'openid_options_page' );
-	add_action("load-$hookname", create_function('', 'add_thickbox();'));
-	add_action("load-$hookname", 'openid_style');
+	if (!OPENID_NETWORK_WIDE_CONFIG) {
+		$hookname = add_options_page(__('OpenID options', 'openid'), __('OpenID', 'openid'), 'manage_options', 'openid', 'openid_options_page' );
+		add_action("load-$hookname", create_function('', 'add_thickbox();'));
+		add_action("load-$hookname", 'openid_style');
+	}
 	
 	// all users can setup external OpenIDs
 	$hookname =	add_users_page(__('Your OpenIDs', 'openid'), __('Your OpenIDs', 'openid'), 'read', 'your_openids', 'openid_profile_panel' );
@@ -77,8 +104,10 @@ function openid_admin_register_settings() {
 	register_setting('discussion', 'openid_enable_approval');
 	register_setting('discussion', 'openid_enable_commentform');
 
-	register_setting('openid', 'openid_blog_owner');
-	register_setting('openid', 'openid_cap');
+	if (!OPENID_NETWORK_WIDE_CONFIG) {
+		register_setting('openid', 'openid_blog_owner');
+		register_setting('openid', 'openid_cap');
+	}
 }
 
 
@@ -151,7 +180,7 @@ function openid_options_page() {
 	</style>
 
 	<div class="wrap">
-		<form method="post" action="options.php">
+		<form method="post">
 
 			<h2><?php _e('OpenID Settings', 'openid') ?></h2>
 
@@ -193,7 +222,7 @@ function openid_options_page() {
 				$users = get_users();
 				$users = array_filter($users, create_function('$u', '$u = new WP_User($u->ID); return $u->has_cap("use_openid_provider");'));
 
-				if (!empty($users)):
+				if (!OPENID_NETWORK_WIDE_CONFIG && !empty($users)):
 			?>
 				<tr valign="top">
 					<th scope="row"><?php _e('Blog Owner', 'openid') ?></th>

@@ -29,6 +29,9 @@ if (!defined('OPENID_ENABLE_SERVER')) {
 if (!defined('OPENID_ENABLE_ADMIN_PANELS')) {
 	define('OPENID_ENABLE_ADMIN_PANELS', true);
 }
+if (!defined('OPENID_NETWORK_WIDE_CONFIG')) {
+	define('OPENID_NETWORK_WIDE_CONFIG', false);
+}
 
 
 $openid_include_path = dirname(__FILE__) . '/lib';
