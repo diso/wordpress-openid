@@ -180,7 +180,7 @@ function openid_options_page() {
 	</style>
 
 	<div class="wrap">
-		<form method="post">
+		<form method="post" <?php if (!OPENID_NETWORK_WIDE_CONFIG) echo 'action="options.php"'; ?>>
 
 			<h2><?php _e('OpenID Settings', 'openid') ?></h2>
 
