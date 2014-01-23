@@ -184,9 +184,10 @@ function openid_options_page() {
 
 			<h2><?php _e('OpenID Settings', 'openid') ?></h2>
 
+			<?php if (!OPENID_NETWORK_WIDE_CONFIG): ?>
 			<div class="updated fade"><p><?php _e('Please note that all OpenID Consumer options have been moved to their respective sections of the '
 				. '<a href="options-general.php">General Settings</a> and <a href="options-discussion.php">Discussion Settings</a> pages.', 'openid') ?></p></div>
-
+			<?php endif; ?>
 
 			<?php 
 				$current_user = wp_get_current_user(); 
