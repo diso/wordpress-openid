@@ -220,10 +220,12 @@ function openid_options_page() {
 				</tr>
 
 			<?php
-				$users = get_users();
-				$users = array_filter($users, create_function('$u', '$u = new WP_User($u->ID); return $u->has_cap("use_openid_provider");'));
+				if (!OPENID_NETWORK_WIDE_CONFIG):
 
-				if (!OPENID_NETWORK_WIDE_CONFIG && !empty($users)):
+					$users = get_users();
+					$users = array_filter($users, create_function('$u', '$u = new WP_User($u->ID); return $u->has_cap("use_openid_provider");'));
+
+					if (!empty($users)):
 			?>
 				<tr valign="top">
 					<th scope="row"><?php _e('Blog Owner', 'openid') ?></th>
@@ -264,7 +266,10 @@ function openid_options_page() {
 			?>
 					</td>
 				</tr>
-			<?php endif; //!empty($users) ?>
+			<?php
+					endif; //!empty($users)>
+				endif; //!OPENID_NETWORK_WIDE_CONFIG
+			?>
 			</table>
 
 			<table class="form-table optiontable editform">
