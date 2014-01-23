@@ -47,11 +47,9 @@ function openid_admin_panels() {
 	add_filter('plugin_action_links', 'openid_plugin_action_links', 10, 2);
 
 	// global options page
-	if (!OPENID_NETWORK_WIDE_CONFIG) {
-		$hookname = add_options_page(__('OpenID options', 'openid'), __('OpenID', 'openid'), 'manage_options', 'openid', 'openid_options_page' );
-		add_action("load-$hookname", create_function('', 'add_thickbox();'));
-		add_action("load-$hookname", 'openid_style');
-	}
+	$hookname = add_options_page(__('OpenID options', 'openid'), __('OpenID', 'openid'), 'manage_options', 'openid', 'openid_options_page' );
+	add_action("load-$hookname", create_function('', 'add_thickbox();'));
+	add_action("load-$hookname", 'openid_style');
 	
 	// all users can setup external OpenIDs
 	$hookname =	add_users_page(__('Your OpenIDs', 'openid'), __('Your OpenIDs', 'openid'), 'read', 'your_openids', 'openid_profile_panel' );
@@ -104,8 +102,8 @@ function openid_admin_register_settings() {
 	register_setting('discussion', 'openid_enable_approval');
 	register_setting('discussion', 'openid_enable_commentform');
 
+	register_setting('openid', 'openid_blog_owner');
 	if (!OPENID_NETWORK_WIDE_CONFIG) {
-		register_setting('openid', 'openid_blog_owner');
 		register_setting('openid', 'openid_cap');
 	}
 }
@@ -160,14 +158,18 @@ function openid_plugin_action_links($links, $file) {
 function openid_options_page() {
 	global $wpdb, $wp_roles;
 
-	if ( isset($_REQUEST['action']) ) {
-		switch($_REQUEST['action']) {
-			case 'rebuild_tables' :
-				check_admin_referer('rebuild_tables');
-				$store = openid_getStore();
-				$store->reset();
-				echo '<div class="updated"><p><strong>'.__('OpenID cache refreshed.', 'openid').'</strong></p></div>';
-				break;
+	$isNetworkPanel = get_current_blog_id() == 1? true : false;
+
+	if (!OPENID_NETWORK_WIDE_CONFIG || $isNetworkPanel) {
+		if ( isset($_REQUEST['action']) ) {
+			switch($_REQUEST['action']) {
+				case 'rebuild_tables' :
+					check_admin_referer('rebuild_tables');
+					$store = openid_getStore();
+					$store->reset();
+					echo '<div class="updated"><p><strong>'.__('OpenID cache refreshed.', 'openid').'</strong></p></div>';
+					break;
+			}
 		}
 	}
 
@@ -180,25 +182,21 @@ function openid_options_page() {
 	</style>
 
 	<div class="wrap">
-		<form method="post" <?php if (!OPENID_NETWORK_WIDE_CONFIG) echo 'action="options.php"'; ?>>
+		<form method="post" <?php if (!OPENID_NETWORK_WIDE_CONFIG || !$isNetworkPanel) echo 'action="options.php"'; ?>>
 
 			<h2><?php _e('OpenID Settings', 'openid') ?></h2>
 
-			<?php if (!OPENID_NETWORK_WIDE_CONFIG): ?>
+			<?php if (!OPENID_NETWORK_WIDE_CONFIG || !$isNetworkPanel): ?>
 			<div class="updated fade"><p><?php _e('Please note that all OpenID Consumer options have been moved to their respective sections of the '
 				. '<a href="options-general.php">General Settings</a> and <a href="options-discussion.php">Discussion Settings</a> pages.', 'openid') ?></p></div>
 			<?php endif; ?>
-
-			<?php 
-				$current_user = wp_get_current_user(); 
-				$current_user_url = get_author_posts_url($current_user->ID);
-			?>
 
 			<p><?php _e('The OpenID Provider allows authorized '
 			. 'users to use their author URL as an OpenID, either using their '
 			. 'local WordPress username and password, or by delegating to another OpenID Provider.', 'openid'); ?></p>
 
 			<table class="form-table optiontable editform">
+				<?php if (!OPENID_NETWORK_WIDE_CONFIG || $isNetworkPanel): ?>
 				<tr valign="top">
 					<th scope="row"><?php _e('Enable OpenID', 'openid') ?></th>
 					<td>
@@ -220,7 +218,13 @@ function openid_options_page() {
 				</tr>
 
 			<?php
-				if (!OPENID_NETWORK_WIDE_CONFIG):
+				endif; //!OPENID_NETWORK_WIDE_CONFIG || $isNetworkPanel
+
+				$current_user = wp_get_current_user();
+				$current_user_url = get_author_posts_url($current_user->ID);
+
+
+				if (!OPENID_NETWORK_WIDE_CONFIG || !$isNetworkPanel):
 
 					$users = get_users();
 					$users = array_filter($users, create_function('$u', '$u = new WP_User($u->ID); return $u->has_cap("use_openid_provider");'));
@@ -268,10 +272,11 @@ function openid_options_page() {
 				</tr>
 			<?php
 					endif; //!empty($users)>
-				endif; //!OPENID_NETWORK_WIDE_CONFIG
+				endif; //!OPENID_NETWORK_WIDE_CONFIG || !$isNetworkPanel
 			?>
 			</table>
 
+			<?php if (!OPENID_NETWORK_WIDE_CONFIG || $isNetworkPanel): ?>
 			<table class="form-table optiontable editform">
 				<tr valign="top">
 					<th scope="row"><?php _e('Troubleshooting', 'openid') ?></th>
@@ -283,8 +288,10 @@ function openid_options_page() {
 					</td>
 				</tr>
 			</table>
-
-			<?php settings_fields('openid'); ?>
+			<?php
+				endif; //!OPENID_NETWORK_WIDE_CONFIG || !$isNetworkPanel
+				settings_fields('openid');
+			?>
 			<p class="submit"><input type="submit" class="button-primary" name="info_update" value="<?php _e('Save Changes') ?>" /></p>
 		</form>
 	</div>
