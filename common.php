@@ -848,4 +848,66 @@ function openid_debug($msg) {
 	}
 }
 
+/**
+ * This function overrides wp_set_auth_cookie as found in WP 3.1.0.  The rememberme checkbox
+ * had ceased to work due to navigating away from the site during authentication (eg -
+ * to the openid provider).  This was fixed by tacking the value of the rememberme variable
+ * onto the return URL and then setting the cookie based on that value.
+ * 
+ * Everything other than the $_REQUEST['rememberme'] checks is a direct lift from the
+ * wp_set_auth_cookie function found in wp-includes/pluggable.php.
+ *
+ * @param int $user_id User ID
+ * @param bool $remember Whether to remember the user
+ */
+
+if ( !function_exists('wp_set_auth_cookie') ) :
+function wp_set_auth_cookie($user_id, $remember = false, $secure = '') {
+	if ( $remember || $_REQUEST['rememberme'] == "forever" || $_REQUEST['rememberme'] == true ) {
+		$expiration = $expire = time() + apply_filters('auth_cookie_expiration', 1209600, $user_id, $remember);
+	} else {
+		$expiration = time() + apply_filters('auth_cookie_expiration', 172800, $user_id, $remember);
+		$expire = 0;
+	}
+
+	if ( '' === $secure )
+		$secure = is_ssl();
+
+	$secure = apply_filters('secure_auth_cookie', $secure, $user_id);
+	$secure_logged_in_cookie = apply_filters('secure_logged_in_cookie', false, $user_id, $secure);
+
+	if ( $secure ) {
+		$auth_cookie_name = SECURE_AUTH_COOKIE;
+		$scheme = 'secure_auth';
+	} else {
+		$auth_cookie_name = AUTH_COOKIE;
+		$scheme = 'auth';
+	}
+
+	$auth_cookie = wp_generate_auth_cookie($user_id, $expiration, $scheme);
+	$logged_in_cookie = wp_generate_auth_cookie($user_id, $expiration, 'logged_in');
+
+	do_action('set_auth_cookie', $auth_cookie, $expire, $expiration, $user_id, $scheme);
+	do_action('set_logged_in_cookie', $logged_in_cookie, $expire, $expiration, $user_id, 'logged_in');
+
+	// Set httponly if the php version is >= 5.2.0
+	if ( version_compare(phpversion(), '5.2.0', 'ge') ) {
+		setcookie($auth_cookie_name, $auth_cookie, $expire, PLUGINS_COOKIE_PATH, COOKIE_DOMAIN, $secure, true);
+		setcookie($auth_cookie_name, $auth_cookie, $expire, ADMIN_COOKIE_PATH, COOKIE_DOMAIN, $secure, true);
+		setcookie(LOGGED_IN_COOKIE, $logged_in_cookie, $expire, COOKIEPATH, COOKIE_DOMAIN, $secure_logged_in_cookie, true);
+		if ( COOKIEPATH != SITECOOKIEPATH )
+			setcookie(LOGGED_IN_COOKIE, $logged_in_cookie, $expire, SITECOOKIEPATH, COOKIE_DOMAIN, $secure_logged_in_cookie, true);
+	} else {
+		$cookie_domain = COOKIE_DOMAIN;
+		if ( !empty($cookie_domain) )
+			$cookie_domain .= '; HttpOnly';
+		setcookie($auth_cookie_name, $auth_cookie, $expire, PLUGINS_COOKIE_PATH, $cookie_domain, $secure);
+		setcookie($auth_cookie_name, $auth_cookie, $expire, ADMIN_COOKIE_PATH, $cookie_domain, $secure);
+		setcookie(LOGGED_IN_COOKIE, $logged_in_cookie, $expire, COOKIEPATH, $cookie_domain, $secure_logged_in_cookie);
+		if ( COOKIEPATH != SITECOOKIEPATH )
+			setcookie(LOGGED_IN_COOKIE, $logged_in_cookie, $expire, SITECOOKIEPATH, $cookie_domain, $secure_logged_in_cookie);
+	}
+}
+endif;
+
 ?>

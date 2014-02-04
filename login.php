@@ -100,6 +100,7 @@ function openid_finish_login($identity_url, $action) {
 		'identity_url' => urlencode($identity_url), 
 		'redirect_to' => $_SESSION['openid_finish_url'],
 		'_wpnonce' => wp_create_nonce('openid_login_' . md5($identity_url)), 
+		'rememberme' => $_SESSION['rememberme'],
 	), $url);
 		
 	wp_safe_redirect($url);
