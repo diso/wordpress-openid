@@ -73,12 +73,14 @@ function openid_admin_panels() {
 function openid_admin_register_settings() {
 	register_setting('general', 'openid_required_for_registration');
 
+
 	register_setting('discussion', 'openid_no_require_name');
 	register_setting('discussion', 'openid_enable_approval');
 	register_setting('discussion', 'openid_enable_commentform');
 
 	register_setting('openid', 'openid_blog_owner');
 	register_setting('openid', 'openid_cap');
+	register_setting('openid', 'openid_secure_profile_urls');
 }
 
 
@@ -235,6 +237,21 @@ function openid_options_page() {
 					</td>
 				</tr>
 			<?php endif; //!empty($users) ?>
+				<tr>
+					<th scope="row"><?php _e('Security Settings', 'openid') ?></td>
+					<td>
+						<strong><?php _e('You can secure the OpenID plugin with the following options:', 'openid') ?></strong>
+						
+						<?php
+							$opt_secure_profile_urls = get_option('openid_secure_profile_urls');
+						?>
+						<p><label>
+							<input type="checkbox" name="openid_secure_profile_urls" value="true"<?php checked($opt_secure_profile_urls == 'true', true) ?> /> 
+							<?php _e('Require that users set their profile URL to one of their claimed OpenID URLs') ?>
+						</label></p>
+						
+					</td>
+				</tr>
 			</table>
 
 			<table class="form-table optiontable editform">
@@ -248,14 +265,12 @@ function openid_options_page() {
 					</td>
 				</tr>
 			</table>
-
 			<?php settings_fields('openid'); ?>
 			<p class="submit"><input type="submit" class="button-primary" name="info_update" value="<?php _e('Save Changes') ?>" /></p>
 		</form>
 	</div>
 		<?php
 }
-
 
 /**
  * Handle user management of OpenID associations.
@@ -593,6 +608,8 @@ function openid_printSystemStatus() {
 		($openid_enabled ? '' : 'There are problems above that must be dealt with before the plugin can be used.') );
 
 	if( $openid_enabled ) {	// Display status information
+		echo settings_fields('openid');
+		
 		echo'<p><strong>' . __('Status information:', 'openid') . '</strong> ' . __('All Systems Nominal', 'openid') 
 		. '<small> (<a href="#TB_inline?height=600&width=800&inlineId=openid_system_status" id="openid_status_link" class="thickbox" title="' . __('System Status', 'openid') . '">' . __('Toggle More/Less', 'openid') . '</a>)</small> </p>';
 	} else {
@@ -678,7 +695,8 @@ function openid_profile_management() {
 
 				$message = __($message, 'openid');
 
-				if (array_key_exists('update_url', $_REQUEST) && $_REQUEST['update_url']) {
+				$opt_secure_profile_urls = get_option('openid_secure_profile_urls');
+				if (array_key_exists('update_url', $_REQUEST) && $_REQUEST['update_url'] && opt_secure_profile_urls === true) {
 					$message .= '<br />' .  __('<strong>Note:</strong> For security reasons, your profile URL has been updated to match your OpenID.', 'openid');
 				}
 
@@ -740,12 +758,13 @@ function openid_profile_delete_openids($delete) {
 		openid_message( sprintf(_n('Deleted %d OpenID association.', 'Deleted %d OpenID associations.', $count, 'openid'), $count) );
 		openid_status('success');
 
-		// ensure that profile URL is still a verified OpenID
+		// ensure that profile URL is still a verified OpenID if opt_secure_profile_urls is set to true
 		require_once 'Auth/OpenID.php';
 		@include_once(ABSPATH . WPINC . '/registration.php');	// WP < 2.3
 		@include_once(ABSPATH . 'wp-admin/includes/admin.php');	// WP >= 2.3
 
-		if (!openid_ensure_url_match($user)) {
+		$opt_secure_profile_urls = get_option('openid_secure_profile_urls');
+		if ($opt_secure_profile_urls === true && !openid_ensure_url_match($user)) {
 			$identities = get_user_openids($user->ID);
 			wp_update_user( array('ID' => $user->ID, 'user_url' => $identities[0]) );
 			openid_message(openid_message() . '<br />'.__('<strong>Note:</strong> For security reasons, your profile URL has been updated to match your OpenID.', 'openid'));
@@ -779,11 +798,12 @@ function openid_finish_verify($identity_url, $action) {
 		} else {
 			$message = 3;
 			
-			// ensure that profile URL is a verified OpenID
+			// ensure that profile URL is a verified OpenID if opt_secure_profile_urls is set to true
 			require_once 'Auth/OpenID.php';
 			require_once(ABSPATH . 'wp-admin/includes/admin.php');
 
-			if (!openid_ensure_url_match($user)) {
+			$opt_secure_profile_urls = get_option('openid_secure_profile_urls');
+			if ($opt_secure_profile_urls === true && !openid_ensure_url_match($user)) {
 				wp_update_user( array('ID' => $user->ID, 'user_url' => $identity_url) );
 				$update_url = 1;
 			}
@@ -806,6 +826,7 @@ function openid_finish_verify($identity_url, $action) {
  * hook in and call when user is updating their profile URL... make sure it is an OpenID they control.
  */
 function openid_personal_options_update() {
+	if (!get_option('openid_secure_profile_urls') === true) return;
 	$user = wp_get_current_user();
 
 	if (!openid_ensure_url_match($user, $_POST['url'])) {
@@ -816,7 +837,7 @@ function openid_personal_options_update() {
 
 
 /**
- * Ensure that the user's profile URL matches one of their OpenIDs
+ * Ensure that the user's profile URL matches one of their OpenIDs if opt_secure_profile_urls is set to true
  */
 function openid_ensure_url_match($user, $url = null) {
 	$identities = get_user_openids($user->ID);

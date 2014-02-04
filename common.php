@@ -90,6 +90,7 @@ function openid_activate_plugin() {
 	add_option( 'openid_enable_approval', false );
 	add_option( 'openid_xrds_returnto', true );
 	add_option( 'openid_comment_displayname_length', 12 );
+	add_option( 'openid_secure_profile_urls', true );
 
 	openid_create_tables();
 	openid_migrate_old_data();
@@ -172,6 +173,7 @@ function openid_uninstall_plugin() {
 	delete_option('openid_blog_owner');
 	delete_option('openid_no_require_name');
 	delete_option('openid_required_for_registration');
+	delete_option('openid_secure_profile_urls');
 
 	// historical options
 	openid_remove_historical_options();
