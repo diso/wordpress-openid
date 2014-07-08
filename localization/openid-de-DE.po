@@ -426,7 +426,7 @@ msgid ""
 "OpenID authentication successful, but failed to create WordPress user. This "
 "is probably a bug."
 msgstr ""
-"OpenID-Überprüfung war erfolgreich, ABER es konnte kein neuer WordPress-Benutzer 
+"OpenID-Überprüfung war erfolgreich, ABER es konnte kein neuer WordPress-Benutzer "
 "angelegt werden. Das ist wahrscheinlich ein Bug (Programmfehler)."
 
 #: common.php:680
@@ -434,74 +434,78 @@ msgid ""
 "Since your browser does not support JavaScript, you must press the Continue "
 "button once to proceed."
 msgstr ""
+"Da Ihr Browser keine JavaScripte ausführt, müssen Sie manuell den Weiter-"
+"Knopf drücken, um fortzufahren."
 
 #: common.php:688 server.php:236 server.php:480
 msgid "Continue"
-msgstr ""
+msgstr "Weiter"
 
 #: common.php:692
 msgid "Please Wait..."
-msgstr ""
+msgstr "Bitte warten..."
 
 #: common.php:696
 msgid "OpenID Authentication Redirect"
-msgstr ""
+msgstr "Weiterleitung zur OpenID-Athentifizierung"
 
 #: consumer.php:90
 msgid "OpenID login was cancelled."
-msgstr ""
+msgstr "OpenID-Anmeldung wurde abgebrochen."
 
 #: consumer.php:95
 #, php-format
 msgid "OpenID login failed: %s"
-msgstr ""
+msgstr "OpenID-Anmeldung fehlgeschlagen: %s"
 
 #: consumer.php:100
 msgid "OpenID login successful"
-msgstr ""
+msgstr "OpenID-Anmeldung erfolgreich"
 
 #: consumer.php:108
 msgid "Unknown Status. Bind not successful. This is probably a bug."
-msgstr ""
+msgstr "Hups! Unbekannter Status. Bind fehlgeschlagen. Sie haben wahrscheinlich soeben einen Programmfehler entdeckt"
 
 #: consumer.php:155
 #, php-format
 msgid "Could not discover an OpenID identity server endpoint at the url: %s"
-msgstr ""
+msgstr "Leider konnte ich keinen OpenID-Identitäts-Server unter der URL %s finden."
 
 #: login.php:47
 msgid ""
 "Your have entered a valid OpenID, but this site is not currently accepting "
 "new accounts."
 msgstr ""
+"Sie haben eine gültige OpenID angegeben, aber diese Seite vergibt im Moment keine "
+"neuen Accounts."
 
 #: login.php:126
 msgid "Or login using an OpenID"
-msgstr ""
+msgstr "Oder mit OpenID einloggen"
 
 #: login.php:131 login.php:179
 msgid "Learn about OpenID"
-msgstr ""
+msgstr "Mehr über OpenID lernen"
 
 #: login.php:146
 msgid "Register using an OpenID:"
-msgstr ""
+msgstr "Mit OpenID registrieren:"
 
 #: login.php:159
 msgid "Or register using an OpenID:"
-msgstr ""
+msgstr "Oder mittels OpenID registrieren:"
 
 #: login.php:205 login.php:216
 msgid "<strong>ERROR</strong>: "
-msgstr ""
+msgstr "<strong>FEHLER</strong>: "
 
 #: login.php:205
 msgid "New users must register using OpenID."
-msgstr ""
+msgstr "Neue Nutzer müssen sich mit OpenID registrieren."
 
 #: server.php:227
 msgid "OpenID Login Error"
-msgstr ""
+msgstr "Fehler bei der Anmeldung mit OpenID"
 
 #: server.php:229
 #, php-format
@@ -509,35 +513,39 @@ msgid ""
 "Because you have delegated your OpenID, you cannot login with the URL "
 "<strong>%s</strong>. Instead, you must use your full OpenID when logging in."
 msgstr ""
+"Weil Sie OpenID-Delegation (Weiterleitung) benutzen, können Sie sich nicht mit der URL "
+"<strong>%s</strong> anmelden. Sie müssen dafür ihre vollständige OpenID zur Anmeldung nutzen."
 
 #: server.php:231
 #, php-format
 msgid "Your full OpenID is: %s"
-msgstr ""
+msgstr "Ihre vollständige OpenID ist: %s"
 
 #: server.php:459
 #, php-format
 msgid "Logged in as %1$s (%2$s). <a href=\"%3$s\">Use a different account?</a>"
-msgstr ""
+msgstr "Sie sind als %1$s (%2$s) angemeldet. <a href=\"%3$s\">Mit anderem Account anmelden?</a>"
 
 #: server.php:466 server.php:500
 msgid "Verify Your Identity"
-msgstr ""
+msgstr "Bestätigen Sie ihre Identität"
 
 #: server.php:468
 #, php-format
 msgid "%s has asked to verify your identity."
-msgstr ""
+msgstr "%s verlangt die Bestätigung ihrer Identität."
 
 #: server.php:472
 msgid ""
 "Click <strong>Continue</strong> to verify your identity and login without "
 "creating a new password."
 msgstr ""
+"<strong>Weiter</strong> klicken, um ihre Identität zu bestätigen und ohne "
+"Vergabe eines neuen Passwortes anzumelden."
 
 #: server.php:479
 msgid "Cancel and go back"
-msgstr ""
+msgstr "Abbrechen und Zurück"
 
 #: server.php:484
 #, php-format
@@ -545,6 +553,8 @@ msgid ""
 "Manage or remove access on the <a href=\"%s\" target=\"_blank\">Trusted "
 "Sites</a> page."
 msgstr ""
+"zugriff auf der <a href=\"%s\" target=\"_blank\">Vertraute Seiten"
+"</a>-Seite verwalten."
 
 #: server.php:488
 #, php-format
@@ -552,11 +562,13 @@ msgid ""
 "<a href=\"%s\" target=\"_blank\">Edit your profile</a> to change the "
 "information that gets shared with Trusted Sites."
 msgstr ""
+"<a href=\"%s\" target=\"_blank\">Bearbeiten Sie ihr Profil</a> um die "
+"Informationen, die mit anderen Seiten geteilt werden, zu ändern."
 
 #: server_ext.php:63
 #, php-format
 msgid "Also grant access to see my %s."
-msgstr ""
+msgstr "Auch den Zugriff auf mein %s erlauben."
 
 #. Plugin URI of an extension
 msgid "http://wordpress.org/extend/plugins/openid"
@@ -568,10 +580,13 @@ msgid ""
 "commenting.  Also includes an OpenID provider which can turn WordPress "
 "author URLs into OpenIDs."
 msgstr ""
+"Erlaubt die Nutzung von OpenIDs für Registrierung von Benutzerkonten, Anmeldung und "
+"Kommentare.  Erlaubt die Nutzeung der Seite als OpenID-Provider, um sich an anderen Seiten mit "
+"WordPress-Autoren-URLs als OpenID anzumelden."
 
 #. Author of an extension
 msgid "DiSo Development Team"
-msgstr ""
+msgstr "DiSo Entwicklungsteam"
 
 #. Author URI of an extension
 msgid "http://diso-project.org/"
