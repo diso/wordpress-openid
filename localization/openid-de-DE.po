@@ -160,37 +160,37 @@ msgstr ""
 
 #: admin_panels.php:298 admin_panels.php:433
 msgid "Delete"
-msgstr ""
+msgstr "Entfernen"
 
 #: admin_panels.php:300 admin_panels.php:435
 msgid "Apply"
-msgstr ""
+msgstr "Übernehmen"
 
 #: admin_panels.php:312
 msgid "Account"
-msgstr ""
+msgstr "Account"
 
 #: admin_panels.php:321
 msgid "No Verified Accounts."
-msgstr ""
+msgstr "Keine bestätigten Accounts"
 
 #: admin_panels.php:340 admin_panels.php:346
 msgid "Add OpenID"
-msgstr ""
+msgstr "OpenID hinzufügen"
 
 #: admin_panels.php:387
 #, php-format
 msgid "Added %d trusted site."
 msgid_plural "Added %d trusted sites."
-msgstr[0] ""
-msgstr[1] ""
+msgstr[0] "%d vertraute Seite hinzugefügt."
+msgstr[1] "%d vertraute Seiten hinzugefügt."
 
 #: admin_panels.php:410
 #, php-format
 msgid "Deleted %d trusted site."
 msgid_plural "Deleted %d trusted sites."
-msgstr[0] ""
-msgstr[1] ""
+msgstr[0] "%d vertraute Seite entfernt."
+msgstr[1] "%d vertraute Seiten entfernt."
 
 #: admin_panels.php:425
 msgid ""
@@ -198,125 +198,136 @@ msgid ""
 "OpenID account.  You will not be asked to approve OpenID login requests for "
 "your trusted sites."
 msgstr ""
+"Dis ist eine Liste von Seiten, zu auf denen Sie sich mit ihrer OpenID "
+"automatisch einloggen können. Sie werden bei vertrauten Seiten nicht gefragt "
+"werden, OpenID-Login-Versuche zu bestätigen."
 
 #: admin_panels.php:447
 msgid "URL"
-msgstr ""
+msgstr "URL"
 
 #: admin_panels.php:448
 msgid "Last Login"
-msgstr ""
+msgstr "letzter Login"
 
 #: admin_panels.php:456
 msgid "No Trusted Sites."
-msgstr ""
+msgstr "Keine vertrauten Seiten."
 
 #: admin_panels.php:487
 msgid "Import Trusted Sites"
-msgstr ""
+msgstr "Vertraute Seiten importieren."
 
 #: admin_panels.php:489
 msgid "Enter a list of URLs to be added to your Trusted Sites."
-msgstr ""
+msgstr "Geben Sie eine Liste von URLs ein, die zu ihren vertrauten Seiten hinzugefügt werden sollen."
 
 #: admin_panels.php:493 admin_panels.php:503
 msgid "Add Sites"
-msgstr ""
+msgstr "Seiten hinzufügen"
 
 #: admin_panels.php:495
 msgid "(One URL per line)"
-msgstr ""
+msgstr "(Eine URL pro Zeile)"
 
 #: admin_panels.php:589
 msgid "Status information:"
-msgstr ""
+msgstr "Statusinformation:"
 
 #: admin_panels.php:589
 msgid "All Systems Nominal"
-msgstr ""
+msgstr "Alle Systeme Normal"
 
 #: admin_panels.php:590
 msgid "System Status"
-msgstr ""
+msgstr "Systemstatus"
 
 #: admin_panels.php:590
 msgid "Toggle More/Less"
-msgstr ""
+msgstr "Umschalten Mehr/Weniger"
 
 #: admin_panels.php:592
 msgid ""
 "Plugin is currently disabled. Fix the problem, then Deactivate/Reactivate "
 "the plugin."
 msgstr ""
+"Die Erweiterung ist im Moment inaktiv. Beheben Sie das Problem und Deaktivieren/Reaktivieren "
+"Sie das Plugin."
 
 #: admin_panels.php:600
 msgid "FAIL"
-msgstr ""
+msgstr "FEHLER"
 
 #: admin_panels.php:602
 msgid "OK"
-msgstr ""
+msgstr "Ok"
 
 #: admin_panels.php:604
 msgid "INFO"
-msgstr ""
+msgstr "INFO"
 
 #: admin_panels.php:638
 msgid "You already have this OpenID!"
-msgstr ""
+msgstr "Sie haben bereits diese OpenID!"
 
 #: admin_panels.php:640
 msgid "This OpenID is already associated with another user."
-msgstr ""
+msgstr "Diese OpenID ist schon mit einem anderen Benutzer verknüpft."
 
 #: admin_panels.php:661
 msgid "Unable to authenticate OpenID."
-msgstr ""
+msgstr "Konnte OpenID nicht authentifizieren."
 
 #: admin_panels.php:662
 msgid ""
 "OpenID assertion successful, but this URL is already associated with another "
 "user on this blog."
 msgstr ""
+"OpenID-Überprüfung erfolgreich, aber diese URL ist schon mit einem anderen Benutzer "
+"dieses Blogs verknüpft."
 
 #: admin_panels.php:663
 msgid "Added association with OpenID."
-msgstr ""
+msgstr "Verknüpfung mit OpenID hinzugefügt."
 
 #: admin_panels.php:675 admin_panels.php:745
 msgid ""
 "<strong>Note:</strong> For security reasons, your profile URL has been "
 "updated to match your OpenID."
 msgstr ""
+"<strong>Hinweis:</strong> Aus Sicherheitsgründen wurde ihre Profil-URL so geändert, "
+"dass Sie ihrer OpenID entspricht."
 
 #: admin_panels.php:701 admin_panels.php:718
 msgid "OpenID Warning"
-msgstr ""
+msgstr "OpenID-Warnung"
 
 #: admin_panels.php:703
 msgid ""
 "Are you sure you want to delete all of your OpenID associations? Doing so "
 "may prevent you from logging in."
 msgstr ""
+"Sind Sie sicher, dass Sie alle Ihre OpenID-Zuordnungen löschen wollen? "
+"Diese Aktion kann dazu führen, dass Sie sich nicht mehr einloggen können."
 
 #: admin_panels.php:705
 msgid "Yes I'm sure. Delete."
-msgstr ""
+msgstr "Ja, das will ich. Löschen.""
 
 #: admin_panels.php:706
 msgid "No, don't delete."
-msgstr ""
+msgstr "Nein, nicht löschen."
 
 #: admin_panels.php:733
 #, php-format
 msgid "Deleted %d OpenID association."
 msgid_plural "Deleted %d OpenID associations."
-msgstr[0] ""
-msgstr[1] ""
+msgstr[0] "%d OpenID-Zuordnung gelöscht"
+msgstr[1] "%d OpenID-Zuordnungen gelöscht"
 
 #: admin_panels.php:751
 msgid "OpenID association delete failed: Unknown reason."
-msgstr ""
+msgstr "Fehler beim Löschen einer OpenID-Zuordnung: Grund unbekannt."
 
 #: admin_panels.php:807
 #, php-format
@@ -324,41 +335,45 @@ msgid ""
 "For security reasons, your profile URL must be one of your claimed OpenIDs: %"
 "s"
 msgstr ""
+"Aus Sicherheitsgründen muss ihre Profil-URL einer der vorgegebenen OpenIDs entsprechen: %"
+"s"
 
 #: admin_panels.php:844
 msgid "OpenID Delegation"
-msgstr ""
+msgstr "OpenID-Weiterleitung"
 
 #: admin_panels.php:846
 msgid ""
 "OpenID Delegation allows you to use an external OpenID provider of your "
 "choice."
 msgstr ""
+"OpenID-Weiterleitung erlaubt ihnen, einen externen OpenID-Anbieter ihrer "
+"Wahl zu nutzen."
 
 #: admin_panels.php:849
 msgid "To delegate, enter a valid OpenID. Otherwise leave this blank."
-msgstr ""
+msgstr "Geben Sie eine gültige OpenID für die Weiterleitung an, oder lassen Sie das Feld leer."
 
 #: admin_panels.php:886
 #, php-format
 msgid "Unable to find any OpenID information for delegate URL %s"
-msgstr ""
+msgstr "Konnte keine OpenID-Information für die Weiterleitungs-URL %s finden."
 
 #: admin_panels.php:896
 msgid "You cannot delegate to an OpenID provider which uses Identifier Select."
-msgstr ""
+msgstr "Sie können nicht zu einem OpenID-Provider weiterleiten, der \"Identifier Select\" verwendet."
 
 #: admin_panels.php:917
 msgid "New accounts can only be created with verified OpenIDs."
-msgstr ""
+msgstr "Neue Accounts können nutz mit überprüften OpenIDs erzeugt werden."
 
 #: admin_panels.php:956
 msgid "New accounts can only be created with verified OpenIDs"
-msgstr ""
+msgstr "Neue Accounts können nutz mit überprüften OpenIDs erzeugt werden."
 
 #: admin_panels.php:979
 msgid "Enable OpenID for comments"
-msgstr ""
+msgstr "OpenIDs für Kommentare aktivieren"
 
 #: admin_panels.php:989
 msgid "Do not require name and e-mail for comments left with a verified OpenID"
