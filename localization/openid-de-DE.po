@@ -377,50 +377,57 @@ msgstr "OpenIDs für Kommentare aktivieren"
 
 #: admin_panels.php:989
 msgid "Do not require name and e-mail for comments left with a verified OpenID"
-msgstr ""
+msgstr "Keinen Namen/E-Mail für Kommentare verlangen, die mit einer gültigen OpenID abgegeben wurden"
 
 #: admin_panels.php:997
 msgid "Always approve comments left with a verified OpenID"
-msgstr ""
+msgstr "Kommentare, die mit einer gültigen OpenID abgegeben wurden, stets bestätigen"
 
 #: comments.php:106
 msgid "Error: please fill the required fields (name, email)."
-msgstr ""
+msgstr "Fehler: Bitte füllen Sie die erforderlichen Felder (Name, E-Mail) aus."
 
 #: comments.php:108
 msgid "Error: please enter a valid email address."
-msgstr ""
+msgstr "Fehler: Bitte geben Sie eine gültige E-Mailadresse an."
 
 #: comments.php:258
 msgid ""
 "Authenticate this comment using <span class=\"openid_link\">OpenID</span>."
 msgstr ""
+"Diesen Kommentar mittel <span class=\"openid_link\">OpenID</span> authentifizieren."
 
 #: comments.php:271 comments.php:289
 msgid "OpenID Authentication Error"
-msgstr ""
+msgstr "OpenID-Authentifikationsfehler"
 
 #: comments.php:272
 msgid ""
 "We were unable to authenticate your claimed OpenID, however you can continue "
 "to post your comment without OpenID:"
 msgstr ""
+"Wir konnten leider ihre angegebene OpenID nicht prüfen. Sie können dennoch 
+"ihren Kommentar abgeben, wenn auch ohne OpenID:""
 
 #: comments.php:280
 msgid "Submit Comment"
-msgstr ""
+msgstr "Kommentar absenden"
 
 #: common.php:342
 msgid ""
 "User was created fine, but wp_login() for the new user failed. This is "
 "probably a bug."
 msgstr ""
+"Benutzer wurde erfolgreich angelegt, ABER: wp_login() ist für den neuen Benutzer "
+"fehlgeschlagen. Dies ist wahrscheinlich ein Bug (Programmfehler)."
 
 #: common.php:363
 msgid ""
 "OpenID authentication successful, but failed to create WordPress user. This "
 "is probably a bug."
 msgstr ""
+"OpenID-Überprüfung war erfolgreich, ABER es konnte kein neuer WordPress-Benutzer 
+"angelegt werden. Das ist wahrscheinlich ein Bug (Programmfehler)."
 
 #: common.php:680
 msgid ""
