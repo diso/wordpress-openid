@@ -10,8 +10,8 @@ msgstr ""
 "Report-Msgid-Bugs-To: http://wordpress.org/tag/openid\n"
 "POT-Creation-Date: 2009-10-01 15:34-0700\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
-"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
-"Language-Team: LANGUAGE <LL@li.org>\n"
+"Last-Translator: Stephan Richter <s.richter@srsoftware.de>\n"
+"Language-Team: GERMAN <LL@li.org>\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=CHARSET\n"
 "Content-Transfer-Encoding: 8bit\n"
@@ -19,33 +19,33 @@ msgstr ""
 
 #: admin_panels.php:25
 msgid "OpenID options"
-msgstr ""
+msgstr "OpenID-Optionen"
 
 #. #-#-#-#-#  openid.pot (OpenID 3.4-trunk)  #-#-#-#-#
 #. Plugin Name of an extension
 #: admin_panels.php:25
 msgid "OpenID"
-msgstr ""
+msgstr "OpenID"
 
 #: admin_panels.php:30
 msgid "Your OpenIDs"
-msgstr ""
+msgstr "Ihre OpenIDs"
 
 #: admin_panels.php:44 admin_panels.php:45 admin_panels.php:423
 msgid "Your Trusted Sites"
-msgstr ""
+msgstr "Ihre vertrauten Seiten"
 
 #: admin_panels.php:57 admin_panels.php:61 admin_panels.php:149
 msgid "OpenID Settings"
-msgstr ""
+msgstr "OpenID-Einstellungen"
 
 #: admin_panels.php:112
 msgid "Settings"
-msgstr ""
+msgstr "Einstellungen"
 
 #: admin_panels.php:133
 msgid "OpenID cache refreshed."
-msgstr ""
+msgstr "OpenID-Cache wurde erneuert."
 
 #: admin_panels.php:151
 msgid ""
@@ -53,6 +53,9 @@ msgid ""
 "respective sections of the <a href=\"options-general.php\">General Settings</"
 "a> and <a href=\"options-discussion.php\">Discussion Settings</a> pages."
 msgstr ""
+"Bitte beachten Sie, dass alle OpenID-Nutzeroptionen in die entsprechenden "
+"Bereiche der <a href=\"options-general.php\">allgemeinen Einstellungen</"
+"a> und <a href=\"options-discussion.php\">Diskussions-Einstellungen</a/> verschoben wurden."
 
 #: admin_panels.php:160
 msgid ""
@@ -60,18 +63,21 @@ msgid ""
 "OpenID, either using their local WordPress username and password, or by "
 "delegating to another OpenID Provider."
 msgstr ""
+"Die OpenID-Provider-Funktion erlaubt es authorisierten Benutzern deren Autoren-URL als "
+"OpenID zu nutzen. Das kann entweder über den lokalen WordPress-Login geschehen, oder "
+"durch Verweis auf einen anderen OpenID-Anbieter."
 
 #: admin_panels.php:166
 msgid "Enable OpenID"
-msgstr ""
+msgstr "OpenID aktivieren"
 
 #: admin_panels.php:169
 msgid "Enable the local OpenID Provider for these roles:"
-msgstr ""
+msgstr "Lokalen OpenID-Provider für die folgenden Rollen aktivieren:"
 
 #: admin_panels.php:192
 msgid "Blog Owner"
-msgstr ""
+msgstr "Besitzer des Blogs"
 
 #: admin_panels.php:195
 #, php-format
@@ -81,12 +87,18 @@ msgid ""
 "$s) as their OpenID.  If this is a single-user blog, you should set this to "
 "your account."
 msgstr ""
+"Authorisierte Benutzerkonten dieses Blogs können ihre Autoren-URL (i.e. <em>%1$s</"
+"em>) als OpenID benutzen. Der Blog-Besitzer ist damit fähig, die Blogadresse (%2"
+"$s) als dessen OpenID zu nutzen. Wenn dies ein Blog mit nur einem Benutzer ist, sollte "
+"dies auf den eigenen Account eingestellt werden."
 
 #: admin_panels.php:205
 msgid ""
 "A Blog Owner cannot be set for this blog.  To set a Blog Owner, first remove "
 "the following line from your <code>wp-config.php</code>:"
 msgstr ""
+"Blog-Besitzer kann für diesen Blog nicht gesetzt werden. Um dies zu ermöglichen, entfernen "
+"Sie bitte folgende Zeilen aus <code>wp-config.php</code>:"
 
 #: admin_panels.php:213
 msgid "(none)"
