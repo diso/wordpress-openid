@@ -102,16 +102,16 @@ msgstr ""
 
 #: admin_panels.php:213
 msgid "(none)"
-msgstr ""
+msgstr "(keine)"
 
 #: admin_panels.php:223
 #, php-format
 msgid "Only the current Blog Owner (%s) can change this setting."
-msgstr ""
+msgstr "Nur der momentane Blog-Besitzer (%s) kann diese Einstellung ändern."
 
 #: admin_panels.php:235
 msgid "Troubleshooting"
-msgstr ""
+msgstr "Problembehebung"
 
 #: admin_panels.php:239
 #, php-format
@@ -119,26 +119,28 @@ msgid ""
 "If users are experiencing problems logging in with OpenID, it may help to %1"
 "$srefresh the cache%2$s."
 msgstr ""
+"Wenn Nutzer Probleme haben, sich mit einer OpenID anzumelden, versichen Sie %1"
+"$s den Cache zu aktualisieren%2$s."
 
 #: admin_panels.php:246
 msgid "Save Changes"
-msgstr ""
+msgstr "Änderungen speichern"
 
 #: admin_panels.php:266
 msgid "Success:"
-msgstr ""
+msgstr "Erfolgreich:"
 
 #: admin_panels.php:269
 msgid "Warning:"
-msgstr ""
+msgstr "Warnung:"
 
 #: admin_panels.php:272 admin_panels.php:276
 msgid "Error:"
-msgstr ""
+msgstr "Fehler:"
 
 #: admin_panels.php:288
 msgid "Your Verified OpenIDs"
-msgstr ""
+msgstr "Ihre geprüften OpenIDs"
 
 #: admin_panels.php:290
 msgid ""
@@ -147,6 +149,10 @@ msgid ""
 "password.  <a href=\"http://openid.net/what/\" target=\"_blank\">Learn "
 "more...</a>"
 msgstr ""
+"Sie können eine oder mehrere OpenIDs mit ihrem Account verknüpfen. Das wird "
+"Ihnen ermöglichen, sich bei WordPress mit ihrer OpenID einzuloggen anstelle "
+"von Nutzername und Passwort. <a href=\"http://www.openid.ch/what-is-openid/\" "
+"target=\"_blank\">Mehr darüber lernen..."</a>"
 
 #: admin_panels.php:297 admin_panels.php:432
 msgid "Bulk Actions"
