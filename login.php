@@ -27,9 +27,7 @@ function openid_authenticate($user) {
 		openid_start_login($_POST['openid_identifier'], 'login', $redirect_to);
 
 		// if we got this far, something is wrong
-		global $error;
-		$error = openid_message();
-		$user = new WP_Error( 'openid_login_error', $error );
+		$user = new WP_Error( 'openid_login_error', openid_message() );
 
 	} else if ( array_key_exists('finish_openid', $_REQUEST) ) {
 
