@@ -345,7 +345,7 @@ function openid_profile_panel() {
 		<table class="form-table">
 			<tr>
 				<th scope="row"><label for="openid_identifier"><?php _e('Add OpenID', 'openid') ?></label></th>
-				<td><input id="openid_identifier" name="openid_identifier" /></td>
+				<td><input id="openid_identifier" class="regular-text code" name="openid_identifier" /></td>
 			</tr>
 		</table>
 		<?php wp_nonce_field('openid-add_openid'); ?>
@@ -849,7 +849,7 @@ function openid_extend_profile() {
 	<td>
 		<p style="margin-top:0;">'.__('OpenID Delegation allows you to use an external OpenID provider of your choice.', 'openid').'</p>
 		<p>
-			<input type="text" id="openid_delegate" name="openid_delegate" class="openid_link" value="'.get_user_meta($user->ID, 'openid_delegate', true).'" /> '
+			<input type="text" id="openid_delegate" name="openid_delegate" class="regular-text code openid_link" value="'.get_user_meta($user->ID, 'openid_delegate', true).'" /> '
 			. __('To delegate, enter a valid OpenID. Otherwise leave this blank.', 'openid')
 		. '</p>
 	</td>
