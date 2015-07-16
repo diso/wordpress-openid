@@ -5,21 +5,12 @@
 #openid_enabled_link, .openid_link, #openid_identifier, #commentform #openid_identifier {
 	background-image: url('openid.gif');
 	background-position: 3px 50%;
-	background-repeat: no-repeat; 
-	padding-left: 21px !important; 
+	background-repeat: no-repeat;
+	padding-left: 21px !important;
 }
 
 .openid_loading {
 	background: url('ajax-loader.gif') right center no-repeat;
-}
-
-body.login #openid_identifier {
-	width: 92%;
-	font-size: 20px;
-	background-color: #FFF;
-	border: 1px solid #ccc;
-	padding: 3px 3px 3px 18px;
-	margin-right: 6px;
 }
 
 #openid_comment {
@@ -30,8 +21,7 @@ body.login #openid_identifier {
 }
 
 /* fix link color on wp-login.php */
-body.login form#loginform a.legacy, 
+body.login form#loginform a.legacy,
 body.login form#registerform a.legacy {
 	color: #FFF;
 }
-
