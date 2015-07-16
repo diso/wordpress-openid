@@ -208,7 +208,7 @@ function openid_add_ax_extension($extensions, $auth_request) {
 
 /**
  * Build an SReg attribute query extension if we've never seen this OpenID before.
- * 
+ *
  * @uses apply_filters() Calls 'openid_consumer_sreg_required_fields' and
  *     'openid_consumer_sreg_required_fields' to collect sreg fields.
  */
@@ -255,7 +255,3 @@ function openid_consumer_xrds_simple($xrds) {
 
 	return $xrds;
 }
-
-
-
-

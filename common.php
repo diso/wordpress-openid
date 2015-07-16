@@ -572,10 +572,10 @@ function is_url_openid( $url ) {
 /**
  * Clean HTTP request parameters for OpenID.
  *
- * Apache's rewrite module is often used to produce "pretty URLs" in WordPress.  
- * Other webservers, such as lighttpd, nginx, and Microsoft IIS each have ways 
- * (read: hacks) for simulating this kind of functionality. This function 
- * reverses the side-effects of these hacks so that the OpenID request 
+ * Apache's rewrite module is often used to produce "pretty URLs" in WordPress.
+ * Other webservers, such as lighttpd, nginx, and Microsoft IIS each have ways
+ * (read: hacks) for simulating this kind of functionality. This function
+ * reverses the side-effects of these hacks so that the OpenID request
  * variables are in the form that the OpenID library expects.
  */
 function openid_clean_request() {
@@ -594,13 +594,13 @@ function openid_clean_request() {
 				$clean[] = $v;
 			}
 		}
-		
+
 		$_SERVER['QUERY_STRING'] = implode('&', $clean);
 
 	} else if (isset($_SERVER['argc']) && $_SERVER['argc'] >= 1 && $_SERVER['argv'][0] == 'error=404') {
 
-		// handle lighttpd hack which uses a custom error-handler, passing 404 errors to WordPress.  
-		// This results in the QUERY_STRING not having the correct information, but fortunately we 
+		// handle lighttpd hack which uses a custom error-handler, passing 404 errors to WordPress.
+		// This results in the QUERY_STRING not having the correct information, but fortunately we
 		// can pull it out of REQUEST_URI
 
 		list($path, $query) = explode('?', $_SERVER['REQUEST_URI'], 2);
@@ -740,9 +740,9 @@ function openid_js_setup() {
 
 
 /**
- * Include OpenID stylesheet.  
+ * Include OpenID stylesheet.
  *
- * "Intelligently" decides whether to enqueue or print the CSS file, based on whether * the 'wp_print_styles' 
+ * "Intelligently" decides whether to enqueue or print the CSS file, based on whether * the 'wp_print_styles'
  * action has been run.  (This logic taken from the core wp_admin_css function)
  **/
 function openid_style() {

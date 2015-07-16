@@ -1,6 +1,6 @@
 <?php
 /**
- * All the code required for handling OpenID administration.  These functions should not be considered public, 
+ * All the code required for handling OpenID administration.  These functions should not be considered public,
  * and may change without notice.
  */
 
@@ -25,7 +25,7 @@ function openid_admin_panels() {
 	$hookname = add_options_page(__('OpenID options', 'openid'), __('OpenID', 'openid'), 'manage_options', 'openid', 'openid_options_page' );
 	add_action("load-$hookname", create_function('', 'add_thickbox();'));
 	add_action("load-$hookname", 'openid_style');
-	
+
 	// all users can setup external OpenIDs
 	$hookname =	add_users_page(__('Your OpenIDs', 'openid'), __('Your OpenIDs', 'openid'), 'read', 'your_openids', 'openid_profile_panel' );
 	add_action("load-$hookname", create_function('', 'wp_enqueue_script("admin-forms");'));
@@ -41,7 +41,7 @@ function openid_admin_panels() {
 		add_action('load-profile.php', 'openid_style');
 
 		if (!get_user_meta($user->ID, 'openid_delegate', true)) {
-			$hookname =	add_submenu_page('profile.php', __('Your Trusted Sites', 'openid'), 
+			$hookname =	add_submenu_page('profile.php', __('Your Trusted Sites', 'openid'),
 				__('Your Trusted Sites', 'openid'), 'read', 'openid_trusted_sites', 'openid_manage_trusted_sites' );
 			add_action("load-$hookname", 'openid_style' );
 			add_action("load-$hookname", create_function('', 'wp_enqueue_script("admin-forms");'));
@@ -57,7 +57,7 @@ function openid_admin_panels() {
 		// 'users_can_register' option, so only add the OpenID Settings if that is set.  If additional OpenID settings
 		// are added to the General Settings page, this check may no longer be necessary
 		if ( get_option('users_can_register') ) {
-			add_settings_field('openid_general_settings', __('OpenID Settings', 'openid'), 'openid_general_settings', 
+			add_settings_field('openid_general_settings', __('OpenID Settings', 'openid'), 'openid_general_settings',
 				'general', 'default');
 		}
 	}
@@ -83,7 +83,7 @@ function openid_admin_register_settings() {
 
 
 /**
- * Intercept the call to set the openid_cap option.  Instead of storing 
+ * Intercept the call to set the openid_cap option.  Instead of storing
  * this in the options table, set the capability on the appropriate roles.
  */
 function openid_set_cap($newvalue, $oldvalue) {
@@ -159,8 +159,8 @@ function openid_options_page() {
 				. '<a href="options-general.php">General Settings</a> and <a href="options-discussion.php">Discussion Settings</a> pages.', 'openid') ?></p></div>
 
 
-			<?php 
-				$current_user = wp_get_current_user(); 
+			<?php
+				$current_user = wp_get_current_user();
 				$current_user_url = get_author_posts_url($current_user->ID);
 			?>
 
@@ -176,7 +176,7 @@ function openid_options_page() {
 						<p><?php _e('Enable the local OpenID Provider for these roles:', 'openid'); ?></p>
 
 						<p>
-							<?php 
+							<?php
 				foreach ($wp_roles->role_names as $key => $name) {
 					$name = _x($name, null);
 					$role = $wp_roles->get_role($key);
@@ -206,11 +206,11 @@ function openid_options_page() {
 						); ?>
 						</p>
 
-			<?php 
+			<?php
 				if (defined('OPENID_DISALLOW_OWNER') && OPENID_DISALLOW_OWNER) {
 					echo '
 						<p class="error">' . __('A Blog Owner cannot be set for this blog.  To set a Blog Owner, '
-							. 'first remove the following line from your <code>wp-config.php</code>:', 'openid') 
+							. 'first remove the following line from your <code>wp-config.php</code>:', 'openid')
 							. '<br /><code style="margin:1em;">define("OPENID_DISALLOW_OWNER", 1);</code>
 						</p>';
 				} else {
@@ -229,7 +229,7 @@ function openid_options_page() {
 					} else {
 						echo '<p class="error">' . sprintf(__('Only the current Blog Owner (%s) can change this setting.', 'openid'), $blog_owner) . '</p>';
 					}
-				} 
+				}
 
 			?>
 					</td>
@@ -261,7 +261,7 @@ function openid_options_page() {
  * Handle user management of OpenID associations.
  *
  * @submenu_page: profile.php
- **/
+ */
 function openid_profile_panel() {
 	global $error;
 
@@ -524,32 +524,32 @@ function openid_printSystemStatus() {
 	global $wp_version, $wpdb;
 
 	$paths = explode(PATH_SEPARATOR, get_include_path());
-	for($i=0; $i<sizeof($paths); $i++ ) { 
-		$paths[$i] = @realpath($paths[$i]); 
+	for($i=0; $i<sizeof($paths); $i++ ) {
+		$paths[$i] = @realpath($paths[$i]);
 		if (empty($paths[$i])) unset($paths[$i]);
 	}
-	
+
 	$status = array();
 	$status[] = array( 'PHP version', 'info', phpversion() );
 	$status[] = array( 'PHP memory limit', 'info', ini_get('memory_limit') );
 	$status[] = array( 'Include Path', 'info', $paths );
-	
+
 	$status[] = array( 'WordPress version', 'info', $wp_version );
 	$status[] = array( 'PHP OpenID Library Version', 'info', Auth_OpenID_VERSION );
 	$status[] = array( 'MySQL version', 'info', function_exists('mysql_get_client_info') ? mysql_get_client_info() : 'Mysql client information not available. Very strange, as WordPress requires MySQL.' );
 
 	$status[] = array('WordPress\' table prefix', 'info', isset($wpdb->base_prefix) ? $wpdb->base_prefix : $wpdb->prefix );
-	
-	
+
+
 	if ( extension_loaded('suhosin') ) {
 		$status[] = array( 'Curl', false, 'Hardened php (suhosin) extension active -- curl version checking skipped.' );
 	} else {
 		$curl_message = '';
 		if( function_exists('curl_version') ) {
 			$curl_version = curl_version();
-			if(isset($curl_version['version']))  	
+			if(isset($curl_version['version']))
 				$curl_message .= 'Version ' . $curl_version['version'] . '. ';
-			if(isset($curl_version['ssl_version']))	
+			if(isset($curl_version['ssl_version']))
 				$curl_message .= 'SSL: ' . $curl_version['ssl_version'] . '. ';
 			if(isset($curl_message['libz_version']))
 				$curl_message .= 'zlib: ' . $curl_version['libz_version'] . '. ';
@@ -578,7 +578,7 @@ function openid_printSystemStatus() {
 		$status[] = array( 'Big Integer support', false, 'The OpenID Library is operating in Dumb Mode. Recommend installing <a href="http://www.php.net/gmp">GMP</a> support.' );
 	}
 
-	
+
 	$status[] = array( 'Plugin Revision', 'info', OPENID_PLUGIN_REVISION);
 	$status[] = array( 'Plugin Database Revision', 'info', get_option('openid_db_revision'));
 
@@ -587,16 +587,16 @@ function openid_printSystemStatus() {
 	} else {
 		$status[] = array( 'XRDS-Simple', false, '<a href="http://wordpress.org/extend/plugins/xrds-simple/">XRDS-Simple</a> plugin is not installed.  Some features may not work properly (including providing OpenIDs).');
 	}
-	
+
 	$openid_enabled = openid_enabled();
-	$status[] = array( '<strong>Overall Plugin Status</strong>', ($openid_enabled), 
+	$status[] = array( '<strong>Overall Plugin Status</strong>', ($openid_enabled),
 		($openid_enabled ? '' : 'There are problems above that must be dealt with before the plugin can be used.') );
 
 	if( $openid_enabled ) {	// Display status information
-		echo'<p><strong>' . __('Status information:', 'openid') . '</strong> ' . __('All Systems Nominal', 'openid') 
+		echo'<p><strong>' . __('Status information:', 'openid') . '</strong> ' . __('All Systems Nominal', 'openid')
 		. '<small> (<a href="#TB_inline?height=600&width=800&inlineId=openid_system_status" id="openid_status_link" class="thickbox" title="' . __('System Status', 'openid') . '">' . __('Toggle More/Less', 'openid') . '</a>)</small> </p>';
 	} else {
-		echo '<p><strong>' . __('Plugin is currently disabled. Fix the problem, then Deactivate/Reactivate the plugin.', 'openid') 
+		echo '<p><strong>' . __('Plugin is currently disabled. Fix the problem, then Deactivate/Reactivate the plugin.', 'openid')
 		. '</strong></p>';
 	}
 	echo '<div id="openid_system_status" class="updated">';
@@ -626,7 +626,7 @@ function openid_printSystemStatus() {
  */
 function openid_profile_management() {
 	global $action;
-	
+
 	wp_reset_vars( array('action') );
 
 	switch( $action ) {
@@ -753,7 +753,7 @@ function openid_profile_delete_openids($delete) {
 
 		return;
 	}
-		
+
 	openid_message(__('OpenID association delete failed: Unknown reason.', 'openid'));
 	openid_status('error');
 }
@@ -778,7 +778,7 @@ function openid_finish_verify($identity_url, $action) {
 			$message = 2;
 		} else {
 			$message = 3;
-			
+
 			// ensure that profile URL is a verified OpenID
 			require_once 'Auth/OpenID.php';
 			require_once(ABSPATH . 'wp-admin/includes/admin.php');
@@ -829,7 +829,7 @@ function openid_ensure_url_match($user, $url = null) {
 
 	foreach ($identities as $id) {
 		$id = Auth_OpenID::normalizeUrl($id);
-		if ($id == $url) return true; 
+		if ($id == $url) return true;
 	}
 
 	return false;
@@ -978,7 +978,7 @@ function openid_general_settings() {
 function openid_discussion_settings() {
 ?>
 	<label for="openid_enable_commentform">
-		<input type="checkbox" name="openid_enable_commentform" id="openid_enable_commentform" value="1" <?php 
+		<input type="checkbox" name="openid_enable_commentform" id="openid_enable_commentform" value="1" <?php
 			echo checked(true, get_option('openid_enable_commentform'));  ?> />
 		<?php _e('Enable OpenID for comments', 'openid') ?>
 	</label>
@@ -988,7 +988,7 @@ function openid_discussion_settings() {
 
 		<?php if ( get_option('require_name_email') ): ?>
 		<label for="openid_no_require_name">
-			<input type="checkbox" name="openid_no_require_name" id="openid_no_require_name" value="1" <?php 
+			<input type="checkbox" name="openid_no_require_name" id="openid_no_require_name" value="1" <?php
 				echo checked(true, get_option('openid_no_require_name')) ; ?> />
 			<?php _e('Do not require name and e-mail for comments left with a verified OpenID', 'openid') ?>
 		</label>
@@ -996,7 +996,7 @@ function openid_discussion_settings() {
 		<?php endif; ?>
 
 		<label for="openid_enable_approval">
-			<input type="checkbox" name="openid_enable_approval" id="openid_enable_approval" value="1" <?php 
+			<input type="checkbox" name="openid_enable_approval" id="openid_enable_approval" value="1" <?php
 				echo checked(true, get_option('openid_enable_approval'));  ?> />
 			<?php _e('Always approve comments left with a verified OpenID', 'openid'); ?>
 		</label>

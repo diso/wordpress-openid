@@ -1,6 +1,6 @@
 <?php
 /**
- * All the code required for handling OpenID comments.  These functions should not be considered public, 
+ * All the code required for handling OpenID comments.  These functions should not be considered public,
  * and may change without notice.
  */
 
@@ -94,14 +94,14 @@ function openid_process_comment( $comment ) {
 
 
 /**
- * Duplicated code from wp-comments-post.php to check for presence of comment author name and email 
+ * Duplicated code from wp-comments-post.php to check for presence of comment author name and email
  * address.
  */
 function openid_require_name_email() {
 	$user = wp_get_current_user();
 	global $comment_author, $comment_author_email;
-	
-	if ( get_option('require_name_email') && !$user->ID ) { 
+
+	if ( get_option('require_name_email') && !$user->ID ) {
 		if ( 6 > strlen($comment_author_email) || '' == $comment_author ) {
 			wp_die( __('Error: please fill the required fields (name, email).', 'openid') );
 		} elseif ( !is_email($comment_author_email)) {
@@ -134,7 +134,7 @@ function openid_comment_approval($approved) {
  * @see get_user_data
  */
 function openid_option_require_name_email( $value ) {
-	
+
 	$comment_page = (defined('OPENID_COMMENTS_POST_PAGE') ? OPENID_COMMENTS_POST_PAGE : 'wp-comments-post.php');
 
 	if ($GLOBALS['pagenow'] != $comment_page) {
@@ -144,7 +144,7 @@ function openid_option_require_name_email( $value ) {
 	if (array_key_exists('openid_skip', $_REQUEST) && $_REQUEST['openid_skip']) {
 		return get_option('openid_no_require_name') ? false : $value;
 	}
-	
+
 	// make sure we only process this once per request
 	static $bypass;
 	if ($bypass) {
@@ -284,7 +284,7 @@ function openid_repost_comment_anonymously($post) {
 		<input type="hidden" name="'.$name.'" value="'.$value.'" />';
 		}
 	}
-	
+
 	$html .= '</form>';
 	openid_page($html, __('OpenID Authentication Error', 'openid'));
 }
@@ -301,9 +301,9 @@ function openid_finish_comment($identity_url, $action) {
 	if (empty($identity_url)) {
 		openid_repost_comment_anonymously($_SESSION['openid_comment_post']);
 	}
-		
+
 	openid_set_current_user($identity_url);
-		
+
 	if (is_user_logged_in()) {
 		// simulate an authenticated comment submission
 		$_SESSION['openid_comment_post']['author'] = null;
@@ -321,7 +321,7 @@ function openid_finish_comment($identity_url, $action) {
 		}
 		$_SESSION['openid_comment_post']['url'] = $identity_url;
 	}
-		
+
 	// record that we're about to post an OpenID authenticated comment.
 	// We can't actually record it in the database until after the repost below.
 	$_SESSION['openid_posted_comment'] = true;

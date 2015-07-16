@@ -11,8 +11,8 @@ require_once 'Auth/OpenID/Association.php';
 
 if (!class_exists('WordPress_OpenID_OptionStore')):
 /**
- * OpenID store that uses the WordPress options table for storage.  Originally 
- * written by Simon Willison for use in the mu-open-id plugin.  Modified a fair 
+ * OpenID store that uses the WordPress options table for storage.  Originally
+ * written by Simon Willison for use in the mu-open-id plugin.  Modified a fair
  * amount for use in WordPress OpenID.
  */
 class WordPress_OpenID_OptionStore extends Auth_OpenID_OpenIDStore {
@@ -117,9 +117,9 @@ class WordPress_OpenID_OptionStore extends Auth_OpenID_OpenIDStore {
 			} else {
 				return false;
 			}
-		}		
+		}
 	}
-	
+
 	function useNonce($server_url, $timestamp, $salt) {
 		global $Auth_OpenID_SKEW;
 
@@ -158,11 +158,11 @@ class WordPress_OpenID_OptionStore extends Auth_OpenID_OpenIDStore {
 		$url_hash = base64_encode($server_url);
 		$salt_hash = base64_encode($salt);
 
-		return sprintf('%08x-%s-%s-%s-%s', $timestamp, $proto, 
+		return sprintf('%08x-%s-%s-%s-%s', $timestamp, $proto,
 			$domain, $url_hash, $salt_hash);
 	}
 
-	function cleanupNonces() { 
+	function cleanupNonces() {
 		global $Auth_OpenID_SKEW;
 
 		$nonces = get_option('openid_nonces');
@@ -176,7 +176,7 @@ class WordPress_OpenID_OptionStore extends Auth_OpenID_OpenIDStore {
 		update_option('openid_nonces', $nonces);
 	}
 
-	function cleanupAssociations() { 
+	function cleanupAssociations() {
 		$associations = get_option('openid_associations');
 
 		foreach ($associations as $key => $assoc_s) {
@@ -190,7 +190,7 @@ class WordPress_OpenID_OptionStore extends Auth_OpenID_OpenIDStore {
 		update_option('openid_associations', $associations);
 	}
 
-	function reset() { 
+	function reset() {
 		update_option('openid_nonces', array());
 		update_option('openid_associations', array());
 	}
@@ -220,7 +220,7 @@ function openid_check_tables($retry=true) {
 			$message[] = "Table $t exists.";
 		}
 	}
-		
+
 	if( $retry and !$ok) {
 		openid_create_tables();
 		$ok = openid_check_tables( false );
@@ -267,7 +267,7 @@ function openid_delete_tables() {
 	global $wpdb;
 	$wpdb->query('DROP TABLE IF EXISTS ' . openid_identity_table());
 	$wpdb->query( $wpdb->prepare('DELETE FROM ' . $wpdb->postmeta . ' WHERE meta_key=%s', 'openid_comments') );
-	
+
 	// old database changes... just to make sure
 	$wpdb->query('DROP TABLE IF EXISTS ' . openid_table_prefix(true) . 'openid_nonces');
 	$wpdb->query('DROP TABLE IF EXISTS ' . openid_table_prefix(true) . 'openid_associations');
@@ -290,10 +290,10 @@ function openid_migrate_old_data() {
 	// remove old nonce and associations tables
 	$wpdb->query('DROP TABLE IF EXISTS ' . openid_table_prefix(true) . 'openid_nonces');
 	$wpdb->query('DROP TABLE IF EXISTS ' . openid_table_prefix(true) . 'openid_associations');
-	
+
 	$openid_column = $wpdb->get_row('SHOW COLUMNS FROM ' . openid_table_prefix(true) . 'comments LIKE "openid"');
 	if ($openid_column) {
-		// update old style of marking openid comments.  For performance reason, we 
+		// update old style of marking openid comments.  For performance reason, we
 		// migrate them en masse rather than using set_comment_openid()
 		$comments_table = openid_table_prefix(true) . 'comments';
 		$comment_data = $wpdb->get_results( $wpdb->prepare('SELECT comment_ID, comment_post_ID from ' . $comments_table . ' WHERE openid=%s OR comment_type=%s', 1, 'openid') );
@@ -319,7 +319,7 @@ function openid_migrate_old_data() {
 
 
 	// remove old style of marking openid users
-	$usermeta_table = defined('CUSTOM_USER_META_TABLE') ? CUSTOM_USER_META_TABLE : openid_table_prefix() . 'usermeta'; 
+	$usermeta_table = defined('CUSTOM_USER_META_TABLE') ? CUSTOM_USER_META_TABLE : openid_table_prefix() . 'usermeta';
 	$wpdb->query( $wpdb->prepare('DELETE FROM ' . $usermeta_table . ' WHERE meta_key=%s OR meta_key=%s', 'has_openid', 'registered_with_openid') );
 }
 
@@ -332,8 +332,8 @@ function openid_table_prefix($blog_specific = false) {
 	}
 }
 
-function openid_identity_table() { 
-	return (defined('CUSTOM_OPENID_IDENTITY_TABLE') ? CUSTOM_OPENID_IDENTITY_TABLE : openid_table_prefix() . 'openid_identities'); 
+function openid_identity_table() {
+	return (defined('CUSTOM_OPENID_IDENTITY_TABLE') ? CUSTOM_OPENID_IDENTITY_TABLE : openid_table_prefix() . 'openid_identities');
 }
 
 

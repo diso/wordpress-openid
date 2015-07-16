@@ -73,7 +73,7 @@ function openid_server_attributes_string($fields, $string = '') {
 	if (empty($fields)) return $string;
 
 	if (empty($string)) {
-		if (sizeof($fields) == 2) 
+		if (sizeof($fields) == 2)
 			return join(' and ', $fields);
 		$string = array_shift($fields);
 	} else if (sizeof($fields) == 1) {
@@ -145,12 +145,12 @@ function openid_server_sreg_auth_response($response) {
 
 
 /**
- * Try to pre-populate SReg data from user's profile.  The following fields 
+ * Try to pre-populate SReg data from user's profile.  The following fields
  * are not handled by the plugin: dob, gender, postcode, country, and language.
- * Other plugins may provide this data by implementing the filter 
+ * Other plugins may provide this data by implementing the filter
  * openid_server_sreg_${fieldname}.
  *
- * @uses apply_filters() Calls 'openid_server_sreg_*' before returning sreg values, 
+ * @uses apply_filters() Calls 'openid_server_sreg_*' before returning sreg values,
  *       where '*' is the name of the sreg attribute.
  */
 function openid_server_sreg_from_profile($field) {

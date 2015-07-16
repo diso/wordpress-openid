@@ -34,8 +34,8 @@ if (!defined('OPENID_ENABLE_ADMIN_PANELS')) {
 $openid_include_path = dirname(__FILE__) . '/lib';
 
 // check source of randomness
-if ( !@is_readable('/dev/urandom') ) { 
-	define('Auth_OpenID_RAND_SOURCE', null); 
+if ( !@is_readable('/dev/urandom') ) {
+	define('Auth_OpenID_RAND_SOURCE', null);
 }
 
 set_include_path( $openid_include_path . PATH_SEPARATOR . get_include_path() );
@@ -89,7 +89,7 @@ function is_user_openid($user = null) {
 
 
 /**
- * Check if the current comment was submitted using an OpenID. Useful for 
+ * Check if the current comment was submitted using an OpenID. Useful for
  * <pre><?php echo ( is_comment_openid() ? 'Submitted with OpenID' : '' ); ?></pre>
  *
  * @param int $id comment ID to check for.  If not provided, the current comment will be used.
@@ -187,8 +187,8 @@ endif;
 
 
 /**
- * Get the file for the plugin, including the path.  This method will handle the case where the 
- * actual plugin files do not reside within the WordPress directory on the filesystem (such as 
+ * Get the file for the plugin, including the path.  This method will handle the case where the
+ * actual plugin files do not reside within the WordPress directory on the filesystem (such as
  * a symlink).  The standard value should be 'openid/openid.php' unless files or folders have
  * been renamed.
  *
@@ -210,4 +210,3 @@ function openid_plugin_file() {
 
 	return $file;
 }
-
