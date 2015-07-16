@@ -325,7 +325,7 @@ function openid_migrate_old_data() {
 
 function openid_table_prefix($blog_specific = false) {
 	global $wpdb;
-	if (isset($wpdb->base_prefix)) {
+	if (is_multisite() && isset($wpdb->base_prefix)) {
 		return $wpdb->base_prefix . ($blog_specific ? $wpdb->blogid . '_' : '');
 	} else {
 		return $wpdb->prefix;
