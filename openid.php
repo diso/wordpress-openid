@@ -172,6 +172,9 @@ function openid_input() {
 if (!function_exists('get_userdata_by_various')) :
 function get_userdata_by_various($id_or_name = null) {
 	if ( $id_or_name === null ) {
+		if ( ! is_user_logged_in() ) {
+			return false;
+		}
 		$user = wp_get_current_user();
 		if ($user == null) return false;
 		return $user->data;
