@@ -312,10 +312,10 @@ function openid_profile_panel() {
 
 		<div class="clear"></div>
 
-		<table class="widefat">
+		<table class="wp-list-table widefat fixed striped">
 			<thead>
 				<tr>
-					<th scope="col" class="check-column"><input type="checkbox" /></th>
+					<td class="check-column"><input type="checkbox" /></td>
 					<th scope="col"><?php _e('Account', 'openid'); ?></th>
 				</tr>
 			</thead>
@@ -447,10 +447,10 @@ function openid_manage_trusted_sites() {
 
 			<div class="clear"></div>
 
-			<table class="widefat">
+			<table class="wp-list-table widefat fixed striped">
 			<thead>
 				<tr>
-					<th scope="col" class="check-column"><input type="checkbox" /></th>
+					<td class="check-column"><input type="checkbox" /></td>
 					<th scope="col"><?php _e('URL'); ?></th>
 					<th scope="col"><?php _e('Last Login', 'openid'); ?></th>
 				</tr>
@@ -731,7 +731,7 @@ function openid_profile_delete_openids($delete) {
 	foreach ($urls as $url) {
 		if (in_array(md5($url), $_REQUEST['delete'])) {
 			if (openid_drop_identity($user->ID, $url)) {
-			   	$count++;
+				$count++;
 			}
 		}
 	}
@@ -911,7 +911,7 @@ function openid_wpmu_options() {
 	$registration = get_site_option('registration');
 	if ( $registration == 'all' || $registration == 'user' ):
 ?>
-		<table id="openid_options" class="form-table">
+		<table id="openid_options" class="wp-list-table widefat fixed striped">
 			<tr valign="top">
 				<th scope="row"></th>
 				<td>
