@@ -368,7 +368,7 @@ function openid_manage_trusted_sites() {
 
 		$trusted_sites = get_user_meta($user->ID, 'openid_trusted_sites', true);
 		if (!is_array($trusted_sites)) $trusted_sites = array();
-		$sites = split("\n", $_REQUEST['sites']);
+		$sites = explode(PHP_EOL, $_REQUEST['sites']);
 
 		$count = 0;
 		foreach ($sites as $site) {
