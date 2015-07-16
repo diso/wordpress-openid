@@ -375,7 +375,7 @@ function openid_manage_trusted_sites() {
 			$site = trim($site);
 			if (empty($site)) continue;
 
-			if (strpos($site, 'http') === false || strpos($sites, 'http') != 0) {
+			if (strpos($site, 'http') === false || strpos($site, 'http') != 0) {
 				$site = 'http://' . $site;
 			}
 
