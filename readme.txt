@@ -21,7 +21,7 @@ Developer documentation, which includes all of the public methods and hooks for
 integrating with and extending the plugin, can be found [here][dev-doc].
 
 [open standard]: http://openid.net/
-[XRDS-Simple]: http://wordpress.org/extend/plugins/xrds-simple/
+[XRDS-Simple]: http://wordpress.org/plugins/xrds-simple/
 [dev-doc]: http://wiki.diso-project.org/wordpress-openid-api
 
 == Installation ==
