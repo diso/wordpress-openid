@@ -39,7 +39,6 @@ function openid_provider_xrds_simple($xrds) {
 
 	if (!$provider_enabled) return $xrds;
 
-
 	$user = openid_server_requested_user();
 
 	if (!$user && get_option('openid_blog_owner')) {
