@@ -546,6 +546,11 @@ function openid_server_get_delegation_info($userid, $url = null) {
 	if (empty($services)) {
 		// resort to checking for HTML links
 		$response = $fetcher->get($url);
+
+		if ( ! $response ) {
+			return false;
+		}
+
 		$html_content = $response->body;
 		$p = new Auth_OpenID_Parse();
 		$link_attrs = $p->parseLinkAttrs($html_content);
