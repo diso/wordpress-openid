@@ -1,5 +1,5 @@
 === OpenID ===
-Contributors: willnorris, factoryjoe
+Contributors: willnorris, factoryjoe, pfefferle
 Tags: openid, authentication, login, comments
 Requires at least: 2.8
 Tested up to: 2.8.5
