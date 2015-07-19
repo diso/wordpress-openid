@@ -733,8 +733,8 @@ function openid_page($message, $title = '') {
  * @action: init
  **/
 function openid_js_setup() {
-	if (have_comments() || comments_open() || is_admin()) {
-		wp_enqueue_script('openid', plugin_dir_url(__FILE__) . 'f/openid.js', array('jquery'), OPENID_PLUGIN_REVISION);
+	if ( ( is_singular() && ( have_comments() || comments_open() ) ) || is_admin() ) {
+		wp_enqueue_script( 'openid', plugin_dir_url( __FILE__ ) . 'f/openid.js', array( 'jquery' ), OPENID_PLUGIN_REVISION );
 	}
 }
 
