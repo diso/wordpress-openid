@@ -10,64 +10,64 @@
  Text Domain: openid
  */
 
-define ( 'OPENID_PLUGIN_REVISION', preg_replace( '/\$Rev: (.+) \$/', '\\1',
-	'$Rev: 519 $') ); // this needs to be on a separate line so that svn:keywords can work its magic
+// this needs to be on a separate line so that svn:keywords can work its magic
+define( 'OPENID_PLUGIN_REVISION', preg_replace( '/\$Rev: (.+) \$/', '\\1', '$Rev: 519 $' ) );
 
 // last plugin revision that required database schema changes
-define ( 'OPENID_DB_REVISION', 24426);
+define( 'OPENID_DB_REVISION', 24426 );
 
 // default values for which modules to activate
-if (!defined('OPENID_ENABLE_CONSUMER')) {
-	define('OPENID_ENABLE_CONSUMER', true);
+if ( ! defined( 'OPENID_ENABLE_CONSUMER' ) ) {
+	define( 'OPENID_ENABLE_CONSUMER', true );
 }
-if (!defined('OPENID_ENABLE_COMMENTS')) {
-	define('OPENID_ENABLE_COMMENTS', true);
+if ( ! defined( 'OPENID_ENABLE_COMMENTS' ) ) {
+	define( 'OPENID_ENABLE_COMMENTS', true );
 }
-if (!defined('OPENID_ENABLE_SERVER')) {
-	define('OPENID_ENABLE_SERVER', true);
+if ( ! defined( 'OPENID_ENABLE_SERVER' ) ) {
+	define( 'OPENID_ENABLE_SERVER', true );
 }
-if (!defined('OPENID_ENABLE_ADMIN_PANELS')) {
-	define('OPENID_ENABLE_ADMIN_PANELS', true);
+if ( ! defined( 'OPENID_ENABLE_ADMIN_PANELS' ) ) {
+	define( 'OPENID_ENABLE_ADMIN_PANELS', true );
 }
 
 
-$openid_include_path = dirname(__FILE__) . '/lib';
+$openid_include_path = dirname( __FILE__ ) . '/lib';
 
 // check source of randomness
-if ( !@is_readable('/dev/urandom') ) {
-	define('Auth_OpenID_RAND_SOURCE', null);
+if ( ! @is_readable( '/dev/urandom' ) ) {
+	define( 'Auth_OpenID_RAND_SOURCE', null );
 }
 
 set_include_path( $openid_include_path . PATH_SEPARATOR . get_include_path() );
 
-require_once dirname(__FILE__) . '/common.php';
-require_once dirname(__FILE__) . '/store.php';
+require_once dirname( __FILE__ ) . '/common.php';
+require_once dirname( __FILE__ ) . '/store.php';
 
-if (OPENID_ENABLE_CONSUMER) {
-	require_once dirname(__FILE__) . '/consumer.php';
-	require_once dirname(__FILE__) . '/login.php';
+if ( OPENID_ENABLE_CONSUMER ) {
+	require_once dirname( __FILE__ ) . '/consumer.php';
+	require_once dirname( __FILE__ ) . '/login.php';
 }
 
-if (OPENID_ENABLE_ADMIN_PANELS) {
-	require_once dirname(__FILE__) . '/admin_panels.php';
+if ( OPENID_ENABLE_ADMIN_PANELS ) {
+	require_once dirname( __FILE__ ) . '/admin_panels.php';
 }
 
-if (OPENID_ENABLE_CONSUMER && OPENID_ENABLE_COMMENTS) {
-	require_once dirname(__FILE__) . '/comments.php';
+if ( OPENID_ENABLE_CONSUMER && OPENID_ENABLE_COMMENTS ) {
+	require_once dirname( __FILE__ ) . '/comments.php';
 }
 
-if (OPENID_ENABLE_SERVER) {
-	require_once dirname(__FILE__) . '/server.php';
+if ( OPENID_ENABLE_SERVER ) {
+	require_once dirname( __FILE__ ) . '/server.php';
 }
 
 // register activation (and similar) hooks
-register_activation_hook('openid/openid.php', 'openid_activate_plugin');
-register_deactivation_hook('openid/openid.php', 'openid_deactivate_plugin');
-register_uninstall_hook('openid/openid.php', 'openid_uninstall_plugin');
+register_activation_hook( 'openid/openid.php', 'openid_activate_plugin' );
+register_deactivation_hook( 'openid/openid.php', 'openid_deactivate_plugin' );
+register_uninstall_hook( 'openid/openid.php', 'openid_uninstall_plugin' );
 
 // run activation function if new revision of plugin
-if ( get_option('openid_plugin_revision') === false || OPENID_PLUGIN_REVISION != get_option('openid_plugin_revision') ) {
-	add_action('admin_init', 'openid_activate_plugin');
+if ( get_option( 'openid_plugin_revision' ) === false || OPENID_PLUGIN_REVISION != get_option( 'openid_plugin_revision' ) ) {
+	add_action( 'admin_init', 'openid_activate_plugin' );
 }
 
 
@@ -82,9 +82,9 @@ if ( get_option('openid_plugin_revision') === false || OPENID_PLUGIN_REVISION !=
  * @return bool true if the user has any OpenIDs
  * @since 1.0
  */
-function is_user_openid($user = null) {
-	$urls = get_user_openids($user);
-	return ( !empty($urls) );
+function is_user_openid( $user = null ) {
+	$urls = get_user_openids( $user );
+	return ( ! empty( $urls ) );
 }
 
 
@@ -98,16 +98,16 @@ function is_user_openid($user = null) {
  * @since 1.0
  */
 function is_comment_openid($id = null) {
-	if ( is_numeric($id) ) {
-		$comment = get_comment($id);
+	if ( is_numeric( $id ) ) {
+		$comment = get_comment( $id );
 	} else {
 		global $comment;
 	}
 
-	$openid_comments = get_post_meta($comment->comment_post_ID, 'openid_comments', true);
+	$openid_comments = get_post_meta( $comment->comment_post_ID, 'openid_comments', true );
 
-	if ( is_array($openid_comments) ) {
-		if ( in_array($comment->comment_ID, $openid_comments) ) {
+	if ( is_array( $openid_comments ) ) {
+		if ( in_array( $comment->comment_ID, $openid_comments ) ) {
 			return true;
 		}
 	}
@@ -124,12 +124,12 @@ function is_comment_openid($id = null) {
  * @access public
  * @since 3.0
  */
-function get_user_openids($id_or_name = null) {
-	$user = get_userdata_by_various($id_or_name);
+function get_user_openids( $id_or_name = null ) {
+	$user = get_userdata_by_various( $id_or_name );
 
 	if ( $user ) {
 		global $wpdb;
-		return $wpdb->get_col( $wpdb->prepare('SELECT url FROM '.openid_identity_table().' WHERE user_id = %s', $user->ID) );
+		return $wpdb->get_col( $wpdb->prepare( 'SELECT url FROM '.openid_identity_table().' WHERE user_id = %s', $user->ID ) );
 	} else {
 		return array();
 	}
@@ -146,7 +146,7 @@ function get_user_openids($id_or_name = null) {
  */
 function get_user_by_openid($url) {
 	global $wpdb;
-	return $wpdb->get_var( $wpdb->prepare('SELECT user_id FROM '.openid_identity_table().' WHERE url = %s', $url) );
+	return $wpdb->get_var( $wpdb->prepare( 'SELECT user_id FROM '.openid_identity_table().' WHERE url = %s', $url ) );
 }
 
 
@@ -169,21 +169,23 @@ function openid_input() {
  * @access public
  * @since 3.0
  */
-if (!function_exists('get_userdata_by_various')) :
-function get_userdata_by_various($id_or_name = null) {
-	if ( $id_or_name === null ) {
-		if ( ! is_user_logged_in() ) {
-			return false;
+if ( ! function_exists( 'get_userdata_by_various' ) ) :
+	function get_userdata_by_various($id_or_name = null) {
+		if ( null === $id_or_name ) {
+			if ( ! is_user_logged_in() ) {
+				return false;
+			}
+			$user = wp_get_current_user();
+			if ( null === $user ) {
+				return false;
+			}
+			return $user->data;
+		} else if ( is_numeric( $id_or_name ) ) {
+			return get_user_by( 'id', $id_or_name );
+		} else {
+			return get_user_by( 'login', $id_or_name );
 		}
-		$user = wp_get_current_user();
-		if ($user == null) return false;
-		return $user->data;
-	} else if ( is_numeric($id_or_name) ) {
-		return get_user_by('id', $id_or_name);
-	} else {
-		return get_user_by('login', $id_or_name);
 	}
-}
 endif;
 
 // -- end of public functions
@@ -200,15 +202,15 @@ endif;
 function openid_plugin_file() {
 	static $file;
 
-	if ( empty($file) ) {
+	if ( empty( $file ) ) {
 		$path = 'openid';
 
-		$base = plugin_basename(__FILE__);
-		if ( $base != __FILE__ ) {
-			$path = basename(dirname($base));
+		$base = plugin_basename( __FILE__ );
+		if ( __FILE__ != $base ) {
+			$path = basename( dirname( $base ) );
 		}
 
-		$file = $path . '/' . basename(__FILE__);
+		$file = $path . '/' . basename( __FILE__ );
 	}
 
 	return $file;
