@@ -1,10 +1,11 @@
 <?php
 
 require_once 'Auth/OpenID/Server.php';
-require_once dirname(__FILE__) . '/server_ext.php';
+require_once dirname( __FILE__ ) . '/server_ext.php';
 
-add_filter( 'xrds_simple', 'openid_provider_xrds_simple');
-add_action( 'wp_head', 'openid_provider_link_tags');
+add_filter( 'xrds_simple', 'openid_provider_xrds_simple' );
+add_filter( 'webfinger_user_data', 'openid_provider_webfinger', 10, 3 );
+add_action( 'wp_head', 'openid_provider_link_tags' );
 
 
 /**
@@ -109,6 +110,45 @@ function openid_provider_xrds_simple($xrds) {
 	}
 
 	return $xrds;
+}
+
+/**
+ * Add WebFinger entries for OpenID Server.  Entries added will be highly
+ * dependant on the requested URL and plugin configuration.
+ *
+ * @param  array   $webfinger The WebFinger data array
+ * @param  string  $resource  The requested WebFinger resource
+ * @param  WP_User $user      The WordPress user
+ * @return array              The updated WebFinger data array
+ */
+function openid_provider_webfinger( $webfinger, $resource, $user ) {
+	// check if OpenID provider is enabled for user
+	if ( ! $user->has_cap( 'use_openid_provider' ) ) {
+		return $webfinger;
+	}
+
+	// use delegation URL if set
+	if ( get_user_meta( $user->ID, 'openid_delegate', true ) ) {
+		$webfinger['links'][] = array(
+			'href' => get_user_meta( $user->ID, 'openid_delegate', true ),
+			'rel' => 'http://specs.openid.net/auth/2.0/provider',
+		);
+	} else {
+		// check if WebFinger user is "blog-owner"
+		if ( get_option( 'openid_blog_owner' ) && $user->user_login == get_option( 'openid_blog_owner' ) ) {
+			$webfinger['links'][] = array(
+				'href' => site_url( '/' ),
+				'rel' => 'http://specs.openid.net/auth/2.0/provider',
+			);
+		} else { // otherwise use author-url
+			$webfinger['links'][] = array(
+				'href' => get_author_posts_url( $user->ID ),
+				'rel' => 'http://specs.openid.net/auth/2.0/provider',
+			);
+		}
+	}
+
+	return $webfinger;
 }
 
 
