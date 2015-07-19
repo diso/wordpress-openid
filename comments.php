@@ -414,5 +414,3 @@ function openid_recent_comments() {
 		}
 	}
 }
-
-?>

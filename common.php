@@ -845,5 +845,3 @@ function openid_debug($msg) {
 		openid_error($msg);
 	}
 }
-
-?>

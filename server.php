@@ -582,5 +582,3 @@ function openid_server_get_delegation_info($userid, $url = null) {
 		'services' => $services
 	);
 }
-
-?>

@@ -175,6 +175,3 @@ function openid_server_sreg_from_profile($field) {
 	$value = apply_filters('openid_server_sreg_' . $field, $value, $user->ID);
 	return $value;
 }
-
-
-?>

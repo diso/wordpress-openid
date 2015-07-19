@@ -335,6 +335,3 @@ function openid_table_prefix($blog_specific = false) {
 function openid_identity_table() {
 	return (defined('CUSTOM_OPENID_IDENTITY_TABLE') ? CUSTOM_OPENID_IDENTITY_TABLE : openid_table_prefix() . 'openid_identities');
 }
-
-
-?>

@@ -236,4 +236,3 @@ function openid_register_post($username, $password, $errors) {
 		wp_signon();
 	}
 }
-?>

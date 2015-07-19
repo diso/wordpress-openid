@@ -1005,5 +1005,3 @@ function openid_discussion_settings() {
 	<?php endif; ?>
 <?php
 }
-
-?>
