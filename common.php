@@ -9,7 +9,7 @@ add_action( 'init', 'openid_textdomain' ); // load textdomain
 
 // include internal stylesheet
 if (OPENID_ENABLE_CONSUMER) {
-    add_action( 'wp', 'openid_style');
+	add_action( 'wp', 'openid_style');
 }
 
 // parse request
@@ -389,9 +389,9 @@ function openid_create_new_user($identity_url, &$user_data) {
  *   ID, user_url, user_nicename, display_name
  *
  * Multiple soures of data may be available and are attempted in the following order:
- *   - OpenID Attribute Exchange      !! not yet implemented
+ *   - OpenID Attribute Exchange	  !! not yet implemented
  * 	 - OpenID Simple Registration
- * 	 - hCard discovery                !! not yet implemented
+ * 	 - hCard discovery				!! not yet implemented
  * 	 - default to identity URL
  *
  * @param string $identity_url OpenID to get user data about
