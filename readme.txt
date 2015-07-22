@@ -103,6 +103,16 @@ report at <http://code.google.com/p/diso/issues/list>.
 Project maintined on github at
 [diso/wordpress-openid](https://github.com/diso/wordpress-openid).
 
+= version 3.4.0 (Jul XX, 2015) =
+ - update to latest OpenID library (includes lots of bug fixes, particularly with PHP 5.3). Full changelog [on github](https://github.com/openid/php-openid).
+ - fixed various PHP warnings/errors.
+ - various improvements and bugfixes (props @rodrigoprimo).
+ - attempt to use email as username before url for open id new user (props @yincrash).
+ - chinese and german (props Stephan Richter) translations.
+ - added WebFinger support
+
+Full changelog on [github](https://github.com/diso/wordpress-openid/compare/v3.3.4...v3.4.0).
+
 = version 3.3.4 (Nov 16, 2012) =
  - update to latest OpenID library (includes lots of bug fixes, particularly with PHP 5.3). Full changelog [on github](https://github.com/openid/php-openid).
  - various bug fixes. Full changelog [on github](https://github.com/diso/wordpress-openid).
@@ -129,18 +139,18 @@ Project maintined on github at
  - drop support for installing the plugin in mu-plugins folder
  - always include 'index.php' on OpenID endpoint URLs. Without that, some deployments were having problems.
  - fix bug relating to trackbacks and pingbacks
- - fix bug (#121) relating to unregistered options (props: tom.tdw for the patch)
+ - fix bug (#121) relating to unregistered options (props tom.tdw for the patch)
  - lots of minor bug fixes
 
 = version 3.2.3 (Jul 20, 2009) =
- - fix XSS vulnerability. (props: Stuart Metcalfe)
+ - fix XSS vulnerability. (props Stuart Metcalfe)
 
 = version 3.2.2 (Mar 19, 2009) =
  - fix problems when using non-index.php permalinks with non-apache web servers
  - ensure that show\_on\_front option is not empty
- - function name typo (props: gunemalli)
- - fix deprecated pass-by-reference call in php-openid library (props: jschuur)
- - fix UI bug on registration form with IE browsers (props: oledole)
+ - function name typo (props gunemalli)
+ - fix deprecated pass-by-reference call in php-openid library (props jschuur)
+ - fix UI bug on registration form with IE browsers (props oledole)
  - UI tweaks to better match WP 2.7
  - update a few strings for localization and POT file
 
@@ -242,7 +252,7 @@ Project maintined on github at
  - improve jQuery code to reduce problems with other js libraries
 
 = version 2.1.3 (Feb 06, 2008) =
- - address security bug mentioned [here](http://www.gnucitizen.org/blog/hijacking-openid-enabled-accounts). Props: Sam Alexander
+ - address security bug mentioned [here](http://www.gnucitizen.org/blog/hijacking-openid-enabled-accounts). Props Sam Alexander
 
 = version 2.1.2 =
  - minor typo in profile data code
