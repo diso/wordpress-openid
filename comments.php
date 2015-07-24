@@ -311,7 +311,7 @@ function openid_finish_comment($identity_url, $action) {
 		$_SESSION['openid_comment_post']['url'] = null;
 	} else {
 		// try to get user data from the verified OpenID
-		$user_data =& openid_get_user_data($identity_url);
+		$user_data = openid_get_user_data($identity_url);
 
 		if (!empty($user_data['display_name'])) {
 			$_SESSION['openid_comment_post']['author'] = $user_data['display_name'];

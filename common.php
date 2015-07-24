@@ -182,7 +182,7 @@ function openid_uninstall_plugin() {
  * Cleanup expired nonces and associations from the OpenID store.
  */
 function openid_cleanup() {
-	$store =& openid_getStore();
+	$store = openid_getStore();
 	$store->cleanupNonces();
 	$store->cleanupAssociations();
 }

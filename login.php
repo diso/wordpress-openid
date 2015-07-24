@@ -69,7 +69,7 @@ function openid_finish_login($identity_url, $action) {
 	if ($identity_url) {
 		// create new user account if appropriate
 		$user_id = get_user_by_openid($identity_url);
-		$user_data =& openid_get_user_data($identity_url);
+		$user_data = openid_get_user_data($identity_url);
 
 		if (!$user_id) {
 			if (get_option('users_can_register')) {
