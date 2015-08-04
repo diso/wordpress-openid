@@ -6,7 +6,8 @@
  Author: DiSo Development Team
  Author URI: http://diso-project.org/
  Version: 3.4.0
- License: Dual GPL (http://www.fsf.org/licensing/licenses/info/GPLv2.html) and Modified BSD (http://www.fsf.org/licensing/licenses/index_html#ModifiedBSD)
+ License: Apache 2.0
+ License URI: https://www.apache.org/licenses/LICENSE-2.0
  Text Domain: openid
 */
 

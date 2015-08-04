@@ -4,6 +4,8 @@ Tags: openid, authentication, login, comments
 Requires at least: 2.8
 Tested up to: 4.3
 Stable tag: 3.4.0
+License: Apache 2.0
+License URI: https://www.apache.org/licenses/LICENSE-2.0
 
 Allows WordPress to provide and consumer OpenIDs for authentication of users and comments.
 
