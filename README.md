@@ -4,6 +4,8 @@
 **Requires at least:** 2.8  
 **Tested up to:** 4.3  
 **Stable tag:** 3.4.0  
+**License:** Apache 2.0  
+**License URI:** https://www.apache.org/licenses/LICENSE-2.0  
 
 Allows WordPress to provide and consumer OpenIDs for authentication of users and comments.
 
@@ -113,7 +115,10 @@ report at <http://code.google.com/p/diso/issues/list>.
 Project maintined on github at
 [diso/wordpress-openid](https://github.com/diso/wordpress-openid).
 
-### version 3.4.0 (Jul XX, 2015) ###
+### version 3.4.1 (XXX XX, 2015) ###
+ - update to latest OpenID library. Full changelog [on github](https://github.com/openid/php-openid).
+
+### version 3.4.0 (Jul 22, 2015) ###
  - update to latest OpenID library (includes lots of bug fixes, particularly with PHP 5.3). Full changelog [on github](https://github.com/openid/php-openid).
  - fixed various PHP warnings/errors.
  - various improvements and bugfixes (props @rodrigoprimo).
