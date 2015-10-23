@@ -3,7 +3,7 @@ msgstr ""
 "Project-Id-Version: OpenID 3.4-trunk\n"
 "Report-Msgid-Bugs-To: http://wordpress.org/tag/openid\n"
 "POT-Creation-Date: 2009-10-01 15:34-0700\n"
-"PO-Revision-Date: 2015-10-23 21:47+0300\n"
+"PO-Revision-Date: 2015-10-23 22:00+0300\n"
 "Last-Translator: Valery Ryaboshapko <valera@creator.su>\n"
 "Language-Team: \n"
 "MIME-Version: 1.0\n"
@@ -26,11 +26,11 @@ msgstr "OpenID"
 
 #: admin_panels.php:30
 msgid "Your OpenIDs"
-msgstr "Ваши OpenID идентификаторы"
+msgstr "Идентификаторы OpenID"
 
 #: admin_panels.php:44 admin_panels.php:45 admin_panels.php:423
 msgid "Your Trusted Sites"
-msgstr "Ваши доверенные сайты"
+msgstr "Доверенные сайты"
 
 #: admin_panels.php:57 admin_panels.php:61 admin_panels.php:149
 msgid "OpenID Settings"
@@ -61,8 +61,8 @@ msgid ""
 "delegating to another OpenID Provider."
 msgstr ""
 "Провайдер OpenID позволяет авторизованным пользователям использовать свои "
-"URL в качестве OpenID идентификаторов или через логин и пароль локального "
-"WordPress, или делегировав авторизацию другому провайдеру OpenID."
+"URL в качестве идентификатора OpenID или посредством логина и пароля "
+"локального WordPress, или делегировав авторизацию другому провайдеру OpenID."
 
 #: admin_panels.php:166
 msgid "Enable OpenID"
@@ -87,7 +87,7 @@ msgstr ""
 "Авторизованные аккаунты этого блога могут использовать свои собственные URL "
 "(напр., <em>%1$s</em>) в качестве идентификаторов OpenID. Владелец блога "
 "может использовать адрес блога (%2$s) в качестве идентификатора. Если этот "
-"блог ведёт только один человек, укажите здесь своего пользователя."
+"блог ведёт только один человек, укажите здесь свою учётную запись."
 
 #: admin_panels.php:205
 msgid ""
