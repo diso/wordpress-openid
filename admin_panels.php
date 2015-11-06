@@ -977,31 +977,33 @@ function openid_general_settings() {
  */
 function openid_discussion_settings() {
 ?>
-	<label for="openid_enable_commentform">
-		<input type="checkbox" name="openid_enable_commentform" id="openid_enable_commentform" value="1" <?php
-			echo checked(true, get_option('openid_enable_commentform'));  ?> />
-		<?php _e('Enable OpenID for comments', 'openid') ?>
-	</label>
-	<br />
-
-	<?php if ( get_option('openid_enable_commentform') ): ?>
-
-		<?php if ( get_option('require_name_email') ): ?>
-		<label for="openid_no_require_name">
-			<input type="checkbox" name="openid_no_require_name" id="openid_no_require_name" value="1" <?php
-				echo checked(true, get_option('openid_no_require_name')) ; ?> />
-			<?php _e('Do not require name and e-mail for comments left with a verified OpenID', 'openid') ?>
+	<fieldset>
+		<label for="openid_enable_commentform">
+			<input type="checkbox" name="openid_enable_commentform" id="openid_enable_commentform" value="1" <?php
+				echo checked(true, get_option('openid_enable_commentform'));  ?> />
+			<?php _e('Enable OpenID for comments', 'openid') ?>
 		</label>
 		<br />
+
+		<?php if ( get_option('openid_enable_commentform') ): ?>
+
+			<?php if ( get_option('require_name_email') ): ?>
+			<label for="openid_no_require_name">
+				<input type="checkbox" name="openid_no_require_name" id="openid_no_require_name" value="1" <?php
+					echo checked(true, get_option('openid_no_require_name')) ; ?> />
+				<?php _e('Do not require name and e-mail for comments left with a verified OpenID', 'openid') ?>
+			</label>
+			<br />
+			<?php endif; ?>
+
+			<label for="openid_enable_approval">
+				<input type="checkbox" name="openid_enable_approval" id="openid_enable_approval" value="1" <?php
+					echo checked(true, get_option('openid_enable_approval'));  ?> />
+				<?php _e('Always approve comments left with a verified OpenID', 'openid'); ?>
+			</label>
+			<br />
+
 		<?php endif; ?>
-
-		<label for="openid_enable_approval">
-			<input type="checkbox" name="openid_enable_approval" id="openid_enable_approval" value="1" <?php
-				echo checked(true, get_option('openid_enable_approval'));  ?> />
-			<?php _e('Always approve comments left with a verified OpenID', 'openid'); ?>
-		</label>
-		<br />
-
-	<?php endif; ?>
+	</fieldset>
 <?php
 }
