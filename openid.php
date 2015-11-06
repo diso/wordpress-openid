@@ -1,15 +1,15 @@
 <?php
-/*
- Plugin Name: OpenID
- Plugin URI: http://wordpress.org/extend/plugins/openid
- Description: Allows the use of OpenID for account registration, authentication, and commenting.  Also includes an OpenID provider which can turn WordPress author URLs into OpenIDs.
- Author: DiSo Development Team
- Author URI: http://diso-project.org/
- Version: 3.4.1-dev
- License: Apache 2.0
- License URI: https://www.apache.org/licenses/LICENSE-2.0
- Text Domain: openid
-*/
+/**
+ * Plugin Name: OpenID
+ * Plugin URI: http://wordpress.org/extend/plugins/openid
+ * Description: Allows the use of OpenID for account registration, authentication, and commenting.  Also includes an OpenID provider which can turn WordPress author URLs into OpenIDs.
+ * Author: DiSo Development Team
+ * Author URI: http://diso-project.org/
+ * Version: 3.4.1-dev
+ * License: Apache 2.0
+ * License URI: https://www.apache.org/licenses/LICENSE-2.0
+ * Text Domain: openid
+ */
 
 // this needs to be on a separate line so that svn:keywords can work its magic
 define( 'OPENID_PLUGIN_REVISION', preg_replace( '/\$Rev: (.+) \$/', '\\1', '$Rev: 519 $' ) );
@@ -103,6 +103,10 @@ function is_comment_openid($id = null) {
 		$comment = get_comment( $id );
 	} else {
 		global $comment;
+	}
+
+	if ( ! $comment ) {
+		return false;
 	}
 
 	$openid_comments = get_post_meta( $comment->comment_post_ID, 'openid_comments', true );
