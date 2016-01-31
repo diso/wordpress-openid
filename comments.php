@@ -86,7 +86,7 @@ function openid_process_comment( $comment ) {
 
 	// duplicate name and email check from wp-comments-post.php
 	if ( $comment['comment_type'] == '') {
-		openid_require_name_email();
+		openid_require_name_email( $comment );
 	}
 
 	return $comment;
@@ -97,9 +97,10 @@ function openid_process_comment( $comment ) {
  * Duplicated code from wp-comments-post.php to check for presence of comment author name and email
  * address.
  */
-function openid_require_name_email() {
+function openid_require_name_email( $comment ) {
 	$user = wp_get_current_user();
-	global $comment_author, $comment_author_email;
+	$comment_author = $comment['comment_author'];
+	$comment_author_email = $comment['comment_author_email'];
 
 	if ( get_option('require_name_email') && !$user->ID ) {
 		if ( 6 > strlen($comment_author_email) || '' == $comment_author ) {
