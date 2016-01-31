@@ -249,6 +249,8 @@ function openid_consumer_xrds_simple($xrds) {
 		// OpenID Consumer Service
 		$return_urls = array_unique(apply_filters('openid_consumer_return_urls', array(openid_service_url('consumer', 'login_post'))));
 		if (!empty($return_urls)) {
+			// fixes https://github.com/diso/wordpress-xrds-simple/issues/4
+			unset( $xrds['main']['type'] );
 			$xrds = xrds_add_simple_service($xrds, 'OpenID Consumer Service', 'http://specs.openid.net/auth/2.0/return_to', $return_urls);
 		}
 	}
