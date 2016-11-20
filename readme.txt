@@ -2,8 +2,8 @@
 Contributors: willnorris, factoryjoe, pfefferle
 Tags: openid, authentication, login, comments
 Requires at least: 2.8
-Tested up to: 4.4.1
-Stable tag: 3.4.1
+Tested up to: 4.6.1
+Stable tag: 3.4.2
 License: Apache 2.0
 License URI: https://www.apache.org/licenses/LICENSE-2.0
 
@@ -104,6 +104,10 @@ report at <http://code.google.com/p/diso/issues/list>.
 
 Project maintined on github at
 [diso/wordpress-openid](https://github.com/diso/wordpress-openid).
+
+= version 3.4.2 (Nov 20, 2016) =
+ - update to latest OpenID library
+ - fixed error response if nonce doesn't match https://github.com/diso/wordpress-openid/pull/46
 
 = version 3.4.1 (Jan 31, 2016) =
  - update to latest OpenID library. Full changelog [on github](https://github.com/openid/php-openid).
