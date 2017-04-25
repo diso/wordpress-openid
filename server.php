@@ -50,10 +50,6 @@ function openid_provider_xrds_simple($xrds) {
 		$script = preg_replace('/index.php$/', '', $_SERVER['SCRIPT_NAME']);
 		$script = trailingslashit($script);
 
-		if ($path != $script && !is_admin()) {
-			return $xrds;
-		}
-
 		if (!defined('OPENID_DISALLOW_OWNER') || !OPENID_DISALLOW_OWNER) {
 			$user = get_user_by('login', get_option('openid_blog_owner'));
 		}
