@@ -27,6 +27,10 @@ require_once "Auth/OpenID.php";
  * @package OpenID
  */
 class Auth_Yadis_ParanoidHTTPFetcher extends Auth_Yadis_HTTPFetcher {
+
+    private $headers = array();
+    private $data = '';
+
     function __construct()
     {
         $this->reset();
@@ -40,6 +44,9 @@ class Auth_Yadis_ParanoidHTTPFetcher extends Auth_Yadis_HTTPFetcher {
 
     /**
      * @access private
+     * @param string $ch
+     * @param string $header
+     * @return int
      */
     function _writeHeader($ch, $header)
     {
@@ -49,6 +56,9 @@ class Auth_Yadis_ParanoidHTTPFetcher extends Auth_Yadis_HTTPFetcher {
 
     /**
      * @access private
+     * @param string $ch
+     * @param string $data
+     * @return int
      */
     function _writeData($ch, $data)
     {
@@ -75,6 +85,11 @@ class Auth_Yadis_ParanoidHTTPFetcher extends Auth_Yadis_HTTPFetcher {
         }
     }
 
+    /**
+     * @param string $url
+     * @param array|null $extra_headers
+     * @return Auth_Yadis_HTTPResponse|null
+     */
     function get($url, $extra_headers = null)
     {
         if (!$this->canFetchURL($url)) {
@@ -153,6 +168,7 @@ class Auth_Yadis_ParanoidHTTPFetcher extends Auth_Yadis_HTTPFetcher {
             if (defined('Auth_OpenID_HTTP_PROXY')) {
                 curl_setopt($c, CURLOPT_PROXY, Auth_OpenID_HTTP_PROXY);
             }
+
             curl_exec($c);
 
             $code = curl_getinfo($c, CURLINFO_HTTP_CODE);
