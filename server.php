@@ -245,15 +245,10 @@ function openid_server_auth_request($request) {
 	// get some user data
 	$user = wp_get_current_user();
 	$author_url = get_author_posts_url($user->ID);
-	$id_select = ($request->identity == 'http://specs.openid.net/auth/2.0/identifier_select');
+	$id_select = $request->idSelect();
 
 	// bail if user does not have access to OpenID provider
 	if (!$user->has_cap('use_openid_provider')) return $request->answer(false);
-
-	// bail if user doesn't own identity and not using id select
-	if (!$id_select && ($author_url != $request->identity)) {
-		return $request->answer(false);
-	}
 
 	// if using id select but user is delegating, display error to user (unless checkid_immediate)
 	if ($id_select && get_user_meta($user->ID, 'openid_delegate', true)) {
