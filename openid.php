@@ -1,11 +1,11 @@
 <?php
 /**
  * Plugin Name: OpenID
- * Plugin URI: http://wordpress.org/extend/plugins/openid
+ * Plugin URI: https://wordpress.org/plugins/openid
  * Description: Allows the use of OpenID for account registration, authentication, and commenting.  Also includes an OpenID provider which can turn WordPress author URLs into OpenIDs.
  * Author: DiSo Development Team
  * Author URI: http://diso-project.org/
- * Version: 3.4.2
+ * Version: 3.4.3
  * License: Apache 2.0
  * License URI: https://www.apache.org/licenses/LICENSE-2.0
  * Text Domain: openid
