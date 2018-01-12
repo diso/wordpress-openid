@@ -3,7 +3,7 @@ Contributors: willnorris, factoryjoe, pfefferle
 Tags: openid, authentication, login, comments
 Requires at least: 2.8
 Tested up to: 4.9.1
-Stable tag: 3.4.3
+Stable tag: 3.4.4
 License: Apache 2.0
 License URI: https://www.apache.org/licenses/LICENSE-2.0
 
