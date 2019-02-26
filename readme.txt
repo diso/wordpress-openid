@@ -2,8 +2,9 @@
 Contributors: willnorris, factoryjoe, pfefferle
 Tags: openid, authentication, login, comments
 Requires at least: 2.8
-Tested up to: 4.9.1
-Stable tag: 3.4.4
+Tested up to: 5.1
+Stable tag: 3.5.0
+Requires PHP: 5.3
 License: Apache 2.0
 License URI: https://www.apache.org/licenses/LICENSE-2.0
 
@@ -97,6 +98,9 @@ report at <http://code.google.com/p/diso/issues/list>.
 
 Project maintined on github at
 [diso/wordpress-openid](https://github.com/diso/wordpress-openid).
+
+= version 3.5.0 (Feb 12, 2019) =
+ - fixed PHP warnings and deprecation messages
 
 = version 3.4.4 (Jan 12, 2018) =
  - fixed bug with latest OpenID library
