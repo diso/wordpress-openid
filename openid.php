@@ -5,7 +5,8 @@
  * Description: Allows the use of OpenID for account registration, authentication, and commenting.  Also includes an OpenID provider which can turn WordPress author URLs into OpenIDs.
  * Author: DiSo Development Team
  * Author URI: http://diso-project.org/
- * Version: 3.4.4
+ * Version: 3.5.0
+ * Requires PHP: 5.3
  * License: Apache 2.0
  * License URI: https://www.apache.org/licenses/LICENSE-2.0
  * Text Domain: openid
@@ -98,7 +99,7 @@ function is_user_openid( $user = null ) {
  * @access public
  * @since 1.0
  */
-function is_comment_openid($id = null) {
+function is_comment_openid( $id = null ) {
 	if ( is_numeric( $id ) ) {
 		$comment = get_comment( $id );
 	} else {
@@ -134,7 +135,7 @@ function get_user_openids( $id_or_name = null ) {
 
 	if ( $user ) {
 		global $wpdb;
-		return $wpdb->get_col( $wpdb->prepare( 'SELECT url FROM '.openid_identity_table().' WHERE user_id = %s', $user->ID ) );
+		return $wpdb->get_col( $wpdb->prepare( 'SELECT url FROM ' . openid_identity_table() . ' WHERE user_id = %s', $user->ID ) );
 	} else {
 		return array();
 	}
@@ -149,9 +150,9 @@ function get_user_openids( $id_or_name = null ) {
  * @access public
  * @since 3.0
  */
-function get_user_by_openid($url) {
+function get_user_by_openid( $url ) {
 	global $wpdb;
-	return $wpdb->get_var( $wpdb->prepare( 'SELECT user_id FROM '.openid_identity_table().' WHERE url = %s', $url ) );
+	return $wpdb->get_var( $wpdb->prepare( 'SELECT user_id FROM ' . openid_identity_table() . ' WHERE url = %s', $url ) );
 }
 
 
@@ -175,7 +176,7 @@ function openid_input() {
  * @since 3.0
  */
 if ( ! function_exists( 'get_userdata_by_various' ) ) :
-	function get_userdata_by_various($id_or_name = null) {
+	function get_userdata_by_various( $id_or_name = null ) {
 		if ( null === $id_or_name ) {
 			if ( ! is_user_logged_in() ) {
 				return false;

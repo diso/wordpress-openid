@@ -5,7 +5,7 @@ require_once 'Auth/OpenID/SReg.php';
 add_filter( 'openid_server_xrds_types', 'openid_server_sreg_xrds_types' );
 add_action( 'openid_server_post_auth', 'openid_server_sreg_post_auth' );
 
-function openid_server_sreg_xrds_types($types) {
+function openid_server_sreg_xrds_types( $types ) {
 	$types[] = 'http://openid.net/extensions/sreg/1.1';
 	$types[] = 'http://openid.net/sreg/1.0';
 	return $types;
@@ -60,7 +60,7 @@ function openid_server_attributes_trust_form() {
 		echo '
 		<p class="trust_form_add" style="padding: 0">
 			<input type="checkbox" id="include_sreg" name="include_sreg" checked="checked" style="display: block; float: left; margin: 0.8em;" />
-			<label for="include_sreg" style="display: block; padding: 0.5em 2em;">'.sprintf( __( 'Also grant access to see my %s.', 'openid' ), $attr_string ) . '</label>
+			<label for="include_sreg" style="display: block; padding: 0.5em 2em;">' . sprintf( __( 'Also grant access to see my %s.', 'openid' ), $attr_string ) . '</label>
 		</p>';
 	}
 }
@@ -158,7 +158,7 @@ function openid_server_sreg_auth_response( $response ) {
  * @uses apply_filters() Calls 'openid_server_sreg_*' before returning sreg values,
  *       where '*' is the name of the sreg attribute.
  */
-function openid_server_sreg_from_profile($field) {
+function openid_server_sreg_from_profile( $field ) {
 	$user = wp_get_current_user();
 	$value = '';
 
