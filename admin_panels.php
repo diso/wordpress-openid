@@ -10,7 +10,7 @@ add_action( 'admin_init', 'openid_admin_register_settings' );
 add_action( 'admin_menu', 'openid_admin_panels' );
 add_action( 'personal_options_update', 'openid_personal_options_update' );
 add_action( 'openid_finish_auth', 'openid_finish_verify', 10, 2 );
-add_filter( 'pre_update_option_openid_cap', 'openid_set_cap', 10, 2);
+add_filter( 'pre_update_option_openid_cap', 'openid_set_cap', 10, 2 );
 
 
 /**
@@ -19,51 +19,57 @@ add_filter( 'pre_update_option_openid_cap', 'openid_set_cap', 10, 2);
  * @action: admin_menu
  **/
 function openid_admin_panels() {
-	add_filter('plugin_action_links', 'openid_plugin_action_links', 10, 2);
+	add_filter( 'plugin_action_links', 'openid_plugin_action_links', 10, 2 );
 
 	// global options page
-	$hookname = add_options_page(__('OpenID options', 'openid'), __('OpenID', 'openid'), 'manage_options', 'openid', 'openid_options_page' );
-	add_action("load-$hookname", create_function('', 'add_thickbox();'));
-	add_action("load-$hookname", 'openid_style');
+	$hookname = add_options_page( __( 'OpenID options', 'openid' ), __( 'OpenID', 'openid' ), 'manage_options', 'openid', 'openid_options_page' );
+	add_action( "load-$hookname", function() {
+		add_thickbox();
+	} );
+	add_action( "load-$hookname", 'openid_style' );
 
 	// all users can setup external OpenIDs
-	$hookname =	add_users_page(__('Your OpenIDs', 'openid'), __('Your OpenIDs', 'openid'), 'read', 'your_openids', 'openid_profile_panel' );
-	add_action("load-$hookname", create_function('', 'wp_enqueue_script("admin-forms");'));
-	add_action("load-$hookname", 'openid_profile_management' );
-	add_action("load-$hookname", 'openid_style' );
+	$hookname = add_users_page( __( 'Your OpenIDs', 'openid' ), __( 'Your OpenIDs', 'openid' ), 'read', 'your_openids', 'openid_profile_panel' );
+	add_action( "load-$hookname", function() {
+		wp_enqueue_script( 'admin-forms' );
+	} );
+	add_action( "load-$hookname", 'openid_profile_management' );
+	add_action( "load-$hookname", 'openid_style' );
 
 	// additional options for users authorized to use OpenID provider
 	$user = wp_get_current_user();
-	if ($user->has_cap('use_openid_provider')) {
-		add_action('show_user_profile', 'openid_extend_profile', 5);
-		add_action('profile_update', 'openid_profile_update');
-		add_action('user_profile_update_errors', 'openid_profile_update_errors', 10, 3);
-		add_action('load-profile.php', 'openid_style');
+	if ( $user->has_cap( 'use_openid_provider' ) ) {
+		add_action( 'show_user_profile', 'openid_extend_profile', 5 );
+		add_action( 'profile_update', 'openid_profile_update' );
+		add_action( 'user_profile_update_errors', 'openid_profile_update_errors', 10, 3 );
+		add_action( 'load-profile.php', 'openid_style' );
 
-		if (!get_user_meta($user->ID, 'openid_delegate', true)) {
-			$hookname =	add_submenu_page('profile.php', __('Your Trusted Sites', 'openid'),
-				__('Your Trusted Sites', 'openid'), 'read', 'openid_trusted_sites', 'openid_manage_trusted_sites' );
-			add_action("load-$hookname", 'openid_style' );
-			add_action("load-$hookname", create_function('', 'wp_enqueue_script("admin-forms");'));
+		if ( ! get_user_meta( $user->ID, 'openid_delegate', true ) ) {
+			$hookname = add_submenu_page( 'profile.php', __( 'Your Trusted Sites', 'openid' ),
+			__( 'Your Trusted Sites', 'openid' ), 'read', 'openid_trusted_sites', 'openid_manage_trusted_sites' );
+			add_action( "load-$hookname", 'openid_style' );
+			add_action( "load-$hookname", function() {
+				wp_enqueue_script( 'admin-forms' );
+			} );
 		}
 	}
 
-	if ( function_exists('is_site_admin') ) {
+	if ( function_exists( 'is_site_admin' ) ) {
 		// add OpenID options to WPMU Site Admin page
-		add_action('wpmu_options', 'openid_wpmu_options');
-		add_action('update_wpmu_options', 'openid_update_wpmu_options');
+		add_action( 'wpmu_options', 'openid_wpmu_options' );
+		add_action( 'update_wpmu_options', 'openid_update_wpmu_options' );
 	} else {
 		// add OpenID options to General Settings page.  For now, the only option on this page is dependent on the
 		// 'users_can_register' option, so only add the OpenID Settings if that is set.  If additional OpenID settings
 		// are added to the General Settings page, this check may no longer be necessary
-		if ( get_option('users_can_register') ) {
-			add_settings_field('openid_general_settings', __('OpenID Settings', 'openid'), 'openid_general_settings',
-				'general', 'default');
+		if ( get_option( 'users_can_register' ) ) {
+			add_settings_field( 'openid_general_settings', __( 'OpenID Settings', 'openid' ), 'openid_general_settings',
+			'general', 'default');
 		}
 	}
 
 	// add OpenID options to Discussion Settings page
-	add_settings_field('openid_disucssion_settings', __('OpenID Settings', 'openid'), 'openid_discussion_settings', 'discussion', 'default');
+	add_settings_field( 'openid_disucssion_settings', __( 'OpenID Settings', 'openid' ), 'openid_discussion_settings', 'discussion', 'default' );
 }
 
 
@@ -71,14 +77,14 @@ function openid_admin_panels() {
  * Register OpenID admin settings.
  */
 function openid_admin_register_settings() {
-	register_setting('general', 'openid_required_for_registration');
+	register_setting( 'general', 'openid_required_for_registration' );
 
-	register_setting('discussion', 'openid_no_require_name');
-	register_setting('discussion', 'openid_enable_approval');
-	register_setting('discussion', 'openid_enable_commentform');
+	register_setting( 'discussion', 'openid_no_require_name' );
+	register_setting( 'discussion', 'openid_enable_approval' );
+	register_setting( 'discussion', 'openid_enable_commentform' );
 
-	register_setting('openid', 'openid_blog_owner');
-	register_setting('openid', 'openid_cap');
+	register_setting( 'openid', 'openid_blog_owner' );
+	register_setting( 'openid', 'openid_cap' );
 }
 
 
@@ -86,22 +92,26 @@ function openid_admin_register_settings() {
  * Intercept the call to set the openid_cap option.  Instead of storing
  * this in the options table, set the capability on the appropriate roles.
  */
-function openid_set_cap($newvalue, $oldvalue) {
+function openid_set_cap( $newvalue, $oldvalue ) {
 	global $wp_roles;
 
 	$newvalue = (array) $newvalue;
 
-	foreach ($wp_roles->role_names as $key => $name) {
-		$role = $wp_roles->get_role($key);
-		if (array_key_exists($key, $newvalue) && $newvalue[$key] == 'on') {
+	foreach ( $wp_roles->role_names as $key => $name ) {
+		$role = $wp_roles->get_role( $key );
+		if ( array_key_exists( $key, $newvalue ) && 'on' == $newvalue[ $key ] ) {
 			$option_set = true;
 		} else {
 			$option_set = false;
 		}
-		if ($role->has_cap('use_openid_provider')) {
-			if (!$option_set) $role->remove_cap('use_openid_provider');
+		if ( $role->has_cap( 'use_openid_provider' ) ) {
+			if ( ! $option_set ) {
+				$role->remove_cap( 'use_openid_provider' );
+			}
 		} else {
-			if ($option_set) $role->add_cap('use_openid_provider');
+			if ( $option_set ) {
+				$role->add_cap( 'use_openid_provider' );
+			}
 		}
 	}
 
@@ -112,11 +122,11 @@ function openid_set_cap($newvalue, $oldvalue) {
 /**
  * Add settings link to plugin page.
  */
-function openid_plugin_action_links($links, $file) {
+function openid_plugin_action_links( $links, $file ) {
 	$this_plugin = openid_plugin_file();
 
-	if($file == $this_plugin) {
-		$links[] = '<a href="options-general.php?page=openid">' . __('Settings') . '</a>';
+	if ( $file == $this_plugin ) {
+		$links[] = '<a href="options-general.php?page=openid">' . __( 'Settings' ) . '</a>';
 	}
 
 	return $links;
@@ -131,92 +141,92 @@ function openid_plugin_action_links($links, $file) {
 function openid_options_page() {
 	global $wpdb, $wp_roles;
 
-	if ( isset($_REQUEST['action']) ) {
-		switch($_REQUEST['action']) {
-			case 'rebuild_tables' :
-				check_admin_referer('rebuild_tables');
+	if ( isset( $_REQUEST['action'] ) ) {
+		switch ( $_REQUEST['action'] ) {
+			case 'rebuild_tables':
+				check_admin_referer( 'rebuild_tables' );
 				$store = openid_getStore();
 				$store->reset();
-				echo '<div class="updated"><p><strong>'.__('OpenID cache refreshed.', 'openid').'</strong></p></div>';
+				echo '<div class="updated"><p><strong>' . __( 'OpenID cache refreshed.', 'openid' ) . '</strong></p></div>';
 				break;
 		}
 	}
 
 	// Display the options page form
-
-	screen_icon('openid');
 	?>
 	<style type="text/css">
-		#icon-openid { background-image: url("<?php echo plugin_dir_url(__FILE__) . 'f/icon.png'; ?>"); }
+		#icon-openid { background-image: url( "<?php echo plugin_dir_url( __FILE__ ) . 'f/icon.png'; ?>" ); }
 	</style>
 
 	<div class="wrap">
 		<form method="post" action="options.php">
 
-			<h2><?php _e('OpenID Settings', 'openid') ?></h2>
+			<h2><?php _e( 'OpenID Settings', 'openid' ); ?></h2>
 
-			<div class="updated fade"><p><?php _e('Please note that all OpenID Consumer options have been moved to their respective sections of the '
-				. '<a href="options-general.php">General Settings</a> and <a href="options-discussion.php">Discussion Settings</a> pages.', 'openid') ?></p></div>
+			<div class="updated fade"><p><?php _e( 'Please note that all OpenID Consumer options have been moved to their respective sections of the '
+			. '<a href="options-general.php">General Settings</a> and <a href="options-discussion.php">Discussion Settings</a> pages.', 'openid' ); ?></p></div>
 
 
 			<?php
 				$current_user = wp_get_current_user();
-				$current_user_url = get_author_posts_url($current_user->ID);
+				$current_user_url = get_author_posts_url( $current_user->ID );
 			?>
 
-			<p><?php _e('The OpenID Provider allows authorized '
+			<p><?php _e( 'The OpenID Provider allows authorized '
 			. 'users to use their author URL as an OpenID, either using their '
-			. 'local WordPress username and password, or by delegating to another OpenID Provider.', 'openid'); ?></p>
+			. 'local WordPress username and password, or by delegating to another OpenID Provider.', 'openid' ); ?></p>
 
 			<table class="form-table optiontable editform">
 				<tr valign="top">
-					<th scope="row"><?php _e('Enable OpenID', 'openid') ?></th>
+					<th scope="row"><?php _e( 'Enable OpenID', 'openid' ); ?></th>
 					<td>
 
-						<p><?php _e('Enable the local OpenID Provider for these roles:', 'openid'); ?></p>
+						<p><?php _e( 'Enable the local OpenID Provider for these roles:', 'openid' ); ?></p>
 
 						<p>
-							<?php
-				foreach ($wp_roles->role_names as $key => $name) {
-					$name = _x($name, null);
-					$role = $wp_roles->get_role($key);
-					$checked = $role->has_cap('use_openid_provider') ? ' checked="checked"' : '';
-					$option_name = 'openid_cap[' . htmlentities($key) . ']';
-					echo '<input type="checkbox" id="'.$option_name.'" name="'.$option_name.'"'.$checked.' /><label for="'.$option_name.'"> '.$name.'</label><br />' . "\n";
-				}
-							?>
+						<?php
+						foreach ( $wp_roles->role_names as $key => $name ) {
+							$name = _x( $name, null );
+							$role = $wp_roles->get_role( $key );
+							$checked = $role->has_cap( 'use_openid_provider' ) ? ' checked="checked"' : '';
+							$option_name = 'openid_cap[' . htmlentities( $key ) . ']';
+							echo '<input type="checkbox" id="' . $option_name . '" name="' . $option_name . '"' . $checked . ' /><label for="' . $option_name . '"> ' . $name . '</label><br />' . PHP_EOL;
+						}
+						?>
 						</p>
 					</td>
 				</tr>
 
 			<?php
 				$users = get_users();
-				$users = array_filter($users, create_function('$u', '$u = new WP_User($u->ID); return $u->has_cap("use_openid_provider");'));
+				$users = array_filter( $users, function( $u ) {
+					$u = new WP_User( $u->ID );
+					return $u->has_cap( 'use_openid_provider' );
+				} );
 
-				if (!empty($users)):
-			?>
+				if ( ! empty( $users ) ):
+				?>
 				<tr valign="top">
 					<th scope="row"><?php _e('Blog Owner', 'openid') ?></th>
 					<td>
 
-						<p><?php printf(__('Authorized accounts on this blog can use their author URL (i.e. <em>%1$s</em>) as an OpenID. '
-							. 'The Blog Owner will be able to use the blog address (%2$s) as their OpenID.  If this is a '
-							. 'single-user blog, you should set this to your account.', 'openid'),
-							sprintf('<a href="%1$s">%1$s</a>', $current_user_url), sprintf('<a href="%1$s">%1$s</a>', trailingslashit(get_option('home')))
-						); ?>
-						</p>
+						<p><?php printf( __( 'Authorized accounts on this blog can use their author URL (i.e. <em>%1$s</em>) as an OpenID. '
+						. 'The Blog Owner will be able to use the blog address (%2$s) as their OpenID.  If this is a '
+						. 'single-user blog, you should set this to your account.', 'openid'),
+						sprintf( '<a href="%1$s">%1$s</a>', $current_user_url ), sprintf('<a href="%1$s">%1$s</a>', trailingslashit( get_option( 'home') ) )
+						); ?></p>
 
 			<?php
-				if (defined('OPENID_DISALLOW_OWNER') && OPENID_DISALLOW_OWNER) {
+				if ( defined( 'OPENID_DISALLOW_OWNER' ) && OPENID_DISALLOW_OWNER ) {
 					echo '
-						<p class="error">' . __('A Blog Owner cannot be set for this blog.  To set a Blog Owner, '
-							. 'first remove the following line from your <code>wp-config.php</code>:', 'openid')
-							. '<br /><code style="margin:1em;">define("OPENID_DISALLOW_OWNER", 1);</code>
+						<p class="error">' . __( 'A Blog Owner cannot be set for this blog.  To set a Blog Owner, '
+						. 'first remove the following line from your <code>wp-config.php</code>:', 'openid')
+						. '<br /><code style="margin:1em;">define("OPENID_DISALLOW_OWNER", 1);</code>
 						</p>';
 				} else {
-					$blog_owner = get_option('openid_blog_owner');
+					$blog_owner = get_option( 'openid_blog_owner' );
 
-					if (empty($blog_owner) || $blog_owner == $current_user->user_login) {
+					if ( empty( $blog_owner ) || $blog_owner == $current_user->user_login) {
 						echo '<select id="openid_blog_owner" name="openid_blog_owner"><option value="">' . __('(none)', 'openid') . '</option>';
 
 
@@ -283,8 +293,6 @@ function openid_profile_panel() {
 		echo '<div class="error"><p><strong>'.__('Error:', 'openid').'</strong> '.$error.'</p></div>';
 		unset($error);
 	}
-
-	screen_icon('openid');
 	?>
 	<style type="text/css">
 		#icon-openid { background-image: url("<?php echo plugin_dir_url(__FILE__) . 'f/icon.png'; ?>"); }
@@ -419,8 +427,6 @@ function openid_manage_trusted_sites() {
 		}
 		break;
 	}
-
-	screen_icon('openid');
 	?>
 	<style type="text/css">
 		#icon-openid { background-image: url("<?php echo plugin_dir_url(__FILE__) . 'f/icon.png'; ?>"); }
