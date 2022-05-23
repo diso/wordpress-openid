@@ -65,7 +65,7 @@ function openid_process_comment( $comment ) {
 
 	if ( array_key_exists( 'openid_identifier', $_POST ) ) {
 		$openid_url = $_POST['openid_identifier'];
-	} elseif ( $_REQUEST['login_with_openid'] ) {
+	} elseif ( array_key_exists( 'login_with_openid', $_REQUEST ) && $_REQUEST['login_with_openid'] ) {
 		$openid_url = $_POST['url'];
 	}
 
