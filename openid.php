@@ -5,8 +5,8 @@
  * Description: Allows the use of OpenID for account registration, authentication, and commenting.  Also includes an OpenID provider which can turn WordPress author URLs into OpenIDs.
  * Author: DiSo Development Team
  * Author URI: http://diso-project.org/
- * Version: 3.5.0
- * Requires PHP: 5.3
+ * Version: 3.6.0
+ * Requires PHP: 5.6
  * License: Apache 2.0
  * License URI: https://www.apache.org/licenses/LICENSE-2.0
  * Text Domain: openid
