@@ -1,0 +1,27 @@
+{
+    "name": "wordpress-openid",
+    "description": "openid support for WordPress posts",
+    "main": "openid.php",
+    "devDependencies": {
+      "grunt": "^1.1.0",
+      "grunt-checktextdomain": "^1.0.1",
+      "grunt-wp-i18n": "^1.0.3",
+      "grunt-wp-readme-to-markdown": "^2.0.1"
+    },
+    "repository": {
+      "type": "git",
+      "url": "https://github.com/diso/wordpress-openid.git"
+    },
+    "keywords": [
+      "openid",
+      "authentication",
+      "login",
+      "comments"
+    ],
+    "author": "DiSo Team",
+    "license": "Apache-2.0",
+    "bugs": {
+      "url": "https://github.com/diso/wordpress-openid/issues"
+    },
+    "homepage": "https://github.com/diso/wordpress-openid"
+  }

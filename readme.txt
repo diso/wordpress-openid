@@ -2,10 +2,10 @@
 Contributors: willnorris, factoryjoe, pfefferle
 Tags: openid, authentication, login, comments
 Requires at least: 2.8
-Tested up to: 5.1
-Stable tag: 3.5.0
-Requires PHP: 5.3
-License: Apache 2.0
+Tested up to: 6.0
+Stable tag: 3.6.0
+Requires PHP: 5.6
+License: Apache-2.0
 License URI: https://www.apache.org/licenses/LICENSE-2.0
 
 Allows WordPress to provide and consumer OpenIDs for authentication of users and comments.
@@ -98,6 +98,11 @@ report at <http://code.google.com/p/diso/issues/list>.
 
 Project maintined on github at
 [diso/wordpress-openid](https://github.com/diso/wordpress-openid).
+
+= version 3.6.0 (Mai 2022) =
+ - fixed issue with ActivityPub plugin
+ - updated to latest OpenID library
+ - added CI/CD toolings
 
 = version 3.5.0 (Feb 12, 2019) =
  - fixed PHP warnings and deprecation messages

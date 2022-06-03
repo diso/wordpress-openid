@@ -1,11 +1,11 @@
 # OpenID #
-**Contributors:** willnorris, factoryjoe, pfefferle  
+**Contributors:** [willnorris](https://profiles.wordpress.org/willnorris/), [factoryjoe](https://profiles.wordpress.org/factoryjoe/), [pfefferle](https://profiles.wordpress.org/pfefferle/)  
 **Tags:** openid, authentication, login, comments  
 **Requires at least:** 2.8  
-**Tested up to:** 5.1  
-**Stable tag:** 3.5.0  
-**Requires PHP:** 5.3  
-**License:** Apache 2.0  
+**Tested up to:** 6.0  
+**Stable tag:** 3.6.0  
+**Requires PHP:** 5.6  
+**License:** Apache-2.0  
 **License URI:** https://www.apache.org/licenses/LICENSE-2.0  
 
 Allows WordPress to provide and consumer OpenIDs for authentication of users and comments.
@@ -87,27 +87,22 @@ report at <http://code.google.com/p/diso/issues/list>.
 
 ## Screenshots ##
 
-### 1. Commentors can use their OpenID when leaving a comment ###
-![Commentors can use their OpenID when leaving a comment](http://s.wordpress.org/extend/plugins/openid/screenshot-1.png)
-
-### 2. Users can login with their OpenID in place of a traditional username and password ###
-![Users can login with their OpenID in place of a traditional username and password](http://s.wordpress.org/extend/plugins/openid/screenshot-2.png)
-
-### 3. Users authorized to use the OpenID Provider can delegate to a different provider ###
-![Users authorized to use the OpenID Provider can delegate to a different provider](http://s.wordpress.org/extend/plugins/openid/screenshot-3.png)
-
-### 4. Users can add additional OpenIDs which they can use to login to WordPress ###
-![Users can add additional OpenIDs which they can use to login to WordPress](http://s.wordpress.org/extend/plugins/openid/screenshot-4.png)
-
-### 5. Users authorized to use the OpenID Provider can monitor which sites they've logged in to ###
-![Users authorized to use the OpenID Provider can monitor which sites they've logged in to](http://s.wordpress.org/extend/plugins/openid/screenshot-5.png)
-
+1. Commentors can use their OpenID when leaving a comment
+2. Users can login with their OpenID in place of a traditional username and password
+3. Users authorized to use the OpenID Provider can delegate to a different provider
+4. Users can add additional OpenIDs which they can use to login to WordPress
+5. Users authorized to use the OpenID Provider can monitor which sites they've logged in to
 
 
 ## Changelog ##
 
 Project maintined on github at
 [diso/wordpress-openid](https://github.com/diso/wordpress-openid).
+
+### version 3.6.0 (Mai 2022) ###
+ - fixed issue with ActivityPub plugin
+ - updated to latest OpenID library
+ - added CI/CD toolings
 
 ### version 3.5.0 (Feb 12, 2019) ###
  - fixed PHP warnings and deprecation messages
