@@ -195,7 +195,7 @@ function openid_cleanup() {
 /*
  * Customer error handler for calls into the JanRain library
  */
-function openid_customer_error_handler( $errno, $errmsg, $filename, $linenum, $vars ) {
+function openid_customer_error_handler( $errno, $errmsg, $filename, $linenum, $vars = NULL) {
 	if ( 2048 == ( 2048 & $errno ) ) {
 		return;
 	}
