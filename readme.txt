@@ -3,7 +3,7 @@ Contributors: willnorris, factoryjoe, pfefferle
 Tags: openid, authentication, login, comments
 Requires at least: 2.8
 Tested up to: 6.0
-Stable tag: 3.6.0
+Stable tag: 3.6.1
 Requires PHP: 5.6
 License: Apache-2.0
 License URI: https://www.apache.org/licenses/LICENSE-2.0
@@ -98,6 +98,10 @@ report at <http://code.google.com/p/diso/issues/list>.
 
 Project maintined on github at
 [diso/wordpress-openid](https://github.com/diso/wordpress-openid).
+
+= version 3.6.1 (June 2022) =
+ - fixed PHP 8 issue (props to mscherer)
+ - updated code to match the WordPress Coding Standard
 
 = version 3.6.0 (Mai 2022) =
  - fixed issue with ActivityPub plugin
