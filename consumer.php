@@ -21,7 +21,7 @@ function openid_getConsumer() { // phpcs:ignore
 	if ( ! $consumer ) {
 		require_once 'Auth/OpenID/Consumer.php';
 
-		$store = openid_getStore();
+		$store    = openid_getStore();
 		$consumer = new Auth_OpenID_Consumer( $store );
 		if ( null === $consumer ) {
 			openid_error( 'OpenID consumer could not be created properly.' );
@@ -98,7 +98,7 @@ function finish_openid_auth() {
 			openid_status( 'success' );
 
 			$identity_url = $response->identity_url;
-			$escaped_url = htmlspecialchars( $identity_url, ENT_QUOTES );
+			$escaped_url  = htmlspecialchars( $identity_url, ENT_QUOTES );
 			return $escaped_url;
 
 		default:
@@ -124,7 +124,7 @@ function openid_begin_consumer( $url ) {
 		set_error_handler( 'openid_customer_error_handler' );
 
 		$consumer = openid_getConsumer();
-		$request = $consumer->begin( $url );
+		$request  = $consumer->begin( $url );
 
 		restore_error_handler();
 	}
@@ -150,16 +150,18 @@ function openid_start_login( $claimed_url, $action, $finish_url = null ) {
 
 	if ( null === $auth_request ) {
 		openid_status( 'error' );
-		openid_message(sprintf(
-			__( 'Could not discover an OpenID identity server endpoint at the url: %s', 'openid' ),
-			htmlentities( $claimed_url )
-		));
+		openid_message(
+			sprintf(
+				__( 'Could not discover an OpenID identity server endpoint at the url: %s', 'openid' ),
+				htmlentities( $claimed_url )
+			)
+		);
 
 		return;
 	}
 
 	@session_start();
-	$_SESSION['openid_action'] = $action;
+	$_SESSION['openid_action']     = $action;
 	$_SESSION['openid_finish_url'] = $finish_url;
 
 	$extensions = apply_filters( 'openid_auth_request_extensions', array(), $auth_request );
@@ -192,7 +194,7 @@ function openid_add_ax_extension( $extensions, $auth_request ) {
 				Auth_OpenID_AX_AttrInfo::make( 'http://axschema.org/contact/email', 1, true ),
 				Auth_OpenID_AX_AttrInfo::make( 'http://axschema.org/namePerson', 1, true ),
 			);
-			$fields = apply_filters( 'openid_consumer_ax_fields', $default_fields );
+			$fields         = apply_filters( 'openid_consumer_ax_fields', $default_fields );
 
 			$ax_request = new Auth_OpenID_AX_FetchRequest();
 			foreach ( $fields as $field ) {
@@ -218,8 +220,8 @@ function openid_add_sreg_extension( $extensions, $auth_request ) {
 		require_once( 'Auth/OpenID/SReg.php' );
 
 		if ( $auth_request->endpoint->usesExtension( Auth_OpenID_SREG_NS_URI_1_0 ) || $auth_request->endpoint->usesExtension( Auth_OpenID_SREG_NS_URI_1_1 ) ) {
-			$required = apply_filters( 'openid_consumer_sreg_required_fields', array() );
-			$optional = apply_filters( 'openid_consumer_sreg_optional_fields', array( 'nickname', 'email', 'fullname' ) );
+			$required     = apply_filters( 'openid_consumer_sreg_required_fields', array() );
+			$optional     = apply_filters( 'openid_consumer_sreg_optional_fields', array( 'nickname', 'email', 'fullname' ) );
 			$extensions[] = Auth_OpenID_SRegRequest::build( $required, $optional );
 		}
 	}

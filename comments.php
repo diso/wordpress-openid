@@ -73,9 +73,9 @@ function openid_process_comment( $comment ) {
 	unset( $_SESSION['openid_posted_comment'] );
 
 	if ( ! empty( $openid_url ) ) {  // Comment form's OpenID url is filled in.
-		$_SESSION['openid_comment_post'] = $_POST;
+		$_SESSION['openid_comment_post']                          = $_POST;
 		$_SESSION['openid_comment_post']['comment_author_openid'] = $openid_url;
-		$_SESSION['openid_comment_post']['openid_skip'] = 1;
+		$_SESSION['openid_comment_post']['openid_skip']           = 1;
 
 		openid_start_login( $openid_url, 'comment' );
 
@@ -102,8 +102,8 @@ function openid_process_comment( $comment ) {
  * address.
  */
 function openid_require_name_email( $comment ) {
-	$user = wp_get_current_user();
-	$comment_author = $comment['comment_author'];
+	$user                 = wp_get_current_user();
+	$comment_author       = $comment['comment_author'];
 	$comment_author_email = $comment['comment_author_email'];
 
 	if ( get_option( 'require_name_email' ) && ! $user->ID ) {
@@ -185,9 +185,11 @@ function openid_sanitize_comment_cookies() {
 		// this might be an i-name, so we don't want to run clean_url()
 		remove_filter( 'pre_comment_author_url', 'clean_url' );
 
-		$comment_author_url = apply_filters( 'pre_comment_author_url',
-		$_COOKIE[ 'comment_author_openid_' . COOKIEHASH ] );
-		$comment_author_url = stripslashes( $comment_author_url );
+		$comment_author_url                            = apply_filters(
+			'pre_comment_author_url',
+			$_COOKIE[ 'comment_author_openid_' . COOKIEHASH ]
+		);
+		$comment_author_url                            = stripslashes( $comment_author_url );
 		$_COOKIE[ 'comment_author_url_' . COOKIEHASH ] = $comment_author_url;
 	}
 }
@@ -343,7 +345,7 @@ function openid_finish_comment( $identity_url, $action ) {
  * @param int $id id of comment to set as OpenID
  */
 function set_comment_openid( $id ) {
-	$comment = get_comment( $id );
+	$comment         = get_comment( $id );
 	$openid_comments = get_post_meta( $comment->comment_post_ID, 'openid_comments', true );
 	if ( ! is_array( $openid_comments ) ) {
 		$openid_comments = array();
@@ -359,7 +361,7 @@ function set_comment_openid( $id ) {
  * @param int $id id of comment to set as OpenID
  */
 function unset_comment_openid( $id ) {
-	$comment = get_comment( $id );
+	$comment         = get_comment( $id );
 	$openid_comments = get_post_meta( $comment->comment_post_ID, 'openid_comments', true );
 
 	if ( is_array( $openid_comments ) && in_array( $id, $openid_comments ) ) {
@@ -396,9 +398,9 @@ function openid_get_user_data_form( $data, $identity_url ) {
 	}
 
 	if ( $comment['author'] ) {
-		$data['nickname'] = $comment['author'];
+		$data['nickname']      = $comment['author'];
 		$data['user_nicename'] = $comment['author'];
-		$data['display_name'] = $comment['author'];
+		$data['display_name']  = $comment['author'];
 	}
 
 	return $data;

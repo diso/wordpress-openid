@@ -33,7 +33,7 @@ function openid_server_sreg_post_auth( $request ) {
  */
 function openid_server_sreg_trust_form( $attributes ) {
 	$sreg_request = $GLOBALS['openid_server_sreg_request'];
-	$sreg_fields = $sreg_request->allRequestedFields();
+	$sreg_fields  = $sreg_request->allRequestedFields();
 
 	if ( ! empty( $sreg_fields ) ) {
 		foreach ( $sreg_fields as $field ) {
@@ -79,9 +79,9 @@ function openid_server_attributes_string( $fields, $string = '' ) {
 			return join( ' and ', $fields );
 		}
 		$string = array_shift( $fields );
-	} else if ( sizeof( $fields ) == 1 ) {
+	} elseif ( sizeof( $fields ) == 1 ) {
 		$string .= ', and ' . array_shift( $fields );
-	} else if ( sizeof( $fields ) > 1 ) {
+	} elseif ( sizeof( $fields ) > 1 ) {
 		$string .= ', ' . array_shift( $fields );
 	}
 
@@ -123,8 +123,8 @@ function openid_server_sreg_auth_response( $response ) {
 		$include_sreg = $GLOBALS['openid_server_sreg_trust'];
 	} else {
 		$trusted_sites = get_user_meta( $user->ID, 'openid_trusted_sites', true );
-		$request = $response->request;
-		$site_hash = md5( $request->trust_root );
+		$request       = $response->request;
+		$site_hash     = md5( $request->trust_root );
 		if ( is_array( $trusted_sites ) && array_key_exists( $site_hash, $trusted_sites ) ) {
 			$include_sreg = $trusted_sites[ $site_hash ]['release_attributes'];
 		}
@@ -159,7 +159,7 @@ function openid_server_sreg_auth_response( $response ) {
  *       where '*' is the name of the sreg attribute.
  */
 function openid_server_sreg_from_profile( $field ) {
-	$user = wp_get_current_user();
+	$user  = wp_get_current_user();
 	$value = '';
 
 	switch ( $field ) {
@@ -173,7 +173,7 @@ function openid_server_sreg_from_profile( $field ) {
 
 		case 'fullname':
 			$user_data = get_userdata( $user->ID );
-			$value = $user_data->display_name;
+			$value     = $user_data->display_name;
 			break;
 	}
 

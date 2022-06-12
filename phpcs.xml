@@ -2,4 +2,12 @@
 <ruleset name="WordPress">
 	<description>WordPress Coding Standard.</description>
 	<rule ref="WordPress-Core" />
+
+	<exclude-pattern>*/f/*</exclude-pattern>
+	<exclude-pattern>*/vendor/*</exclude-pattern>
+	<exclude-pattern>*/lib/*</exclude-pattern>
+	<exclude-pattern>*/node_modules/*</exclude-pattern>
+	<exclude-pattern>*/.wordpress-org/*</exclude-pattern>
+	<exclude-pattern>*/.github/*</exclude-pattern>
+	<exclude-pattern>*\.(inc|css|js|svg|xml|json)</exclude-pattern>
 </ruleset>

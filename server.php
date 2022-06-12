@@ -48,8 +48,8 @@ function openid_provider_xrds_simple( $xrds ) {
 
 	if ( ! $user && get_option( 'openid_blog_owner' ) ) {
 		$url_parts = parse_url( get_option( 'home' ) );
-		$path = array_key_exists( 'path', $url_parts ) ? $url_parts['path'] : '';
-		$path = trailingslashit( $path );
+		$path      = array_key_exists( 'path', $url_parts ) ? $url_parts['path'] : '';
+		$path      = trailingslashit( $path );
 
 		$script = preg_replace( '/index.php$/', '', $_SERVER['SCRIPT_NAME'] );
 		$script = trailingslashit( $script );
@@ -76,32 +76,32 @@ function openid_provider_xrds_simple( $xrds ) {
 			$services = array();
 
 			$tmp_types = apply_filters( 'openid_server_xrds_types', array( 'http://specs.openid.net/auth/2.0/signon' ) );
-			$types = array();
+			$types     = array();
 			foreach ( $tmp_types as $t ) {
 				$types[] = array( 'content' => $t );
 			}
 			$services[] = array(
-				'Type' => $types,
-				'URI' => openid_server_url(),
+				'Type'    => $types,
+				'URI'     => openid_server_url(),
 				'LocalID' => get_author_posts_url( $user->ID ),
 			);
 
 			$tmp_types = apply_filters( 'openid_server_xrds_types', array( 'http://openid.net/signon/1.1' ) );
-			$types = array();
+			$types     = array();
 			foreach ( $tmp_types as $t ) {
 				$types[] = array( 'content' => $t );
 			}
 			$services[] = array(
-				'Type' => $types,
-				'URI' => openid_server_url(),
+				'Type'            => $types,
+				'URI'             => openid_server_url(),
 				'openid:Delegate' => get_author_posts_url( $user->ID ),
 			);
 		}
 	} else {
 		$services = array(
 			array(
-				'Type' => array( array( 'content' => 'http://specs.openid.net/auth/2.0/server' ) ),
-				'URI' => openid_server_url(),
+				'Type'    => array( array( 'content' => 'http://specs.openid.net/auth/2.0/server' ) ),
+				'URI'     => openid_server_url(),
 				'LocalID' => 'http://specs.openid.net/auth/2.0/identifier_select',
 			),
 		);
@@ -136,19 +136,19 @@ function openid_provider_webfinger( $webfinger, $resource, $user ) {
 	if ( get_user_meta( $user->ID, 'openid_delegate', true ) ) {
 		$webfinger['links'][] = array(
 			'href' => get_user_meta( $user->ID, 'openid_delegate', true ),
-			'rel' => 'http://specs.openid.net/auth/2.0/provider',
+			'rel'  => 'http://specs.openid.net/auth/2.0/provider',
 		);
 	} else {
 		// check if WebFinger user is "blog-owner"
 		if ( get_option( 'openid_blog_owner' ) && get_option( 'openid_blog_owner' ) == $user->user_login ) {
 			$webfinger['links'][] = array(
 				'href' => site_url( '/' ),
-				'rel' => 'http://specs.openid.net/auth/2.0/provider',
+				'rel'  => 'http://specs.openid.net/auth/2.0/provider',
 			);
 		} else { // otherwise use author-url
 			$webfinger['links'][] = array(
 				'href' => get_author_posts_url( $user->ID ),
-				'rel' => 'http://specs.openid.net/auth/2.0/provider',
+				'rel'  => 'http://specs.openid.net/auth/2.0/provider',
 			);
 		}
 	}
@@ -248,9 +248,9 @@ function openid_server_auth_request( $request ) {
 	do_action( 'openid_server_post_auth', $request );
 
 	// get some user data
-	$user = wp_get_current_user();
+	$user       = wp_get_current_user();
 	$author_url = get_author_posts_url( $user->ID );
-	$id_select = ( $request->identity == 'http://specs.openid.net/auth/2.0/identifier_select' );
+	$id_select  = ( $request->identity == 'http://specs.openid.net/auth/2.0/identifier_select' );
 
 	// bail if user does not have access to OpenID provider
 	if ( ! $user->has_cap( 'use_openid_provider' ) ) {
@@ -275,14 +275,14 @@ function openid_server_auth_request( $request ) {
 
 				echo '<h1>' . __( 'OpenID Login Error', 'openid' ) . '</h1>';
 				echo '<p>';
-				printf( __( 'Because you have delegated your OpenID, you cannot login with the URL <strong>%s</strong>. Instead, you must use your full OpenID when logging in.', 'openid'), trailingslashit( get_option( 'home' ) ) );
+				printf( __( 'Because you have delegated your OpenID, you cannot login with the URL <strong>%s</strong>. Instead, you must use your full OpenID when logging in.', 'openid' ), trailingslashit( get_option( 'home' ) ) );
 				echo'</p>';
-				echo '<p>' . sprintf( __( 'Your full OpenID is: %s', 'openid'), '<strong>' . $author_url . '</strong>' ) . '</p>';
+				echo '<p>' . sprintf( __( 'Your full OpenID is: %s', 'openid' ), '<strong>' . $author_url . '</strong>' ) . '</p>';
 
 				echo '
 					<form method="post">
 						<p class="submit">
-							<input type="submit" value="'.__('Continue').'" />
+							<input type="submit" value="' . __( 'Continue' ) . '" />
 							<input type="hidden" name="action" value="cancel" />
 							<input type="hidden" name="openid_server" value="1" />
 						</p>'
@@ -298,7 +298,7 @@ function openid_server_auth_request( $request ) {
 
 	// if user trusts site, we're done
 	$trusted_sites = get_user_meta( $user->ID, 'openid_trusted_sites', true );
-	$site_hash = md5( $request->trust_root );
+	$site_hash     = md5( $request->trust_root );
 	if ( is_array( $trusted_sites ) && array_key_exists( $site_hash, $trusted_sites ) ) {
 		$trusted_sites[ $site_hash ]['last_login'] = time();
 		update_user_meta( $user->ID, 'openid_trusted_sites', $trusted_sites );
@@ -426,7 +426,7 @@ function openid_provider_link_tags() {
 				}
 			}
 		} else {
-			$server = openid_server_url();
+			$server     = openid_server_url();
 			$identifier = get_author_posts_url( $user->ID );
 
 			echo '
@@ -476,8 +476,8 @@ function openid_server_user_trust( $request ) {
 				);
 				$site = apply_filters( 'openid_server_store_trusted_site', $site );
 
-				$trusted_sites = get_user_meta( $user->ID, 'openid_trusted_sites', true );
-				$site_hash = md5( $request->trust_root );
+				$trusted_sites               = get_user_meta( $user->ID, 'openid_trusted_sites', true );
+				$site_hash                   = md5( $request->trust_root );
 				$trusted_sites[ $site_hash ] = $site;
 
 				update_user_meta( $user->ID, 'openid_trusted_sites', $trusted_sites );
@@ -507,7 +507,7 @@ function openid_server_user_trust( $request ) {
 				<div id="site">' . get_option( 'blogname' ) . '</div>';
 
 		if ( is_user_logged_in() ) {
-			$user = wp_get_current_user();
+			$user       = wp_get_current_user();
 			$logout_url = site_url( 'wp-login.php?action=logout&redirect_to=' . urlencode( openid_server_url() ), 'login' );
 			echo '
 				<div id="loggedin">' . sprintf( __( 'Logged in as %1$s (%2$s). <a href="%3$s">Use a different account?</a>', 'openid' ), $user->display_name, $user->user_login, $logout_url ) . '</div>';
@@ -535,8 +535,10 @@ function openid_server_user_trust( $request ) {
 			</p>
 
 			<p style="margin: 3em 0 1em 0; font-size: 0.8em;">'
-				. sprintf( __( 'Manage or remove access on the <a href="%s" target="_blank">Trusted Sites</a> page.', 'openid' ),
-				admin_url( ( current_user_can( 'edit_users' ) ? 'users.php' : 'profile.php' ) . '?page=openid_trusted_sites' ) )
+				. sprintf(
+					__( 'Manage or remove access on the <a href="%s" target="_blank">Trusted Sites</a> page.', 'openid' ),
+					admin_url( ( current_user_can( 'edit_users' ) ? 'users.php' : 'profile.php' ) . '?page=openid_trusted_sites' )
+				)
 				. '</p>
 			<p style="margin: 1em 0; font-size: 0.8em;">'
 				. sprintf( __( '<a href="%s" target="_blank">Edit your profile</a> to change the information that gets shared with Trusted Sites.', 'openid' ), admin_url( 'profile.php' ) )
@@ -608,8 +610,8 @@ function openid_server_get_delegation_info( $userid, $url = null ) {
 		}
 
 		$html_content = $response->body;
-		$p = new Auth_OpenID_Parse();
-		$link_attrs = $p->parseLinkAttrs( $html_content );
+		$p            = new Auth_OpenID_Parse();
+		$link_attrs   = $p->parseLinkAttrs( $html_content );
 
 		// check HTML for OpenID2
 		$server_url = $p->findFirstHref( $link_attrs, 'openid2.provider' );
@@ -619,8 +621,8 @@ function openid_server_get_delegation_info( $userid, $url = null ) {
 				$openid_url = $url;
 			}
 			$services[] = array(
-				'Type' => array( array( 'content' => Auth_OpenID_Type_1_1 ) ),
-				'URI' => $server_url,
+				'Type'    => array( array( 'content' => Auth_OpenID_Type_1_1 ) ),
+				'URI'     => $server_url,
 				'LocalID' => $openid_url,
 			);
 		}

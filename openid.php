@@ -186,7 +186,7 @@ if ( ! function_exists( 'get_userdata_by_various' ) ) :
 				return false;
 			}
 			return $user->data;
-		} else if ( is_numeric( $id_or_name ) ) {
+		} elseif ( is_numeric( $id_or_name ) ) {
 			return get_user_by( 'id', $id_or_name );
 		} else {
 			return get_user_by( 'login', $id_or_name );

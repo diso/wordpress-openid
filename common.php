@@ -232,10 +232,10 @@ function openid_customer_error_handler( $errno, $errmsg, $filename, $linenum, $v
  */
 function openid_generate_new_username( $url, $append = true ) {
 	$base = openid_normalize_username( $url );
-	$i = '';
+	$i    = '';
 	while ( true ) {
 		$username = openid_normalize_username( $base . $i );
-		$user = get_user_by( 'login', $username );
+		$user     = get_user_by( 'login', $username );
 		if ( $user ) {
 			if ( ! $append ) {
 				return null;
@@ -349,25 +349,25 @@ function openid_create_new_user( $identity_url, &$user_data ) {
 		$username = openid_generate_new_username( $identity_url );
 	}
 
-	$user_data['user_login'] = $username;
+	$user_data['user_login']   = $username;
 	$user_data['display_name'] = $username;
-	$user_data['user_pass'] = substr( md5( uniqid( microtime() ) ), 0, 7 );
-	$user_id = wp_insert_user( $user_data );
+	$user_data['user_pass']    = substr( md5( uniqid( microtime() ) ), 0, 7 );
+	$user_id                   = wp_insert_user( $user_data );
 
 	if ( $user_id instanceof WP_Error ) {
 		openid_message( $user_id->get_error_message() );
 		openid_status( 'error' );
 		return;
-	} else if ( is_integer( $user_id ) ) { // created ok
+	} elseif ( is_integer( $user_id ) ) { // created ok
 
 		$user_data['ID'] = $user_id;
 		// XXX this all looks redundant, see openid_set_current_user
 
-		$user = new WP_User( $user_id );
+		$user        = new WP_User( $user_id );
 		$credentials = array(
-			'user_login' => $user->user_login,
+			'user_login'    => $user->user_login,
 			'user_password' => $user_data['user_pass'],
-			'remember' => true,
+			'remember'      => true,
 		);
 
 		if ( ! wp_signon( $credentials ) ) {
@@ -419,10 +419,10 @@ function openid_create_new_user( $identity_url, &$user_data ) {
  */
 function openid_get_user_data( $identity_url ) {
 	$data = array(
-		'ID' => null,
-		'user_url' => $identity_url,
+		'ID'            => null,
+		'user_url'      => $identity_url,
 		'user_nicename' => $identity_url,
-		'display_name' => $identity_url,
+		'display_name'  => $identity_url,
 	);
 
 	// create proper website URL if OpenID is an i-name
@@ -462,7 +462,7 @@ function openid_get_user_data_ax( $data, $identity_url ) {
 	require_once( 'Auth/OpenID/AX.php' );
 
 	$response = openid_response();
-	$ax = Auth_OpenID_AX_FetchResponse::fromSuccessResponse( $response );
+	$ax       = Auth_OpenID_AX_FetchResponse::fromSuccessResponse( $response );
 
 	if ( ! $ax ) {
 		return $data;
@@ -475,9 +475,9 @@ function openid_get_user_data_ax( $data, $identity_url ) {
 
 	$nickname = $ax->getSingle( 'http://axschema.org/namePerson/friendly' );
 	if ( $nickname && ! is_a( $nickname, 'Auth_OpenID_AX_Error' ) ) {
-		$data['nickname'] = $ax->getSingle( 'http://axschema.org/namePerson/friendly' );
+		$data['nickname']      = $ax->getSingle( 'http://axschema.org/namePerson/friendly' );
 		$data['user_nicename'] = $ax->getSingle( 'http://axschema.org/namePerson/friendly' );
-		$data['display_name'] = $ax->getSingle( 'http://axschema.org/namePerson/friendly' );
+		$data['display_name']  = $ax->getSingle( 'http://axschema.org/namePerson/friendly' );
 	}
 
 	$fullname = $ax->getSingle( 'http://axschema.org/namePerson' );
@@ -505,9 +505,9 @@ function openid_get_user_data_ax( $data, $identity_url ) {
  */
 function openid_get_user_data_sreg( $data, $identity_url ) {
 	require_once( 'Auth/OpenID/SReg.php' );
-	$response = openid_response();
+	$response  = openid_response();
 	$sreg_resp = Auth_OpenID_SRegResponse::fromSuccessResponse( $response );
-	$sreg = $sreg_resp->contents();
+	$sreg      = $sreg_resp->contents();
 
 	if ( ! $sreg ) {
 		return $data;
@@ -518,9 +518,9 @@ function openid_get_user_data_sreg( $data, $identity_url ) {
 	}
 
 	if ( array_key_exists( 'nickname', $sreg ) && $sreg['nickname'] ) {
-		$data['nickname'] = $sreg['nickname'];
+		$data['nickname']      = $sreg['nickname'];
 		$data['user_nicename'] = $sreg['nickname'];
-		$data['display_name'] = $sreg['nickname'];
+		$data['display_name']  = $sreg['nickname'];
 	}
 
 	if ( array_key_exists( 'fullname', $sreg ) && $sreg['fullname'] ) {
@@ -625,7 +625,7 @@ function openid_clean_request() {
 
 		unset( $_GET['q'] );
 
-		$vars = explode( '&', $_SERVER['QUERY_STRING'] );
+		$vars  = explode( '&', $_SERVER['QUERY_STRING'] );
 		$clean = array();
 
 		foreach ( $vars as $v ) {
@@ -642,7 +642,7 @@ function openid_clean_request() {
 		// This results in the QUERY_STRING not having the correct information, but fortunately we
 		// can pull it out of REQUEST_URI
 
-		list($path, $query) = explode( '?', $_SERVER['REQUEST_URI'], 2 );
+		list($path, $query)      = explode( '?', $_SERVER['REQUEST_URI'], 2 );
 		$_SERVER['QUERY_STRING'] = $query;
 	}
 }
