@@ -45,7 +45,7 @@ function openid_authenticate( $user ) {
 			if ( $user_id ) {
 				$user = new WP_User( $user_id );
 			} else {
-				$user = new WP_Error( 'openid_registration_closed', __( 'Your have entered a valid OpenID, but this site is not currently accepting new accounts.', 'openid' ) );
+				$user = new WP_Error( 'openid_registration_closed', __( 'You have entered a valid OpenID, but this site is not currently accepting new accounts.', 'openid' ) );
 			}
 		} elseif ( array_key_exists( 'openid_error', $_REQUEST ) ) {
 			$user = new WP_Error( 'openid_login_error', htmlentities2( $_REQUEST['openid_error'] ) );
