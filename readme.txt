@@ -1,8 +1,8 @@
 === OpenID ===
-Contributors: willnorris, factoryjoe, pfefferle
+Contributors: willnorris, factoryjoe, pfefferle, huzaifaalmesbah
 Tags: openid, authentication, login, comments
 Requires at least: 2.8
-Tested up to: 6.0
+Tested up to: 6.3
 Stable tag: 3.6.1
 Requires PHP: 5.6
 License: Apache-2.0
