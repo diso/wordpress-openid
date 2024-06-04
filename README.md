@@ -1,12 +1,19 @@
 # OpenID #
-**Contributors:** [willnorris](https://profiles.wordpress.org/willnorris/), [factoryjoe](https://profiles.wordpress.org/factoryjoe/), [pfefferle](https://profiles.wordpress.org/pfefferle/)  
-**Tags:** openid, authentication, login, comments  
-**Requires at least:** 2.8  
-**Tested up to:** 6.0  
-**Stable tag:** 3.6.1  
-**Requires PHP:** 5.6  
-**License:** Apache-2.0  
-**License URI:** https://www.apache.org/licenses/LICENSE-2.0  
+
+> [!CAUTION]
+> This plugin has not been maintained for many years and is not recommended for use.
+> It is provided here for historical reference only.
+> If you are still interested in using your personal domain to login,
+> take a look at <https://wordpress.org/plugins/indieauth/>.
+
+**Contributors:** [willnorris](https://profiles.wordpress.org/willnorris/), [factoryjoe](https://profiles.wordpress.org/factoryjoe/), [pfefferle](https://profiles.wordpress.org/pfefferle/)\
+**Tags:** openid, authentication, login, comments\
+**Requires at least:** 2.8 \
+**Tested up to:** 6.0 \
+**Stable tag:** 3.6.1 \
+**Requires PHP:** 5.6 \
+**License:** Apache-2.0 \
+**License URI:** https://www.apache.org/licenses/LICENSE-2.0
 
 Allows WordPress to provide and consumer OpenIDs for authentication of users and comments.
 
